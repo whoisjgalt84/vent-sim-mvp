@@ -474,6 +474,163 @@ console.log('\n  ⚕️ In PC-CMV, watch VT closely — it changes with the pati
 
 
 // =============================================================================
+// TEST 11: VC-CMV Descending Ramp — Normal Lung
+// =============================================================================
+section('TEST 11: VC Descending Ramp — Normal Lung (R=10, C=0.05)');
+
+const lungRamp1 = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventRamp1 = new Ventilator(lungRamp1, {
+    mode: 'vc-cmv',
+    flowPattern: 'ramp',
+    tidalVolume: 0.500,
+    respiratoryRate: 14,
+    ieRatio: [1, 2],
+    peep: 5,
+});
+
+// V̇_peak = 2 × VT / Ti = 2 × 0.500 / 1.4286 = 0.700 L/s = 42.0 L/min
+// (twice the square flow of 21.0 L/min)
+const ti = 60 / 14 / 3;  // 1.4286 s
+const expectedPeakFlow = 2 * 0.500 / ti;
+
+assert('Ramp peak flow (L/s)', ventRamp1.vcPeakFlow, expectedPeakFlow, 0.01);
+assert('Ramp peak flow = 2× square flow', ventRamp1.vcPeakFlow, 2 * ventRamp1.inspiratoryFlow, 0.01);
+assert('Ramp flow pattern label', ventRamp1.flowPatternLabel === 'Ramp' ? 1 : 0, 1, 0);
+
+// Pplat should be SAME as square (same VT, same mechanics)
+const ventSquare1 = new Ventilator(lungRamp1, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+});
+assert('Ramp Pplat = Square Pplat', ventRamp1.pplat, ventSquare1.pplat, 0.01);
+
+// Driving pressure should be SAME (same VT/C)
+assert('Ramp ΔP = Square ΔP', ventRamp1.drivingPressure, ventSquare1.drivingPressure, 0.01);
+
+// PIP should be LOWER for ramp (the key clinical advantage!)
+console.log(`    Square PIP = ${ventSquare1.pip.toFixed(1)} cmH₂O`);
+console.log(`    Ramp PIP   = ${ventRamp1.pip.toFixed(1)} cmH₂O`);
+assert('Ramp PIP < Square PIP', ventRamp1.pip < ventSquare1.pip ? 1 : 0, 1, 0);
+
+// Verify PIP analytically:
+// τ = 0.5s, Ti = 1.43s → t* = Ti - τ = 0.93s
+// At t*: V̇ = 0.700 × (1 - 0.93/1.43) = 0.700 × 0.351 = 0.245 L/s
+//         V = 0.700 × (0.93 - 0.93²/2.86) = 0.700 × (0.93 - 0.302) = 0.440 L
+//         P = 5 + 0 + 10×0.245 + 0.440/0.05 = 5 + 2.45 + 8.80 = 16.25
+const tau = 10 * 0.05;
+const tStar = ti - tau;
+const fAtStar = expectedPeakFlow * (1 - tStar / ti);
+const vAtStar = expectedPeakFlow * (tStar - tStar * tStar / (2 * ti));
+const expectedPIP = 5 + 10 * fAtStar + vAtStar / 0.05;
+console.log(`    Analytical PIP = ${expectedPIP.toFixed(1)} (t*=${tStar.toFixed(2)}s)`);
+assert('Ramp PIP matches analytical', ventRamp1.pip, expectedPIP, 0.02);
+
+
+// =============================================================================
+// TEST 12: Descending Ramp — Waveform Shape Validation
+// =============================================================================
+section('TEST 12: Descending Ramp — Waveform Shape Validation');
+
+const wavesRamp = ventRamp1.generateBreathWaveforms(1);
+const inspSamplesR = Math.round(ti * 100);
+
+// Flow should start high and linearly decrease to ~0
+const flowStart = wavesRamp.flow[0];
+const flowMid   = wavesRamp.flow[Math.round(inspSamplesR / 2)];
+const flowEnd   = wavesRamp.flow[inspSamplesR - 1];
+console.log(`    Flow: start=${flowStart.toFixed(1)}, mid=${flowMid.toFixed(1)}, end=${flowEnd.toFixed(1)} L/min`);
+assert('Ramp flow start ≈ peak', flowStart, expectedPeakFlow * 60, 0.02);
+assert('Ramp flow end ≈ 0', Math.abs(flowEnd) < 1.0 ? 1 : 0, 1, 0);
+assert('Ramp flow linearly decreasing', (flowStart > flowMid && flowMid > flowEnd) ? 1 : 0, 1, 0);
+assert('Ramp flow mid ≈ half peak', flowMid, flowStart / 2, 0.05);
+
+// Volume should be parabolic (concave down) and reach VT
+const volEnd = wavesRamp.volume[inspSamplesR - 1];
+const volMid = wavesRamp.volume[Math.round(inspSamplesR / 2)];
+console.log(`    Volume: mid=${volMid.toFixed(1)} mL, end=${volEnd.toFixed(1)} mL`);
+assert('Ramp volume reaches VT', volEnd, 500, 0.03);
+// Parabolic: at t=Ti/2, V should be 75% of VT (not 50% like linear)
+// V(Ti/2) = fPeak × (Ti/2 - (Ti/2)²/(2Ti)) = fPeak × Ti/2 × (1 - 1/4) = fPeak × 3Ti/8
+// = (2VT/Ti) × 3Ti/8 = 3VT/4 = 375 mL
+assert('Ramp volume at midpoint ≈ 75% VT (parabolic)', volMid, 375, 0.05);
+
+// Pressure should have the "hump" shape
+const pStartR = wavesRamp.pressure[0];
+const pEndR   = wavesRamp.pressure[inspSamplesR - 1];
+const pMaxR   = Math.max(...wavesRamp.pressure.slice(0, inspSamplesR));
+console.log(`    Pressure: start=${pStartR.toFixed(1)}, peak=${pMaxR.toFixed(1)}, end-insp=${pEndR.toFixed(1)}`);
+// End-insp pressure should ≈ Pplat (flow is ~0)
+assert('Ramp end-insp P ≈ Pplat', pEndR, ventRamp1.pplat, 0.5);
+// Peak (PIP) should be in the middle, not at start or end
+assert('Ramp PIP is interior maximum', (pMaxR > pStartR && pMaxR > pEndR) ? 1 : 0, 1, 0);
+
+// Expiration should be identical to square (same VT, same mechanics)
+const expStartIdx = inspSamplesR;
+const expFlowRamp = wavesRamp.flow[expStartIdx];
+console.log(`    Expiratory flow at start: ${expFlowRamp.toFixed(1)} L/min`);
+assert('Ramp exp flow is negative', expFlowRamp < -1 ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 13: Ramp vs Square — Same VT, Different Pressure
+// =============================================================================
+section('TEST 13: Ramp vs Square — Comparative Analysis');
+
+console.log('\n  Same VT=500 mL, same patient, different flow patterns:');
+console.log('  ─────────────────────────────────────────────────────');
+
+for (const [label, R, C] of [
+    ['Normal',   10, 0.050],
+    ['ARDS',     10, 0.035],
+    ['COPD',     25, 0.060],
+    ['Fibrosis',  8, 0.030],
+]) {
+    const testLung = new LungModel({ resistance: R, compliance: C });
+    const sq = new Ventilator(testLung, {
+        mode: 'vc-cmv', flowPattern: 'square',
+        tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    });
+    const rp = new Ventilator(testLung, {
+        mode: 'vc-cmv', flowPattern: 'ramp',
+        tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    });
+    const pipDiff = sq.pip - rp.pip;
+    console.log(`    ${label.padEnd(10)} Square PIP=${sq.pip.toFixed(1)}  Ramp PIP=${rp.pip.toFixed(1)}  (ΔP=${pipDiff.toFixed(1)} less)  Pplat=${sq.pplat.toFixed(1)} (same)`);
+}
+
+console.log('\n  ⚕️ Descending ramp: same VT, same Pplat, lower PIP — purely cosmetic?');
+console.log('     No! Lower PIP means less peak airway pressure and potentially');
+console.log('     better patient comfort. But Pplat (the alveolar stretching');
+console.log('     pressure) is unchanged — lung protection depends on Pplat and ΔP.');
+
+
+// =============================================================================
+// TEST 14: High Resistance — Ramp PIP at t=0
+// =============================================================================
+section('TEST 14: High Resistance — PIP Location Shifts');
+
+// When τ > Ti, PIP should be at t=0 (resistive component dominates entirely)
+const lungHighR = new LungModel({ resistance: 40, compliance: 0.060 });
+const ventHighR = new Ventilator(lungHighR, {
+    mode: 'vc-cmv', flowPattern: 'ramp',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+});
+const tauHighR = 40 * 0.060;  // 2.4 s
+const tiHighR = ventHighR.inspiratoryTime;  // 1.43 s
+console.log(`    τ=${tauHighR.toFixed(2)}s > Ti=${tiHighR.toFixed(2)}s → PIP at t=0`);
+assert('τ > Ti condition', tauHighR > tiHighR ? 1 : 0, 1, 0);
+
+// PIP at t=0: P = PEEP + R × V̇_peak (no volume yet)
+const fPeakHighR = 2 * 0.500 / tiHighR;
+const expectedPIPHighR = 5 + 40 * fPeakHighR;  // PEEP + R × V̇_peak + 0 (auto-PEEP negligible? check)
+const autoHighR = ventHighR.autoPeep;
+const trappedHighR = ventHighR.trappedVolume;
+const actualExpectedPIP = 5 + autoHighR + 40 * fPeakHighR + trappedHighR / 0.060;
+console.log(`    PIP=${ventHighR.pip.toFixed(1)} cmH₂O  (R×V̇_peak=${(40 * fPeakHighR).toFixed(1)}, autoPEEP=${autoHighR.toFixed(1)})`);
+assert('High-R ramp PIP ≈ PEEP + autoPEEP + R×V̇_peak', ventHighR.pip, actualExpectedPIP, 0.02);
+
+
+// =============================================================================
 // RESULTS
 // =============================================================================
 section('RESULTS');

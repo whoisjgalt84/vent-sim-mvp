@@ -56,6 +56,7 @@ export class Ventilator {
      * @param {LungModel} lungModel   - The patient's lung physics
      * @param {Object}    settings    - Operator settings
      * @param {string}    settings.mode              - 'vc-cmv' or 'pc-cmv'
+     * @param {string}    settings.flowPattern       - 'square' or 'ramp' (VC only)
      * @param {number}    settings.tidalVolume       - VT in L (VC mode, default 0.500)
      * @param {number}    settings.inspiratoryPressure - Pinsp above PEEP in cmH2O (PC mode, default 15)
      * @param {number}    settings.respiratoryRate   - RR in breaths/min (default 14)
@@ -68,6 +69,11 @@ export class Ventilator {
 
         // --- Mode ---
         this.mode = settings.mode ?? 'vc-cmv';  // 'vc-cmv' or 'pc-cmv'
+
+        // --- Flow Pattern (VC only) ---
+        // 'square' = constant flow throughout inspiration
+        // 'ramp'   = descending ramp (linear deceleration from peak to zero)
+        this.flowPattern = settings.flowPattern ?? 'square';
 
         // --- Operator Settings (shared) ---
         this.respiratoryRate = settings.respiratoryRate  ?? 14;      // breaths/min
@@ -130,6 +136,52 @@ export class Ventilator {
     /** Inspiratory flow in L/min (clinical display): V̇ × 60 */
     get inspiratoryFlowLpm() {
         return this.inspiratoryFlow * 60;
+    }
+
+
+    // =========================================================================
+    // VC FLOW PATTERN PROPERTIES
+    // =========================================================================
+    //
+    // SQUARE FLOW (default):
+    //   V̇(t) = VT / Ti = constant
+    //   Peak flow = mean flow = VT / Ti
+    //
+    // DESCENDING RAMP (triangular):
+    //   V̇(t) = V̇_peak × (1 - t/Ti)
+    //   V̇_peak = 2 × VT / Ti  (triangle area = ½ × base × height = VT)
+    //   Mean flow = VT / Ti (same as square — same VT in same Ti)
+    //   Peak flow = 2 × mean flow
+    //
+    //   Volume: V(t) = V̇_peak × [t - t²/(2Ti)]  (parabolic rise)
+    //
+    //   "The descending ramp produces lower peak airway pressures because
+    //    the peak resistive load (R × V̇_peak at t=0) occurs when lung
+    //    volume — and therefore elastic load — is still near zero."
+    //     — Chatburn, Fundamentals, Ch. 4
+    //
+    // =========================================================================
+
+    /**
+     * Peak inspiratory flow for VC mode (L/s).
+     *   Square: V̇_peak = VT / Ti
+     *   Ramp:   V̇_peak = 2 × VT / Ti
+     */
+    get vcPeakFlow() {
+        if (this.flowPattern === 'ramp') {
+            return 2 * this.tidalVolume / this.inspiratoryTime;
+        }
+        return this.inspiratoryFlow;  // square: peak = mean
+    }
+
+    /** Peak inspiratory flow for VC mode (L/min) */
+    get vcPeakFlowLpm() {
+        return this.vcPeakFlow * 60;
+    }
+
+    /** Flow pattern display label */
+    get flowPatternLabel() {
+        return this.flowPattern === 'ramp' ? 'Ramp' : 'Square';
     }
 
     /** I:E ratio as a readable string (e.g., "1:2.0") */
@@ -305,24 +357,72 @@ export class Ventilator {
     /**
      * Peak Inspiratory Pressure (cmH2O)
      *
-     * VC-CMV: PIP occurs at end of inspiration (t = Ti):
+     * VC-CMV Square: PIP occurs at end of inspiration (t = Ti):
      *   PIP = PEEP + autoPEEP + R × V̇ + VT / C
      *
+     * VC-CMV Ramp: PIP occurs at t* = max(0, Ti - τ):
+     *   The pressure waveform has competing components:
+     *     - Resistive: R × V̇(t) = R × V̇_peak × (1 - t/Ti) → DECREASING
+     *     - Elastic:   V(t)/C → INCREASING (parabolic)
+     *   Setting dP/dt = 0 yields t* = Ti - τ.
+     *   If τ ≥ Ti, resistive dominates and PIP is at t=0.
+     *
+     *   Key teaching point: Ramp PIP < Square PIP because the peak
+     *   resistive component (at t=0) occurs when elastic load is zero.
+     *
      * PC-CMV: PIP = PEEP + Pinsp (constant throughout inspiration)
-     *   "The pressure waveform in PC is a square wave — the pressure
-     *    is constant during inspiration."
-     *    — Mireles-Cabodevila et al. (2022), p. 134
      */
     get pip() {
         if (this.mode === 'pc-cmv') {
             return this.peep + this.inspiratoryPressure;
         }
+
+        if (this.flowPattern === 'ramp') {
+            return this._rampPIP();
+        }
+
+        // Square flow: PIP at end of inspiration
         return this.lung.inspiratoryPressure(
             this.tidalVolume,
             this.inspiratoryFlow,
             this.peep,
             this.autoPeep
         );
+    }
+
+    /**
+     * Compute PIP for descending ramp flow (analytical).
+     *
+     * P(t) = PEEP + autoPEEP + R × V̇_peak × (1 - t/Ti)
+     *       + (V_trapped + V̇_peak × (t - t²/(2Ti))) / C
+     *
+     * dP/dt = 0 at t* = Ti - τ   (if τ < Ti)
+     *
+     * @private
+     */
+    _rampPIP() {
+        const ti    = this.inspiratoryTime;
+        const tau   = this.lung.timeConstant;
+        const R     = this.lung.resistance;
+        const C     = this.lung.compliance;
+        const peep  = this.peep;
+        const auto  = this.autoPeep;
+        const vTrap = this.trappedVolume;
+        const fPeak = this.vcPeakFlow;  // 2 × VT / Ti
+
+        // Critical time where PIP occurs
+        const tStar = Math.max(0, ti - tau);
+
+        // Flow at t*
+        const flowAtStar = fPeak * (1 - tStar / ti);
+
+        // Volume delivered at t*
+        const volAtStar = fPeak * (tStar - tStar * tStar / (2 * ti));
+
+        // Total volume above PEEP equilibrium
+        const vTotal = vTrap + volAtStar;
+
+        return peep + auto + R * flowAtStar + vTotal / C;
     }
 
     /**
@@ -371,13 +471,19 @@ export class Ventilator {
     /**
      * Resistive pressure drop (cmH2O)
      *
-     * VC-CMV: PIP - Pplat = R × V̇ (constant, since flow is constant)
-     * PC-CMV: Varies from peak at t=0 to ~0 at t=Ti (if Ti >> τ).
-     *         Report the peak value: R × V̇_peak = ΔP_drive
+     * VC-CMV Square: PIP - Pplat = R × V̇ (constant)
+     * VC-CMV Ramp:   Peak resistive = R × V̇_peak (at t=0, but Pplat is same)
+     *                PIP - Pplat ≠ R × V̇_peak because PIP doesn't occur at t=0.
+     *                Report PIP - Pplat for clinical consistency.
+     * PC-CMV: Report peak value = ΔP_drive
      */
     get resistivePressure() {
         if (this.mode === 'pc-cmv') {
-            return this.pcDrivingPressure;  // = Pinsp - autoPEEP
+            return this.pcDrivingPressure;
+        }
+        if (this.flowPattern === 'ramp') {
+            // PIP - Pplat gives the net resistive effect at the PIP location
+            return this.pip - this.pplat;
         }
         return this.lung.resistance * this.inspiratoryFlow;
     }
@@ -423,6 +529,9 @@ export class Ventilator {
     generateBreathWaveforms(numBreaths = 4) {
         if (this.mode === 'pc-cmv') {
             return this._generatePC(numBreaths);
+        }
+        if (this.flowPattern === 'ramp') {
+            return this._generateVCRamp(numBreaths);
         }
         return this._generateVC(numBreaths);
     }
@@ -478,6 +587,153 @@ export class Ventilator {
             }
 
             // EXPIRATION — Passive Exponential Decay
+            const expSteps = Math.round(te * this.sampleRate);
+            const deltaPExp = vStartExp / C;
+
+            for (let i = 0; i < expSteps; i++) {
+                const tExp = i * dt;
+                const expDecay = Math.exp(-tExp / tau);
+                const vRemaining = vStartExp * expDecay;
+                const fExp = -(deltaPExp / R) * expDecay;
+                const p = peep + (vRemaining / C);
+                const vExhaled  = vStartExp * (1 - expDecay);
+                const vDisplayed = vt - vExhaled;
+
+                time[idx]     = t;
+                pressure[idx] = p;
+                volume[idx]   = vDisplayed * 1000;
+                flow[idx]     = fExp * 60;
+                idx++;
+                t += dt;
+            }
+        }
+
+        return {
+            time:     time.slice(0, idx),
+            pressure: pressure.slice(0, idx),
+            volume:   volume.slice(0, idx),
+            flow:     flow.slice(0, idx),
+        };
+    }
+
+    /**
+     * VC-CMV waveform generation — descending ramp (triangular) flow.
+     *
+     * INSPIRATION:
+     *   V̇(t) = V̇_peak × (1 - t/Ti)
+     *   V̇_peak = 2 × VT / Ti
+     *   V(t) = V̇_peak × [t - t²/(2Ti)]    (parabolic rise)
+     *   P(t) = PEEP + autoPEEP + R × V̇(t) + V_total(t)/C
+     *
+     * The pressure waveform shape differs dramatically from square flow:
+     *
+     *   Square:  P rises linearly (constant R×V̇ + increasing V/C)
+     *            PIP at end of inspiration (highest elastic + resistive)
+     *
+     *   Ramp:    P has an interior maximum where dP/dt = 0
+     *            This occurs at t* = Ti - τ (if τ < Ti)
+     *            The pressure "humps up" then comes back down
+     *
+     *   ┌── Square: ╱╱╱╱╲        Ramp: ╱╲╱╲
+     *   │           ╱    ╲              ╱  ╲
+     *   │    PEEP──╱      ╲──PEEP      ╱    ╲──PEEP
+     *   └─────────────────────────────────────────
+     *
+     *   "The descending ramp delivers the same VT with a lower PIP,
+     *    but the same Pplat and driving pressure. Only the resistive
+     *    component changes — the elastic load is identical."
+     *
+     * EXPIRATION: Same passive exponential decay (identical physics).
+     *
+     * @private
+     */
+    _generateVCRamp(numBreaths) {
+        const dt   = 1 / this.sampleRate;
+        const ti   = this.inspiratoryTime;
+        const te   = this.expiratoryTime;
+        const vt   = this.tidalVolume;
+        const peep = this.peep;
+        const tau  = this.lung.timeConstant;
+        const R    = this.lung.resistance;
+        const C    = this.lung.compliance;
+
+        // Steady-state values (same as square — same VT, same Te)
+        const autoPeepSS = this.autoPeep;
+        const trappedVol = this.trappedVolume;
+
+        // Peak flow: V̇_peak = 2 × VT / Ti
+        // Area of triangle: ½ × Ti × V̇_peak = VT  →  V̇_peak = 2VT/Ti
+        const fPeak = 2 * vt / ti;
+
+        // Volume above PEEP-equilibrium at start of expiration
+        const vStartExp = trappedVol + vt;
+
+        // Pre-allocate arrays
+        const totalSamples = Math.ceil(this.totalCycleTime * this.sampleRate) * numBreaths + 1;
+        const time     = new Array(totalSamples);
+        const pressure = new Array(totalSamples);
+        const volume   = new Array(totalSamples);
+        const flow     = new Array(totalSamples);
+        let idx = 0;
+        let t = 0;
+
+        for (let breath = 0; breath < numBreaths; breath++) {
+
+            // =================================================================
+            // INSPIRATION — Descending Ramp Flow
+            // =================================================================
+            //
+            //   V̇(t) = fPeak × (1 - t/Ti)
+            //
+            //     At t=0:  V̇ = fPeak = 2VT/Ti  (twice the square flow)
+            //     At t=Ti: V̇ = 0                (flow reaches zero)
+            //
+            //   V(t) = fPeak × (t - t²/(2Ti))
+            //
+            //     Parabolic rise — starts steep, flattens as flow decelerates.
+            //     At t=Ti: V(Ti) = fPeak × (Ti - Ti/2) = fPeak×Ti/2 = VT ✓
+            //
+            //   P(t) = PEEP + autoPEEP + R × V̇(t) + V_total(t)/C
+            //
+            //     The pressure curve has a distinctive "hump":
+            //     - At t=0: High R×V̇, low V/C → net moderate P
+            //     - At t*:  Balanced R×V̇ and V/C → maximum P (the PIP)
+            //     - At t=Ti: Zero R×V̇, max V/C → P drops to Pplat
+            //
+            //     This "hump and settle" shape is the visual signature
+            //     of descending ramp flow on the ventilator screen.
+            //
+            // =================================================================
+
+            const inspSteps = Math.round(ti * this.sampleRate);
+
+            for (let i = 0; i < inspSteps; i++) {
+                const tInsp = i * dt;
+
+                // Instantaneous flow (linearly decreasing)
+                const fInst = fPeak * (1 - tInsp / ti);
+
+                // Volume delivered so far (parabolic)
+                const vDelivered = fPeak * (tInsp - tInsp * tInsp / (2 * ti));
+
+                // Total volume above PEEP equilibrium
+                const vTotal = trappedVol + vDelivered;
+
+                // Equation of motion: P = PEEP + V_total/C + R × V̇
+                const p = peep + (vTotal / C) + (R * fInst);
+
+                time[idx]     = t;
+                pressure[idx] = p;
+                volume[idx]   = vDelivered * 1000;   // L → mL
+                flow[idx]     = fInst * 60;            // L/s → L/min
+                idx++;
+                t += dt;
+            }
+
+            // =================================================================
+            // EXPIRATION — Passive Exponential Decay (same as square flow)
+            // =================================================================
+
             const expSteps = Math.round(te * this.sampleRate);
             const deltaPExp = vStartExp / C;
 
@@ -716,12 +972,25 @@ export class Ventilator {
     summary() {
         const map = this.calculateMAP();
         const isPC = this.mode === 'pc-cmv';
+        const isRamp = !isPC && this.flowPattern === 'ramp';
         const vtEffective = this.effectiveVt;
+
+        // Display flow: peak for PC and ramp, constant for square
+        let displayFlowLpm;
+        if (isPC) {
+            displayFlowLpm = round(this.pcPeakFlowLpm, 1);
+        } else if (isRamp) {
+            displayFlowLpm = round(this.vcPeakFlowLpm, 1);
+        } else {
+            displayFlowLpm = round(this.inspiratoryFlowLpm, 1);
+        }
 
         return {
             // --- Mode ---
             mode: this.modeLabel,
             isPC: isPC,
+            flowPattern: isPC ? null : this.flowPattern,
+            isRamp: isRamp,
 
             // --- Operator Settings ---
             settings: {
@@ -738,7 +1007,7 @@ export class Ventilator {
                 totalCycleTime_s:    round(this.totalCycleTime, 2),
                 inspiratoryTime_s:   round(this.inspiratoryTime, 2),
                 expiratoryTime_s:    round(this.expiratoryTime, 2),
-                inspFlow_Lpm:        isPC ? round(this.pcPeakFlowLpm, 1) : round(this.inspiratoryFlowLpm, 1),
+                inspFlow_Lpm:        displayFlowLpm,
                 tiOverTau:           isPC ? round(this.tiOverTau, 1) : null,
             },
 
@@ -777,7 +1046,6 @@ export class Ventilator {
                 gasTrappingRisk:     this.gasTrappingRisk,
                 pplatAbove30:        this.pplat > 30,
                 drivingPressureAbove15: this.drivingPressure > 15,
-                // PC-specific: warn if Ti too short to deliver adequate VT
                 tiTooShort:          isPC && this.tiOverTau < 1,
             },
         };

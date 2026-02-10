@@ -406,6 +406,18 @@ html, body {
     font-weight: bold;
 }
 
+.flow-pattern-group {
+    display: flex;
+    gap: 4px;
+}
+
+.flow-icon {
+    font-size: 13px;
+    line-height: 1;
+    vertical-align: middle;
+    margin-right: 2px;
+}
+
 
 /* --- Mode Toggle --- */
 

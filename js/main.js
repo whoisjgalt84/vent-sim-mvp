@@ -5,16 +5,17 @@
  *
  * Wires together:
  *   - LungModel (the patient)
- *   - Ventilator (the machine — VC-CMV or PC-CMV)
+ *   - Ventilator (the machine — VC-CMV or PC-CMV, square or ramp flow)
  *   - WaveformDisplay (the screen)
  *   - DOM controls (the operator's hands)
  *
- * Every slider change → rebuild ventilator state → re-render waveforms
- * and update all digital parameter displays. Instant feedback.
- *
  * MODE SWITCHING:
- *   VC-CMV: Operator sets VT → pressure waveform is dependent
- *   PC-CMV: Operator sets Pinsp → flow and volume waveforms are dependent
+ *   VC-CMV: Operator sets VT → pressure is dependent
+ *   PC-CMV: Operator sets Pinsp → flow & volume are dependent
+ *
+ * FLOW PATTERN (VC only):
+ *   Square: constant flow, linear volume ramp
+ *   Ramp:   linearly decelerating flow, parabolic volume curve
  *
  * ============================================================================
  */
@@ -42,6 +43,7 @@ function init() {
     lung = LungModel.fromPreset('normal');
     vent = new Ventilator(lung, {
         mode:                'vc-cmv',
+        flowPattern:         'square',
         tidalVolume:         0.500,
         inspiratoryPressure: 15,
         respiratoryRate:     14,
@@ -67,6 +69,7 @@ function init() {
     bindPresetSelector();
     bindIEButtons();
     bindModeToggle();
+    bindFlowPatternToggle();
 
     let resizeTimer;
     window.addEventListener('resize', () => {
@@ -104,20 +107,26 @@ function applyModeUI(mode) {
 
     // Header mode label
     const modeLabel = document.getElementById('mode-label');
-    modeLabel.innerHTML = isPC
-        ? 'PC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">set-point</span>'
-        : 'VC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">set-point</span>';
+    if (isPC) {
+        modeLabel.innerHTML = 'PC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">set-point</span>';
+    } else {
+        const patternTag = vent.flowPattern === 'ramp' ? 'ramp' : 'set-point';
+        modeLabel.innerHTML = `VC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${patternTag}</span>`;
+    }
 
-    // Toggle VT vs Pinsp slider
-    const vtControl    = document.getElementById('vt-control');
-    const pinspControl = document.getElementById('pinsp-control');
+    // Toggle VT + Flow Pattern vs Pinsp
+    const vtControl      = document.getElementById('vt-control');
+    const pinspControl   = document.getElementById('pinsp-control');
+    const patternControl = document.getElementById('flow-pattern-control');
 
     if (isPC) {
         vtControl.classList.add('control--hidden');
         pinspControl.classList.remove('control--hidden');
+        patternControl.classList.add('control--hidden');
     } else {
         vtControl.classList.remove('control--hidden');
         pinspControl.classList.add('control--hidden');
+        patternControl.classList.remove('control--hidden');
     }
 
     // Toggle PC-specific parameter rows
@@ -129,13 +138,56 @@ function applyModeUI(mode) {
         ? 'V<sub>T</sub> <span style="font-size:9px;opacity:0.5">(del)</span>'
         : 'V<sub>T</sub>';
 
-    document.getElementById('flow-param-label').innerHTML = isPC
-        ? 'V̇<sub>peak</sub>'
-        : 'V̇<sub>insp</sub>';
+    // Flow label: peak for ramp and PC, constant for square
+    updateFlowLabel();
 
     document.getElementById('resist-label').innerHTML = isPC
         ? 'ΔP<sub>eff</sub>'
         : 'P<sub>resist</sub>';
+}
+
+/**
+ * Update the flow parameter label based on current mode and pattern.
+ */
+function updateFlowLabel() {
+    const label = document.getElementById('flow-param-label');
+    if (vent.mode === 'pc-cmv') {
+        label.innerHTML = 'V̇<sub>peak</sub>';
+    } else if (vent.flowPattern === 'ramp') {
+        label.innerHTML = 'V̇<sub>peak</sub>';
+    } else {
+        label.innerHTML = 'V̇<sub>insp</sub>';
+    }
+}
+
+
+// =============================================================================
+// FLOW PATTERN TOGGLE (VC only)
+// =============================================================================
+
+function bindFlowPatternToggle() {
+    const group = document.getElementById('flow-pattern-group');
+    group.addEventListener('click', (e) => {
+        const btn = e.target.closest('.ie-btn');
+        if (!btn) return;
+
+        const pattern = btn.dataset.pattern;
+        vent.flowPattern = pattern;
+
+        group.querySelectorAll('.ie-btn').forEach(b => b.classList.remove('ie-btn--active'));
+        btn.classList.add('ie-btn--active');
+
+        document.getElementById('flow-pattern-display').textContent =
+            pattern === 'ramp' ? 'Ramp ╲' : 'Square ▬';
+
+        // Update header tag and flow label
+        const modeLabel = document.getElementById('mode-label');
+        const tag = pattern === 'ramp' ? 'ramp' : 'set-point';
+        modeLabel.innerHTML = `VC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${tag}</span>`;
+
+        updateFlowLabel();
+        update();
+    });
 }
 
 
@@ -323,6 +375,16 @@ function updateMechanicsBar(summary) {
         <span class="mechanics-chip" style="color: ${tiOverTau < 1 ? 'var(--color-warning)' : tiOverTau < 3 ? 'var(--color-pressure)' : 'var(--text-primary)'}">
             <span class="mechanics-chip__symbol">Ti/τ</span>
             ${tiOverTau}
+        </span>`;
+    }
+
+    // Show flow pattern chip in VC mode
+    if (s.flowPattern) {
+        const patternColor = s.isRamp ? 'var(--color-flow)' : 'var(--text-dim)';
+        chips += `
+        <span class="mechanics-chip" style="color: ${patternColor}">
+            <span class="mechanics-chip__symbol">Flow</span>
+            ${s.isRamp ? '╲Ramp' : '▬Sq'}
         </span>`;
     }
 

@@ -1,0 +1,467 @@
+/**
+ * ============================================================================
+ * style.css — Ventilator Simulator UI
+ * ============================================================================
+ *
+ * Design: Dark clinical display inspired by ICU ventilator screens
+ * (Dräger, PB, Hamilton). High contrast, no decorative fluff.
+ *
+ * ============================================================================
+ */
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    /* Screen background — deep blue-black like a real vent display */
+    --bg-primary:    #0b0f14;
+    --bg-panel:      #111820;
+    --bg-control:    #161d27;
+    --bg-input:      #1c2530;
+
+    /* Text */
+    --text-primary:  #c8d0da;
+    --text-dim:      #5a6678;
+    --text-bright:   #e8ecf0;
+
+    /* Waveform colors — match the canvas traces */
+    --color-pressure: #f0c050;
+    --color-volume:   #4fc3f7;
+    --color-flow:     #66bb6a;
+
+    /* Accent and alert */
+    --color-accent:   #4a9eff;
+    --color-warning:  #ff9800;
+    --color-danger:   #ef5350;
+    --color-safe:     #66bb6a;
+
+    /* Borders */
+    --border-subtle:  rgba(255, 255, 255, 0.06);
+    --border-panel:   rgba(255, 255, 255, 0.08);
+
+    /* Spacing */
+    --gap: 10px;
+    --radius: 6px;
+}
+
+html, body {
+    height: 100%;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    overflow: hidden;
+    user-select: none;
+}
+
+
+/* --- Main Layout --- */
+
+.app {
+    display: grid;
+    grid-template-columns: 260px 1fr 220px;
+    grid-template-rows: auto 1fr;
+    height: 100vh;
+    gap: 0;
+}
+
+.header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-panel);
+    min-height: 38px;
+}
+
+.header__mode {
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--color-accent);
+    letter-spacing: 1px;
+}
+
+.header__title {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+}
+
+.header__alerts {
+    display: flex;
+    gap: 8px;
+}
+
+
+/* --- Controls Panel (Left) --- */
+
+.controls {
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-panel);
+    padding: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.control-group {
+    background: var(--bg-control);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle);
+}
+
+.control-group__title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Individual slider control */
+.control {
+    margin-bottom: 10px;
+}
+
+.control:last-child {
+    margin-bottom: 0;
+}
+
+.control__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+}
+
+.control__label {
+    font-size: 11px;
+    color: var(--text-primary);
+}
+
+.control__value {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--text-bright);
+    min-width: 60px;
+    text-align: right;
+}
+
+.control__range {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--bg-input);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.control__range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: 2px solid var(--bg-panel);
+}
+
+.control__range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: 2px solid var(--bg-panel);
+}
+
+/* Preset selector */
+.preset-select {
+    width: 100%;
+    padding: 6px 8px;
+    background: var(--bg-input);
+    color: var(--text-bright);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+}
+
+.preset-select:focus {
+    border-color: var(--color-accent);
+}
+
+
+/* --- Waveform Display (Center) --- */
+
+.waveforms {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 4px;
+    min-width: 0;
+    min-height: 0;        /* Allow grid child to shrink below content size */
+    overflow: hidden;      /* Prevent content from pushing layout */
+    background: var(--bg-primary);
+}
+
+.waveform-panel {
+    flex: 1 1 0;          /* Grow, shrink, and start from 0 basis */
+    min-height: 0;        /* Allow flex child to shrink below content size */
+    overflow: hidden;
+    position: relative;
+}
+
+.waveform-panel canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 3px;
+}
+
+
+/* --- Monitored Parameters Panel (Right) --- */
+
+.parameters {
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border-panel);
+    padding: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.param-group {
+    background: var(--bg-control);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    border: 1px solid var(--border-subtle);
+}
+
+.param-group__title {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+}
+
+.param-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 2px 0;
+}
+
+.param-row__label {
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+.param-row__value {
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--text-bright);
+}
+
+/* Color-coded parameter values */
+.param-row__value--pressure { color: var(--color-pressure); }
+.param-row__value--volume   { color: var(--color-volume); }
+.param-row__value--flow     { color: var(--color-flow); }
+
+/* Large primary readouts (PIP, VT, RR) */
+.param-row--large .param-row__value {
+    font-size: 22px;
+}
+
+.param-row--large .param-row__label {
+    font-size: 12px;
+}
+
+
+/* --- Safety Alert Badges --- */
+
+.alert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.alert-badge--ok {
+    background: rgba(102, 187, 106, 0.12);
+    color: var(--color-safe);
+    border: 1px solid rgba(102, 187, 106, 0.2);
+}
+
+.alert-badge--warning {
+    background: rgba(255, 152, 0, 0.12);
+    color: var(--color-warning);
+    border: 1px solid rgba(255, 152, 0, 0.25);
+    animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.alert-badge--danger {
+    background: rgba(239, 83, 80, 0.15);
+    color: var(--color-danger);
+    border: 1px solid rgba(239, 83, 80, 0.3);
+    animation: pulse-danger 1s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.7; }
+}
+
+@keyframes pulse-danger {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.5; }
+}
+
+
+/* --- Mechanics Info Bar --- */
+
+.mechanics-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.mechanics-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+}
+
+.mechanics-chip__symbol {
+    color: var(--text-dim);
+    font-weight: normal;
+}
+
+
+/* --- I:E Ratio Button Group --- */
+
+.ie-group {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.ie-btn {
+    flex: 1;
+    min-width: 42px;
+    padding: 5px 2px;
+    background: var(--bg-input);
+    color: var(--text-dim);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+}
+
+.ie-btn:hover {
+    border-color: var(--color-accent);
+    color: var(--text-primary);
+}
+
+.ie-btn--active {
+    background: rgba(74, 158, 255, 0.15);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    font-weight: bold;
+}
+
+
+/* --- Mode Toggle --- */
+
+.mode-toggle {
+    display: flex;
+    gap: 4px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 7px 4px;
+    background: var(--bg-input);
+    color: var(--text-dim);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+}
+
+.mode-btn:hover {
+    border-color: var(--color-accent);
+    color: var(--text-primary);
+}
+
+.mode-btn--active {
+    background: rgba(74, 158, 255, 0.2);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    box-shadow: 0 0 8px rgba(74, 158, 255, 0.15);
+}
+
+/* Hidden control (for mode-switching between VT / Pinsp) */
+.control--hidden {
+    display: none !important;
+}
+
+
+/* --- Scrollbar --- */
+
+.controls::-webkit-scrollbar,
+.parameters::-webkit-scrollbar {
+    width: 4px;
+}
+
+.controls::-webkit-scrollbar-track,
+.parameters::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.controls::-webkit-scrollbar-thumb,
+.parameters::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}

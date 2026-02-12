@@ -419,6 +419,93 @@ html, body {
 }
 
 
+/* ── Hold Maneuver ───────────────────────────────────────── */
+
+.hold-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hold-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.hold-btn:hover {
+    border-color: var(--color-pressure);
+    color: var(--color-pressure);
+}
+
+.hold-btn--active {
+    background: rgba(255, 167, 38, 0.15);
+    border-color: var(--color-pressure);
+    color: var(--color-pressure);
+    font-weight: bold;
+}
+
+.hold-btn__icon {
+    font-size: 10px;
+}
+
+.hold-duration {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+}
+
+.hold-duration .control__range {
+    width: 80px;
+}
+
+.hold-results {
+    margin-top: 4px;
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 167, 38, 0.3);
+    border-radius: 4px;
+    background: rgba(255, 167, 38, 0.05);
+}
+
+.hold-result-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 2px 0;
+    font-size: 11px;
+}
+
+.hold-result-label {
+    color: var(--text-dim);
+    min-width: 80px;
+}
+
+.hold-result-value {
+    color: var(--color-pressure);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: bold;
+    min-width: 40px;
+    text-align: right;
+}
+
+.hold-result-unit {
+    color: var(--text-dim);
+    font-size: 9px;
+    opacity: 0.6;
+}
+
+
 /* --- Mode Toggle --- */
 
 .mode-toggle {

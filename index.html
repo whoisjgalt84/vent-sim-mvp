@@ -135,6 +135,54 @@
             </div>
         </div>
 
+        <!-- Maneuvers -->
+        <div class="control-group">
+            <div class="control-group__title">Maneuvers</div>
+
+            <!-- Inspiratory Hold -->
+            <div class="control">
+                <div class="control__header">
+                    <span class="control__label">Insp Hold</span>
+                    <span class="control__value" id="hold-display">Off</span>
+                </div>
+                <div class="hold-controls">
+                    <button class="hold-btn" id="hold-toggle">
+                        <span class="hold-btn__icon" id="hold-icon">▶</span>
+                        <span id="hold-btn-label">Activate</span>
+                    </button>
+                    <div class="hold-duration" id="hold-duration-group" style="display:none">
+                        <input type="range" class="control__range" id="hold-duration"
+                               min="3" max="20" step="1" value="5">
+                        <span class="control__value" id="hold-duration-display">0.5s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hold Results (shown when hold is active) -->
+            <div class="hold-results" id="hold-results" style="display:none">
+                <div class="hold-result-row">
+                    <span class="hold-result-label">P<sub>plat</sub></span>
+                    <span class="hold-result-value" id="hold-pplat">—</span>
+                    <span class="hold-result-unit">cmH₂O</span>
+                </div>
+                <div class="hold-result-row">
+                    <span class="hold-result-label">PIP − P<sub>plat</sub></span>
+                    <span class="hold-result-value" id="hold-pip-pplat">—</span>
+                    <span class="hold-result-unit">cmH₂O</span>
+                </div>
+                <div class="hold-result-row">
+                    <span class="hold-result-label">C<sub>rs</sub> static</span>
+                    <span class="hold-result-value" id="hold-crs">—</span>
+                    <span class="hold-result-unit">mL/cmH₂O</span>
+                </div>
+                <div class="hold-result-row" id="hold-raw-row">
+                    <span class="hold-result-label">R<sub>aw</sub></span>
+                    <span class="hold-result-value" id="hold-raw">—</span>
+                    <span class="hold-result-unit">cmH₂O·s/L</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Lung Mechanics (the "patient knobs") -->
         <div class="control-group">
             <div class="control-group__title">Lung Mechanics</div>

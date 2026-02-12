@@ -631,6 +631,200 @@ assert('High-R ramp PIP ≈ PEEP + autoPEEP + R×V̇_peak', ventHighR.pip, actua
 
 
 // =============================================================================
+// TEST 15: Inspiratory Hold — VC-CMV Square Flow
+// =============================================================================
+section('TEST 15: Inspiratory Hold — VC Square (R=10, C=0.05)');
+
+const lungHold1 = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventHold1 = new Ventilator(lungHold1, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    holdTime: 0.5,
+});
+
+assert('Hold is active', ventHold1.holdActive ? 1 : 0, 1, 0);
+assert('Effective hold time', ventHold1.effectiveHoldTime, 0.5, 0.01);
+console.log(`    Ti=${ventHold1.inspiratoryTime.toFixed(2)}s  Hold=${ventHold1.effectiveHoldTime.toFixed(1)}s  Te_eff=${ventHold1.effectiveExpiratoryTime.toFixed(2)}s`);
+
+// Hold steals from Te, so effective Te = Te - holdTime
+const teNoHold = ventHold1.expiratoryTime;
+assert('Effective Te = Te - holdTime', ventHold1.effectiveExpiratoryTime, teNoHold - 0.5, 0.01);
+
+// Pplat and PIP should be the same as without hold (same VT, same flow)
+const ventNoHold1 = new Ventilator(lungHold1, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    holdTime: 0,
+});
+assert('Hold PIP = no-hold PIP', ventHold1.pip, ventNoHold1.pip, 0.01);
+assert('Hold Pplat = no-hold Pplat', ventHold1.pplat, ventNoHold1.pplat, 0.01);
+
+// PIP - Pplat = R × V̇ (resistive pressure, exact for square flow)
+const pipPplatDiff = ventHold1.pip - ventHold1.pplat;
+console.log(`    PIP=${ventHold1.pip.toFixed(1)}  Pplat=${ventHold1.pplat.toFixed(1)}  PIP-Pplat=${pipPplatDiff.toFixed(1)}`);
+assert('PIP - Pplat = R × V̇', pipPplatDiff, 10 * ventHold1.inspiratoryFlow, 0.1);
+
+// Hold-derived measurements
+const s15 = ventHold1.summary();
+console.log(`    Static Crs = ${s15.mechanics.staticCompliance} mL/cmH₂O (actual=${lungHold1.compliance * 1000})`);
+console.log(`    Measured Raw = ${s15.mechanics.measuredResistance} cmH₂O·s/L (actual=${lungHold1.resistance})`);
+assert('Hold reveals correct static Crs', s15.mechanics.staticCompliance, lungHold1.compliance * 1000, 0.5);
+assert('Hold reveals correct Raw', s15.mechanics.measuredResistance, lungHold1.resistance, 0.2);
+
+
+// =============================================================================
+// TEST 16: Hold Waveform — Pressure Drop & Flow Zero
+// =============================================================================
+section('TEST 16: Hold Waveform — Pressure Drop & Flow Zero');
+
+const wavesHold1 = ventHold1.generateBreathWaveforms(1);
+const tiSamples = Math.round(ventHold1.inspiratoryTime * 100);
+const holdSamples = Math.round(0.5 * 100);  // 50 samples
+
+// Last inspiration sample: should be at PIP (pressure still has R×V̇)
+const lastInspP = wavesHold1.pressure[tiSamples - 1];
+console.log(`    Last insp pressure: ${lastInspP.toFixed(1)} (PIP=${ventHold1.pip.toFixed(1)})`);
+
+// First hold sample: pressure should drop to Pplat
+const firstHoldP = wavesHold1.pressure[tiSamples];
+const firstHoldF = wavesHold1.flow[tiSamples];
+const firstHoldV = wavesHold1.volume[tiSamples];
+console.log(`    First hold: P=${firstHoldP.toFixed(1)} (Pplat=${ventHold1.pplat.toFixed(1)})  V̇=${firstHoldF.toFixed(1)} L/min  V=${firstHoldV.toFixed(0)} mL`);
+
+assert('Hold pressure = Pplat', firstHoldP, ventHold1.pplat, 0.5);
+assert('Hold flow = 0', firstHoldF, 0, 0.01);
+assert('Hold volume = VT', firstHoldV, 500, 1);
+
+// All hold samples should have zero flow and constant pressure
+let holdFlowAllZero = true;
+let holdPressureConstant = true;
+for (let i = tiSamples; i < tiSamples + holdSamples && i < wavesHold1.time.length; i++) {
+    if (Math.abs(wavesHold1.flow[i]) > 0.01) holdFlowAllZero = false;
+    if (Math.abs(wavesHold1.pressure[i] - firstHoldP) > 0.1) holdPressureConstant = false;
+}
+assert('All hold samples: flow = 0', holdFlowAllZero ? 1 : 0, 1, 0);
+assert('All hold samples: P = constant', holdPressureConstant ? 1 : 0, 1, 0);
+
+// After hold, expiration should start with negative flow
+const firstExpIdx = tiSamples + holdSamples;
+const firstExpF = wavesHold1.flow[firstExpIdx];
+console.log(`    First exp flow after hold: ${firstExpF.toFixed(1)} L/min`);
+assert('Exp starts after hold', firstExpF < -5 ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 17: Hold — Ramp Flow (Pplat should be lower than PIP)
+// =============================================================================
+section('TEST 17: Hold — Ramp Flow (interior PIP → hold at Pplat)');
+
+const lungHoldRamp = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventHoldRamp = new Ventilator(lungHoldRamp, {
+    mode: 'vc-cmv', flowPattern: 'ramp',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    holdTime: 0.5,
+});
+
+// For ramp flow: end-insp flow ≈ 0, so pressure at end of insp ≈ Pplat
+// But PIP is an interior maximum. Hold plateau should still be at Pplat.
+console.log(`    Ramp PIP=${ventHoldRamp.pip.toFixed(1)}  Pplat=${ventHoldRamp.pplat.toFixed(1)}`);
+assert('Ramp hold Pplat < PIP', ventHoldRamp.pplat < ventHoldRamp.pip ? 1 : 0, 1, 0);
+
+// Ramp waveform: hold should show Pplat plateau after the pressure hump
+const wavesHoldRamp = ventHoldRamp.generateBreathWaveforms(1);
+const tiSamplesR = Math.round(ventHoldRamp.inspiratoryTime * 100);
+const holdStartP = wavesHoldRamp.pressure[tiSamplesR];
+const holdStartF = wavesHoldRamp.flow[tiSamplesR];
+console.log(`    Hold start: P=${holdStartP.toFixed(1)} V̇=${holdStartF.toFixed(1)}`);
+assert('Ramp hold flow = 0', holdStartF, 0, 0.01);
+assert('Ramp hold pressure ≈ Pplat', holdStartP, ventHoldRamp.pplat, 0.5);
+
+
+// =============================================================================
+// TEST 18: Hold — PC-CMV (Pplat visible when Ti < 3τ)
+// =============================================================================
+section('TEST 18: Hold — PC-CMV (Pplat visibility depends on Ti/τ)');
+
+// Use moderate τ where flow hasn't completely stopped
+const lungHoldPC = new LungModel({ resistance: 15, compliance: 0.05 });
+const ventHoldPC = new Ventilator(lungHoldPC, {
+    mode: 'pc-cmv',
+    inspiratoryPressure: 15, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    holdTime: 0.5,
+});
+
+const pcTiTau = ventHoldPC.tiOverTau;
+console.log(`    PC: Ti/τ=${pcTiTau.toFixed(1)}  PIP=${ventHoldPC.pip.toFixed(1)}  Pplat=${ventHoldPC.pplat.toFixed(1)}`);
+
+// In PC, PIP = PEEP + Pinsp = 20. If Ti/τ < 3, Pplat < PIP.
+const pcPIP   = ventHoldPC.pip;
+const pcPplat = ventHoldPC.pplat;
+console.log(`    PIP - Pplat = ${(pcPIP - pcPplat).toFixed(1)} cmH₂O (visible pressure drop during hold)`);
+if (pcTiTau < 3) {
+    assert('PC hold shows pressure drop (Ti/τ < 3)', pcPplat < pcPIP ? 1 : 0, 1, 0);
+} else {
+    console.log('    Ti/τ ≥ 3 → flow nearly stopped, Pplat ≈ PIP (hold is less dramatic)');
+}
+
+// Verify waveform
+const wavesHoldPC = ventHoldPC.generateBreathWaveforms(1);
+const pcTiSamples = Math.round(ventHoldPC.inspiratoryTime * 100);
+const pcHoldP = wavesHoldPC.pressure[pcTiSamples];
+const pcHoldF = wavesHoldPC.flow[pcTiSamples];
+console.log(`    PC hold: P=${pcHoldP.toFixed(1)} V̇=${pcHoldF.toFixed(1)}`);
+assert('PC hold flow = 0', pcHoldF, 0, 0.01);
+assert('PC hold P ≈ Pplat', pcHoldP, pcPplat, 0.5);
+
+
+// =============================================================================
+// TEST 19: Hold Increases Gas Trapping (steals from Te)
+// =============================================================================
+section('TEST 19: Hold Increases Gas Trapping (COPD + hold)');
+
+const lungCOPDHold = new LungModel({ resistance: 25, compliance: 0.06 });
+
+const ventCOPD_noHold = new Ventilator(lungCOPDHold, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    holdTime: 0,
+});
+
+const ventCOPD_hold = new Ventilator(lungCOPDHold, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    holdTime: 1.0,
+});
+
+console.log(`    Without hold: Te=${ventCOPD_noHold.effectiveExpiratoryTime.toFixed(2)}s  Te/τ=${ventCOPD_noHold.teOverTau.toFixed(1)}  AutoPEEP=${ventCOPD_noHold.autoPeep.toFixed(1)}`);
+console.log(`    With 1s hold: Te=${ventCOPD_hold.effectiveExpiratoryTime.toFixed(2)}s  Te/τ=${ventCOPD_hold.teOverTau.toFixed(1)}  AutoPEEP=${ventCOPD_hold.autoPeep.toFixed(1)}`);
+
+assert('Hold reduces effective Te', ventCOPD_hold.effectiveExpiratoryTime < ventCOPD_noHold.effectiveExpiratoryTime ? 1 : 0, 1, 0);
+assert('Hold increases auto-PEEP', ventCOPD_hold.autoPeep > ventCOPD_noHold.autoPeep ? 1 : 0, 1, 0);
+assert('Hold increases trapped volume', ventCOPD_hold.trappedVolume > ventCOPD_noHold.trappedVolume ? 1 : 0, 1, 0);
+
+console.log('\n  ⚕️ Teaching point: In COPD patients, prolonged inspiratory holds');
+console.log('     steal expiratory time → more gas trapping → higher auto-PEEP.');
+console.log('     Keep holds brief in obstructive patients!');
+
+
+// =============================================================================
+// TEST 20: Hold Duration Clamping
+// =============================================================================
+section('TEST 20: Hold Duration Clamping (safety limit)');
+
+const lungClamp = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventClamp = new Ventilator(lungClamp, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    holdTime: 99,  // absurdly long
+});
+
+console.log(`    Te=${ventClamp.expiratoryTime.toFixed(2)}s  Requested hold=99s`);
+console.log(`    Effective hold=${ventClamp.effectiveHoldTime.toFixed(2)}s  Effective Te=${ventClamp.effectiveExpiratoryTime.toFixed(2)}s`);
+assert('Hold clamped (Te_eff ≥ 0.2)', ventClamp.effectiveExpiratoryTime >= 0.2 ? 1 : 0, 1, 0);
+assert('Hold clamped = Te - 0.2', ventClamp.effectiveHoldTime, ventClamp.expiratoryTime - 0.2, 0.01);
+
+
+// =============================================================================
 // RESULTS
 // =============================================================================
 section('RESULTS');

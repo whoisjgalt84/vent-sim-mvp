@@ -17,6 +17,12 @@
  *   Square: constant flow, linear volume ramp
  *   Ramp:   linearly decelerating flow, parabolic volume curve
  *
+ * INSPIRATORY HOLD:
+ *   Closes both valves at end of inspiration → flow drops to zero →
+ *   pressure equilibrates to Pplat. Reveals:
+ *     Crs_static = VT / (Pplat - totalPEEP)
+ *     R_airway   = (PIP - Pplat) / V̇  (square flow only)
+ *
  * ============================================================================
  */
 
@@ -44,6 +50,7 @@ function init() {
     vent = new Ventilator(lung, {
         mode:                'vc-cmv',
         flowPattern:         'square',
+        holdTime:            0,
         tidalVolume:         0.500,
         inspiratoryPressure: 15,
         respiratoryRate:     14,
@@ -65,11 +72,13 @@ function init() {
     bindSlider('fio2',       onFio2Change);
     bindSlider('compliance', onComplianceChange);
     bindSlider('resistance', onResistanceChange);
+    bindSlider('hold-duration', onHoldDurationChange);
 
     bindPresetSelector();
     bindIEButtons();
     bindModeToggle();
     bindFlowPatternToggle();
+    bindHoldToggle();
 
     let resizeTimer;
     window.addEventListener('resize', () => {
@@ -106,13 +115,7 @@ function applyModeUI(mode) {
     const isPC = mode === 'pc-cmv';
 
     // Header mode label
-    const modeLabel = document.getElementById('mode-label');
-    if (isPC) {
-        modeLabel.innerHTML = 'PC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">set-point</span>';
-    } else {
-        const patternTag = vent.flowPattern === 'ramp' ? 'ramp' : 'set-point';
-        modeLabel.innerHTML = `VC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${patternTag}</span>`;
-    }
+    updateModeLabel();
 
     // Toggle VT + Flow Pattern vs Pinsp
     const vtControl      = document.getElementById('vt-control');
@@ -138,12 +141,32 @@ function applyModeUI(mode) {
         ? 'V<sub>T</sub> <span style="font-size:9px;opacity:0.5">(del)</span>'
         : 'V<sub>T</sub>';
 
-    // Flow label: peak for ramp and PC, constant for square
     updateFlowLabel();
 
     document.getElementById('resist-label').innerHTML = isPC
         ? 'ΔP<sub>eff</sub>'
         : 'P<sub>resist</sub>';
+
+    // R_aw row only makes sense for square VC flow during hold
+    updateHoldResultsVisibility();
+}
+
+/**
+ * Update the header mode label with flow pattern and hold tags.
+ */
+function updateModeLabel() {
+    const modeLabel = document.getElementById('mode-label');
+    const isPC = vent.mode === 'pc-cmv';
+
+    let tag = 'set-point';
+    if (!isPC && vent.flowPattern === 'ramp') tag = 'ramp';
+
+    const holdTag = vent.holdActive
+        ? '<span style="color:var(--color-pressure); margin-left:4px; font-size:10px;">⏸ HOLD</span>'
+        : '';
+
+    const modeName = isPC ? 'PC-CMV' : 'VC-CMV';
+    modeLabel.innerHTML = `${modeName}<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${tag}</span>${holdTag}`;
 }
 
 /**
@@ -180,14 +203,67 @@ function bindFlowPatternToggle() {
         document.getElementById('flow-pattern-display').textContent =
             pattern === 'ramp' ? 'Ramp ╲' : 'Square ▬';
 
-        // Update header tag and flow label
-        const modeLabel = document.getElementById('mode-label');
-        const tag = pattern === 'ramp' ? 'ramp' : 'set-point';
-        modeLabel.innerHTML = `VC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${tag}</span>`;
-
+        updateModeLabel();
         updateFlowLabel();
+        updateHoldResultsVisibility();
         update();
     });
+}
+
+
+// =============================================================================
+// INSPIRATORY HOLD MANEUVER
+// =============================================================================
+
+function bindHoldToggle() {
+    const btn = document.getElementById('hold-toggle');
+    btn.addEventListener('click', () => {
+        const wasActive = vent.holdActive;
+
+        if (wasActive) {
+            // Deactivate
+            vent.holdTime = 0;
+            btn.classList.remove('hold-btn--active');
+            document.getElementById('hold-icon').textContent = '▶';
+            document.getElementById('hold-btn-label').textContent = 'Activate';
+            document.getElementById('hold-display').textContent = 'Off';
+            document.getElementById('hold-duration-group').style.display = 'none';
+            document.getElementById('hold-results').style.display = 'none';
+        } else {
+            // Activate with current slider value
+            const dur = parseInt(document.getElementById('hold-duration').value) / 10;
+            vent.holdTime = dur;
+            btn.classList.add('hold-btn--active');
+            document.getElementById('hold-icon').textContent = '⏸';
+            document.getElementById('hold-btn-label').textContent = 'Release';
+            document.getElementById('hold-display').textContent = `${dur.toFixed(1)}s`;
+            document.getElementById('hold-duration-group').style.display = 'flex';
+            document.getElementById('hold-results').style.display = '';
+        }
+
+        updateModeLabel();
+        updateHoldResultsVisibility();
+        update();
+    });
+}
+
+function onHoldDurationChange(slider) {
+    const dur = parseInt(slider.value) / 10;  // slider 3-20 → 0.3-2.0s
+    vent.holdTime = dur;
+    document.getElementById('hold-duration-display').textContent = `${dur.toFixed(1)}s`;
+    document.getElementById('hold-display').textContent = `${dur.toFixed(1)}s`;
+}
+
+/**
+ * Show/hide the R_aw row in hold results.
+ * R_aw = (PIP - Pplat) / V̇ is only valid for square VC flow.
+ */
+function updateHoldResultsVisibility() {
+    const rawRow = document.getElementById('hold-raw-row');
+    if (rawRow) {
+        const showRaw = vent.holdActive && vent.mode !== 'pc-cmv' && vent.flowPattern !== 'ramp';
+        rawRow.style.display = showRaw ? '' : 'none';
+    }
 }
 
 
@@ -340,6 +416,9 @@ function update() {
 
     // Alerts
     updateAlerts(s);
+
+    // Hold results panel
+    updateHoldResults(s);
 }
 
 
@@ -388,6 +467,15 @@ function updateMechanicsBar(summary) {
         </span>`;
     }
 
+    // Hold indicator chip
+    if (s.holdActive) {
+        chips += `
+        <span class="mechanics-chip" style="color: var(--color-pressure)">
+            <span class="mechanics-chip__symbol">Hold</span>
+            ${s.timing.holdTime_s}s
+        </span>`;
+    }
+
     chips += `
         <span class="mechanics-chip" style="color: ${trappedMl > 20 ? 'var(--color-warning)' : 'var(--text-primary)'}">
             <span class="mechanics-chip__symbol">Trap</span>
@@ -427,6 +515,55 @@ function updateAlerts(summary) {
     }
 
     container.innerHTML = badges.join('');
+}
+
+/**
+ * Update the hold results panel with derived measurements.
+ *
+ * THE CLINICAL GOLD:
+ *   - Pplat: alveolar pressure at end-inspiration (when flow = 0)
+ *   - PIP − Pplat: the resistive component
+ *   - Crs = VT / (Pplat − totalPEEP): static compliance
+ *   - Raw = (PIP − Pplat) / V̇: airway resistance (square flow only)
+ *
+ * These are the exact measurements respiratory therapists compute
+ * at the bedside during an inspiratory hold maneuver.
+ */
+function updateHoldResults(summary) {
+    const panel = document.getElementById('hold-results');
+    if (!panel) return;
+
+    if (!summary.holdActive) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    panel.style.display = '';
+
+    const s = summary;
+    const pplat     = s.pressures.pplat_cmH2O;
+    const pip       = s.pressures.pip_cmH2O;
+    const totalPeep = s.pressures.totalPeep_cmH2O;
+
+    // Pplat
+    setText('hold-pplat', pplat.toFixed(1));
+
+    // PIP − Pplat (resistive drop visible on the waveform)
+    setText('hold-pip-pplat', (pip - pplat).toFixed(1));
+
+    // Static compliance: Crs = VT / (Pplat − totalPEEP)
+    const dp = pplat - totalPeep;
+    if (dp > 0.1) {
+        const crs = s.volumes.tidalVolume_mL / dp;
+        setText('hold-crs', crs.toFixed(1));
+    } else {
+        setText('hold-crs', '—');
+    }
+
+    // Airway resistance (square VC flow only)
+    if (s.mechanics.measuredResistance !== null) {
+        setText('hold-raw', s.mechanics.measuredResistance.toFixed(1));
+    }
 }
 
 function makeBadge(level, text) {

@@ -101,6 +101,71 @@ html, body {
 }
 
 
+/* ── Transport Controls ──────────────────────────────────── */
+
+.header__transport {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.transport-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.transport-btn:hover {
+    border-color: var(--color-pressure);
+}
+
+.transport-btn--paused {
+    background: rgba(255, 167, 38, 0.15);
+    border-color: var(--color-pressure);
+}
+
+.speed-group {
+    display: flex;
+    gap: 2px;
+}
+
+.speed-btn {
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.speed-btn:first-child { border-radius: 3px 0 0 3px; }
+.speed-btn:last-child  { border-radius: 0 3px 3px 0; }
+
+.speed-btn--active {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-color: var(--text-dim);
+}
+
+.transport-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+}
+
+
 /* --- Controls Panel (Left) --- */
 
 .controls {
@@ -319,6 +384,12 @@ html, body {
     border: 1px solid rgba(102, 187, 106, 0.2);
 }
 
+.alert-badge--info {
+    background: rgba(79, 195, 247, 0.12);
+    color: var(--color-volume);
+    border: 1px solid rgba(79, 195, 247, 0.2);
+}
+
 .alert-badge--warning {
     background: rgba(255, 152, 0, 0.12);
     color: var(--color-warning);
@@ -503,6 +574,43 @@ html, body {
     color: var(--text-dim);
     font-size: 9px;
     opacity: 0.6;
+}
+
+
+/* ── Patient Effort (Pmus) ───────────────────────────────── */
+
+.pmus-controls {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.pmus-sliders {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.pmus-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pmus-slider-label {
+    color: var(--text-dim);
+    font-size: 10px;
+    min-width: 36px;
+}
+
+.pmus-slider-row .control__range {
+    width: 80px;
+}
+
+.pmus-slider-row .control__value {
+    font-size: 10px;
+    min-width: 60px;
 }
 
 

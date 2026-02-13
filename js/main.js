@@ -1,34 +1,30 @@
 /**
  * ============================================================================
- * main.js — Application Integration Layer
+ * main.js — Application Integration Layer (Dynamic Simulation)
  * ============================================================================
  *
  * Wires together:
- *   - LungModel (the patient)
- *   - Ventilator (the machine — VC-CMV or PC-CMV, square or ramp flow)
- *   - WaveformDisplay (the screen)
- *   - DOM controls (the operator's hands)
+ *   - LungModel          (the patient's lung physics)
+ *   - Ventilator          (settings + analytical predictions)
+ *   - SimulationEngine    (tick-based real-time simulation)
+ *   - WaveformDisplay     (scrolling three-panel waveform rendering)
+ *   - DOM controls        (the operator's hands)
  *
- * MODE SWITCHING:
- *   VC-CMV: Operator sets VT → pressure is dependent
- *   PC-CMV: Operator sets Pinsp → flow & volume are dependent
+ * Architecture:
+ *   requestAnimationFrame loop → sim.advance(dt) → display.renderFromSim(sim)
  *
- * FLOW PATTERN (VC only):
- *   Square: constant flow, linear volume ramp
- *   Ramp:   linearly decelerating flow, parabolic volume curve
- *
- * INSPIRATORY HOLD:
- *   Closes both valves at end of inspiration → flow drops to zero →
- *   pressure equilibrates to Pplat. Reveals:
- *     Crs_static = VT / (Pplat - totalPEEP)
- *     R_airway   = (PIP - Pplat) / V̇  (square flow only)
+ *   The SimulationEngine reads settings from the Ventilator at each breath
+ *   start. Lung mechanics (R, C) are read live every tick. This means:
+ *     - Changing VT, RR, mode → takes effect on next breath (realistic)
+ *     - Changing R, C, PEEP → takes effect immediately (realistic)
  *
  * ============================================================================
  */
 
-import { LungModel }      from './lung-model.js';
-import { Ventilator }      from './ventilator.js';
-import { WaveformDisplay } from './waveforms.js';
+import { LungModel }        from './lung-model.js?v=6';
+import { Ventilator }        from './ventilator.js?v=6';
+import { SimulationEngine }  from './simulation.js?v=6';
+import { WaveformDisplay }   from './waveforms.js?v=6';
 
 
 // =============================================================================
@@ -37,8 +33,11 @@ import { WaveformDisplay } from './waveforms.js';
 
 let lung;
 let vent;
+let sim;
 let display;
-let currentIE = [1, 2];
+let currentIE   = [1, 2];
+let lastFrameTs = null;
+let animFrame   = null;
 
 
 // =============================================================================
@@ -51,6 +50,8 @@ function init() {
         mode:                'vc-cmv',
         flowPattern:         'square',
         holdTime:            0,
+        pMusMax:             0,
+        neuralTi:            1.0,
         tidalVolume:         0.500,
         inspiratoryPressure: 15,
         respiratoryRate:     14,
@@ -59,34 +60,69 @@ function init() {
         fio2:                0.40,
     });
 
+    sim = new SimulationEngine(vent, {
+        sampleRate:     100,
+        displaySeconds: 10,
+    });
+
     display = new WaveformDisplay({
         pressure: document.getElementById('canvas-pressure'),
         volume:   document.getElementById('canvas-volume'),
         flow:     document.getElementById('canvas-flow'),
     }, 4);
 
-    bindSlider('vt',         onVtChange);
-    bindSlider('rr',         onRrChange);
-    bindSlider('pinsp',      onPinspChange);
-    bindSlider('peep',       onPeepChange);
-    bindSlider('fio2',       onFio2Change);
-    bindSlider('compliance', onComplianceChange);
-    bindSlider('resistance', onResistanceChange);
+    // --- Bind all controls ---
+    bindSlider('vt',            onVtChange);
+    bindSlider('rr',            onRrChange);
+    bindSlider('pinsp',         onPinspChange);
+    bindSlider('peep',          onPeepChange);
+    bindSlider('fio2',          onFio2Change);
+    bindSlider('compliance',    onComplianceChange);
+    bindSlider('resistance',    onResistanceChange);
     bindSlider('hold-duration', onHoldDurationChange);
+    bindSlider('pmus-max',      onPmusMaxChange);
+    bindSlider('neural-ti',     onNeuralTiChange);
+    bindSlider('patient-rr',    onPatientRRChange);
 
     bindPresetSelector();
     bindIEButtons();
     bindModeToggle();
     bindFlowPatternToggle();
     bindHoldToggle();
+    bindPmusToggle();
+    bindTransportControls();
 
+    // --- Handle window resize ---
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => update(), 100);
+        resizeTimer = setTimeout(() => renderFrame(), 100);
     });
 
-    update();
+    // --- Start the animation loop ---
+    lastFrameTs = performance.now();
+    animFrame = requestAnimationFrame(animate);
+}
+
+
+// =============================================================================
+// ANIMATION LOOP
+// =============================================================================
+
+function animate(timestamp) {
+    const realDt = (timestamp - lastFrameTs) / 1000;
+    lastFrameTs = timestamp;
+
+    sim.advance(realDt);
+    renderFrame();
+
+    animFrame = requestAnimationFrame(animate);
+}
+
+function renderFrame() {
+    display.renderFromSim(sim);
+    updateParams();
+    updateBreathInfo();
 }
 
 
@@ -107,17 +143,14 @@ function bindModeToggle() {
         btn.classList.add('mode-btn--active');
 
         applyModeUI(mode);
-        update();
+        sim.reset();
     });
 }
 
 function applyModeUI(mode) {
     const isPC = mode === 'pc-cmv';
-
-    // Header mode label
     updateModeLabel();
 
-    // Toggle VT + Flow Pattern vs Pinsp
     const vtControl      = document.getElementById('vt-control');
     const pinspControl   = document.getElementById('pinsp-control');
     const patternControl = document.getElementById('flow-pattern-control');
@@ -132,11 +165,9 @@ function applyModeUI(mode) {
         patternControl.classList.remove('control--hidden');
     }
 
-    // Toggle PC-specific parameter rows
     document.getElementById('pinsp-param-row').style.display = isPC ? '' : 'none';
     document.getElementById('ti-tau-row').style.display      = isPC ? '' : 'none';
 
-    // Update parameter labels
     document.getElementById('vt-param-label').innerHTML = isPC
         ? 'V<sub>T</sub> <span style="font-size:9px;opacity:0.5">(del)</span>'
         : 'V<sub>T</sub>';
@@ -144,16 +175,11 @@ function applyModeUI(mode) {
     updateFlowLabel();
 
     document.getElementById('resist-label').innerHTML = isPC
-        ? 'ΔP<sub>eff</sub>'
-        : 'P<sub>resist</sub>';
+        ? 'ΔP<sub>eff</sub>' : 'P<sub>resist</sub>';
 
-    // R_aw row only makes sense for square VC flow during hold
     updateHoldResultsVisibility();
 }
 
-/**
- * Update the header mode label with flow pattern and hold tags.
- */
 function updateModeLabel() {
     const modeLabel = document.getElementById('mode-label');
     const isPC = vent.mode === 'pc-cmv';
@@ -162,30 +188,25 @@ function updateModeLabel() {
     if (!isPC && vent.flowPattern === 'ramp') tag = 'ramp';
 
     const holdTag = vent.holdActive
-        ? '<span style="color:var(--color-pressure); margin-left:4px; font-size:10px;">⏸ HOLD</span>'
-        : '';
+        ? '<span style="color:var(--color-pressure); margin-left:4px; font-size:10px;">⏸ HOLD</span>' : '';
+
+    const pmusTag = sim.patientRR > 0
+        ? '<span style="color:var(--color-volume); margin-left:4px; font-size:10px;">💪 EFFORT</span>' : '';
 
     const modeName = isPC ? 'PC-CMV' : 'VC-CMV';
-    modeLabel.innerHTML = `${modeName}<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${tag}</span>${holdTag}`;
+    modeLabel.innerHTML = `${modeName}<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${tag}</span>${holdTag}${pmusTag}`;
 }
 
-/**
- * Update the flow parameter label based on current mode and pattern.
- */
 function updateFlowLabel() {
     const label = document.getElementById('flow-param-label');
-    if (vent.mode === 'pc-cmv') {
-        label.innerHTML = 'V̇<sub>peak</sub>';
-    } else if (vent.flowPattern === 'ramp') {
-        label.innerHTML = 'V̇<sub>peak</sub>';
-    } else {
-        label.innerHTML = 'V̇<sub>insp</sub>';
-    }
+    if (vent.mode === 'pc-cmv') label.innerHTML = 'V̇<sub>peak</sub>';
+    else if (vent.flowPattern === 'ramp') label.innerHTML = 'V̇<sub>peak</sub>';
+    else label.innerHTML = 'V̇<sub>insp</sub>';
 }
 
 
 // =============================================================================
-// FLOW PATTERN TOGGLE (VC only)
+// FLOW PATTERN TOGGLE
 // =============================================================================
 
 function bindFlowPatternToggle() {
@@ -194,34 +215,29 @@ function bindFlowPatternToggle() {
         const btn = e.target.closest('.ie-btn');
         if (!btn) return;
 
-        const pattern = btn.dataset.pattern;
-        vent.flowPattern = pattern;
-
+        vent.flowPattern = btn.dataset.pattern;
         group.querySelectorAll('.ie-btn').forEach(b => b.classList.remove('ie-btn--active'));
         btn.classList.add('ie-btn--active');
 
         document.getElementById('flow-pattern-display').textContent =
-            pattern === 'ramp' ? 'Ramp ╲' : 'Square ▬';
+            btn.dataset.pattern === 'ramp' ? 'Ramp ╲' : 'Square ▬';
 
         updateModeLabel();
         updateFlowLabel();
         updateHoldResultsVisibility();
-        update();
+        sim.reset();
     });
 }
 
 
 // =============================================================================
-// INSPIRATORY HOLD MANEUVER
+// INSPIRATORY HOLD
 // =============================================================================
 
 function bindHoldToggle() {
     const btn = document.getElementById('hold-toggle');
     btn.addEventListener('click', () => {
-        const wasActive = vent.holdActive;
-
-        if (wasActive) {
-            // Deactivate
+        if (vent.holdActive) {
             vent.holdTime = 0;
             btn.classList.remove('hold-btn--active');
             document.getElementById('hold-icon').textContent = '▶';
@@ -230,7 +246,6 @@ function bindHoldToggle() {
             document.getElementById('hold-duration-group').style.display = 'none';
             document.getElementById('hold-results').style.display = 'none';
         } else {
-            // Activate with current slider value
             const dur = parseInt(document.getElementById('hold-duration').value) / 10;
             vent.holdTime = dur;
             btn.classList.add('hold-btn--active');
@@ -240,24 +255,18 @@ function bindHoldToggle() {
             document.getElementById('hold-duration-group').style.display = 'flex';
             document.getElementById('hold-results').style.display = '';
         }
-
         updateModeLabel();
         updateHoldResultsVisibility();
-        update();
     });
 }
 
 function onHoldDurationChange(slider) {
-    const dur = parseInt(slider.value) / 10;  // slider 3-20 → 0.3-2.0s
+    const dur = parseInt(slider.value) / 10;
     vent.holdTime = dur;
     document.getElementById('hold-duration-display').textContent = `${dur.toFixed(1)}s`;
     document.getElementById('hold-display').textContent = `${dur.toFixed(1)}s`;
 }
 
-/**
- * Show/hide the R_aw row in hold results.
- * R_aw = (PIP - Pplat) / V̇ is only valid for square VC flow.
- */
 function updateHoldResultsVisibility() {
     const rawRow = document.getElementById('hold-raw-row');
     if (rawRow) {
@@ -268,16 +277,100 @@ function updateHoldResultsVisibility() {
 
 
 // =============================================================================
-// CONTROL BINDINGS
+// PATIENT EFFORT + PATIENT RR
+// =============================================================================
+
+function bindPmusToggle() {
+    const btn = document.getElementById('pmus-toggle');
+    btn.addEventListener('click', () => {
+        const wasActive = sim.patientRR > 0;
+
+        if (wasActive) {
+            vent.pMusMax = 0;
+            sim.patientRR = 0;
+            btn.classList.remove('hold-btn--active');
+            document.getElementById('pmus-icon').textContent = '♿';
+            document.getElementById('pmus-btn-label').textContent = 'Passive';
+            document.getElementById('pmus-display').textContent = 'Off';
+            document.getElementById('pmus-sliders').style.display = 'none';
+            document.getElementById('patient-rr-control').style.display = 'none';
+        } else {
+            const pmax = parseInt(document.getElementById('pmus-max').value);
+            const nti  = parseInt(document.getElementById('neural-ti').value) / 10;
+            const prr  = parseInt(document.getElementById('patient-rr').value);
+            vent.pMusMax  = pmax;
+            vent.neuralTi = nti;
+            sim.patientRR = prr;
+
+            btn.classList.add('hold-btn--active');
+            document.getElementById('pmus-icon').textContent = '💪';
+            document.getElementById('pmus-btn-label').textContent = 'Active';
+            document.getElementById('pmus-display').textContent = `${pmax} cmH₂O`;
+            document.getElementById('pmus-sliders').style.display = '';
+            document.getElementById('patient-rr-control').style.display = '';
+        }
+        updateModeLabel();
+    });
+}
+
+function onPmusMaxChange(slider) {
+    const pmax = parseInt(slider.value);
+    vent.pMusMax = pmax;
+    document.getElementById('pmus-max-display').textContent = `${pmax} cmH₂O`;
+    document.getElementById('pmus-display').textContent = `${pmax} cmH₂O`;
+}
+
+function onNeuralTiChange(slider) {
+    const nti = parseInt(slider.value) / 10;
+    vent.neuralTi = nti;
+    document.getElementById('neural-ti-display').textContent = `${nti.toFixed(1)}s`;
+}
+
+function onPatientRRChange(slider) {
+    const prr = parseInt(slider.value);
+    sim.patientRR = prr;
+    document.getElementById('patient-rr-display').textContent = `${prr} /min`;
+}
+
+
+// =============================================================================
+// TRANSPORT CONTROLS
+// =============================================================================
+
+function bindTransportControls() {
+    const pauseBtn = document.getElementById('btn-pause');
+    pauseBtn.addEventListener('click', () => {
+        sim.toggle();
+        if (sim.running) {
+            pauseBtn.textContent = '⏸';
+            pauseBtn.classList.remove('transport-btn--paused');
+            lastFrameTs = performance.now();
+        } else {
+            pauseBtn.textContent = '▶';
+            pauseBtn.classList.add('transport-btn--paused');
+        }
+    });
+
+    const speedGroup = document.getElementById('speed-group');
+    speedGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.speed-btn');
+        if (!btn) return;
+        sim.setSpeed(parseInt(btn.dataset.speed));
+        speedGroup.querySelectorAll('.speed-btn').forEach(b =>
+            b.classList.remove('speed-btn--active'));
+        btn.classList.add('speed-btn--active');
+    });
+}
+
+
+// =============================================================================
+// SLIDER BINDINGS
 // =============================================================================
 
 function bindSlider(id, callback) {
     const slider = document.getElementById(id);
     if (!slider) return;
-    slider.addEventListener('input', () => {
-        callback(slider);
-        update();
-    });
+    slider.addEventListener('input', () => callback(slider));
 }
 
 function onVtChange(slider) {
@@ -329,20 +422,15 @@ function bindPresetSelector() {
         const presets = LungModel.presets();
         const preset = presets[presetName];
         if (!preset) return;
-
         lung.resistance = preset.resistance;
         lung.compliance = preset.compliance;
 
-        const compSlider = document.getElementById('compliance');
-        const resSlider  = document.getElementById('resistance');
-        compSlider.value = Math.round(preset.compliance * 1000);
-        resSlider.value  = Math.round(preset.resistance);
+        document.getElementById('compliance').value = Math.round(preset.compliance * 1000);
+        document.getElementById('resistance').value = Math.round(preset.resistance);
         document.getElementById('compliance-display').textContent =
             `${Math.round(preset.compliance * 1000)} mL/cmH₂O`;
         document.getElementById('resistance-display').textContent =
             `${Math.round(preset.resistance)} cmH₂O·s/L`;
-
-        update();
     });
 }
 
@@ -351,52 +439,41 @@ function bindIEButtons() {
     group.addEventListener('click', (e) => {
         const btn = e.target.closest('.ie-btn');
         if (!btn) return;
-
         const parts = btn.dataset.ie.split(',').map(Number);
         currentIE = parts;
         vent.ieRatio = parts;
-
         group.querySelectorAll('.ie-btn').forEach(b => b.classList.remove('ie-btn--active'));
         btn.classList.add('ie-btn--active');
-
         document.getElementById('ie-display').textContent = `1:${(parts[1] / parts[0]).toFixed(1)}`;
-
-        update();
     });
 }
 
 
 // =============================================================================
-// UPDATE — The main render loop
+// PARAMETER PANEL
 // =============================================================================
 
-function update() {
-    display.render(vent);
-
+function updateParams() {
     const s = vent.summary();
+    const m = sim.breathSummary;
 
-    // Pressures
-    setText('param-pip',     `${s.pressures.pip_cmH2O}`);
+    setText('param-pip',     m.pip > 0 ? `${m.pip}` : `${s.pressures.pip_cmH2O}`);
     setText('param-pplat',   `${s.pressures.pplat_cmH2O}`);
     setText('param-map',     `${s.pressures.map_cmH2O}`);
     setText('param-dp',      `${s.pressures.drivingPressure}`);
     setText('param-pr',      `${s.pressures.resistivePressure}`);
 
-    if (s.isPC) {
-        setText('param-pinsp', `${s.pressures.inspiratoryPressure}`);
-    }
+    if (s.isPC) setText('param-pinsp', `${s.pressures.inspiratoryPressure}`);
 
-    // PEEP
     setText('param-peep-set',   `${s.pressures.peep_cmH2O}`);
     setText('param-auto-peep',  `${s.pressures.autoPeep_cmH2O}`);
     setText('param-total-peep', `${s.pressures.totalPeep_cmH2O}`);
 
-    // Volumes & Flow
-    setText('param-vt',   `${s.volumes.tidalVolume_mL}`);
+    const displayVt = m.vt_mL > 0 ? m.vt_mL : s.volumes.tidalVolume_mL;
+    setText('param-vt',   `${Math.round(displayVt)}`);
     setText('param-ve',   `${s.volumes.minuteVentilation}`);
     setText('param-flow', `${s.timing.inspFlow_Lpm}`);
 
-    // Timing
     setText('param-ti',     `${s.timing.inspiratoryTime_s}s`);
     setText('param-te',     `${s.timing.expiratoryTime_s}s`);
     setText('param-te-tau', `${s.safety.teOverTau}`);
@@ -405,20 +482,31 @@ function update() {
         setText('param-ti-tau', `${s.timing.tiOverTau}`);
     }
 
-    // Mechanics
     setText('param-crs', `${s.mechanics.compliance * 1000}`);
     setText('param-raw', `${s.mechanics.resistance}`);
     setText('param-tau', `${s.mechanics.timeConstant_s}s`);
     setText('param-ers', `${s.mechanics.elastance}`);
 
-    // Mechanics bar
     updateMechanicsBar(s);
-
-    // Alerts
-    updateAlerts(s);
-
-    // Hold results panel
+    updateAlerts(s, m);
     updateHoldResults(s);
+}
+
+
+// =============================================================================
+// BREATH INFO
+// =============================================================================
+
+function updateBreathInfo() {
+    const m = sim.breathSummary;
+    const el = document.getElementById('breath-info');
+    if (!el) return;
+
+    const trigTag = m.triggerType === 'patient'
+        ? '<span style="color:var(--color-volume)">⬆trig</span>'
+        : '<span style="opacity:0.4">mach</span>';
+
+    el.innerHTML = `#${m.breathCount} ${trigTag} · ${m.phase.slice(0, 4)}`;
 }
 
 
@@ -434,7 +522,6 @@ function setText(id, text) {
 function updateMechanicsBar(summary) {
     const bar = document.getElementById('mechanics-bar');
     const s = summary;
-
     const trappedMl = s.volumes.trappedVolume_mL;
     const teOverTau = s.safety.teOverTau;
 
@@ -449,30 +536,34 @@ function updateMechanicsBar(summary) {
         </span>`;
 
     if (s.isPC && s.safety.tiOverTau !== null) {
-        const tiOverTau = s.safety.tiOverTau;
         chips += `
-        <span class="mechanics-chip" style="color: ${tiOverTau < 1 ? 'var(--color-warning)' : tiOverTau < 3 ? 'var(--color-pressure)' : 'var(--text-primary)'}">
+        <span class="mechanics-chip" style="color: ${s.safety.tiOverTau < 1 ? 'var(--color-warning)' : s.safety.tiOverTau < 3 ? 'var(--color-pressure)' : 'var(--text-primary)'}">
             <span class="mechanics-chip__symbol">Ti/τ</span>
-            ${tiOverTau}
+            ${s.safety.tiOverTau}
         </span>`;
     }
 
-    // Show flow pattern chip in VC mode
     if (s.flowPattern) {
-        const patternColor = s.isRamp ? 'var(--color-flow)' : 'var(--text-dim)';
         chips += `
-        <span class="mechanics-chip" style="color: ${patternColor}">
+        <span class="mechanics-chip" style="color: ${s.isRamp ? 'var(--color-flow)' : 'var(--text-dim)'}">
             <span class="mechanics-chip__symbol">Flow</span>
             ${s.isRamp ? '╲Ramp' : '▬Sq'}
         </span>`;
     }
 
-    // Hold indicator chip
     if (s.holdActive) {
         chips += `
         <span class="mechanics-chip" style="color: var(--color-pressure)">
             <span class="mechanics-chip__symbol">Hold</span>
             ${s.timing.holdTime_s}s
+        </span>`;
+    }
+
+    if (sim.patientRR > 0) {
+        chips += `
+        <span class="mechanics-chip" style="color: var(--color-volume)">
+            <span class="mechanics-chip__symbol">Pmus</span>
+            ${vent.pMusMax}·${sim.patientRR}/m
         </span>`;
     }
 
@@ -485,82 +576,41 @@ function updateMechanicsBar(summary) {
     bar.innerHTML = chips;
 }
 
-function updateAlerts(summary) {
+function updateAlerts(summary, measured) {
     const container = document.getElementById('alerts');
     const badges = [];
     const s = summary;
 
-    if (s.safety.pplatAbove30) {
-        badges.push(makeBadge('danger', `Pplat ${s.pressures.pplat_cmH2O} > 30`));
+    if (s.safety.pplatAbove30) badges.push(makeBadge('danger', `Pplat ${s.pressures.pplat_cmH2O} > 30`));
+    if (s.safety.drivingPressureAbove15) badges.push(makeBadge('warning', `ΔP ${s.pressures.drivingPressure} > 15`));
+    if (s.safety.gasTrappingRisk) badges.push(makeBadge('warning', `Te/τ ${s.safety.teOverTau} < 3`));
+    if (s.pressures.autoPeep_cmH2O > 2) badges.push(makeBadge('warning', `AutoPEEP ${s.pressures.autoPeep_cmH2O}`));
+    if (s.safety.tiTooShort) badges.push(makeBadge('warning', `Ti/τ ${s.safety.tiOverTau} < 1 — short fill`));
+
+    if (sim.patientRR > 0 && measured.triggerType === 'patient') {
+        badges.push(makeBadge('info', '⬆ Patient triggered'));
     }
 
-    if (s.safety.drivingPressureAbove15) {
-        badges.push(makeBadge('warning', `ΔP ${s.pressures.drivingPressure} > 15`));
-    }
-
-    if (s.safety.gasTrappingRisk) {
-        badges.push(makeBadge('warning', `Te/τ ${s.safety.teOverTau} < 3`));
-    }
-
-    if (s.pressures.autoPeep_cmH2O > 2) {
-        badges.push(makeBadge('warning', `AutoPEEP ${s.pressures.autoPeep_cmH2O}`));
-    }
-
-    if (s.safety.tiTooShort) {
-        badges.push(makeBadge('warning', `Ti/τ ${s.safety.tiOverTau} < 1 — short fill`));
-    }
-
-    if (badges.length === 0) {
-        badges.push(makeBadge('ok', 'No alerts'));
-    }
-
+    if (badges.length === 0) badges.push(makeBadge('ok', 'No alerts'));
     container.innerHTML = badges.join('');
 }
 
-/**
- * Update the hold results panel with derived measurements.
- *
- * THE CLINICAL GOLD:
- *   - Pplat: alveolar pressure at end-inspiration (when flow = 0)
- *   - PIP − Pplat: the resistive component
- *   - Crs = VT / (Pplat − totalPEEP): static compliance
- *   - Raw = (PIP − Pplat) / V̇: airway resistance (square flow only)
- *
- * These are the exact measurements respiratory therapists compute
- * at the bedside during an inspiratory hold maneuver.
- */
 function updateHoldResults(summary) {
     const panel = document.getElementById('hold-results');
     if (!panel) return;
-
-    if (!summary.holdActive) {
-        panel.style.display = 'none';
-        return;
-    }
-
+    if (!summary.holdActive) { panel.style.display = 'none'; return; }
     panel.style.display = '';
 
     const s = summary;
-    const pplat     = s.pressures.pplat_cmH2O;
-    const pip       = s.pressures.pip_cmH2O;
-    const totalPeep = s.pressures.totalPeep_cmH2O;
+    const pplat = s.pressures.pplat_cmH2O;
+    const pip   = s.pressures.pip_cmH2O;
 
-    // Pplat
     setText('hold-pplat', pplat.toFixed(1));
-
-    // PIP − Pplat (resistive drop visible on the waveform)
     setText('hold-pip-pplat', (pip - pplat).toFixed(1));
 
-    // Static compliance: Crs = VT / (Pplat − totalPEEP)
-    const dp = pplat - totalPeep;
-    if (dp > 0.1) {
-        const crs = s.volumes.tidalVolume_mL / dp;
-        setText('hold-crs', crs.toFixed(1));
-    } else {
-        setText('hold-crs', '—');
-    }
+    const dp = pplat - s.pressures.totalPeep_cmH2O;
+    setText('hold-crs', dp > 0.1 ? (s.volumes.tidalVolume_mL / dp).toFixed(1) : '—');
 
-    // Airway resistance (square VC flow only)
     if (s.mechanics.measuredResistance !== null) {
         setText('hold-raw', s.mechanics.measuredResistance.toFixed(1));
     }

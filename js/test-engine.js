@@ -14,6 +14,7 @@
 
 import { LungModel } from './lung-model.js';
 import { Ventilator } from './ventilator.js';
+import { SimulationEngine, RingBuffer } from './simulation.js';
 
 let passed = 0;
 let failed = 0;
@@ -822,6 +823,405 @@ console.log(`    Te=${ventClamp.expiratoryTime.toFixed(2)}s  Requested hold=99s`
 console.log(`    Effective hold=${ventClamp.effectiveHoldTime.toFixed(2)}s  Effective Te=${ventClamp.effectiveExpiratoryTime.toFixed(2)}s`);
 assert('Hold clamped (Te_eff ≥ 0.2)', ventClamp.effectiveExpiratoryTime >= 0.2 ? 1 : 0, 1, 0);
 assert('Hold clamped = Te - 0.2', ventClamp.effectiveHoldTime, ventClamp.expiratoryTime - 0.2, 0.01);
+
+
+// =============================================================================
+// TEST 21: Pmus Waveform — Half-Sine Shape
+// =============================================================================
+section('TEST 21: Pmus Waveform — Half-Sine Shape');
+
+const lungPmus = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventPmus = new Ventilator(lungPmus, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    pMusMax: 10, neuralTi: 1.0,
+});
+
+assert('Pmus is active', ventPmus.pMusActive ? 1 : 0, 1, 0);
+assert('Pmus at t=0', ventPmus.pMusAt(0), 0, 0.01);
+assert('Pmus at t=0.5 (peak)', ventPmus.pMusAt(0.5), 10, 0.01);
+assert('Pmus at t=1.0 (end)', ventPmus.pMusAt(1.0), 0, 0.01);
+assert('Pmus at t=1.5 (after neural Ti)', ventPmus.pMusAt(1.5), 0, 0.01);
+assert('Pmus at t=0.25 (quarter)', ventPmus.pMusAt(0.25), 10 * Math.sin(Math.PI * 0.25), 0.01);
+
+
+// =============================================================================
+// TEST 22: VC-CMV + Pmus — Pressure Scalloping
+// =============================================================================
+section('TEST 22: VC-CMV + Pmus — Pressure Scalloping');
+
+// With Pmus active, the pressure waveform should dip during inspiration
+// Flow and volume should be UNCHANGED (VC controls flow)
+const ventVC_noPmus = new Ventilator(lungPmus, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    pMusMax: 0,
+});
+const ventVC_pmus = new Ventilator(lungPmus, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    pMusMax: 10, neuralTi: 1.0,
+});
+
+const wavesNoPmus = ventVC_noPmus.generateBreathWaveforms(1);
+const wavesPmus   = ventVC_pmus.generateBreathWaveforms(1);
+
+// Flow should be identical
+const tiSamplesP = Math.round(ventVC_pmus.inspiratoryTime * 100);
+assert('VC+Pmus: flow unchanged at start', wavesPmus.flow[0], wavesNoPmus.flow[0], 0.01);
+assert('VC+Pmus: flow unchanged at mid', wavesPmus.flow[Math.round(tiSamplesP/2)], wavesNoPmus.flow[Math.round(tiSamplesP/2)], 0.01);
+
+// Volume should be identical
+assert('VC+Pmus: volume unchanged at mid', wavesPmus.volume[Math.round(tiSamplesP/2)], wavesNoPmus.volume[Math.round(tiSamplesP/2)], 0.1);
+
+// Pressure should be LOWER during Pmus peak (scalloping)
+// Pmus peaks at t = neuralTi/2 = 0.5s → sample ~50
+const pmusIdx = Math.round(0.5 * 100);
+const pDiff = wavesNoPmus.pressure[pmusIdx] - wavesPmus.pressure[pmusIdx];
+console.log(`    Without Pmus: P(0.5s) = ${wavesNoPmus.pressure[pmusIdx].toFixed(1)} cmH₂O`);
+console.log(`    With Pmus=10: P(0.5s) = ${wavesPmus.pressure[pmusIdx].toFixed(1)} cmH₂O`);
+console.log(`    Scallop depth = ${pDiff.toFixed(1)} cmH₂O (should ≈ Pmus_max = 10)`);
+assert('VC+Pmus: pressure scallop ≈ Pmus_max', pDiff, 10, 0.5);
+
+// Pressure at start of breath should be same (Pmus=0 at t=0)
+assert('VC+Pmus: P(0) unchanged (Pmus=0 at t=0)', wavesPmus.pressure[0], wavesNoPmus.pressure[0], 0.1);
+
+console.log('\n  ⚕️ In VC mode, patient effort creates the "scalloped" pressure waveform.');
+console.log('     Flow and volume are unchanged — the patient does work that');
+console.log('     would otherwise be done by the ventilator.');
+
+
+// =============================================================================
+// TEST 23: PC-CMV + Pmus — Volume Increase
+// =============================================================================
+section('TEST 23: PC-CMV + Pmus — Volume Increase');
+
+const ventPC_noPmus = new Ventilator(lungPmus, {
+    mode: 'pc-cmv',
+    inspiratoryPressure: 15, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    pMusMax: 0,
+});
+const ventPC_pmus = new Ventilator(lungPmus, {
+    mode: 'pc-cmv',
+    inspiratoryPressure: 15, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    pMusMax: 10, neuralTi: 1.0,
+});
+
+const wavesPC_no = ventPC_noPmus.generateBreathWaveforms(1);
+const wavesPC_pm = ventPC_pmus.generateBreathWaveforms(1);
+
+const tiSamplesPC = Math.round(ventPC_pmus.inspiratoryTime * 100);
+
+// Volume should be HIGHER with Pmus (more driving pressure)
+const vtNoPmus = wavesPC_no.volume[tiSamplesPC - 1];
+const vtPmus   = wavesPC_pm.volume[tiSamplesPC - 1];
+console.log(`    Without Pmus: VT = ${vtNoPmus.toFixed(0)} mL`);
+console.log(`    With Pmus=10: VT = ${vtPmus.toFixed(0)} mL`);
+console.log(`    VT increase = ${(vtPmus - vtNoPmus).toFixed(0)} mL`);
+assert('PC+Pmus: VT increases', vtPmus > vtNoPmus ? 1 : 0, 1, 0);
+
+// Flow should be HIGHER at peak (more driving pressure)
+const fNoPmus = wavesPC_no.flow[0];
+const fPmus   = wavesPC_pm.flow[0];
+console.log(`    Without Pmus: V̇_peak = ${fNoPmus.toFixed(1)} L/min`);
+console.log(`    With Pmus=10: V̇_peak = ${fPmus.toFixed(1)} L/min`);
+// At t=0, Pmus=0 (half-sine starts at zero), so initial flow should be same
+assert('PC+Pmus: initial flow same (Pmus=0 at t=0)', fPmus, fNoPmus, 0.5);
+
+// At mid-inspiration, flow should be higher
+const midFlow_no = wavesPC_no.flow[Math.round(tiSamplesPC/2)];
+const midFlow_pm = wavesPC_pm.flow[Math.round(tiSamplesPC/2)];
+console.log(`    Mid-insp flow: no-Pmus=${midFlow_no.toFixed(1)}, Pmus=${midFlow_pm.toFixed(1)} L/min`);
+assert('PC+Pmus: mid-insp flow higher', midFlow_pm > midFlow_no ? 1 : 0, 1, 0);
+
+// Pressure should still be constant (ventilator controls it)
+const pPC_start = wavesPC_pm.pressure[0];
+const pPC_mid   = wavesPC_pm.pressure[Math.round(tiSamplesPC/2)];
+assert('PC+Pmus: pressure still constant', Math.abs(pPC_start - pPC_mid) < 0.5 ? 1 : 0, 1, 0);
+
+console.log('\n  ⚕️ In PC mode, patient effort is invisible on pressure waveform —');
+console.log('     but look at flow and volume! VT increases because Pmus adds');
+console.log('     to the driving pressure. This is why PC mode can over-deliver.');
+
+
+// =============================================================================
+// TEST 24: Pmus = 0 — Backward Compatibility
+// =============================================================================
+section('TEST 24: Pmus = 0 — Backward Compatibility');
+
+const ventCompat = new Ventilator(lungPmus, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    pMusMax: 0,  // explicitly zero
+});
+assert('Pmus inactive when 0', ventCompat.pMusActive ? 1 : 0, 0, 0);
+assert('Pmus at any time = 0', ventCompat.pMusAt(0.5), 0, 0);
+
+// Verify waveform matches original exactly
+const wCompat = ventCompat.generateBreathWaveforms(1);
+const wOriginal = ventVC_noPmus.generateBreathWaveforms(1);
+let maxPDiff = 0;
+for (let i = 0; i < Math.min(wCompat.pressure.length, wOriginal.pressure.length); i++) {
+    const d = Math.abs(wCompat.pressure[i] - wOriginal.pressure[i]);
+    if (d > maxPDiff) maxPDiff = d;
+}
+console.log(`    Max pressure difference: ${maxPDiff.toFixed(6)} cmH₂O`);
+assert('Pmus=0 produces identical waveforms', maxPDiff < 0.001 ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 25: RingBuffer — Push, toArray, Wrap-Around
+// =============================================================================
+section('TEST 25: RingBuffer — Circular Buffer Integrity');
+
+const rb = new RingBuffer(5);
+rb.push(1); rb.push(2); rb.push(3);
+assert('RingBuffer count after 3 pushes', rb.length, 3, 0);
+assert('RingBuffer last value', rb.last, 3, 0);
+
+let arr = rb.toArray();
+assert('RingBuffer toArray length', arr.length, 3, 0);
+assert('RingBuffer toArray order', arr[0] === 1 && arr[2] === 3 ? 1 : 0, 1, 0);
+
+// Wrap around
+rb.push(4); rb.push(5); rb.push(6); rb.push(7);
+assert('RingBuffer count after wrap', rb.length, 5, 0);
+arr = rb.toArray();
+assert('RingBuffer oldest after wrap', arr[0], 3, 0);
+assert('RingBuffer newest after wrap', arr[4], 7, 0);
+console.log(`    Buffer contents: [${arr.join(', ')}]`);
+
+
+// =============================================================================
+// TEST 26: SimEngine — Passive VC-CMV Converges to Analytical
+// =============================================================================
+section('TEST 26: SimEngine — Passive VC-CMV Converges to Analytical');
+
+const lungSim1 = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventSim1 = new Ventilator(lungSim1, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+});
+
+const sim1 = new SimulationEngine(ventSim1, { sampleRate: 100, displaySeconds: 10 });
+
+// Run for 6 breaths (~25 seconds) to reach steady state
+const ticksFor6Breaths = Math.round(6 * ventSim1.totalCycleTime * 100);
+for (let i = 0; i < ticksFor6Breaths; i++) {
+    sim1.tick();
+}
+
+const bs1 = sim1.breathSummary;
+const analyticalPIP = ventSim1.pip;
+const analyticalVT  = ventSim1.tidalVolume * 1000;
+
+console.log(`    Analytical PIP=${analyticalPIP.toFixed(1)}  Sim PIP=${bs1.pip}`);
+console.log(`    Analytical VT=${analyticalVT.toFixed(0)} mL  Sim VT=${bs1.vt_mL} mL`);
+console.log(`    Breaths completed: ${bs1.breathCount}`);
+
+assert('Sim PIP converges to analytical', bs1.pip, analyticalPIP, 0.5);
+assert('Sim VT converges to analytical', bs1.vt_mL, analyticalVT, 5);
+assert('All breaths machine-triggered', bs1.triggerType === 'machine' ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 27: SimEngine — PC-CMV VT Matches Analytical
+// =============================================================================
+section('TEST 27: SimEngine — PC-CMV VT Matches Analytical');
+
+const ventSimPC = new Ventilator(lungSim1, {
+    mode: 'pc-cmv',
+    inspiratoryPressure: 15, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+});
+
+const simPC = new SimulationEngine(ventSimPC, { sampleRate: 100, displaySeconds: 10 });
+
+const ticksPC = Math.round(6 * ventSimPC.totalCycleTime * 100);
+for (let i = 0; i < ticksPC; i++) {
+    simPC.tick();
+}
+
+const bsPC = simPC.breathSummary;
+const analyticalVT_PC = ventSimPC.effectiveVtMl;
+
+console.log(`    PC Analytical VT=${analyticalVT_PC.toFixed(0)} mL  Sim VT=${bsPC.vt_mL} mL`);
+console.log(`    PC PIP = ${bsPC.pip} (expected 20.0)`);
+
+assert('PC Sim VT ≈ analytical', bsPC.vt_mL, analyticalVT_PC, 10);
+assert('PC PIP = PEEP + Pinsp', bsPC.pip, 20, 0.5);
+
+
+// =============================================================================
+// TEST 28: SimEngine — Patient Triggering
+// =============================================================================
+section('TEST 28: SimEngine — Patient-Triggered Breaths');
+
+const lungTrig = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventTrig = new Ventilator(lungTrig, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 12, ieRatio: [1, 2], peep: 5,
+    pMusMax: 8, neuralTi: 1.0,
+});
+
+const simTrig = new SimulationEngine(ventTrig, { sampleRate: 100, displaySeconds: 10 });
+simTrig.patientRR = 20;  // Patient breathing faster than vent (20 vs 12)
+
+// Run for 15 seconds
+for (let i = 0; i < 1500; i++) {
+    simTrig.tick();
+}
+
+const bsTrig = simTrig.breathSummary;
+console.log(`    Vent RR=12, Patient RR=20`);
+console.log(`    Breaths in 15s: ${bsTrig.breathCount}`);
+console.log(`    Last trigger: ${bsTrig.triggerType}`);
+
+// With patientRR=20, we expect ~5 breaths per 15s (20/min × 15/60 = 5)
+// Actually more, since the vent delivers at its own Ti, not the patient's
+assert('Patient triggers detected', bsTrig.triggerType === 'patient' ? 1 : 0, 1, 0);
+assert('Effective RR > vent RR', bsTrig.breathCount > (12 * 15 / 60) ? 1 : 0, 1, 0);
+
+console.log('\n  ⚕️ Teaching point: When patient RR > vent RR, the patient triggers');
+console.log('     additional breaths. The effective RR follows the patient.');
+console.log('     This is normal Assist/Control behavior.');
+
+
+// =============================================================================
+// TEST 29: SimEngine — Ramp Flow + Hold
+// =============================================================================
+section('TEST 29: SimEngine — Ramp Flow + Hold Phase');
+
+const ventSimRamp = new Ventilator(lungSim1, {
+    mode: 'vc-cmv', flowPattern: 'ramp',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    holdTime: 0.5,
+});
+
+const simRamp = new SimulationEngine(ventSimRamp, { sampleRate: 100, displaySeconds: 10 });
+
+const ticksRamp = Math.round(6 * ventSimRamp.totalCycleTime * 100);
+for (let i = 0; i < ticksRamp; i++) {
+    simRamp.tick();
+}
+
+const bsRamp = simRamp.breathSummary;
+console.log(`    Ramp PIP=${bsRamp.pip}  VT=${bsRamp.vt_mL} mL`);
+console.log(`    Pplat=${bsRamp.pplat ?? 'N/A'} (hold active → should measure)`);
+
+assert('Ramp sim VT ≈ 500', bsRamp.vt_mL, 500, 10);
+assert('Hold measures Pplat', bsRamp.pplat !== null ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 30: SimEngine — COPD Gas Trapping Emerges Dynamically
+// =============================================================================
+section('TEST 30: SimEngine — COPD Gas Trapping (dynamic)');
+
+const lungCOPDSim = new LungModel({ resistance: 25, compliance: 0.06 });
+const ventCOPDSim = new Ventilator(lungCOPDSim, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+});
+
+const simCOPD = new SimulationEngine(ventCOPDSim, { sampleRate: 100, displaySeconds: 10 });
+
+// Run just 3 breaths — gas trapping should be building
+const ticks3 = Math.round(3 * ventCOPDSim.totalCycleTime * 100);
+for (let i = 0; i < ticks3; i++) {
+    simCOPD.tick();
+}
+
+const vLungAfter3 = simCOPD.volumeAboveEq;
+console.log(`    After 3 breaths: vLung above eq = ${(vLungAfter3 * 1000).toFixed(1)} mL`);
+
+// Run 10 more breaths to approach steady state
+const ticks10 = Math.round(10 * ventCOPDSim.totalCycleTime * 100);
+for (let i = 0; i < ticks10; i++) {
+    simCOPD.tick();
+}
+
+const vLungSS = simCOPD.volumeAboveEq;
+const analyticalTrap = ventCOPDSim.trappedVolume * 1000;
+console.log(`    After 13 breaths: vLung above eq = ${(vLungSS * 1000).toFixed(1)} mL`);
+console.log(`    Analytical trapped vol = ${analyticalTrap.toFixed(1)} mL`);
+
+// Volume at end of exp should stabilize near analytical trapped volume
+// (vLung at start of each breath = trapped volume)
+assert('Gas trapping builds over breaths', vLungSS > 0.01 ? 1 : 0, 1, 0);
+assert('Trapping converges toward analytical',
+    Math.abs(vLungSS * 1000 - analyticalTrap) < 30 ? 1 : 0, 1, 0);
+
+console.log('\n  ⚕️ Teaching point: Gas trapping isn\'t a setting — it EMERGES');
+console.log('     from the physics when Te < 3τ. Watch it build breath-by-breath!');
+
+
+// =============================================================================
+// TEST 31: SimEngine — Pmus Pressure Scalloping in VC
+// =============================================================================
+section('TEST 31: SimEngine — VC Pressure Scalloping with Pmus');
+
+const lungScallop = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventScallop = new Ventilator(lungScallop, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 12, ieRatio: [1, 2], peep: 5,
+    pMusMax: 10, neuralTi: 1.0,
+});
+
+// Run passive sim
+const simPassive = new SimulationEngine(ventScallop, { sampleRate: 100, displaySeconds: 10 });
+// patientRR = 0 → no Pmus
+for (let i = 0; i < 1000; i++) simPassive.tick();
+const passiveP = simPassive.buffers.pressure.toArray();
+
+// Run with Pmus
+const simActive = new SimulationEngine(ventScallop, { sampleRate: 100, displaySeconds: 10 });
+simActive.patientRR = 12;  // Same as vent RR → synchronized
+for (let i = 0; i < 1000; i++) simActive.tick();
+const activeP = simActive.buffers.pressure.toArray();
+
+// Find minimum pressure during a mid-breath sample (should be scalloped lower)
+const midIdx = Math.min(500, passiveP.length - 1, activeP.length - 1);
+if (midIdx > 0) {
+    console.log(`    Passive mid P: ${passiveP[midIdx].toFixed(1)}  Active mid P: ${activeP[midIdx].toFixed(1)}`);
+    // Active pressure should sometimes dip below passive (scalloping)
+    let foundScallop = false;
+    const checkLen = Math.min(passiveP.length, activeP.length);
+    for (let i = 100; i < checkLen; i++) {
+        if (passiveP[i] - activeP[i] > 2) { foundScallop = true; break; }
+    }
+    assert('VC Pmus creates pressure scalloping', foundScallop ? 1 : 0, 1, 0);
+}
+
+
+// =============================================================================
+// TEST 32: SimEngine — Transport Controls
+// =============================================================================
+section('TEST 32: SimEngine — Pause/Resume/Speed');
+
+const ventTransport = new Ventilator(lungSim1, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+});
+
+const simT = new SimulationEngine(ventTransport, { sampleRate: 100, displaySeconds: 10 });
+
+assert('Sim starts running', simT.running ? 1 : 0, 1, 0);
+
+simT.pause();
+assert('Sim paused', simT.running ? 1 : 0, 0, 0);
+
+const countBefore = simT.breathCount;
+simT.advance(1.0);  // Try to advance 1 second while paused
+assert('No advance while paused', simT.breathCount, countBefore, 0);
+
+simT.resume();
+assert('Sim resumed', simT.running ? 1 : 0, 1, 0);
+
+simT.setSpeed(2);
+assert('Speed set to 2×', simT.speed, 2, 0);
+
+simT.advance(0.1);  // 0.1 real seconds at 2× → 0.2 sim seconds = 20 ticks
+assert('Advance works at 2× speed', simT.globalTime > 0 ? 1 : 0, 1, 0);
 
 
 // =============================================================================

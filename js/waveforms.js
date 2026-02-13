@@ -287,7 +287,7 @@ export class WaveformDisplay {
     }
 
     /**
-     * Render all three waveforms from a Ventilator instance.
+     * Render all three waveforms from a Ventilator instance (static mode).
      *
      * @param {import('./ventilator.js').Ventilator} ventilator
      */
@@ -297,6 +297,24 @@ export class WaveformDisplay {
         this.pressureRenderer.render(waveforms.time, waveforms.pressure);
         this.volumeRenderer.render(waveforms.time, waveforms.volume);
         this.flowRenderer.render(waveforms.time, waveforms.flow);
+    }
+
+    /**
+     * Render all three waveforms from simulation ring buffers (dynamic mode).
+     *
+     * @param {import('./simulation.js').SimulationEngine} sim
+     */
+    renderFromSim(sim) {
+        const time     = sim.buffers.time.toArray();
+        const pressure = sim.buffers.pressure.toArray();
+        const volume   = sim.buffers.volume.toArray();
+        const flow     = sim.buffers.flow.toArray();
+
+        if (time.length < 2) return;
+
+        this.pressureRenderer.render(time, pressure);
+        this.volumeRenderer.render(time, volume);
+        this.flowRenderer.render(time, flow);
     }
 
     /**

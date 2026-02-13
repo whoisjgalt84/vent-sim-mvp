@@ -15,7 +15,15 @@
     <!-- ================================================================ -->
     <header class="header">
         <div class="header__mode" id="mode-label">VC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">set-point</span></div>
-        <div class="header__title">Mechanical Ventilator Simulator</div>
+        <div class="header__transport">
+            <button class="transport-btn" id="btn-pause" title="Pause/Play">⏸</button>
+            <div class="speed-group" id="speed-group">
+                <button class="speed-btn speed-btn--active" data-speed="1">1×</button>
+                <button class="speed-btn" data-speed="2">2×</button>
+                <button class="speed-btn" data-speed="4">4×</button>
+            </div>
+            <span class="transport-label" id="breath-info">Breath #0</span>
+        </div>
         <div class="header__alerts" id="alerts">
             <!-- Populated by main.js -->
         </div>
@@ -183,6 +191,49 @@
             </div>
         </div>
 
+        <!-- Patient Effort (Pmus) -->
+        <div class="control-group">
+            <div class="control-group__title">Patient Effort</div>
+
+            <!-- Pmus Toggle & Max -->
+            <div class="control">
+                <div class="control__header">
+                    <span class="control__label">P<sub>mus</sub> max</span>
+                    <span class="control__value" id="pmus-display">Off</span>
+                </div>
+                <div class="pmus-controls">
+                    <button class="hold-btn" id="pmus-toggle">
+                        <span class="hold-btn__icon" id="pmus-icon">♿</span>
+                        <span id="pmus-btn-label">Passive</span>
+                    </button>
+                    <div class="pmus-sliders" id="pmus-sliders" style="display:none">
+                        <div class="pmus-slider-row">
+                            <span class="pmus-slider-label">Effort</span>
+                            <input type="range" class="control__range" id="pmus-max"
+                                   min="2" max="20" step="1" value="8">
+                            <span class="control__value" id="pmus-max-display">8 cmH₂O</span>
+                        </div>
+                        <div class="pmus-slider-row">
+                            <span class="pmus-slider-label">T<sub>neural</sub></span>
+                            <input type="range" class="control__range" id="neural-ti"
+                                   min="4" max="20" step="1" value="10">
+                            <span class="control__value" id="neural-ti-display">1.0s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Respiratory Rate -->
+            <div class="control" id="patient-rr-control" style="display:none">
+                <div class="control__header">
+                    <span class="control__label">Patient RR</span>
+                    <span class="control__value" id="patient-rr-display">16 /min</span>
+                </div>
+                <input type="range" class="control__range" id="patient-rr"
+                       min="6" max="35" step="1" value="16">
+            </div>
+        </div>
+
         <!-- Lung Mechanics (the "patient knobs") -->
         <div class="control-group">
             <div class="control-group__title">Lung Mechanics</div>
@@ -341,7 +392,7 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=6"></script>
 
 </body>
 </html>

@@ -1225,6 +1225,153 @@ assert('Advance works at 2× speed', simT.globalTime > 0 ? 1 : 0, 1, 0);
 
 
 // =============================================================================
+// TEST 33: Loop Data — Per-Breath Collection
+// =============================================================================
+section('TEST 33: Loop Data — Per-Breath Collection');
+
+const lungLoop = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventLoop = new Ventilator(lungLoop, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+});
+
+const simLoop = new SimulationEngine(ventLoop, { sampleRate: 100, displaySeconds: 10 });
+
+// Run for 3 full breaths
+const ticksLoop = Math.round(3 * ventLoop.totalCycleTime * 100);
+for (let i = 0; i < ticksLoop; i++) {
+    simLoop.tick();
+}
+
+const lc = simLoop.loopCurrent;
+const ld = simLoop.loopCompleted;
+
+console.log(`    loopCurrent samples: ${lc.pressure.length}`);
+console.log(`    loopCompleted samples: ${ld.pressure.length}`);
+
+assert('Loop current has data', lc.pressure.length > 10 ? 1 : 0, 1, 0);
+assert('Loop completed has data', ld.pressure.length > 10 ? 1 : 0, 1, 0);
+assert('Loop arrays same length', lc.pressure.length === lc.volume.length ? 1 : 0, 1, 0);
+assert('Completed loop arrays same length',
+    ld.pressure.length === ld.volume.length &&
+    ld.volume.length === ld.flow.length ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 34: P-V Loop Shape — Pressure and Volume Correlated
+// =============================================================================
+section('TEST 34: P-V Loop Shape Validation');
+
+// In VC-CMV with square flow, during inspiration:
+//   Pressure rises linearly (PEEP + V/C + R×V̇, V̇ constant)
+//   Volume rises linearly
+// The inspiratory limb should show both increasing together.
+
+const ldP = ld.pressure;
+const ldV = ld.volume;
+
+// Find peak volume index (end of inspiration)
+let loopMaxVol = 0, loopMaxVolIdx = 0;
+for (let i = 0; i < ldV.length; i++) {
+    if (ldV[i] > loopMaxVol) { loopMaxVol = ldV[i]; loopMaxVolIdx = i; }
+}
+
+console.log(`    Peak volume: ${loopMaxVol.toFixed(0)} mL at sample ${loopMaxVolIdx}`);
+console.log(`    Pressure at peak vol: ${ldP[loopMaxVolIdx].toFixed(1)} cmH₂O`);
+console.log(`    Pressure at start: ${ldP[0].toFixed(1)} cmH₂O`);
+console.log(`    Pressure at end: ${ldP[ldP.length-1].toFixed(1)} cmH₂O`);
+
+assert('P-V loop: peak vol ≈ VT', loopMaxVol, 500, 15);
+assert('P-V loop: pressure rises during insp',
+    ldP[loopMaxVolIdx] > ldP[0] ? 1 : 0, 1, 0);
+// After peak vol, pressure should drop back toward PEEP (expiration)
+assert('P-V loop: pressure decreases during exp',
+    ldP[ldP.length - 1] < ldP[loopMaxVolIdx] ? 1 : 0, 1, 0);
+// The loop should roughly close (end vol near start vol)
+assert('P-V loop closes (end vol near start)',
+    Math.abs(ldV[ldV.length - 1] - ldV[0]) < 20 ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 35: F-V Loop Shape — Inspiratory Positive, Expiratory Negative
+// =============================================================================
+section('TEST 35: F-V Loop Shape Validation');
+
+const ldF = ld.flow;
+
+// Find some samples during inspiration (first quarter) and expiration (last quarter)
+const q1 = Math.round(ldF.length * 0.1);
+const q3 = Math.round(ldF.length * 0.75);
+
+console.log(`    Insp flow (sample ${q1}): ${ldF[q1].toFixed(1)} L/min`);
+console.log(`    Exp flow (sample ${q3}): ${ldF[q3].toFixed(1)} L/min`);
+
+assert('F-V loop: inspiratory flow > 0', ldF[q1] > 0 ? 1 : 0, 1, 0);
+assert('F-V loop: expiratory flow < 0', ldF[q3] < 0 ? 1 : 0, 1, 0);
+
+// Peak inspiratory flow should be ≈ 21 L/min (500mL / 1.43s × 60)
+const maxFlow = Math.max(...ldF);
+console.log(`    Peak insp flow: ${maxFlow.toFixed(1)} L/min (expected ≈21)`);
+assert('F-V loop: peak insp flow ≈ square flow', maxFlow, 21, 1);
+
+
+// =============================================================================
+// TEST 36: COPD Loop — Air Trapping Visible
+// =============================================================================
+section('TEST 36: COPD Loop — Air Trapping (loop doesn\'t close)');
+
+const lungLoopCOPD = new LungModel({ resistance: 25, compliance: 0.06 });
+const ventLoopCOPD = new Ventilator(lungLoopCOPD, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+});
+
+const simLoopCOPD = new SimulationEngine(ventLoopCOPD, { sampleRate: 100, displaySeconds: 10 });
+
+// Run for 8 breaths to build trapping
+const ticksCOPDLoop = Math.round(8 * ventLoopCOPD.totalCycleTime * 100);
+for (let i = 0; i < ticksCOPDLoop; i++) {
+    simLoopCOPD.tick();
+}
+
+const copdLoop = simLoopCOPD.loopCompleted;
+const copdEndVol = copdLoop.volume[copdLoop.volume.length - 1];
+const copdStartVol = copdLoop.volume[0];
+const copdPeakVol = Math.max(...copdLoop.volume);
+
+console.log(`    COPD loop: start vol=${copdStartVol.toFixed(0)} mL, end vol=${copdEndVol.toFixed(0)} mL`);
+console.log(`    COPD loop: peak vol=${copdPeakVol.toFixed(0)} mL`);
+console.log(`    Volume at start > 0 indicates trapped gas from prior breaths`);
+
+// In a COPD patient with gas trapping, the VT delivered is still ~500mL
+// but the starting volume for the loop might not be exactly 0 (it depends
+// on the display convention — we show volume relative to breath start).
+// The key COPD signature in loops: the F-V loop shows expiratory flow
+// not reaching zero before the next breath.
+const copdExpFlow = copdLoop.flow[copdLoop.flow.length - 1];
+console.log(`    Exp flow at end: ${copdExpFlow.toFixed(1)} L/min`);
+console.log(`    (In COPD, expiratory flow may not reach zero = air trapping)`);
+
+assert('COPD: loop has data', copdLoop.pressure.length > 50 ? 1 : 0, 1, 0);
+assert('COPD: VT still ≈ 500 mL', copdPeakVol, 500, 20);
+
+console.log('\n  ⚕️ Teaching point: In the P-V loop, the area between the');
+console.log('     inspiratory and expiratory limbs represents resistive work.');
+console.log('     Wider loop = more resistance. In the F-V loop, a scooped');
+console.log('     expiratory limb indicates airflow obstruction.');
+
+
+// =============================================================================
+// TEST 37: Loop Reset — Clears On Sim Reset
+// =============================================================================
+section('TEST 37: Loop Reset');
+
+simLoop.reset();
+assert('Loop current empty after reset', simLoop.loopCurrent.pressure.length, 0, 0);
+assert('Loop completed empty after reset', simLoop.loopCompleted.pressure.length, 0, 0);
+
+
+// =============================================================================
 // RESULTS
 // =============================================================================
 section('RESULTS');

@@ -303,6 +303,41 @@ html, body {
 }
 
 
+/* --- Loop Displays (P-V and F-V) --- */
+
+.loop-row {
+    display: flex;
+    gap: 4px;
+    flex: 0 0 auto;
+    height: 160px;
+    min-height: 120px;
+}
+
+.loop-row--hidden {
+    display: none;
+}
+
+.loop-panel {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.loop-panel canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 3px;
+}
+
+.transport-btn--active {
+    color: var(--color-volume);
+    background: rgba(79, 195, 247, 0.15);
+    border-color: rgba(79, 195, 247, 0.3);
+}
+
+
 /* --- Monitored Parameters Panel (Right) --- */
 
 .parameters {

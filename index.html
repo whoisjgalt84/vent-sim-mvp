@@ -23,6 +23,7 @@
                 <button class="speed-btn" data-speed="4">4×</button>
             </div>
             <span class="transport-label" id="breath-info">Breath #0</span>
+            <button class="transport-btn" id="btn-loops" title="Toggle P-V / F-V Loops">⊙</button>
         </div>
         <div class="header__alerts" id="alerts">
             <!-- Populated by main.js -->
@@ -279,6 +280,14 @@
         <div class="waveform-panel">
             <canvas id="canvas-flow"></canvas>
         </div>
+        <div class="loop-row" id="loop-row">
+            <div class="loop-panel">
+                <canvas id="canvas-pv-loop"></canvas>
+            </div>
+            <div class="loop-panel">
+                <canvas id="canvas-fv-loop"></canvas>
+            </div>
+        </div>
     </main>
 
     <!-- ================================================================ -->
@@ -392,7 +401,7 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="js/main.js?v=6"></script>
+<script type="module" src="js/main.js?v=7"></script>
 
 </body>
 </html>

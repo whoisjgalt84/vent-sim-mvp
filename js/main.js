@@ -21,10 +21,10 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=6';
-import { Ventilator }        from './ventilator.js?v=6';
-import { SimulationEngine }  from './simulation.js?v=6';
-import { WaveformDisplay }   from './waveforms.js?v=6';
+import { LungModel }        from './lung-model.js?v=7';
+import { Ventilator }        from './ventilator.js?v=7';
+import { SimulationEngine }  from './simulation.js?v=7';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=7';
 
 
 // =============================================================================
@@ -35,6 +35,9 @@ let lung;
 let vent;
 let sim;
 let display;
+let pvLoop;
+let fvLoop;
+let loopsVisible = true;
 let currentIE   = [1, 2];
 let lastFrameTs = null;
 let animFrame   = null;
@@ -71,6 +74,28 @@ function init() {
         flow:     document.getElementById('canvas-flow'),
     }, 4);
 
+    // --- Loop Renderers ---
+    //   P-V Loop: Pressure (x) vs Volume (y)
+    //     Clinical convention: Paw on x-axis, tidal volume on y-axis.
+    //     Inspiratory limb goes right and up, expiratory limb returns.
+    //
+    //   F-V Loop: Volume (x) vs Flow (y)
+    //     Inspiratory flow positive (top), expiratory negative (bottom).
+    //     Scooped expiratory limb = obstruction.
+    pvLoop = new LoopRenderer(document.getElementById('canvas-pv-loop'), {
+        xLabel: 'Paw (cmH₂O)',
+        yLabel: 'Vol (mL)',
+        color:  '#f0c050',
+        traceColor: 'rgba(240, 192, 80, 0.3)',
+    });
+
+    fvLoop = new LoopRenderer(document.getElementById('canvas-fv-loop'), {
+        xLabel: 'Vol (mL)',
+        yLabel: 'Flow (L/min)',
+        color:  '#66bb6a',
+        traceColor: 'rgba(102, 187, 106, 0.3)',
+    });
+
     // --- Bind all controls ---
     bindSlider('vt',            onVtChange);
     bindSlider('rr',            onRrChange);
@@ -91,6 +116,7 @@ function init() {
     bindHoldToggle();
     bindPmusToggle();
     bindTransportControls();
+    bindLoopToggle();
 
     // --- Handle window resize ---
     let resizeTimer;
@@ -121,8 +147,31 @@ function animate(timestamp) {
 
 function renderFrame() {
     display.renderFromSim(sim);
+    if (loopsVisible) renderLoops();
     updateParams();
     updateBreathInfo();
+}
+
+/**
+ * Render P-V and F-V loops from per-breath simulation data.
+ */
+function renderLoops() {
+    const completed = sim.loopCompleted;
+    const current   = sim.loopCurrent;
+
+    // P-V Loop: X = pressure, Y = volume
+    pvLoop.render(
+        { x: completed.pressure, y: completed.volume },
+        { x: current.pressure,   y: current.volume },
+        { xMin: 0 }
+    );
+
+    // F-V Loop: X = volume, Y = flow
+    fvLoop.render(
+        { x: completed.volume, y: completed.flow },
+        { x: current.volume,   y: current.flow },
+        { xMin: 0 }
+    );
 }
 
 
@@ -360,6 +409,30 @@ function bindTransportControls() {
             b.classList.remove('speed-btn--active'));
         btn.classList.add('speed-btn--active');
     });
+}
+
+
+// =============================================================================
+// LOOP TOGGLE
+// =============================================================================
+
+function bindLoopToggle() {
+    const btn = document.getElementById('btn-loops');
+    const row = document.getElementById('loop-row');
+
+    btn.addEventListener('click', () => {
+        loopsVisible = !loopsVisible;
+        if (loopsVisible) {
+            row.classList.remove('loop-row--hidden');
+            btn.classList.add('transport-btn--active');
+        } else {
+            row.classList.add('loop-row--hidden');
+            btn.classList.remove('transport-btn--active');
+        }
+    });
+
+    // Start visible
+    btn.classList.add('transport-btn--active');
 }
 
 

@@ -162,6 +162,13 @@ export class SimulationEngine {
         this.measuredVT_mL     = 0;       // delivered tidal volume
         this.peakInspFlow_Lpm  = 0;       // peak inspiratory flow
 
+        // --- Per-Breath Loop Data ---
+        //   Collects (pressure, volume, flow) samples for the current breath.
+        //   When a new breath starts, current → completed (for loop display).
+        //   "completed" always holds the most recent FULL breath for rendering.
+        this.loopCurrent   = { pressure: [], volume: [], flow: [] };
+        this.loopCompleted = { pressure: [], volume: [], flow: [] };
+
         // --- Breath Tracking ---
         this.breathCount     = 0;
         this.lastTriggerType = 'machine';  // 'machine' or 'patient'
@@ -270,6 +277,12 @@ export class SimulationEngine {
         this.breathCount++;
         this.lastTriggerType = triggerType;
         this.machineTimer = 0;
+
+        // Swap loop data: current (now complete) → completed, then reset current
+        if (this.loopCurrent.pressure.length > 10) {
+            this.loopCompleted = this.loopCurrent;
+        }
+        this.loopCurrent = { pressure: [], volume: [], flow: [] };
 
         // Reset per-breath measurements
         this.measuredPIP       = 0;
@@ -473,6 +486,11 @@ export class SimulationEngine {
         this.buffers.volume.push(Math.max(0, displayVol));
         this.buffers.flow.push(this.currentFlow * 60);  // L/s → L/min
 
+        // Per-breath loop data (for P-V and F-V loop displays)
+        this.loopCurrent.pressure.push(this.currentPressure);
+        this.loopCurrent.volume.push(Math.max(0, displayVol));
+        this.loopCurrent.flow.push(this.currentFlow * 60);
+
         // Advance all clocks
         this.globalTime   += this.dt;
         this.phaseTime    += this.dt;
@@ -528,6 +546,9 @@ export class SimulationEngine {
         this.measuredPplat     = null;
         this.measuredVT_mL     = 0;
         this.peakInspFlow_Lpm  = 0;
+
+        this.loopCurrent   = { pressure: [], volume: [], flow: [] };
+        this.loopCompleted = { pressure: [], volume: [], flow: [] };
 
         Object.values(this.buffers).forEach(b => b.clear());
         this._prefill();

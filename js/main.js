@@ -21,10 +21,10 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=7';
-import { Ventilator }        from './ventilator.js?v=7';
-import { SimulationEngine }  from './simulation.js?v=7';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=7';
+import { LungModel }        from './lung-model.js?v=8';
+import { Ventilator }        from './ventilator.js?v=8';
+import { SimulationEngine }  from './simulation.js?v=8';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=8';
 
 
 // =============================================================================
@@ -117,6 +117,7 @@ function init() {
     bindPmusToggle();
     bindTransportControls();
     bindLoopToggle();
+    bindCollapsibles();
 
     // --- Handle window resize ---
     let resizeTimer;
@@ -433,6 +434,36 @@ function bindLoopToggle() {
 
     // Start visible
     btn.classList.add('transport-btn--active');
+}
+
+
+// =============================================================================
+// COLLAPSIBLE SECTIONS
+// =============================================================================
+
+function bindCollapsibles() {
+    document.querySelectorAll('[data-collapsible]').forEach(title => {
+        title.addEventListener('click', () => {
+            const body = title.nextElementSibling;
+            if (!body) return;
+
+            const isCollapsed = title.hasAttribute('data-collapsed');
+
+            if (isCollapsed) {
+                // Expand
+                title.removeAttribute('data-collapsed');
+                body.style.display = '';
+                // Restore bottom border/margin
+                title.style.marginBottom = '';
+                title.style.paddingBottom = '';
+                title.style.borderBottom = '';
+            } else {
+                // Collapse
+                title.setAttribute('data-collapsed', '');
+                body.style.display = 'none';
+            }
+        });
+    });
 }
 
 

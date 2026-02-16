@@ -190,10 +190,40 @@ html, body {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1.2px;
-    color: var(--text-dim);
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 10px;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Collapsible titles */
+.control-group__title[data-collapsible] {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.control-group__title[data-collapsible]:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.control-group__title[data-collapsible]::after {
+    content: '▾';
+    font-size: 10px;
+    opacity: 0.5;
+    transition: transform 0.15s;
+}
+
+.control-group__title[data-collapsed]::after {
+    content: '▸';
+}
+
+.control-group__title[data-collapsed] {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 /* Individual slider control */
@@ -362,8 +392,35 @@ html, body {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1.2px;
-    color: var(--text-dim);
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 6px;
+}
+
+/* Collapsible param group titles */
+.param-group__title[data-collapsible] {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.param-group__title[data-collapsible]:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.param-group__title[data-collapsible]::after {
+    content: '▾';
+    font-size: 9px;
+    opacity: 0.5;
+}
+
+.param-group__title[data-collapsed]::after {
+    content: '▸';
+}
+
+.param-group__title[data-collapsed] {
+    margin-bottom: 0;
 }
 
 .param-row {

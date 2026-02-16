@@ -177,8 +177,10 @@ export class WaveformRenderer {
             ctx.fillText(label, plot.x - 6, py);
         }
 
-        // --- Draw vertical grid lines (every second) ---
+        // --- Draw vertical grid lines (every second) with time labels ---
         const tStart = Math.ceil(tMin);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
         for (let t = tStart; t <= tMax; t += 1) {
             const px = xScale(t);
             ctx.strokeStyle = this.gridColor;
@@ -187,6 +189,13 @@ export class WaveformRenderer {
             ctx.moveTo(px, plot.y);
             ctx.lineTo(px, plot.y + plot.h);
             ctx.stroke();
+
+            // Time label below plot area
+            ctx.fillStyle = this.textColor;
+            ctx.font = '9px monospace';
+            // Show relative seconds (mod 60 for readability)
+            const label = Math.abs(t % 60).toString();
+            ctx.fillText(label, px, plot.y + plot.h + 3);
         }
 
         // --- Draw zero line (if zero is in range) ---

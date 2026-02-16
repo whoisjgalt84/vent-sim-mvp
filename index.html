@@ -35,233 +35,233 @@
     <!-- ================================================================ -->
     <aside class="controls">
 
-        <!-- Patient Preset -->
-        <div class="control-group">
-            <div class="control-group__title">Patient</div>
-            <select class="preset-select" id="preset">
-                <option value="normal">Normal Lung</option>
-                <option value="ards_moderate">ARDS (Moderate)</option>
-                <option value="ards_severe">ARDS (Severe)</option>
-                <option value="copd">COPD</option>
-                <option value="asthma">Asthma (Acute)</option>
-                <option value="obesity">Morbid Obesity</option>
-                <option value="fibrosis">Pulmonary Fibrosis</option>
-            </select>
-        </div>
-
         <!-- Mode Selector -->
         <div class="control-group">
             <div class="control-group__title">Mode</div>
-            <div class="mode-toggle" id="mode-toggle">
-                <button class="mode-btn mode-btn--active" data-mode="vc-cmv">VC-CMV</button>
-                <button class="mode-btn" data-mode="pc-cmv">PC-CMV</button>
+            <div class="control-group__body">
+                <div class="mode-toggle" id="mode-toggle">
+                    <button class="mode-btn mode-btn--active" data-mode="vc-cmv">VC-CMV</button>
+                    <button class="mode-btn" data-mode="pc-cmv">PC-CMV</button>
+                </div>
             </div>
         </div>
 
         <!-- Ventilator Settings -->
         <div class="control-group">
-            <div class="control-group__title">Ventilator Settings</div>
+            <div class="control-group__title" data-collapsible>Ventilator Settings</div>
+            <div class="control-group__body">
 
-            <!-- Tidal Volume (VC only) -->
-            <div class="control" id="vt-control">
-                <div class="control__header">
-                    <span class="control__label">Tidal Volume</span>
-                    <span class="control__value" id="vt-display">500 mL</span>
+                <!-- Tidal Volume (VC only) -->
+                <div class="control" id="vt-control">
+                    <div class="control__header">
+                        <span class="control__label">Tidal Volume</span>
+                        <span class="control__value" id="vt-display">500 mL</span>
+                    </div>
+                    <input type="range" class="control__range" id="vt"
+                           min="200" max="800" step="10" value="500">
                 </div>
-                <input type="range" class="control__range" id="vt"
-                       min="200" max="800" step="10" value="500">
-            </div>
 
-            <!-- Inspiratory Pressure (PC only) -->
-            <div class="control control--hidden" id="pinsp-control">
-                <div class="control__header">
-                    <span class="control__label">P<sub>insp</sub> above PEEP</span>
-                    <span class="control__value" id="pinsp-display">15 cmH₂O</span>
+                <!-- Inspiratory Pressure (PC only) -->
+                <div class="control control--hidden" id="pinsp-control">
+                    <div class="control__header">
+                        <span class="control__label">P<sub>insp</sub> above PEEP</span>
+                        <span class="control__value" id="pinsp-display">15 cmH₂O</span>
+                    </div>
+                    <input type="range" class="control__range" id="pinsp"
+                           min="5" max="35" step="1" value="15">
                 </div>
-                <input type="range" class="control__range" id="pinsp"
-                       min="5" max="35" step="1" value="15">
-            </div>
 
-            <!-- Flow Pattern (VC only) -->
-            <div class="control" id="flow-pattern-control">
-                <div class="control__header">
-                    <span class="control__label">Flow Pattern</span>
-                    <span class="control__value" id="flow-pattern-display">Square</span>
-                </div>
-                <div class="flow-pattern-group" id="flow-pattern-group">
-                    <button class="ie-btn ie-btn--active" data-pattern="square">
-                        <span class="flow-icon">▬</span> Square
-                    </button>
-                    <button class="ie-btn" data-pattern="ramp">
-                        <span class="flow-icon">╲</span> Ramp
-                    </button>
-                </div>
-            </div>
-
-            <!-- Respiratory Rate -->
-            <div class="control">
-                <div class="control__header">
-                    <span class="control__label">Resp Rate</span>
-                    <span class="control__value" id="rr-display">14 /min</span>
-                </div>
-                <input type="range" class="control__range" id="rr"
-                       min="6" max="35" step="1" value="14">
-            </div>
-
-            <!-- I:E Ratio -->
-            <div class="control">
-                <div class="control__header">
-                    <span class="control__label">I:E Ratio</span>
-                    <span class="control__value" id="ie-display">1:2.0</span>
-                </div>
-                <div class="ie-group" id="ie-group">
-                    <button class="ie-btn" data-ie="1,1">1:1</button>
-                    <button class="ie-btn" data-ie="1,1.5">1:1.5</button>
-                    <button class="ie-btn ie-btn--active" data-ie="1,2">1:2</button>
-                    <button class="ie-btn" data-ie="1,3">1:3</button>
-                    <button class="ie-btn" data-ie="1,4">1:4</button>
-                </div>
-            </div>
-
-            <!-- PEEP -->
-            <div class="control">
-                <div class="control__header">
-                    <span class="control__label">PEEP</span>
-                    <span class="control__value" id="peep-display">5 cmH₂O</span>
-                </div>
-                <input type="range" class="control__range" id="peep"
-                       min="0" max="24" step="1" value="5">
-            </div>
-
-            <!-- FiO2 -->
-            <div class="control">
-                <div class="control__header">
-                    <span class="control__label">FiO₂</span>
-                    <span class="control__value" id="fio2-display">40%</span>
-                </div>
-                <input type="range" class="control__range" id="fio2"
-                       min="21" max="100" step="1" value="40">
-            </div>
-        </div>
-
-        <!-- Maneuvers -->
-        <div class="control-group">
-            <div class="control-group__title">Maneuvers</div>
-
-            <!-- Inspiratory Hold -->
-            <div class="control">
-                <div class="control__header">
-                    <span class="control__label">Insp Hold</span>
-                    <span class="control__value" id="hold-display">Off</span>
-                </div>
-                <div class="hold-controls">
-                    <button class="hold-btn" id="hold-toggle">
-                        <span class="hold-btn__icon" id="hold-icon">▶</span>
-                        <span id="hold-btn-label">Activate</span>
-                    </button>
-                    <div class="hold-duration" id="hold-duration-group" style="display:none">
-                        <input type="range" class="control__range" id="hold-duration"
-                               min="3" max="20" step="1" value="5">
-                        <span class="control__value" id="hold-duration-display">0.5s</span>
+                <!-- Flow Pattern (VC only) -->
+                <div class="control" id="flow-pattern-control">
+                    <div class="control__header">
+                        <span class="control__label">Flow Pattern</span>
+                        <span class="control__value" id="flow-pattern-display">Square</span>
+                    </div>
+                    <div class="flow-pattern-group" id="flow-pattern-group">
+                        <button class="ie-btn ie-btn--active" data-pattern="square">
+                            <span class="flow-icon">▬</span> Square
+                        </button>
+                        <button class="ie-btn" data-pattern="ramp">
+                            <span class="flow-icon">╲</span> Ramp
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Hold Results (shown when hold is active) -->
-            <div class="hold-results" id="hold-results" style="display:none">
-                <div class="hold-result-row">
-                    <span class="hold-result-label">P<sub>plat</sub></span>
-                    <span class="hold-result-value" id="hold-pplat">—</span>
-                    <span class="hold-result-unit">cmH₂O</span>
+                <!-- Respiratory Rate -->
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">Resp Rate</span>
+                        <span class="control__value" id="rr-display">14 /min</span>
+                    </div>
+                    <input type="range" class="control__range" id="rr"
+                           min="6" max="35" step="1" value="14">
                 </div>
-                <div class="hold-result-row">
-                    <span class="hold-result-label">PIP − P<sub>plat</sub></span>
-                    <span class="hold-result-value" id="hold-pip-pplat">—</span>
-                    <span class="hold-result-unit">cmH₂O</span>
+
+                <!-- I:E Ratio -->
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">I:E Ratio</span>
+                        <span class="control__value" id="ie-display">1:2.0</span>
+                    </div>
+                    <div class="ie-group" id="ie-group">
+                        <button class="ie-btn" data-ie="1,1">1:1</button>
+                        <button class="ie-btn" data-ie="1,1.5">1:1.5</button>
+                        <button class="ie-btn ie-btn--active" data-ie="1,2">1:2</button>
+                        <button class="ie-btn" data-ie="1,3">1:3</button>
+                        <button class="ie-btn" data-ie="1,4">1:4</button>
+                    </div>
                 </div>
-                <div class="hold-result-row">
-                    <span class="hold-result-label">C<sub>rs</sub> static</span>
-                    <span class="hold-result-value" id="hold-crs">—</span>
-                    <span class="hold-result-unit">mL/cmH₂O</span>
+
+                <!-- PEEP -->
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">PEEP</span>
+                        <span class="control__value" id="peep-display">5 cmH₂O</span>
+                    </div>
+                    <input type="range" class="control__range" id="peep"
+                           min="0" max="24" step="1" value="5">
                 </div>
-                <div class="hold-result-row" id="hold-raw-row">
-                    <span class="hold-result-label">R<sub>aw</sub></span>
-                    <span class="hold-result-value" id="hold-raw">—</span>
-                    <span class="hold-result-unit">cmH₂O·s/L</span>
+
+                <!-- FiO2 -->
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">FiO₂</span>
+                        <span class="control__value" id="fio2-display">40%</span>
+                    </div>
+                    <input type="range" class="control__range" id="fio2"
+                           min="21" max="100" step="1" value="40">
                 </div>
             </div>
         </div>
 
-        <!-- Patient Effort (Pmus) -->
+        <!-- Maneuvers (collapsed by default) -->
         <div class="control-group">
-            <div class="control-group__title">Patient Effort</div>
+            <div class="control-group__title" data-collapsible data-collapsed>Maneuvers</div>
+            <div class="control-group__body" style="display:none">
 
-            <!-- Pmus Toggle & Max -->
-            <div class="control">
-                <div class="control__header">
-                    <span class="control__label">P<sub>mus</sub> max</span>
-                    <span class="control__value" id="pmus-display">Off</span>
-                </div>
-                <div class="pmus-controls">
-                    <button class="hold-btn" id="pmus-toggle">
-                        <span class="hold-btn__icon" id="pmus-icon">♿</span>
-                        <span id="pmus-btn-label">Passive</span>
-                    </button>
-                    <div class="pmus-sliders" id="pmus-sliders" style="display:none">
-                        <div class="pmus-slider-row">
-                            <span class="pmus-slider-label">Effort</span>
-                            <input type="range" class="control__range" id="pmus-max"
-                                   min="2" max="20" step="1" value="8">
-                            <span class="control__value" id="pmus-max-display">8 cmH₂O</span>
-                        </div>
-                        <div class="pmus-slider-row">
-                            <span class="pmus-slider-label">T<sub>neural</sub></span>
-                            <input type="range" class="control__range" id="neural-ti"
-                                   min="4" max="20" step="1" value="10">
-                            <span class="control__value" id="neural-ti-display">1.0s</span>
+                <!-- Inspiratory Hold -->
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">Insp Hold</span>
+                        <span class="control__value" id="hold-display">Off</span>
+                    </div>
+                    <div class="hold-controls">
+                        <button class="hold-btn" id="hold-toggle">
+                            <span class="hold-btn__icon" id="hold-icon">▶</span>
+                            <span id="hold-btn-label">Activate</span>
+                        </button>
+                        <div class="hold-duration" id="hold-duration-group" style="display:none">
+                            <input type="range" class="control__range" id="hold-duration"
+                                   min="3" max="20" step="1" value="5">
+                            <span class="control__value" id="hold-duration-display">0.5s</span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Patient Respiratory Rate -->
-            <div class="control" id="patient-rr-control" style="display:none">
-                <div class="control__header">
-                    <span class="control__label">Patient RR</span>
-                    <span class="control__value" id="patient-rr-display">16 /min</span>
+                <!-- Hold Results (shown when hold is active) -->
+                <div class="hold-results" id="hold-results" style="display:none">
+                    <div class="hold-result-row">
+                        <span class="hold-result-label">P<sub>plat</sub></span>
+                        <span class="hold-result-value" id="hold-pplat">—</span>
+                        <span class="hold-result-unit">cmH₂O</span>
+                    </div>
+                    <div class="hold-result-row">
+                        <span class="hold-result-label">PIP − P<sub>plat</sub></span>
+                        <span class="hold-result-value" id="hold-pip-pplat">—</span>
+                        <span class="hold-result-unit">cmH₂O</span>
+                    </div>
+                    <div class="hold-result-row">
+                        <span class="hold-result-label">C<sub>rs</sub> static</span>
+                        <span class="hold-result-value" id="hold-crs">—</span>
+                        <span class="hold-result-unit">mL/cmH₂O</span>
+                    </div>
+                    <div class="hold-result-row" id="hold-raw-row">
+                        <span class="hold-result-label">R<sub>aw</sub></span>
+                        <span class="hold-result-value" id="hold-raw">—</span>
+                        <span class="hold-result-unit">cmH₂O·s/L</span>
+                    </div>
                 </div>
-                <input type="range" class="control__range" id="patient-rr"
-                       min="6" max="35" step="1" value="16">
             </div>
         </div>
 
-        <!-- Lung Mechanics (the "patient knobs") -->
+        <!-- Patient (combined: preset, effort, mechanics) (collapsed by default) -->
         <div class="control-group">
-            <div class="control-group__title">Lung Mechanics</div>
+            <div class="control-group__title" data-collapsible data-collapsed>Patient</div>
+            <div class="control-group__body" style="display:none">
 
-            <!-- Compliance -->
-            <div class="control">
-                <div class="control__header">
-                    <span class="control__label">Compliance</span>
-                    <span class="control__value" id="compliance-display">50 mL/cmH₂O</span>
+                <!-- Preset -->
+                <select class="preset-select" id="preset">
+                    <option value="normal">Normal Lung</option>
+                    <option value="ards_moderate">ARDS (Moderate)</option>
+                    <option value="ards_severe">ARDS (Severe)</option>
+                    <option value="copd">COPD</option>
+                    <option value="asthma">Asthma (Acute)</option>
+                    <option value="obesity">Morbid Obesity</option>
+                    <option value="fibrosis">Pulmonary Fibrosis</option>
+                </select>
+
+                <!-- Compliance -->
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">Compliance</span>
+                        <span class="control__value" id="compliance-display">50 mL/cmH₂O</span>
+                    </div>
+                    <input type="range" class="control__range" id="compliance"
+                           min="15" max="100" step="1" value="50">
                 </div>
-                <input type="range" class="control__range" id="compliance"
-                       min="15" max="100" step="1" value="50">
-            </div>
 
-            <!-- Resistance -->
-            <div class="control">
-                <div class="control__header">
-                    <span class="control__label">Resistance</span>
-                    <span class="control__value" id="resistance-display">10 cmH₂O·s/L</span>
+                <!-- Resistance -->
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">Resistance</span>
+                        <span class="control__value" id="resistance-display">10 cmH₂O·s/L</span>
+                    </div>
+                    <input type="range" class="control__range" id="resistance"
+                           min="5" max="40" step="1" value="10">
                 </div>
-                <input type="range" class="control__range" id="resistance"
-                       min="5" max="40" step="1" value="10">
-            </div>
 
-            <!-- Mechanics summary chips -->
-            <div class="mechanics-bar" id="mechanics-bar">
-                <!-- Populated by main.js -->
+                <!-- Patient Effort (Pmus) -->
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">P<sub>mus</sub> max</span>
+                        <span class="control__value" id="pmus-display">Off</span>
+                    </div>
+                    <div class="pmus-controls">
+                        <button class="hold-btn" id="pmus-toggle">
+                            <span class="hold-btn__icon" id="pmus-icon">♿</span>
+                            <span id="pmus-btn-label">Passive</span>
+                        </button>
+                        <div class="pmus-sliders" id="pmus-sliders" style="display:none">
+                            <div class="pmus-slider-row">
+                                <span class="pmus-slider-label">Effort</span>
+                                <input type="range" class="control__range" id="pmus-max"
+                                       min="2" max="20" step="1" value="8">
+                                <span class="control__value" id="pmus-max-display">8 cmH₂O</span>
+                            </div>
+                            <div class="pmus-slider-row">
+                                <span class="pmus-slider-label">T<sub>neural</sub></span>
+                                <input type="range" class="control__range" id="neural-ti"
+                                       min="4" max="20" step="1" value="10">
+                                <span class="control__value" id="neural-ti-display">1.0s</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient Respiratory Rate -->
+                <div class="control" id="patient-rr-control" style="display:none">
+                    <div class="control__header">
+                        <span class="control__label">Patient RR</span>
+                        <span class="control__value" id="patient-rr-display">16 /min</span>
+                    </div>
+                    <input type="range" class="control__range" id="patient-rr"
+                           min="6" max="35" step="1" value="16">
+                </div>
+
+                <!-- Mechanics summary chips -->
+                <div class="mechanics-bar" id="mechanics-bar">
+                    <!-- Populated by main.js -->
+                </div>
             </div>
         </div>
 
@@ -297,102 +297,112 @@
 
         <!-- Primary Readouts -->
         <div class="param-group">
-            <div class="param-group__title">Pressures</div>
-            <div class="param-row param-row--large">
-                <span class="param-row__label">PIP</span>
-                <span class="param-row__value param-row__value--pressure" id="param-pip">—</span>
-            </div>
-            <div class="param-row param-row--large">
-                <span class="param-row__label">Pplat</span>
-                <span class="param-row__value param-row__value--pressure" id="param-pplat">—</span>
-            </div>
-            <div class="param-row" id="pinsp-param-row" style="display:none;">
-                <span class="param-row__label">P<sub>insp</sub></span>
-                <span class="param-row__value param-row__value--pressure" id="param-pinsp">—</span>
-            </div>
-            <div class="param-row">
-                <span class="param-row__label">MAP</span>
-                <span class="param-row__value param-row__value--pressure" id="param-map">—</span>
-            </div>
-            <div class="param-row">
-                <span class="param-row__label">ΔP<sub>drive</sub></span>
-                <span class="param-row__value param-row__value--pressure" id="param-dp">—</span>
-            </div>
-            <div class="param-row" id="resist-param-row">
-                <span class="param-row__label" id="resist-label">P<sub>resist</sub></span>
-                <span class="param-row__value" id="param-pr">—</span>
-            </div>
-        </div>
-
-        <div class="param-group">
-            <div class="param-group__title">PEEP</div>
-            <div class="param-row">
-                <span class="param-row__label">Set PEEP</span>
-                <span class="param-row__value" id="param-peep-set">—</span>
-            </div>
-            <div class="param-row">
-                <span class="param-row__label">Auto-PEEP</span>
-                <span class="param-row__value" id="param-auto-peep">—</span>
-            </div>
-            <div class="param-row">
-                <span class="param-row__label">Total PEEP</span>
-                <span class="param-row__value" id="param-total-peep">—</span>
+            <div class="param-group__title" data-collapsible>Pressures</div>
+            <div class="param-group__body">
+                <div class="param-row param-row--large">
+                    <span class="param-row__label">PIP</span>
+                    <span class="param-row__value param-row__value--pressure" id="param-pip">—</span>
+                </div>
+                <div class="param-row param-row--large">
+                    <span class="param-row__label">Pplat</span>
+                    <span class="param-row__value param-row__value--pressure" id="param-pplat">—</span>
+                </div>
+                <div class="param-row" id="pinsp-param-row" style="display:none;">
+                    <span class="param-row__label">P<sub>insp</sub></span>
+                    <span class="param-row__value param-row__value--pressure" id="param-pinsp">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">MAP</span>
+                    <span class="param-row__value param-row__value--pressure" id="param-map">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">ΔP<sub>drive</sub></span>
+                    <span class="param-row__value param-row__value--pressure" id="param-dp">—</span>
+                </div>
+                <div class="param-row" id="resist-param-row">
+                    <span class="param-row__label" id="resist-label">P<sub>resist</sub></span>
+                    <span class="param-row__value" id="param-pr">—</span>
+                </div>
             </div>
         </div>
 
         <div class="param-group">
-            <div class="param-group__title">Volumes & Flow</div>
-            <div class="param-row param-row--large">
-                <span class="param-row__label" id="vt-param-label">V<sub>T</sub></span>
-                <span class="param-row__value param-row__value--volume" id="param-vt">—</span>
-            </div>
-            <div class="param-row">
-                <span class="param-row__label">V̇<sub>E</sub></span>
-                <span class="param-row__value param-row__value--volume" id="param-ve">—</span>
-            </div>
-            <div class="param-row">
-                <span class="param-row__label" id="flow-param-label">V̇<sub>insp</sub></span>
-                <span class="param-row__value param-row__value--flow" id="param-flow">—</span>
-            </div>
-        </div>
-
-        <div class="param-group">
-            <div class="param-group__title">Timing</div>
-            <div class="param-row">
-                <span class="param-row__label">T<sub>i</sub></span>
-                <span class="param-row__value" id="param-ti">—</span>
-            </div>
-            <div class="param-row">
-                <span class="param-row__label">T<sub>e</sub></span>
-                <span class="param-row__value" id="param-te">—</span>
-            </div>
-            <div class="param-row" id="ti-tau-row" style="display:none;">
-                <span class="param-row__label">T<sub>i</sub> / τ</span>
-                <span class="param-row__value" id="param-ti-tau">—</span>
-            </div>
-            <div class="param-row">
-                <span class="param-row__label">T<sub>e</sub> / τ</span>
-                <span class="param-row__value" id="param-te-tau">—</span>
+            <div class="param-group__title" data-collapsible>PEEP</div>
+            <div class="param-group__body">
+                <div class="param-row">
+                    <span class="param-row__label">Set PEEP</span>
+                    <span class="param-row__value" id="param-peep-set">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">Auto-PEEP</span>
+                    <span class="param-row__value" id="param-auto-peep">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">Total PEEP</span>
+                    <span class="param-row__value" id="param-total-peep">—</span>
+                </div>
             </div>
         </div>
 
         <div class="param-group">
-            <div class="param-group__title">Mechanics</div>
-            <div class="param-row">
-                <span class="param-row__label">C<sub>rs</sub></span>
-                <span class="param-row__value" id="param-crs">—</span>
+            <div class="param-group__title" data-collapsible>Volumes & Flow</div>
+            <div class="param-group__body">
+                <div class="param-row param-row--large">
+                    <span class="param-row__label" id="vt-param-label">V<sub>T</sub></span>
+                    <span class="param-row__value param-row__value--volume" id="param-vt">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">V̇<sub>E</sub></span>
+                    <span class="param-row__value param-row__value--volume" id="param-ve">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label" id="flow-param-label">V̇<sub>insp</sub></span>
+                    <span class="param-row__value param-row__value--flow" id="param-flow">—</span>
+                </div>
             </div>
-            <div class="param-row">
-                <span class="param-row__label">R<sub>aw</sub></span>
-                <span class="param-row__value" id="param-raw">—</span>
+        </div>
+
+        <div class="param-group">
+            <div class="param-group__title" data-collapsible data-collapsed>Timing</div>
+            <div class="param-group__body" style="display:none">
+                <div class="param-row">
+                    <span class="param-row__label">T<sub>i</sub></span>
+                    <span class="param-row__value" id="param-ti">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">T<sub>e</sub></span>
+                    <span class="param-row__value" id="param-te">—</span>
+                </div>
+                <div class="param-row" id="ti-tau-row" style="display:none;">
+                    <span class="param-row__label">T<sub>i</sub> / τ</span>
+                    <span class="param-row__value" id="param-ti-tau">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">T<sub>e</sub> / τ</span>
+                    <span class="param-row__value" id="param-te-tau">—</span>
+                </div>
             </div>
-            <div class="param-row">
-                <span class="param-row__label">τ</span>
-                <span class="param-row__value" id="param-tau">—</span>
-            </div>
-            <div class="param-row">
-                <span class="param-row__label">E<sub>rs</sub></span>
-                <span class="param-row__value" id="param-ers">—</span>
+        </div>
+
+        <div class="param-group">
+            <div class="param-group__title" data-collapsible data-collapsed>Mechanics</div>
+            <div class="param-group__body" style="display:none">
+                <div class="param-row">
+                    <span class="param-row__label">C<sub>rs</sub></span>
+                    <span class="param-row__value" id="param-crs">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">R<sub>aw</sub></span>
+                    <span class="param-row__value" id="param-raw">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">τ</span>
+                    <span class="param-row__value" id="param-tau">—</span>
+                </div>
+                <div class="param-row">
+                    <span class="param-row__label">E<sub>rs</sub></span>
+                    <span class="param-row__value" id="param-ers">—</span>
+                </div>
             </div>
         </div>
 
@@ -401,7 +411,7 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="js/main.js?v=7"></script>
+<script type="module" src="js/main.js?v=8"></script>
 
 </body>
 </html>

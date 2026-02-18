@@ -1,6 +1,6 @@
 # Ventilator Simulator (MVP v0.1)
 
-[![Smoke Tests](https://github.com/whoisjgalt84/vent-sim-mvp/actions/workflows/smoke-tests.yml/badge.svg)](https://github.com/whoisjgalt84/vent-sim-mvp/actions/workflows/smoke-tests.yml)
+[![Smoke Tests](https://github.com/whoisjgalt84/vent-sim-mvp/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/whoisjgalt84/vent-sim-mvp/actions/workflows/smoke-test.yml)
 
 A physics-driven mechanical ventilator simulator focused on clarity, correctness, and clinical teaching value.
 

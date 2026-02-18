@@ -24,32 +24,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
 
-      - name: Install dependencies (if package.json exists)
-        run: |
-          if [ -f package.json ]; then
-            npm ci
-          else
-            echo "No package.json found; skipping npm ci"
-          fi
+      - name: Install dependencies
+        run: npm ci
 
-      - name: 'Debug: show files'
-        run: |
-          pwd
-          ls -la
-          echo "----"
-          find . -maxdepth 3 -type f -name "test-engine.js" -print
-          echo "----"
-          find . -maxdepth 3 -type f -name "package.json" -print
-
-      - name: Run smoke tests (auto-locate)
-        run: |
-          set -e
-          TEST_FILE="$(find . -maxdepth 5 -type f -name 'test-engine.js' | head -n 1)"
-          if [ -z "$TEST_FILE" ]; then
-            echo "ERROR: test-engine.js not found anywhere in repo (maxdepth 5)."
-            echo "Here are the top-level files:"
-            ls -la
-            exit 1
-          fi
-          echo "Running: node $TEST_FILE"
-          node "$TEST_FILE"
+      - name: Run smoke tests
+        run: npm test

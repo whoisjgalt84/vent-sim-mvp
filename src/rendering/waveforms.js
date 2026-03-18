@@ -574,7 +574,7 @@ export class WaveformDisplay {
     /**
      * Render all three waveforms from a Ventilator instance (static mode).
      *
-     * @param {import('./ventilator.js').Ventilator} ventilator
+     * @param {import('../core/ventilator.js').Ventilator}
      */
     render(ventilator) {
         const waveforms = ventilator.generateBreathWaveforms(this.numBreaths);
@@ -587,7 +587,7 @@ export class WaveformDisplay {
     /**
      * Render all three waveforms from simulation ring buffers (dynamic mode).
      *
-     * @param {import('./simulation.js').SimulationEngine} sim
+     * @param {import('../core/simulation.js').SimulationEngine}
      */
     renderFromSim(sim) {
         const time     = sim.buffers.time.toArray();

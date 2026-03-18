@@ -21,10 +21,10 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=8';
-import { Ventilator }        from './ventilator.js?v=8';
-import { SimulationEngine }  from './simulation.js?v=8';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=8';
+import { LungModel }        from '../core/lung-model.js?v=8';
+import { Ventilator }        from '../core/ventilator.js?v=8';
+import { SimulationEngine }  from '../core/simulation.js?v=8';
+import { WaveformDisplay, LoopRenderer }   from '../rendering/waveforms.js?v=8';
 
 
 // =============================================================================

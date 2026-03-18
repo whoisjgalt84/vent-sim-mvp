@@ -12,9 +12,9 @@
  * ============================================================================
  */
 
-import { LungModel } from '../js/lung-model.js';
-import { Ventilator } from '../js/ventilator.js';
-import { SimulationEngine, RingBuffer } from '../js/simulation.js';
+import { LungModel } from '../src/core/lung-model.js';
+import { Ventilator } from '../src/core/ventilator.js';
+import { SimulationEngine, RingBuffer } from '../src/core/simulation.js';
 
 let passed = 0;
 let failed = 0;

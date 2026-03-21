@@ -128,7 +128,7 @@ export class WaveformRenderer {
      * @param {number[]} timeData  - X values (seconds)
      * @param {number[]} valueData - Y values (in display units)
      */
-    render(timeData, valueData) {
+    render(timeData, valueData, opts = {}) {
         // Resize in case the window changed
         this._resizeCanvas();
 
@@ -197,13 +197,14 @@ export class WaveformRenderer {
             const label = Math.abs(t % 60).toString();
             ctx.fillText(label, px, plot.y + plot.h + 3);
         }
+        const zeroLineColor = opts.zeroLineColor ?? this.axisColor;
 
         // --- Draw zero line (if zero is in range) ---
-        if (yMin <= 0 && yMax >= 0) {
+         if (yMin <= 0 && yMax >= 0) {
             const zeroY = yScale(0);
-            ctx.strokeStyle = this.axisColor;
-            ctx.lineWidth = 1;
-            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = zeroLineColor;
+            ctx.lineWidth = opts.zeroLineWidth ?? 1;
+            ctx.setLineDash(opts.zeroLineDash ?? [4, 4]);
             ctx.beginPath();
             ctx.moveTo(plot.x, zeroY);
             ctx.lineTo(plot.x + plot.w, zeroY);
@@ -593,13 +594,28 @@ export class WaveformDisplay {
         const time     = sim.buffers.time.toArray();
         const pressure = sim.buffers.pressure.toArray();
         const volume   = sim.buffers.volume.toArray();
-        const flow     = sim.buffers.flow.toArray();
+        const flow = sim.buffers.flow.toArray();
 
-        if (time.length < 2) return;
+const inExpiration = sim.phase === 'EXPIRATION';
+const lateExpiration =
+    inExpiration &&
+    sim.phaseTime > sim.vent.effectiveExpiratoryTime * 0.75;
+
+const tailFlow = sim.loopCurrent.flow.slice(-5);
+
+const incompleteExhalation =
+    sim.vent.gasTrappingRisk &&
+    lateExpiration &&
+    tailFlow.length > 0 &&
+    tailFlow.some(f => Math.abs(f) > 1);
 
         this.pressureRenderer.render(time, pressure);
         this.volumeRenderer.render(time, volume);
-        this.flowRenderer.render(time, flow);
+        this.flowRenderer.render(time, flow, {
+            zeroLineColor: incompleteExhalation ? 'rgba(239, 83, 80, 0.95)' : 'rgba(255,255,255,0.15)',
+            zeroLineWidth: incompleteExhalation ? 2 : 1,
+            zeroLineDash: incompleteExhalation ? [] : [4, 4],
+        });
     }
 
     /**

@@ -684,12 +684,28 @@ function updateAlerts(summary, measured) {
     const container = document.getElementById('alerts');
     const badges = [];
     const s = summary;
+    // Live expiratory flow check:
+    // If the last few flow samples are still meaningfully away from zero,
+    // exhalation may be incomplete.
+    const inExpiration = sim.phase === 'EXPIRATION';
+    const lateExpiration = inExpiration && sim.phaseTime > sim.vent.effectiveExpiratoryTime * 0.75;
 
+// Look only at the most recent few samples of the current breath loop,
+// and only judge them late in expiration.
+const tailFlow = sim.loopCurrent.flow.slice(-5);
+const incompleteExhalation =
+    lateExpiration &&
+    tailFlow.length > 0 &&
+    tailFlow.some(f => Math.abs(f) > 1);
     if (s.safety.pplatAbove30) badges.push(makeBadge('danger', `Pplat ${s.pressures.pplat_cmH2O} > 30`));
     if (s.safety.drivingPressureAbove15) badges.push(makeBadge('warning', `ΔP ${s.pressures.drivingPressure} > 15`));
     if (s.safety.gasTrappingRisk) badges.push(makeBadge('warning', `Te/τ ${s.safety.teOverTau} < 3`));
     if (s.pressures.autoPeep_cmH2O > 2) badges.push(makeBadge('warning', `AutoPEEP ${s.pressures.autoPeep_cmH2O}`));
     if (s.safety.tiTooShort) badges.push(makeBadge('warning', `Ti/τ ${s.safety.tiOverTau} < 1 — short fill`));
+
+    if (incompleteExhalation && s.safety.gasTrappingRisk) {
+        badges.push(makeBadge('warning', ' Exp flow not at zero'));
+    }
 
     if (sim.patientRR > 0 && measured.triggerType === 'patient') {
         badges.push(makeBadge('info', '⬆ Patient triggered'));

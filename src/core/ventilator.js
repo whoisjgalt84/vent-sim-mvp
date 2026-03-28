@@ -46,6 +46,8 @@
  */
 
 import { LungModel } from './lung-model.js';
+import { generateVC, generateVCRamp, rampPIP } from './modes/vc-cmv.js';
+import { generatePC, pcTrappedVolume, pcAutoPeep, pcSteadyStateVt } from './modes/pc-cmv.js';
 
 
 export class Ventilator {
@@ -432,36 +434,13 @@ export class Ventilator {
     // -----------------------------------------------------------------
 
     /** @private PC-CMV steady-state trapped volume (L) — uses effective Te */
-    _pcTrappedVolume() {
-        const tau = this.lung.timeConstant;
-        const C   = this.lung.compliance;
-        const ti  = this.inspiratoryTime;
-        const te  = this.effectiveExpiratoryTime;
-
-        const alpha = Math.exp(-te / tau);
-        const beta  = 1 - Math.exp(-ti / tau);
-        const denom = 1 - Math.exp(-(ti + te) / tau);
-
-        if (denom < 1e-10) return Infinity;  // Essentially no exhalation
-
-        return this.inspiratoryPressure * C * beta * alpha / denom;
-    }
+    _pcTrappedVolume() { return pcTrappedVolume(this); }
 
     /** @private PC-CMV steady-state auto-PEEP (cmH2O) */
-    _pcAutoPeep() {
-        const vTrapped = this._pcTrappedVolume();
-        if (!isFinite(vTrapped)) return Infinity;
-        return vTrapped / this.lung.compliance;
-    }
+    _pcAutoPeep() { return pcAutoPeep(this); }
 
     /** @private PC-CMV steady-state delivered VT (L) */
-    _pcSteadyStateVt() {
-        const autoPeep = this._pcAutoPeep();
-        if (!isFinite(autoPeep)) return 0;
-        const drivePressure = Math.max(0, this.inspiratoryPressure - autoPeep);
-        const beta = 1 - Math.exp(-this.inspiratoryTime / this.lung.timeConstant);
-        return drivePressure * this.lung.compliance * beta;
-    }
+    _pcSteadyStateVt() { return pcSteadyStateVt(this); }
 
     /**
      * Peak Inspiratory Pressure (cmH2O)
@@ -509,30 +488,7 @@ export class Ventilator {
      *
      * @private
      */
-    _rampPIP() {
-        const ti    = this.inspiratoryTime;
-        const tau   = this.lung.timeConstant;
-        const R     = this.lung.resistance;
-        const C     = this.lung.compliance;
-        const peep  = this.peep;
-        const auto  = this.autoPeep;
-        const vTrap = this.trappedVolume;
-        const fPeak = this.vcPeakFlow;  // 2 × VT / Ti
-
-        // Critical time where PIP occurs
-        const tStar = Math.max(0, ti - tau);
-
-        // Flow at t*
-        const flowAtStar = fPeak * (1 - tStar / ti);
-
-        // Volume delivered at t*
-        const volAtStar = fPeak * (tStar - tStar * tStar / (2 * ti));
-
-        // Total volume above PEEP equilibrium
-        const vTotal = vTrap + volAtStar;
-
-        return peep + auto + R * flowAtStar + vTotal / C;
-    }
+    _rampPIP() { return rampPIP(this); }
 
     /**
      * Plateau Pressure (cmH2O)
@@ -653,111 +609,7 @@ export class Ventilator {
      * VC-CMV waveform generation — square flow, linear pressure ramp.
      * @private
      */
-    _generateVC(numBreaths) {
-        const dt   = 1 / this.sampleRate;
-        const ti   = this.inspiratoryTime;
-        const vt   = this.tidalVolume;
-        const peep = this.peep;
-        const tau  = this.lung.timeConstant;
-        const R    = this.lung.resistance;
-        const C    = this.lung.compliance;
-
-        // Steady-state values
-        const autoPeepSS  = this.autoPeep;
-        const trappedVol  = this.trappedVolume;
-        const flowInsp    = this.inspiratoryFlow;   // L/s, positive
-
-        // Volume above PEEP-equilibrium at start of expiration
-        const vStartExp = trappedVol + vt;
-
-        // Hold and expiration timing
-        const holdDur = this.effectiveHoldTime;
-        const teEff   = this.effectiveExpiratoryTime;
-
-        // Pre-allocate arrays
-        const totalSamples = Math.ceil(this.totalCycleTime * this.sampleRate) * numBreaths + 10;
-        const time     = new Array(totalSamples);
-        const pressure = new Array(totalSamples);
-        const volume   = new Array(totalSamples);
-        const flow     = new Array(totalSamples);
-        let idx = 0;
-        let t = 0;
-
-        for (let breath = 0; breath < numBreaths; breath++) {
-            let tBreath = 0;  // time since start of THIS breath
-
-            // INSPIRATION — Square Flow
-            const inspSteps = Math.round(ti * this.sampleRate);
-
-            for (let i = 0; i < inspSteps; i++) {
-                const tInsp = i * dt;
-                const vDelivered = flowInsp * tInsp;
-                const vTotal = trappedVol + vDelivered;
-
-                // Paw = PEEP + Pelastic + Presistive - Pmus
-                // Pmus SUBTRACTS from airway pressure in VC (patient does work,
-                // so ventilator doesn't push as hard → "scalloped" waveform)
-                const pmus = this.pMusAt(tBreath);
-                const p = peep + (vTotal / C) + (R * flowInsp) - pmus;
-
-                time[idx]     = t;
-                pressure[idx] = p;
-                volume[idx]   = vDelivered * 1000;
-                flow[idx]     = flowInsp * 60;
-                idx++;
-                t += dt;
-                tBreath += dt;
-            }
-
-            // INSPIRATORY HOLD — Both valves closed, flow = 0
-            if (holdDur > 0) {
-                const holdSteps = Math.round(holdDur * this.sampleRate);
-                const pPlatBase = peep + (vStartExp / C);
-                for (let i = 0; i < holdSteps; i++) {
-                    const pmus = this.pMusAt(tBreath);
-                    const p = pPlatBase - pmus;
-
-                    time[idx]     = t;
-                    pressure[idx] = p;
-                    volume[idx]   = vt * 1000;
-                    flow[idx]     = 0;
-                    idx++;
-                    t += dt;
-                    tBreath += dt;
-                }
-            }
-
-            // EXPIRATION — Passive Exponential Decay
-            const expSteps = Math.round(teEff * this.sampleRate);
-            const deltaPExp = vStartExp / C;
-
-            for (let i = 0; i < expSteps; i++) {
-                const tExp = i * dt;
-                const expDecay = Math.exp(-tExp / tau);
-                const vRemaining = vStartExp * expDecay;
-                const fExp = -(deltaPExp / R) * expDecay;
-                const pmus = this.pMusAt(tBreath);
-                const p = peep + (vRemaining / C) - pmus;
-                const vExhaled  = vStartExp * (1 - expDecay);
-                const vDisplayed = vt - vExhaled;
-
-                time[idx]     = t;
-                pressure[idx] = p;
-                volume[idx]   = vDisplayed * 1000;
-                flow[idx]     = fExp * 60;
-                idx++;
-                t += dt;
-                tBreath += dt;
-            }
-        }
-
-        return {
-            time:     time.slice(0, idx),
-            pressure: pressure.slice(0, idx),
-            volume:   volume.slice(0, idx),
-            flow:     flow.slice(0, idx),
-        };
-    }
+    _generateVC(numBreaths) { return generateVC(this, numBreaths); }
 
     /**
      * VC-CMV waveform generation — descending ramp (triangular) flow.
@@ -790,108 +642,7 @@ export class Ventilator {
      *
      * @private
      */
-    _generateVCRamp(numBreaths) {
-        const dt   = 1 / this.sampleRate;
-        const ti   = this.inspiratoryTime;
-        const vt   = this.tidalVolume;
-        const peep = this.peep;
-        const tau  = this.lung.timeConstant;
-        const R    = this.lung.resistance;
-        const C    = this.lung.compliance;
-
-        // Steady-state values (same as square — same VT, same Te)
-        const autoPeepSS = this.autoPeep;
-        const trappedVol = this.trappedVolume;
-
-        // Peak flow: V̇_peak = 2 × VT / Ti
-        const fPeak = 2 * vt / ti;
-
-        // Volume above PEEP-equilibrium at start of expiration
-        const vStartExp = trappedVol + vt;
-
-        // Hold and expiration timing
-        const holdDur = this.effectiveHoldTime;
-        const teEff   = this.effectiveExpiratoryTime;
-
-        // Pre-allocate arrays
-        const totalSamples = Math.ceil(this.totalCycleTime * this.sampleRate) * numBreaths + 10;
-        const time     = new Array(totalSamples);
-        const pressure = new Array(totalSamples);
-        const volume   = new Array(totalSamples);
-        const flow     = new Array(totalSamples);
-        let idx = 0;
-        let t = 0;
-
-        for (let breath = 0; breath < numBreaths; breath++) {
-            let tBreath = 0;
-
-            // INSPIRATION — Descending Ramp Flow
-            const inspSteps = Math.round(ti * this.sampleRate);
-
-            for (let i = 0; i < inspSteps; i++) {
-                const tInsp = i * dt;
-                const fInst = fPeak * (1 - tInsp / ti);
-                const vDelivered = fPeak * (tInsp - tInsp * tInsp / (2 * ti));
-                const vTotal = trappedVol + vDelivered;
-                const pmus = this.pMusAt(tBreath);
-                const p = peep + (vTotal / C) + (R * fInst) - pmus;
-
-                time[idx]     = t;
-                pressure[idx] = p;
-                volume[idx]   = vDelivered * 1000;
-                flow[idx]     = fInst * 60;
-                idx++;
-                t += dt;
-                tBreath += dt;
-            }
-
-            // INSPIRATORY HOLD
-            if (holdDur > 0) {
-                const holdSteps = Math.round(holdDur * this.sampleRate);
-                const pPlatBase = peep + (vStartExp / C);
-                for (let i = 0; i < holdSteps; i++) {
-                    const pmus = this.pMusAt(tBreath);
-                    time[idx]     = t;
-                    pressure[idx] = pPlatBase - pmus;
-                    volume[idx]   = vt * 1000;
-                    flow[idx]     = 0;
-                    idx++;
-                    t += dt;
-                    tBreath += dt;
-                }
-            }
-
-            // EXPIRATION — Passive Exponential Decay
-            const expSteps = Math.round(teEff * this.sampleRate);
-            const deltaPExp = vStartExp / C;
-
-            for (let i = 0; i < expSteps; i++) {
-                const tExp = i * dt;
-                const expDecay = Math.exp(-tExp / tau);
-                const vRemaining = vStartExp * expDecay;
-                const fExp = -(deltaPExp / R) * expDecay;
-                const pmus = this.pMusAt(tBreath);
-                const p = peep + (vRemaining / C) - pmus;
-                const vExhaled  = vStartExp * (1 - expDecay);
-                const vDisplayed = vt - vExhaled;
-
-                time[idx]     = t;
-                pressure[idx] = p;
-                volume[idx]   = vDisplayed * 1000;
-                flow[idx]     = fExp * 60;
-                idx++;
-                t += dt;
-                tBreath += dt;
-            }
-        }
-
-        return {
-            time:     time.slice(0, idx),
-            pressure: pressure.slice(0, idx),
-            volume:   volume.slice(0, idx),
-            flow:     flow.slice(0, idx),
-        };
-    }
+    _generateVCRamp(numBreaths) { return generateVCRamp(this, numBreaths); }
 
     /**
      * PC-CMV waveform generation.
@@ -918,162 +669,7 @@ export class Ventilator {
      *
      * @private
      */
-    _generatePC(numBreaths) {
-        const dt   = 1 / this.sampleRate;
-        const ti   = this.inspiratoryTime;
-        const peep = this.peep;
-        const tau  = this.lung.timeConstant;
-        const R    = this.lung.resistance;
-        const C    = this.lung.compliance;
-        const E    = 1 / C;  // elastance
-
-        // Steady-state values
-        const autoPeepSS    = this.autoPeep;
-        const trappedVol    = this.trappedVolume;
-        const drivePressure = Math.max(0, this.inspiratoryPressure - autoPeepSS);
-
-        // Airway pressure during inspiration (constant)
-        const pInsp = peep + this.inspiratoryPressure;
-
-        // Hold and expiration timing
-        const holdDur = this.effectiveHoldTime;
-        const teEff   = this.effectiveExpiratoryTime;
-
-        // Choose analytical or numerical path
-        const usePmus = this.pMusActive;
-
-        // For analytical path: pre-compute VT
-        const vtAnalytical = drivePressure * C * (1 - Math.exp(-ti / tau));
-
-        // Pre-allocate arrays
-        const totalSamples = Math.ceil(this.totalCycleTime * this.sampleRate) * numBreaths + 10;
-        const time     = new Array(totalSamples);
-        const pressure = new Array(totalSamples);
-        const volume   = new Array(totalSamples);
-        const flow     = new Array(totalSamples);
-        let idx = 0;
-        let t = 0;
-
-        for (let breath = 0; breath < numBreaths; breath++) {
-            let tBreath = 0;
-            let vtDelivered;  // will be set during inspiration
-
-            // =================================================================
-            // INSPIRATION
-            // =================================================================
-            const inspSteps = Math.round(ti * this.sampleRate);
-
-            if (usePmus) {
-                // NUMERICAL: Euler integration with time-varying Pmus
-                //
-                //   V̇(t) = [Pinsp + Pmus(t) - autoPEEP - V_delivered(t)/C] / R
-                //
-                // The Pmus adds to Pinsp, increasing the net driving pressure.
-                // As V grows, elastic backpressure increases, so flow still
-                // decelerates — but peaks higher and delivers more volume.
-                //
-                let vDel = 0;  // volume delivered so far (L)
-
-                for (let i = 0; i < inspSteps; i++) {
-                    const pmus = this.pMusAt(tBreath);
-                    const netDrive = drivePressure + pmus - (vDel / C - trappedVol / C);
-                    // Actually: effective drive = Pinsp + Pmus - autoPEEP - vDelivered × E
-                    // Since autoPEEP is already subtracted in drivePressure:
-                    //   drive = (Pinsp - autoPEEP) + Pmus - vDel × E
-                    const driveEff = drivePressure + pmus - vDel * E;
-                    const fInsp = Math.max(0, driveEff / R);  // can't have negative insp flow in PC
-
-                    time[idx]     = t;
-                    pressure[idx] = pInsp;  // Paw is controlled (constant)
-                    volume[idx]   = vDel * 1000;
-                    flow[idx]     = fInsp * 60;
-                    idx++;
-
-                    // Euler step: V(n+1) = V(n) + V̇(n) × dt
-                    vDel += fInsp * dt;
-
-                    t += dt;
-                    tBreath += dt;
-                }
-
-                vtDelivered = vDel;
-
-            } else {
-                // ANALYTICAL: exponential fill (no Pmus)
-                const peakFlow = drivePressure / R;
-
-                for (let i = 0; i < inspSteps; i++) {
-                    const tInsp = i * dt;
-                    const expFactor = Math.exp(-tInsp / tau);
-                    const vDel  = drivePressure * C * (1 - expFactor);
-                    const fInsp = peakFlow * expFactor;
-
-                    time[idx]     = t;
-                    pressure[idx] = pInsp;
-                    volume[idx]   = vDel * 1000;
-                    flow[idx]     = fInsp * 60;
-                    idx++;
-                    t += dt;
-                    tBreath += dt;
-                }
-
-                vtDelivered = vtAnalytical;
-            }
-
-            // Volume above PEEP-equilibrium at start of expiration
-            const vStartExp = trappedVol + vtDelivered;
-
-            // =================================================================
-            // INSPIRATORY HOLD
-            // =================================================================
-            if (holdDur > 0) {
-                const holdSteps = Math.round(holdDur * this.sampleRate);
-                const pHoldBase = peep + (vStartExp / C);
-                for (let i = 0; i < holdSteps; i++) {
-                    const pmus = this.pMusAt(tBreath);
-                    time[idx]     = t;
-                    pressure[idx] = pHoldBase - pmus;  // Pmus visible during hold
-                    volume[idx]   = vtDelivered * 1000;
-                    flow[idx]     = 0;
-                    idx++;
-                    t += dt;
-                    tBreath += dt;
-                }
-            }
-
-            // =================================================================
-            // EXPIRATION — Passive Exponential Decay
-            // =================================================================
-            const expSteps = Math.round(teEff * this.sampleRate);
-            const deltaPExp = vStartExp / C;
-
-            for (let i = 0; i < expSteps; i++) {
-                const tExp = i * dt;
-                const expDecay = Math.exp(-tExp / tau);
-                const vRemaining = vStartExp * expDecay;
-                const fExp = -(deltaPExp / R) * expDecay;
-                const pmus = this.pMusAt(tBreath);
-                const p = peep + (vRemaining / C) - pmus;
-                const vExhaled  = vStartExp * (1 - expDecay);
-                const vDisplayed = vtDelivered - vExhaled;
-
-                time[idx]     = t;
-                pressure[idx] = p;
-                volume[idx]   = vDisplayed * 1000;
-                flow[idx]     = fExp * 60;
-                idx++;
-                t += dt;
-                tBreath += dt;
-            }
-        }
-
-        return {
-            time:     time.slice(0, idx),
-            pressure: pressure.slice(0, idx),
-            volume:   volume.slice(0, idx),
-            flow:     flow.slice(0, idx),
-        };
-    }
+    _generatePC(numBreaths) { return generatePC(this, numBreaths); }
 
 
     // =========================================================================

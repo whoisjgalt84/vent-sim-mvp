@@ -341,7 +341,7 @@ console.log(`    Delivered VT = ${(pcVt1 * 1000).toFixed(1)} mL (expected ~707 m
 assert('PC Delivered VT (L)', pcVt1, 0.707, 0.02);
 
 // VT from steady-state should be essentially the same (no trapping)
-const pcVtSS1 = ventPC1._pcSteadyStateVt();
+const pcVtSS1 = ventPC1.steadyStateDeliveredVt;
 assert('PC Steady-state VT (L)', pcVtSS1, pcVt1, 0.02);
 
 // Minute ventilation
@@ -466,7 +466,7 @@ for (const cVal of [0.060, 0.050, 0.035, 0.025]) {
     const testVent = new Ventilator(testLung, {
         mode: 'pc-cmv', inspiratoryPressure: 15, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
     });
-    const vt = testVent._pcSteadyStateVt() * 1000;
+    const vt = testVent.steadyStateDeliveredVt * 1000;
     const ve = testVent.minuteVentilation;
     console.log(`    C=${(cVal*1000).toFixed(0)} mL/cmH₂O → VT=${vt.toFixed(0)} mL, V̇E=${ve.toFixed(1)} L/min`);
 }

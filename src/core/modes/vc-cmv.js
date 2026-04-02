@@ -73,7 +73,6 @@ export function generateVC(vent, numBreaths) {
     const C    = vent.lung.compliance;
 
     // Steady-state values
-    const autoPeepSS  = vent.autoPeep;
     const trappedVol  = vent.trappedVolume;
     const flowInsp    = vent.inspiratoryFlow;   // L/s, positive
 

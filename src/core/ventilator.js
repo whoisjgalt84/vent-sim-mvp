@@ -45,9 +45,23 @@
  * ============================================================================
  */
 
-import { LungModel } from './lung-model.js';
 import { generateVC, generateVCRamp, rampPIP } from './modes/vc-cmv.js';
 import { generatePC, pcTrappedVolume, pcAutoPeep, pcSteadyStateVt } from './modes/pc-cmv.js';
+
+const SUPPORTED_MODES = Object.freeze(['vc-cmv', 'pc-cmv']);
+const VC_FLOW_PATTERNS = Object.freeze(['square', 'ramp']);
+
+function assertSupportedMode(mode) {
+    if (!SUPPORTED_MODES.includes(mode)) {
+        throw new Error(`Unsupported ventilator mode: ${mode}`);
+    }
+}
+
+function assertSupportedFlowPattern(pattern) {
+    if (!VC_FLOW_PATTERNS.includes(pattern)) {
+        throw new Error(`Unsupported VC flow pattern: ${pattern}`);
+    }
+}
 
 
 export class Ventilator {
@@ -55,7 +69,7 @@ export class Ventilator {
     /**
      * Create a ventilator with a lung model and initial settings.
      *
-     * @param {LungModel} lungModel   - The patient's lung physics
+     * @param {import('./lung-model.js').LungModel} lungModel   - The patient's lung physics
      * @param {Object}    settings    - Operator settings
      * @param {string}    settings.mode              - 'vc-cmv' or 'pc-cmv'
      * @param {string}    settings.flowPattern       - 'square' or 'ramp' (VC only)
@@ -69,13 +83,16 @@ export class Ventilator {
     constructor(lungModel, settings = {}) {
         this.lung = lungModel;
 
-        // --- Mode ---
-        this.mode = settings.mode ?? 'vc-cmv';  // 'vc-cmv' or 'pc-cmv'
+                // --- Mode ---
+        this._mode = 'vc-cmv';
 
         // --- Flow Pattern (VC only) ---
         // 'square' = constant flow throughout inspiration
         // 'ramp'   = descending ramp (linear deceleration from peak to zero)
-        this.flowPattern = settings.flowPattern ?? 'square';
+        this._flowPattern = 'square';
+
+        this.mode = settings.mode ?? 'vc-cmv';       // validated setter
+        this.flowPattern = settings.flowPattern ?? 'square'; // validated setter
 
         // --- Inspiratory Hold ---
         // Duration of end-inspiratory pause (seconds). Both valves closed,
@@ -297,6 +314,25 @@ export class Ventilator {
     }
 
     /** I:E ratio as a readable string (e.g., "1:2.0") */
+        /** Current ventilator mode */
+    get mode() {
+        return this._mode;
+    }
+
+    set mode(value) {
+        assertSupportedMode(value);
+        this._mode = value;
+    }
+
+    /** Current VC flow pattern */
+    get flowPattern() {
+        return this._flowPattern;
+    }
+
+    set flowPattern(value) {
+        assertSupportedFlowPattern(value);
+        this._flowPattern = value;
+    }
     get ieRatioString() {
         const [i, e] = this.ieRatio;
         return `1:${(e / i).toFixed(1)}`;
@@ -595,13 +631,19 @@ export class Ventilator {
      *   {number[]} volume   - Displayed volume (mL)
      *   {number[]} flow     - Flow (L/min)
      */
-    generateBreathWaveforms(numBreaths = 4) {
+        generateBreathWaveforms(numBreaths = 4) {
+        assertSupportedMode(this.mode);
+
         if (this.mode === 'pc-cmv') {
             return this._generatePC(numBreaths);
         }
+
+        assertSupportedFlowPattern(this.flowPattern);
+
         if (this.flowPattern === 'ramp') {
             return this._generateVCRamp(numBreaths);
         }
+
         return this._generateVC(numBreaths);
     }
 
@@ -713,9 +755,14 @@ export class Ventilator {
         return this.mode === 'pc-cmv' ? this._pcSteadyStateVt() : this.tidalVolume;
     }
 
-    /** Effective tidal volume in mL */
+        /** Effective tidal volume in mL */
     get effectiveVtMl() {
         return this.effectiveVt * 1000;
+    }
+
+    /** Public steady-state delivered VT (L) */
+    get steadyStateDeliveredVt() {
+        return this.mode === 'pc-cmv' ? this._pcSteadyStateVt() : this.tidalVolume;
     }
 
 

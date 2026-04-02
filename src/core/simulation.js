@@ -252,15 +252,10 @@ export class SimulationEngine {
             this.neuralTimer -= neuralCycleTime;  // carry remainder for timing accuracy
             this.neuralInspActive = true;
 
-            // TRIGGER: patient effort during machine expiration → new breath
-            //
-            // Clinical equivalent: the patient's inspiratory effort creates a
-            // small flow or pressure deflection that the ventilator detects.
-            // We require a minimum 100ms into expiration to prevent
-            // immediate double-triggering.
-            if (this.phase === Phase.EXPIRATION && this.phaseTime > 0.10) {
-                this._startNewBreath('patient');
-            }
+            // Neural inspiration has begun.
+            // The ventilator does NOT trigger immediately — it will trigger
+            // only if the resulting pressure/flow deflection crosses the
+            // configured sensitivity threshold during expiration.
         }
     }
 
@@ -289,6 +284,38 @@ export class SimulationEngine {
         this.measuredPplat     = null;
         this.measuredVT_mL     = 0;
         this.peakInspFlow_Lpm  = 0;
+    }
+
+    /**
+     * Detect whether the patient's inspiratory effort has crossed the
+     * configured ventilator trigger threshold.
+     *
+     * Flow trigger:
+     *   During expiration, inspiratory effort reduces expiratory flow magnitude
+     *   and can create a positive deflection. We trigger when flow rises above
+     *   -triggerFlow_Lpm (i.e. toward zero / inspiratory direction).
+     *
+     * Pressure trigger:
+     *   We trigger when Paw falls below PEEP by triggerPressure_cmH2O.
+     */
+    _shouldPatientTrigger() {
+        if (this.patientRR <= 0 || this.vent.pMusMax <= 0) return false;
+        if (!this.neuralInspActive) return false;
+        if (this.phase !== Phase.EXPIRATION) return false;
+        if (this.phaseTime <= 0.10) return false; // anti-double-trigger guard
+
+        if (this.vent.triggerMode === 'flow') {
+            const triggerFlow = this.vent.triggerFlow_Lpm;   // positive number in L/min
+            const flowLpm = this.currentFlow * 60;
+            return flowLpm > -triggerFlow;
+        }
+
+        if (this.vent.triggerMode === 'pressure') {
+            const triggerDrop = this.vent.triggerPressure_cmH2O;
+            return this.currentPressure <= (this.vent.peep - triggerDrop);
+        }
+
+        return false;
     }
 
     /** Check for phase transitions based on timing. */
@@ -475,6 +502,11 @@ export class SimulationEngine {
     tick() {
         this._advanceNeural();
         this._computePhysics();
+
+        if (this._shouldPatientTrigger()) {
+            this._startNewBreath('patient');
+        }
+
         this._checkTransitions();
 
         // Volume display: delivered this breath (starts at 0 each breath)

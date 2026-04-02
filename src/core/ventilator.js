@@ -50,7 +50,13 @@ import { generatePC, pcTrappedVolume, pcAutoPeep, pcSteadyStateVt } from './mode
 
 const SUPPORTED_MODES = Object.freeze(['vc-cmv', 'pc-cmv']);
 const VC_FLOW_PATTERNS = Object.freeze(['square', 'ramp']);
+const TRIGGER_MODES = Object.freeze(['flow', 'pressure']);
 
+function assertSupportedTriggerMode(mode) {
+    if (!TRIGGER_MODES.includes(mode)) {
+        throw new Error(`Unsupported trigger mode: ${mode}`);
+    }
+}
 function assertSupportedMode(mode) {
     if (!SUPPORTED_MODES.includes(mode)) {
         throw new Error(`Unsupported ventilator mode: ${mode}`);
@@ -171,6 +177,14 @@ export class Ventilator {
         //
         this.pMusMax  = settings.pMusMax  ?? 0;    // cmH2O (0 = passive)
         this.neuralTi = settings.neuralTi ?? 1.0;  // seconds
+
+        // --- Trigger Settings ---
+        // flow: trigger when inspiratory deflection exceeds triggerFlow_Lpm
+        // pressure: trigger when Paw falls below PEEP by triggerPressure_cmH2O
+        this._triggerMode = 'flow';
+        this.triggerMode = settings.triggerMode ?? 'flow'; // 'flow' or 'pressure'
+        this.triggerFlow_Lpm = settings.triggerFlow_Lpm ?? 2.0;
+        this.triggerPressure_cmH2O = settings.triggerPressure_cmH2O ?? 1.0;
     }
 
 
@@ -333,6 +347,17 @@ export class Ventilator {
         assertSupportedFlowPattern(value);
         this._flowPattern = value;
     }
+    
+    /** Trigger mode (flow or pressure) */
+    get triggerMode() {
+    return this._triggerMode;
+    }
+
+    set triggerMode(value) {
+    assertSupportedTriggerMode(value);
+    this._triggerMode = value;
+    }
+
     get ieRatioString() {
         const [i, e] = this.ieRatio;
         return `1:${(e / i).toFixed(1)}`;
@@ -811,6 +836,9 @@ export class Ventilator {
                 ieRatio:             this.ieRatioString,
                 peep_cmH2O:          this.peep,
                 fio2:                this.fio2,
+                triggerMode:         this.triggerMode,
+                triggerFlow_Lpm:     this.triggerMode === 'flow' ? this.triggerFlow_Lpm : null,
+                triggerPressure_cmH2O: this.triggerMode === 'pressure' ? this.triggerPressure_cmH2O : null,
             },
 
             // --- Timing ---

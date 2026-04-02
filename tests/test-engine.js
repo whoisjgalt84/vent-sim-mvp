@@ -1061,6 +1061,8 @@ const ventTrig = new Ventilator(lungTrig, {
     mode: 'vc-cmv', flowPattern: 'square',
     tidalVolume: 0.500, respiratoryRate: 12, ieRatio: [1, 2], peep: 5,
     pMusMax: 8, neuralTi: 1.0,
+    triggerMode: 'flow',
+    triggerFlow_Lpm: 2.0,
 });
 
 const simTrig = new SimulationEngine(ventTrig, { sampleRate: 100, displaySeconds: 10 });

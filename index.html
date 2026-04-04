@@ -258,6 +258,28 @@
                            min="6" max="35" step="1" value="16">
                 </div>
 
+                <!-- Trigger Mode -->
+<div class="control" id="trigger-mode-control" style="display:none">
+    <div class="control__header">
+        <span class="control__label">Trigger Mode</span>
+        <span class="control__value" id="trigger-mode-display">Flow</span>
+    </div>
+    <div id="trigger-mode-group" class="ie-group">
+        <button class="ie-btn ie-btn--active" data-trigger="flow">Flow</button>
+        <button class="ie-btn" data-trigger="pressure">Pressure</button>
+    </div>
+</div>
+
+<!-- Trigger Sensitivity -->
+<div class="control" id="trigger-sensitivity-control" style="display:none">
+    <div class="control__header">
+        <span class="control__label" id="trigger-label">Flow Trigger</span>
+        <span class="control__value" id="trigger-display">2 L/min</span>
+    </div>
+    <input type="range" class="control__range" id="trigger-sensitivity"
+           min="0.5" max="5" step="0.5" value="2">
+</div>
+
                 <!-- Mechanics summary chips -->
                 <div class="mechanics-bar" id="mechanics-bar">
                     <!-- Populated by main.js -->

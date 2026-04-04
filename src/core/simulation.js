@@ -253,12 +253,22 @@ export class SimulationEngine {
             this.neuralInspActive = true;
 
             // Neural inspiration has begun.
-            // The ventilator does NOT trigger immediately — it will trigger
-            // only if the resulting pressure/flow deflection crosses the
-            // configured sensitivity threshold during expiration.
+            // The ventilator will trigger only if the resulting pressure/flow
+            // deflection crosses the configured threshold during expiration.
         }
     }
 
+    /**
+     * Determine whether patient effort has crossed the configured trigger
+     * threshold during expiration.
+     *
+     * Flow trigger:
+     *   Trigger when expiratory flow is pulled toward zero enough to cross
+     *   the configured threshold.
+     *
+     * Pressure trigger:
+     *   Trigger when Paw falls below total PEEP by the configured amount.
+     */
 
     // =========================================================================
     // BREATH STATE MACHINE
@@ -298,21 +308,28 @@ export class SimulationEngine {
      * Pressure trigger:
      *   We trigger when Paw falls below PEEP by triggerPressure_cmH2O.
      */
-    _shouldPatientTrigger() {
+        _shouldPatientTrigger() {
         if (this.patientRR <= 0 || this.vent.pMusMax <= 0) return false;
         if (!this.neuralInspActive) return false;
         if (this.phase !== Phase.EXPIRATION) return false;
-        if (this.phaseTime <= 0.10) return false; // anti-double-trigger guard
+        if (this.phaseTime <= 0.10) return false;  // anti-double-trigger guard
 
         if (this.vent.triggerMode === 'flow') {
-            const triggerFlow = this.vent.triggerFlow_Lpm;   // positive number in L/min
+            const triggerFlow = this.vent.triggerFlow;   // L/min, positive number
+            const passiveExpFlowLpm =
+                (-(this.volumeAboveEq / this.lung.compliance) / this.lung.resistance) * 60;
+
             const flowLpm = this.currentFlow * 60;
-            return flowLpm > -triggerFlow;
+
+            // Trigger when patient effort pulls expiratory flow toward zero
+            // by at least the configured amount.
+            const deflectionLpm = flowLpm - passiveExpFlowLpm;
+            return deflectionLpm >= triggerFlow;
         }
 
         if (this.vent.triggerMode === 'pressure') {
-            const triggerDrop = this.vent.triggerPressure_cmH2O;
-            return this.currentPressure <= (this.vent.peep - triggerDrop);
+            const triggerDrop = Math.abs(this.vent.triggerPressure); // e.g. 2 cmH2O
+            return this.currentPressure <= (this.vent.totalPeep - triggerDrop);
         }
 
         return false;

@@ -115,10 +115,12 @@ function init() {
     bindFlowPatternToggle();
     bindHoldToggle();
     bindPmusToggle();
+    bindTriggerControls();
+    updateTriggerUI();
     bindTransportControls();
     bindLoopToggle();
     bindCollapsibles();
-
+    
     // --- Handle window resize ---
     let resizeTimer;
     window.addEventListener('resize', () => {
@@ -344,6 +346,8 @@ function bindPmusToggle() {
             document.getElementById('pmus-display').textContent = 'Off';
             document.getElementById('pmus-sliders').style.display = 'none';
             document.getElementById('patient-rr-control').style.display = 'none';
+            document.getElementById('trigger-mode-control').style.display = 'none';
+            document.getElementById('trigger-sensitivity-control').style.display = 'none';
         } else {
             const pmax = parseInt(document.getElementById('pmus-max').value);
             const nti  = parseInt(document.getElementById('neural-ti').value) / 10;
@@ -358,6 +362,9 @@ function bindPmusToggle() {
             document.getElementById('pmus-display').textContent = `${pmax} cmH₂O`;
             document.getElementById('pmus-sliders').style.display = '';
             document.getElementById('patient-rr-control').style.display = '';
+            document.getElementById('trigger-mode-control').style.display = '';
+            document.getElementById('trigger-sensitivity-control').style.display = '';
+            updateTriggerUI();
         }
         updateModeLabel();
     });
@@ -382,6 +389,48 @@ function onPatientRRChange(slider) {
     document.getElementById('patient-rr-display').textContent = `${prr} /min`;
 }
 
+function bindTriggerControls() {
+    const group = document.getElementById('trigger-mode-group');
+    const slider = document.getElementById('trigger-sensitivity');
+
+    group.addEventListener('click', (e) => {
+        const btn = e.target.closest('.ie-btn');
+        if (!btn) return;
+
+        vent.triggerMode = btn.dataset.trigger;
+
+        group.querySelectorAll('.ie-btn').forEach(b =>
+            b.classList.remove('ie-btn--active'));
+        btn.classList.add('ie-btn--active');
+
+        updateTriggerUI();
+    });
+
+    slider.addEventListener('input', () => {
+        if (vent.triggerMode === 'flow') {
+            vent.triggerFlow = parseFloat(slider.value);
+        } else {
+            vent.triggerPressure = -parseFloat(slider.value);
+        }
+        updateTriggerUI();
+    });
+}
+
+function updateTriggerUI() {
+    const slider = document.getElementById('trigger-sensitivity');
+    const label  = document.getElementById('trigger-label');
+    const display = document.getElementById('trigger-display');
+
+    if (vent.triggerMode === 'flow') {
+        label.textContent = 'Flow Trigger';
+        display.textContent = `${vent.triggerFlow} L/min`;
+        slider.value = vent.triggerFlow;
+    } else {
+        label.textContent = 'Pressure Trigger';
+        display.textContent = `${Math.abs(vent.triggerPressure)} cmH₂O`;
+        slider.value = Math.abs(vent.triggerPressure);
+    }
+}
 
 // =============================================================================
 // TRANSPORT CONTROLS

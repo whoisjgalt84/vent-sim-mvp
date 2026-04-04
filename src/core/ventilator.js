@@ -179,12 +179,9 @@ export class Ventilator {
         this.neuralTi = settings.neuralTi ?? 1.0;  // seconds
 
         // --- Trigger Settings ---
-        // flow: trigger when inspiratory deflection exceeds triggerFlow_Lpm
-        // pressure: trigger when Paw falls below PEEP by triggerPressure_cmH2O
-        this._triggerMode = 'flow';
         this.triggerMode = settings.triggerMode ?? 'flow'; // 'flow' or 'pressure'
-        this.triggerFlow_Lpm = settings.triggerFlow_Lpm ?? 2.0;
-        this.triggerPressure_cmH2O = settings.triggerPressure_cmH2O ?? 1.0;
+        this.triggerFlow = settings.triggerFlow ?? 2;      // L/min (negative deflection)
+        this.triggerPressure = settings.triggerPressure ?? -2; // cmH2O (below PEEP)
     }
 
 
@@ -357,6 +354,10 @@ export class Ventilator {
     assertSupportedTriggerMode(value);
     this._triggerMode = value;
     }
+
+    get triggerModeLabel() {
+    return this.triggerMode === 'flow' ? 'Flow' : 'Pressure';
+}
 
     get ieRatioString() {
         const [i, e] = this.ieRatio;

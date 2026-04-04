@@ -1058,23 +1058,37 @@ section('TEST 28: SimEngine — Patient-Triggered Breaths');
 
 const lungTrig = new LungModel({ resistance: 10, compliance: 0.05 });
 const ventTrig = new Ventilator(lungTrig, {
-    mode: 'vc-cmv', flowPattern: 'square',
-    tidalVolume: 0.500, respiratoryRate: 12, ieRatio: [1, 2], peep: 5,
-    pMusMax: 8, neuralTi: 1.0,
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 12,
+    ieRatio: [1, 2],
+    peep: 5,
+    pMusMax: 8,
+    neuralTi: 1.0,
     triggerMode: 'flow',
-    triggerFlow_Lpm: 2.0,
+    triggerFlow: 2,
 });
 
 const simTrig = new SimulationEngine(ventTrig, { sampleRate: 100, displaySeconds: 10 });
 simTrig.patientRR = 20;  // Patient breathing faster than vent (20 vs 12)
 
-// Run for 15 seconds
-for (let i = 0; i < 1500; i++) {
+console.log(`    Trigger mode: ${ventTrig.triggerMode}, threshold: ${ventTrig.triggerFlow} L/min`);
+console.log(`    Ti=${ventTrig.inspiratoryTime.toFixed(2)}s  Te=${ventTrig.expiratoryTime.toFixed(2)}s`);
+
+let triggerSeen = false;
+
+// Run simulation for 15 seconds
+const simTime = 15;
+const steps = Math.floor(simTime / simTrig.dt);
+
+for (let i = 0; i < steps; i++) {
     simTrig.tick();
 }
 
 const bsTrig = simTrig.breathSummary;
 console.log(`    Vent RR=12, Patient RR=20`);
+console.log(`    Trigger mode: ${ventTrig.triggerMode}, threshold: ${ventTrig.triggerFlow} L/min`);
 console.log(`    Breaths in 15s: ${bsTrig.breathCount}`);
 console.log(`    Last trigger: ${bsTrig.triggerType}`);
 

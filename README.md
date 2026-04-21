@@ -45,3 +45,25 @@ but to make mechanical ventilation intuitive.
 ## Running Tests Locally
 
 From the project root:
+
+---
+
+## Clinical References
+
+The physics model, breath-state machine, and patient–ventilator interaction
+categories used in this simulator are grounded in the following sources:
+
+1. **Mireles-Cabodevila E, Vaporidi K, Blanch L, Chatburn RL.**
+   *Defining and Measuring Patient–Ventilator Interactions: 10 Fundamental Maxims.*
+   Respiratory Care, 2026. DOI: [10.1177/19433654261425219](https://doi.org/10.1177/19433654261425219)
+   Provides the framework for the equation of motion as the foundation of
+   patient–ventilator interaction, the three states of inspiration
+   (unassisted / active assisted / passive assisted), and the definitions of
+   synchrony, asynchrony, and work-shifting used throughout the engine.
+
+2. **Chatburn RL.**
+   *How to Interpret Ventilator Waveforms Using the Taxonomy for Modes of Mechanical Ventilation.*
+   Respiratory Care, 2026. DOI: [10.1177/19433654251395626](https://doi.org/10.1177/19433654251395626)
+   Basis for the mode taxonomy (VC-CMV, PC-CMV), the time-constant
+   derivations, and the waveform-interpretation procedure reflected in the
+   rendering layer.

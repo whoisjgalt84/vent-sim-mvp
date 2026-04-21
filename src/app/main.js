@@ -18,6 +18,24 @@
  *     - Changing VT, RR, mode → takes effect on next breath (realistic)
  *     - Changing R, C, PEEP → takes effect immediately (realistic)
  *
+ * ----------------------------------------------------------------------------
+ * Clinical References:
+ *
+ *   1. Mireles-Cabodevila E, Vaporidi K, Blanch L, Chatburn RL.
+ *      "Defining and Measuring Patient–Ventilator Interactions:
+ *       10 Fundamental Maxims."
+ *      Respiratory Care, 2026. DOI: 10.1177/19433654261425219
+ *      — Framework for patient-ventilator interaction categories
+ *        surfaced in the UI (trigger/cycle/peak phase differences,
+ *        assisted vs. controlled breath states).
+ *
+ *   2. Chatburn RL.
+ *      "How to Interpret Ventilator Waveforms Using the Taxonomy
+ *       for Modes of Mechanical Ventilation."
+ *      Respiratory Care, 2026. DOI: 10.1177/19433654251395626
+ *      — Reference for mode taxonomy labels (VC-CMV, PC-CMV) and
+ *        the waveform-reading conventions used by WaveformDisplay.
+ *
  * ============================================================================
  */
 

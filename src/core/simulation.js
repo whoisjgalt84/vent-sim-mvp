@@ -37,6 +37,24 @@
  *   occurs during machine expiration → patient-triggered breath.
  *   Pmus follows a half-sine: Pmus(t) = pMusMax × sin(π × t / neuralTi)
  *
+ * ----------------------------------------------------------------------------
+ * Clinical References:
+ *
+ *   1. Mireles-Cabodevila E, Vaporidi K, Blanch L, Chatburn RL.
+ *      "Defining and Measuring Patient–Ventilator Interactions:
+ *       10 Fundamental Maxims."
+ *      Respiratory Care, 2026. DOI: 10.1177/19433654261425219
+ *      — Basis for Pmus modeling, breath-state definitions, and the
+ *        three states of inspiration (unassisted / active assisted /
+ *        passive assisted) used in the state machine above.
+ *
+ *   2. Chatburn RL.
+ *      "How to Interpret Ventilator Waveforms Using the Taxonomy
+ *       for Modes of Mechanical Ventilation."
+ *      Respiratory Care, 2026. DOI: 10.1177/19433654251395626
+ *      — Basis for the Equation of Motion implementation, time-constant
+ *        derivations, and the VC/PC waveform behaviors simulated here.
+ *
  * ============================================================================
  */
 

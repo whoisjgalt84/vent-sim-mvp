@@ -172,6 +172,7 @@ export class SimulationEngine {
         // --- Breath Tracking ---
         this.breathCount     = 0;
         this.lastTriggerType = 'machine';  // 'machine' or 'patient'
+        this.triggerEvents   = [];         // delivered + failed trigger markers
 
         // --- Transport Controls ---
         this.running = true;
@@ -199,7 +200,7 @@ export class SimulationEngine {
             this.buffers.volume.push(0);
             this.buffers.flow.push(0);
         }
-        this._startNewBreath('machine');
+        this._startNewBreath('machine', this.globalTime);
     }
 
 
@@ -258,8 +259,12 @@ export class SimulationEngine {
             // small flow or pressure deflection that the ventilator detects.
             // We require a minimum 100ms into expiration to prevent
             // immediate double-triggering.
-            if (this.phase === Phase.EXPIRATION && this.phaseTime > 0.10) {
-                this._startNewBreath('patient');
+            if (this.phase === Phase.EXPIRATION) {
+                if (this.phaseTime > 0.10) {
+                    this._startNewBreath('patient', this.globalTime);
+                } else {
+                    this._recordTriggerEvent('failed', this.globalTime);
+                }
             }
         }
     }
@@ -269,14 +274,24 @@ export class SimulationEngine {
     // BREATH STATE MACHINE
     // =========================================================================
 
+    _recordTriggerEvent(type, time = this.globalTime) {
+        this.triggerEvents.push({ type, time });
+
+        const cutoff = time - this.displaySeconds - 1;
+        while (this.triggerEvents.length > 0 && this.triggerEvents[0].time < cutoff) {
+            this.triggerEvents.shift();
+        }
+    }
+
     /** Start a new breath (machine-triggered or patient-triggered). */
-    _startNewBreath(triggerType) {
+    _startNewBreath(triggerType, eventTime = this.globalTime) {
         this.phase = Phase.INSPIRATION;
         this.phaseTime = 0;
         this.volumeAtBreathStart = this.volumeAboveEq;
         this.breathCount++;
         this.lastTriggerType = triggerType;
         this.machineTimer = 0;
+        this._recordTriggerEvent(triggerType, eventTime);
 
         // Swap loop data: current (now complete) → completed, then reset current
         if (this.loopCurrent.pressure.length > 10) {
@@ -326,7 +341,7 @@ export class SimulationEngine {
                 // Machine backup timer: if machineTimer reaches Ttot,
                 // the machine fires regardless of patient effort.
                 if (this.machineTimer >= ttot) {
-                    this._startNewBreath('machine');
+                    this._startNewBreath('machine', this.globalTime + this.dt);
                 }
                 break;
         }
@@ -542,6 +557,7 @@ export class SimulationEngine {
         this.neuralInspActive  = false;
         this.breathCount       = 0;
         this.lastTriggerType   = 'machine';
+        this.triggerEvents     = [];
         this.measuredPIP       = 0;
         this.measuredPplat     = null;
         this.measuredVT_mL     = 0;
@@ -564,6 +580,11 @@ export class SimulationEngine {
 
     /** Is patient actively triggering breaths? */
     get isPatientTriggering() { return this.patientRR > 0; }
+
+    /** Trigger events visible on the scrolling waveform panels. */
+    getTriggerEvents(tMin = -Infinity, tMax = Infinity) {
+        return this.triggerEvents.filter(event => event.time >= tMin && event.time <= tMax);
+    }
 
     /** Display-ready summary of per-breath measurements */
     get breathSummary() {

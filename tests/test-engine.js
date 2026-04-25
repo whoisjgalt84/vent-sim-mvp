@@ -1022,6 +1022,9 @@ console.log(`    Breaths completed: ${bs1.breathCount}`);
 assert('Sim PIP converges to analytical', bs1.pip, analyticalPIP, 0.5);
 assert('Sim VT converges to analytical', bs1.vt_mL, analyticalVT, 5);
 assert('All breaths machine-triggered', bs1.triggerType === 'machine' ? 1 : 0, 1, 0);
+assert('Machine trigger markers recorded',
+    sim1.getTriggerEvents(sim1.globalTime - sim1.displaySeconds, sim1.globalTime)
+        .some(event => event.type === 'machine') ? 1 : 0, 1, 0);
 
 
 // =============================================================================
@@ -1072,18 +1075,53 @@ for (let i = 0; i < 1500; i++) {
 }
 
 const bsTrig = simTrig.breathSummary;
+const trigEvents = simTrig.getTriggerEvents(
+    simTrig.globalTime - simTrig.displaySeconds,
+    simTrig.globalTime
+);
 console.log(`    Vent RR=12, Patient RR=20`);
 console.log(`    Breaths in 15s: ${bsTrig.breathCount}`);
 console.log(`    Last trigger: ${bsTrig.triggerType}`);
+console.log(`    Trigger markers: ${trigEvents.length}`);
 
 // With patientRR=20, we expect ~5 breaths per 15s (20/min × 15/60 = 5)
 // Actually more, since the vent delivers at its own Ti, not the patient's
 assert('Patient triggers detected', bsTrig.triggerType === 'patient' ? 1 : 0, 1, 0);
 assert('Effective RR > vent RR', bsTrig.breathCount > (12 * 15 / 60) ? 1 : 0, 1, 0);
+assert('Trigger markers include patient breaths',
+    trigEvents.some(event => event.type === 'patient') ? 1 : 0, 1, 0);
 
 console.log('\n  ⚕️ Teaching point: When patient RR > vent RR, the patient triggers');
 console.log('     additional breaths. The effective RR follows the patient.');
 console.log('     This is normal Assist/Control behavior.');
+
+
+// =============================================================================
+// TEST 28B: SimEngine — Failed Trigger Metadata
+// =============================================================================
+section('TEST 28B: SimEngine — Failed Trigger Metadata');
+
+const lungFailed = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventFailed = new Ventilator(lungFailed, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 12, ieRatio: [1, 2], peep: 5,
+    pMusMax: 8, neuralTi: 1.0,
+});
+
+const simFailed = new SimulationEngine(ventFailed, { sampleRate: 100, displaySeconds: 10 });
+simFailed.patientRR = 35;  // First neural effort lands <100 ms into expiration
+
+for (let i = 0; i < 250; i++) {
+    simFailed.tick();
+}
+
+const failedEvents = simFailed.getTriggerEvents(0, simFailed.globalTime);
+const failedOnly = failedEvents.filter(event => event.type === 'failed');
+console.log(`    Breath count after 2.5 s: ${simFailed.breathCount}`);
+console.log(`    Failed trigger markers: ${failedOnly.length}`);
+
+assert('Failed trigger event recorded', failedOnly.length > 0 ? 1 : 0, 1, 0);
+assert('Failed trigger does not deliver a new breath', simFailed.breathCount, 1, 0);
 
 
 // =============================================================================

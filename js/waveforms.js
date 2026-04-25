@@ -127,8 +127,9 @@ export class WaveformRenderer {
      *
      * @param {number[]} timeData  - X values (seconds)
      * @param {number[]} valueData - Y values (in display units)
+     * @param {{ time: number, type: string }[]} triggerEvents - Overlay markers
      */
-    render(timeData, valueData) {
+    render(timeData, valueData, triggerEvents = []) {
         // Resize in case the window changed
         this._resizeCanvas();
 
@@ -237,6 +238,8 @@ export class WaveformRenderer {
         }
         ctx.stroke();
 
+        this._drawTriggerMarkers(ctx, triggerEvents, xScale, plot);
+
         // --- Draw Y-axis label (rotated, left side) ---
         ctx.save();
         ctx.fillStyle = this.color;
@@ -247,6 +250,79 @@ export class WaveformRenderer {
         ctx.rotate(-Math.PI / 2);
         ctx.fillText(this.label, 0, 0);
         ctx.restore();
+    }
+
+    _drawTriggerMarkers(ctx, triggerEvents, xScale, plot) {
+        if (!triggerEvents || triggerEvents.length === 0) return;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(plot.x, plot.y, plot.w, plot.h);
+        ctx.clip();
+
+        for (const event of triggerEvents) {
+            const x = xScale(event.time);
+
+            if (event.type === 'patient') {
+                this._drawPatientTriggerMarker(ctx, x, plot);
+            } else if (event.type === 'failed') {
+                this._drawFailedTriggerMarker(ctx, x, plot);
+            } else {
+                this._drawMachineTriggerMarker(ctx, x, plot);
+            }
+        }
+
+        ctx.restore();
+    }
+
+    _drawMachineTriggerMarker(ctx, x, plot) {
+        const top = plot.y + 2;
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, top + 11);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        ctx.beginPath();
+        ctx.arc(x, top + 3, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    _drawPatientTriggerMarker(ctx, x, plot) {
+        const top = plot.y + 2;
+
+        ctx.strokeStyle = '#4fc3f7';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, top + 14);
+        ctx.stroke();
+
+        ctx.fillStyle = '#4fc3f7';
+        ctx.beginPath();
+        ctx.moveTo(x, top + 4);
+        ctx.lineTo(x - 4, top + 11);
+        ctx.lineTo(x + 4, top + 11);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    _drawFailedTriggerMarker(ctx, x, plot) {
+        const bottom = plot.y + plot.h - 2;
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x, bottom);
+        ctx.lineTo(x, bottom - 12);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(x, bottom - 4, 3.2, 0, Math.PI * 2);
+        ctx.stroke();
     }
 }
 
@@ -597,9 +673,11 @@ export class WaveformDisplay {
 
         if (time.length < 2) return;
 
-        this.pressureRenderer.render(time, pressure);
-        this.volumeRenderer.render(time, volume);
-        this.flowRenderer.render(time, flow);
+        const triggerEvents = sim.getTriggerEvents(time[0], time[time.length - 1]);
+
+        this.pressureRenderer.render(time, pressure, triggerEvents);
+        this.volumeRenderer.render(time, volume, triggerEvents);
+        this.flowRenderer.render(time, flow, triggerEvents);
     }
 
     /**

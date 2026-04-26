@@ -37,8 +37,8 @@ export class WaveformRenderer {
         this.color     = options.color     ?? '#00ff87';
         this.bgColor   = options.bgColor   ?? '#0d1117';
         this.gridColor = options.gridColor ?? 'rgba(255,255,255,0.07)';
-        this.textColor = options.textColor ?? 'rgba(255,255,255,0.5)';
-        this.axisColor = options.axisColor ?? 'rgba(255,255,255,0.15)';
+        this.textColor = options.textColor ?? 'rgba(232,236,240,0.78)';
+        this.axisColor = options.axisColor ?? 'rgba(255,255,255,0.22)';
 
         // Y-axis range overrides (null = auto-scale from data)
         this.yMinFixed = options.yMin  ?? null;
@@ -46,7 +46,7 @@ export class WaveformRenderer {
         this.yStep     = options.yStep ?? null;
 
         // Layout margins (pixels) — room for axis labels
-        this.margin = { top: 8, right: 12, bottom: 22, left: 52 };
+        this.margin = { top: 8, right: 12, bottom: 24, left: 56 };
 
         // Resize canvas to match its CSS display size (for sharp rendering)
         this._resizeCanvas();
@@ -157,7 +157,7 @@ export class WaveformRenderer {
         const yScale = (v) => plot.y + plot.h - ((v - yMin) / (yMax - yMin)) * plot.h;
 
         // --- Draw horizontal grid lines and Y-axis labels ---
-        ctx.font = '10px monospace';
+        ctx.font = '11px monospace';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
 
@@ -193,7 +193,7 @@ export class WaveformRenderer {
 
             // Time label below plot area
             ctx.fillStyle = this.textColor;
-            ctx.font = '9px monospace';
+            ctx.font = '10px monospace';
             // Show relative seconds (mod 60 for readability)
             const label = Math.abs(t % 60).toString();
             ctx.fillText(label, px, plot.y + plot.h + 3);
@@ -243,10 +243,10 @@ export class WaveformRenderer {
         // --- Draw Y-axis label (rotated, left side) ---
         ctx.save();
         ctx.fillStyle = this.color;
-        ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+        ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.translate(13, plot.y + plot.h / 2);
+        ctx.translate(15, plot.y + plot.h / 2);
         ctx.rotate(-Math.PI / 2);
         ctx.fillText(this.label, 0, 0);
         ctx.restore();
@@ -375,10 +375,10 @@ export class LoopRenderer {
         this.traceColor = options.traceColor ?? 'rgba(255,255,255,0.35)';
         this.bgColor    = options.bgColor    ?? '#0d1117';
         this.gridColor  = options.gridColor  ?? 'rgba(255,255,255,0.07)';
-        this.textColor  = options.textColor  ?? 'rgba(255,255,255,0.5)';
-        this.axisColor  = options.axisColor  ?? 'rgba(255,255,255,0.15)';
+        this.textColor  = options.textColor  ?? 'rgba(232,236,240,0.78)';
+        this.axisColor  = options.axisColor  ?? 'rgba(255,255,255,0.22)';
 
-        this.margin = { top: 10, right: 12, bottom: 26, left: 48 };
+        this.margin = { top: 10, right: 12, bottom: 28, left: 52 };
 
         this._resizeCanvas();
     }
@@ -482,7 +482,7 @@ export class LoopRenderer {
         const yScale = (v) => plot.y + plot.h - ((v - yRange.lo) / (yRange.hi - yRange.lo)) * plot.h;
 
         // --- Grid lines: horizontal (Y) ---
-        ctx.font = '10px monospace';
+        ctx.font = '11px monospace';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
 
@@ -559,7 +559,7 @@ export class LoopRenderer {
 
         // --- X-axis label (bottom center) ---
         ctx.fillStyle = this.textColor;
-        ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
+        ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillText(this.xLabel, plot.x + plot.w / 2, plot.y + plot.h + 14);
@@ -567,10 +567,10 @@ export class LoopRenderer {
         // --- Y-axis label (rotated, left side) ---
         ctx.save();
         ctx.fillStyle = this.color;
-        ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
+        ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.translate(11, plot.y + plot.h / 2);
+        ctx.translate(13, plot.y + plot.h / 2);
         ctx.rotate(-Math.PI / 2);
         ctx.fillText(this.yLabel, 0, 0);
         ctx.restore();

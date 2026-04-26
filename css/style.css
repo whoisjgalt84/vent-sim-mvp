@@ -171,27 +171,27 @@ html, body {
 .controls {
     background: var(--bg-panel);
     border-right: 1px solid var(--border-panel);
-    padding: 12px;
+    padding: 14px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 18px;
 }
 
 .control-group {
     background: var(--bg-control);
     border-radius: var(--radius);
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: 1px solid var(--border-subtle);
 }
 
 .control-group__title {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 10px;
+    letter-spacing: 1.3px;
+    color: rgba(232, 236, 240, 0.92);
+    margin-bottom: 12px;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--border-subtle);
 }
@@ -228,7 +228,7 @@ html, body {
 
 /* Individual slider control */
 .control {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 .control:last-child {
@@ -239,17 +239,18 @@ html, body {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 .control__label {
-    font-size: 11px;
-    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-bright);
 }
 
 .control__value {
     font-family: 'Courier New', monospace;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: bold;
     color: var(--text-bright);
     min-width: 60px;
@@ -373,27 +374,27 @@ html, body {
 .parameters {
     background: var(--bg-panel);
     border-left: 1px solid var(--border-panel);
-    padding: 12px;
+    padding: 14px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .param-group {
     background: var(--bg-control);
     border-radius: var(--radius);
-    padding: 8px 10px;
+    padding: 10px 12px;
     border: 1px solid var(--border-subtle);
 }
 
 .param-group__title {
-    font-size: 9px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.2px;
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 6px;
+    color: rgba(232, 236, 240, 0.9);
+    margin-bottom: 8px;
 }
 
 /* Collapsible param group titles */
@@ -427,17 +428,17 @@ html, body {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 2px 0;
+    padding: 3px 0;
 }
 
 .param-row__label {
-    font-size: 11px;
-    color: var(--text-dim);
+    font-size: 12px;
+    color: rgba(232, 236, 240, 0.8);
 }
 
 .param-row__value {
     font-family: 'Courier New', monospace;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: bold;
     color: var(--text-bright);
 }
@@ -449,11 +450,12 @@ html, body {
 
 /* Large primary readouts (PIP, VT, RR) */
 .param-row--large .param-row__value {
-    font-size: 22px;
+    font-size: 26px;
 }
 
 .param-row--large .param-row__label {
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 700;
 }
 
 
@@ -463,10 +465,10 @@ html, body {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 3px;
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     letter-spacing: 0.5px;
 }
 
@@ -477,9 +479,9 @@ html, body {
 }
 
 .alert-badge--info {
-    background: rgba(79, 195, 247, 0.12);
-    color: var(--color-volume);
-    border: 1px solid rgba(79, 195, 247, 0.2);
+    background: rgba(79, 195, 247, 0.2);
+    color: #e8f8ff;
+    border: 1px solid rgba(79, 195, 247, 0.42);
 }
 
 .alert-badge--warning {
@@ -763,4 +765,15 @@ html, body {
 .parameters::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 2px;
+}
+
+/* Readability overrides for disclosure indicators */
+.control-group__title[data-collapsible]::after {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.param-group__title[data-collapsible]::after {
+    font-size: 10px;
+    opacity: 0.7;
 }

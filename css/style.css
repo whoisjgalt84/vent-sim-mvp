@@ -42,6 +42,8 @@
     /* Borders */
     --border-subtle:  rgba(255, 255, 255, 0.06);
     --border-panel:   rgba(255, 255, 255, 0.08);
+    --border:         rgba(255, 255, 255, 0.1);
+    --surface:        #18212c;
 
     /* Spacing */
     --gap: 10px;
@@ -64,7 +66,7 @@ html, body {
 
 .app {
     display: grid;
-    grid-template-columns: 260px 1fr 220px;
+    grid-template-columns: 240px minmax(0, 1fr) 240px;
     grid-template-rows: auto 1fr;
     height: 100vh;
     gap: 0;
@@ -72,13 +74,21 @@ html, body {
 
 .header {
     grid-column: 1 / -1;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
-    padding: 6px 16px;
+    gap: 14px;
+    padding: 8px 14px;
     background: var(--bg-panel);
     border-bottom: 1px solid var(--border-panel);
-    min-height: 38px;
+    min-height: 46px;
+}
+
+.header__status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
 }
 
 .header__mode {
@@ -97,7 +107,11 @@ html, body {
 
 .header__alerts {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
+    justify-self: end;
+    justify-content: flex-end;
+    min-width: 0;
 }
 
 
@@ -107,11 +121,36 @@ html, body {
     display: flex;
     align-items: center;
     gap: 8px;
+    justify-self: center;
+}
+
+.header__status-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+}
+
+.header__status-chip::before {
+    content: 'Breath';
+    margin-right: 6px;
+    color: var(--text-dim);
+}
+
+.header__transport-extra {
+    display: none;
 }
 
 .transport-btn {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border: 1px solid var(--border);
     border-radius: 4px;
     background: var(--surface);
@@ -138,6 +177,13 @@ html, body {
     gap: 2px;
 }
 
+.speed-group--status {
+    padding: 2px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
 .speed-btn {
     padding: 2px 8px;
     border: 1px solid var(--border);
@@ -148,6 +194,21 @@ html, body {
     cursor: pointer;
     transition: all 0.15s;
 }
+
+.speed-group--status .speed-btn {
+    min-width: 34px;
+    padding: 4px 8px;
+    font-size: 0;
+}
+
+.speed-group--status .speed-btn::after {
+    content: attr(data-speed) 'x';
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.speed-group--status .speed-btn:first-child { border-radius: 999px 0 0 999px; }
+.speed-group--status .speed-btn:last-child  { border-radius: 0 999px 999px 0; }
 
 .speed-btn:first-child { border-radius: 3px 0 0 3px; }
 .speed-btn:last-child  { border-radius: 0 3px 3px 0; }
@@ -235,6 +296,27 @@ html, body {
     margin-bottom: 0;
 }
 
+.control--primary {
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.control--secondary {
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    opacity: 0.88;
+}
+
+.control--secondary .control__label {
+    color: rgba(232, 236, 240, 0.72);
+}
+
+.control--secondary .control__value {
+    color: rgba(232, 236, 240, 0.88);
+}
+
 .control__header {
     display: flex;
     justify-content: space-between;
@@ -311,8 +393,8 @@ html, body {
 .waveforms {
     display: flex;
     flex-direction: column;
-    padding: 8px;
-    gap: 4px;
+    padding: 10px 12px 12px;
+    gap: 6px;
     min-width: 0;
     min-height: 0;        /* Allow grid child to shrink below content size */
     overflow: hidden;      /* Prevent content from pushing layout */
@@ -338,10 +420,11 @@ html, body {
 
 .loop-row {
     display: flex;
-    gap: 4px;
+    gap: 8px;
     flex: 0 0 auto;
-    height: 160px;
-    min-height: 120px;
+    height: 136px;
+    min-height: 104px;
+    margin-top: 10px;
 }
 
 .loop-row--hidden {
@@ -374,27 +457,34 @@ html, body {
 .parameters {
     background: var(--bg-panel);
     border-left: 1px solid var(--border-panel);
-    padding: 14px;
+    padding: 16px 14px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 }
 
 .param-group {
-    background: var(--bg-control);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
     border-radius: var(--radius);
-    padding: 10px 12px;
-    border: 1px solid var(--border-subtle);
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .param-group__title {
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.3px;
     color: rgba(232, 236, 240, 0.9);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+.param-group__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 /* Collapsible param group titles */
@@ -428,7 +518,7 @@ html, body {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 3px 0;
+    padding: 4px 0;
 }
 
 .param-row__label {

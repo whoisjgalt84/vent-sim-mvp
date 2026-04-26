@@ -14,15 +14,23 @@
     <!-- HEADER — Mode indicator and safety alerts                        -->
     <!-- ================================================================ -->
     <header class="header">
-        <div class="header__mode" id="mode-label">VC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">set-point</span></div>
+        <div class="header__status">
+            <div class="header__mode" id="mode-label">VC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">set-point</span></div>
+            <span class="header__status-chip" id="breath-info">#0</span>
+            <div class="speed-group speed-group--status" id="speed-group">
+                <button class="speed-btn speed-btn--active" data-speed="1">1Ã—</button>
+                <button class="speed-btn" data-speed="2">2Ã—</button>
+                <button class="speed-btn" data-speed="4">4Ã—</button>
+            </div>
+        </div>
         <div class="header__transport">
             <button class="transport-btn" id="btn-pause" title="Pause/Play">⏸</button>
-            <div class="speed-group" id="speed-group">
+            <div class="speed-group header__transport-extra" aria-hidden="true">
                 <button class="speed-btn speed-btn--active" data-speed="1">1×</button>
                 <button class="speed-btn" data-speed="2">2×</button>
                 <button class="speed-btn" data-speed="4">4×</button>
             </div>
-            <span class="transport-label" id="breath-info">Breath #0</span>
+            <span class="transport-label header__transport-extra">Breath #0</span>
             <button class="transport-btn" id="btn-loops" title="Toggle P-V / F-V Loops">⊙</button>
         </div>
         <div class="header__alerts" id="alerts">
@@ -52,7 +60,7 @@
             <div class="control-group__body">
 
                 <!-- Tidal Volume (VC only) -->
-                <div class="control" id="vt-control">
+                <div class="control control--primary" id="vt-control">
                     <div class="control__header">
                         <span class="control__label">Tidal Volume</span>
                         <span class="control__value" id="vt-display">500 mL</span>
@@ -62,7 +70,7 @@
                 </div>
 
                 <!-- Inspiratory Pressure (PC only) -->
-                <div class="control control--hidden" id="pinsp-control">
+                <div class="control control--primary control--hidden" id="pinsp-control">
                     <div class="control__header">
                         <span class="control__label">P<sub>insp</sub> above PEEP</span>
                         <span class="control__value" id="pinsp-display">15 cmH₂O</span>
@@ -72,7 +80,7 @@
                 </div>
 
                 <!-- Flow Pattern (VC only) -->
-                <div class="control" id="flow-pattern-control">
+                <div class="control control--secondary" id="flow-pattern-control">
                     <div class="control__header">
                         <span class="control__label">Flow Pattern</span>
                         <span class="control__value" id="flow-pattern-display">Square</span>
@@ -88,7 +96,7 @@
                 </div>
 
                 <!-- Respiratory Rate -->
-                <div class="control">
+                <div class="control control--primary">
                     <div class="control__header">
                         <span class="control__label">Resp Rate</span>
                         <span class="control__value" id="rr-display">14 /min</span>
@@ -98,7 +106,7 @@
                 </div>
 
                 <!-- I:E Ratio -->
-                <div class="control">
+                <div class="control control--primary">
                     <div class="control__header">
                         <span class="control__label">I:E Ratio</span>
                         <span class="control__value" id="ie-display">1:2.0</span>
@@ -113,7 +121,7 @@
                 </div>
 
                 <!-- PEEP -->
-                <div class="control">
+                <div class="control control--primary">
                     <div class="control__header">
                         <span class="control__label">PEEP</span>
                         <span class="control__value" id="peep-display">5 cmH₂O</span>
@@ -123,7 +131,7 @@
                 </div>
 
                 <!-- FiO2 -->
-                <div class="control">
+                <div class="control control--secondary">
                     <div class="control__header">
                         <span class="control__label">FiO₂</span>
                         <span class="control__value" id="fio2-display">40%</span>

@@ -32,6 +32,7 @@
             </div>
             <span class="transport-label header__transport-extra">Breath #0</span>
             <button class="transport-btn" id="btn-loops" title="Toggle P-V / F-V Loops">⊙</button>
+            <button class="transport-btn transport-btn--label" id="btn-teaching-mode" type="button" aria-pressed="false" title="Toggle Teaching Mode">Teach</button>
         </div>
         <div class="header__alerts" id="alerts">
             <!-- Populated by main.js -->
@@ -304,14 +305,14 @@
     <aside class="parameters">
 
         <!-- Primary Readouts -->
-        <div class="param-group">
+        <div class="param-group param-group--teaching">
             <div class="param-group__title" data-collapsible>Pressures</div>
             <div class="param-group__body">
-                <div class="param-row param-row--large">
+                <div class="param-row param-row--large teaching-key">
                     <span class="param-row__label">PIP</span>
                     <span class="param-row__value param-row__value--pressure" id="param-pip">—</span>
                 </div>
-                <div class="param-row param-row--large">
+                <div class="param-row param-row--large teaching-key">
                     <span class="param-row__label">Pplat</span>
                     <span class="param-row__value param-row__value--pressure" id="param-pplat">—</span>
                 </div>
@@ -319,9 +320,13 @@
                     <span class="param-row__label">P<sub>insp</sub></span>
                     <span class="param-row__value param-row__value--pressure" id="param-pinsp">—</span>
                 </div>
-                <div class="param-row">
+                <div class="param-row teaching-key">
                     <span class="param-row__label">MAP</span>
                     <span class="param-row__value param-row__value--pressure" id="param-map">—</span>
+                </div>
+                <div class="param-row param-row--large teaching-key teaching-only">
+                    <span class="param-row__label">RR</span>
+                    <span class="param-row__value param-row__value--volume" id="param-rr">â€”</span>
                 </div>
                 <div class="param-row">
                     <span class="param-row__label">ΔP<sub>drive</sub></span>
@@ -334,10 +339,10 @@
             </div>
         </div>
 
-        <div class="param-group">
+        <div class="param-group param-group--teaching">
             <div class="param-group__title" data-collapsible>PEEP</div>
             <div class="param-group__body">
-                <div class="param-row">
+                <div class="param-row teaching-key">
                     <span class="param-row__label">Set PEEP</span>
                     <span class="param-row__value" id="param-peep-set">—</span>
                 </div>
@@ -352,10 +357,10 @@
             </div>
         </div>
 
-        <div class="param-group">
+        <div class="param-group param-group--teaching">
             <div class="param-group__title" data-collapsible>Volumes & Flow</div>
             <div class="param-group__body">
-                <div class="param-row param-row--large">
+                <div class="param-row param-row--large teaching-key">
                     <span class="param-row__label" id="vt-param-label">V<sub>T</sub></span>
                     <span class="param-row__value param-row__value--volume" id="param-vt">—</span>
                 </div>

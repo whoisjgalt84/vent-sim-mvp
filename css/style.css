@@ -163,6 +163,14 @@ html, body {
     transition: all 0.15s;
 }
 
+.transport-btn--label {
+    width: auto;
+    min-width: 74px;
+    padding: 0 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+}
+
 .transport-btn:hover {
     border-color: var(--color-pressure);
 }
@@ -451,6 +459,13 @@ html, body {
     border-color: rgba(79, 195, 247, 0.3);
 }
 
+.transport-btn--teaching-active {
+    color: var(--text-bright);
+    background: rgba(74, 158, 255, 0.22);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 8px rgba(74, 158, 255, 0.16);
+}
+
 
 /* --- Monitored Parameters Panel (Right) --- */
 
@@ -546,6 +561,112 @@ html, body {
 .param-row--large .param-row__label {
     font-size: 13px;
     font-weight: 700;
+}
+
+.teaching-only {
+    display: none;
+}
+
+
+/* --- Teaching Mode --- */
+
+body.teaching-mode .app {
+    grid-template-columns: 0 minmax(0, 1fr) 208px;
+}
+
+body.teaching-mode .controls {
+    display: none;
+}
+
+body.teaching-mode .waveforms {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+}
+
+body.teaching-mode .parameters {
+    grid-column: 3;
+    grid-row: 2;
+    min-width: 0;
+}
+
+body.teaching-mode #btn-loops {
+    display: none;
+}
+
+body.teaching-mode .waveforms {
+    padding: 6px 10px 8px;
+    gap: 4px;
+}
+
+body.teaching-mode .loop-row {
+    display: none;
+}
+
+body.teaching-mode .parameters {
+    padding: 10px 10px 12px;
+    gap: 8px;
+}
+
+body.teaching-mode .parameters .param-group:not(.param-group--teaching) {
+    display: none;
+}
+
+body.teaching-mode .parameters .param-group {
+    padding: 10px 12px;
+}
+
+body.teaching-mode .parameters .param-group__title {
+    margin-bottom: 8px;
+    font-size: 10px;
+    letter-spacing: 1.1px;
+}
+
+body.teaching-mode .parameters .param-group__title[data-collapsible] {
+    cursor: default;
+    pointer-events: none;
+}
+
+body.teaching-mode .parameters .param-group__title[data-collapsible]::after {
+    display: none;
+}
+
+body.teaching-mode .parameters .param-group__body {
+    display: flex !important;
+    gap: 3px;
+}
+
+body.teaching-mode .parameters .param-row {
+    display: none;
+}
+
+body.teaching-mode .parameters .param-row.teaching-key {
+    display: flex;
+    padding: 3px 0;
+}
+
+body.teaching-mode .parameters .param-row__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-bright);
+}
+
+body.teaching-mode .parameters .param-row__value {
+    font-size: 20px;
+}
+
+body.teaching-mode .parameters .param-row--large .param-row__label {
+    font-size: 13px;
+}
+
+body.teaching-mode .parameters .param-row--large .param-row__value {
+    font-size: 28px;
+    line-height: 1;
+}
+
+body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
+    font-size: 20px;
 }
 
 

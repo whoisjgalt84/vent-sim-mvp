@@ -117,6 +117,7 @@ function init() {
     bindPmusToggle();
     bindTransportControls();
     bindLoopToggle();
+    bindTeachingModeToggle();
     bindCollapsibles();
 
     // --- Handle window resize ---
@@ -436,6 +437,24 @@ function bindLoopToggle() {
     btn.classList.add('transport-btn--active');
 }
 
+function bindTeachingModeToggle() {
+    const btn = document.getElementById('btn-teaching-mode');
+    if (!btn) return;
+
+    const setTeachingMode = (enabled) => {
+        document.body.classList.toggle('teaching-mode', enabled);
+        btn.classList.toggle('transport-btn--teaching-active', enabled);
+        btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        btn.textContent = enabled ? 'Teach On' : 'Teach Off';
+        renderFrame();
+    };
+
+    setTeachingMode(false);
+    btn.addEventListener('click', () => {
+        setTeachingMode(!document.body.classList.contains('teaching-mode'));
+    });
+}
+
 
 // =============================================================================
 // COLLAPSIBLE SECTIONS
@@ -575,6 +594,7 @@ function updateParams() {
 
     const displayVt = m.vt_mL > 0 ? m.vt_mL : s.volumes.tidalVolume_mL;
     setText('param-vt',   `${Math.round(displayVt)}`);
+    setText('param-rr',   `${s.settings.respiratoryRate}`);
     setText('param-ve',   `${s.volumes.minuteVentilation}`);
     setText('param-flow', `${s.timing.inspFlow_Lpm}`);
 

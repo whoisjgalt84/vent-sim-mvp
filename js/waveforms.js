@@ -133,6 +133,16 @@ export class WaveformRenderer {
         // Resize in case the window changed
         this._resizeCanvas();
 
+        const teachingMode = document.body.classList.contains('teaching-mode');
+        const gridFont = teachingMode ? '13px monospace' : '11px monospace';
+        const timeFont = teachingMode ? '12px monospace' : '10px monospace';
+        const axisLabelFont = teachingMode
+            ? 'bold 16px system-ui, -apple-system, sans-serif'
+            : 'bold 13px system-ui, -apple-system, sans-serif';
+        this.margin = teachingMode
+            ? { top: 8, right: 12, bottom: 30, left: 66 }
+            : { top: 8, right: 12, bottom: 24, left: 56 };
+
         const ctx  = this.ctx;
         const plot = this.plotArea;
 
@@ -157,7 +167,7 @@ export class WaveformRenderer {
         const yScale = (v) => plot.y + plot.h - ((v - yMin) / (yMax - yMin)) * plot.h;
 
         // --- Draw horizontal grid lines and Y-axis labels ---
-        ctx.font = '11px monospace';
+        ctx.font = gridFont;
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
 
@@ -193,7 +203,7 @@ export class WaveformRenderer {
 
             // Time label below plot area
             ctx.fillStyle = this.textColor;
-            ctx.font = '10px monospace';
+            ctx.font = timeFont;
             // Show relative seconds (mod 60 for readability)
             const label = Math.abs(t % 60).toString();
             ctx.fillText(label, px, plot.y + plot.h + 3);
@@ -243,7 +253,7 @@ export class WaveformRenderer {
         // --- Draw Y-axis label (rotated, left side) ---
         ctx.save();
         ctx.fillStyle = this.color;
-        ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
+        ctx.font = axisLabelFont;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.translate(15, plot.y + plot.h / 2);

@@ -127,6 +127,7 @@ export class SimulationEngine {
         this.displaySeconds = options.displaySeconds  ?? 10;
         this.triggerEventRetentionSeconds = options.triggerEventRetentionSeconds ?? 60;
         this.triggerLockoutSeconds = 0.10;
+        this.triggerPressureDropCmH2O = 1.0;
 
         // --- Ring Buffers (streaming display data) ---
         const bufSize = this.displaySeconds * this.sampleRate;
@@ -158,6 +159,8 @@ export class SimulationEngine {
         this.neuralTimer = 0;             // seconds within current neural cycle
         this.neuralInspActive = false;    // currently in neural inspiration?
         this.pendingPatientTrigger = false; // effort began during expiratory lockout
+        this.patientEffortStartedThisTick = false;
+        this.scheduledBreathTrigger = null;
 
         // --- Per-Breath Measurements ---
         //   Updated each breath for the parameter display panel.
@@ -240,6 +243,8 @@ export class SimulationEngine {
      * triggers a ventilator breath.
      */
     _advanceNeural() {
+        this.patientEffortStartedThisTick = false;
+
         if (this.patientRR <= 0) {
             this.pendingPatientTrigger = false;
             return;
@@ -255,12 +260,11 @@ export class SimulationEngine {
             this.neuralInspActive = false;
         }
 
-        this._resolvePendingPatientTrigger();
-
         // Start new neural cycle when full cycle time elapsed
         if (this.neuralTimer >= neuralCycleTime) {
             this.neuralTimer -= neuralCycleTime;  // carry remainder for timing accuracy
             this.neuralInspActive = true;
+            this.patientEffortStartedThisTick = true;
 
             // TRIGGER: patient effort during machine expiration → new breath
             //
@@ -269,15 +273,11 @@ export class SimulationEngine {
             // We require a minimum 100ms into expiration to prevent
             // immediate double-triggering.
             if (this.phase === Phase.EXPIRATION) {
-                if (this.phaseTime > this.triggerLockoutSeconds) {
-                    // Patient effort wins when it arrives on the same tick
-                    // as the machine timer.
-                    this._startNewBreath('patient', this.globalTime);
-                } else {
-                    this.pendingPatientTrigger = true;
-                }
+                this.pendingPatientTrigger = true;
             }
         }
+
+        this._resolvePendingPatientTrigger();
     }
 
 
@@ -296,12 +296,6 @@ export class SimulationEngine {
         if (!this.neuralInspActive) {
             this.pendingPatientTrigger = false;
             this._recordTriggerEvent('failed', this.globalTime);
-            return;
-        }
-
-        if (this.phaseTime > this.triggerLockoutSeconds) {
-            this.pendingPatientTrigger = false;
-            this._startNewBreath('patient', this.globalTime);
         }
     }
 
@@ -371,7 +365,8 @@ export class SimulationEngine {
             case Phase.EXPIRATION:
                 // Machine backup timer: if machineTimer reaches Ttot,
                 // the machine fires regardless of patient effort.
-                if (this.machineTimer >= ttot) {
+                if (this.machineTimer >= ttot &&
+                    this.scheduledBreathTrigger !== 'patient') {
                     this._startNewBreath('machine', this.globalTime);
                 }
                 break;
@@ -401,6 +396,22 @@ export class SimulationEngine {
             case Phase.EXPIRATION:
                 this._computeExpiration(R, C, peep, pmus, dt);
                 break;
+        }
+    }
+
+    _queuePatientTriggerIfThresholdMet() {
+        if (!this.pendingPatientTrigger) return;
+        if (this.phase !== Phase.EXPIRATION) return;
+        if (!this.neuralInspActive) return;
+        if (this.phaseTime <= this.triggerLockoutSeconds) return;
+
+        const triggerThreshold = this.vent.peep - this.triggerPressureDropCmH2O;
+        const timerTie = this.patientEffortStartedThisTick &&
+            (this.machineTimer + this.dt) >= this.vent.totalCycleTime;
+
+        if (this.currentPressure <= triggerThreshold || timerTie) {
+            this.pendingPatientTrigger = false;
+            this.scheduledBreathTrigger = 'patient';
         }
     }
 
@@ -499,8 +510,7 @@ export class SimulationEngine {
         this.volumeAboveEq = Math.max(0, this.volumeAboveEq);
 
         // Paw = PEEP + V/C + R × V̇  (equals PEEP for passive exp)
-        this.currentPressure =
-            peep + this.volumeAboveEq / C + R * flow;
+        this.currentPressure = peep - pmus;
     }
 
 
@@ -521,6 +531,7 @@ export class SimulationEngine {
     tick() {
         this._advanceNeural();
         this._computePhysics();
+        this._queuePatientTriggerIfThresholdMet();
         this._checkTransitions();
 
         // Volume display: delivered this breath (starts at 0 each breath)
@@ -541,6 +552,12 @@ export class SimulationEngine {
         this.globalTime   += this.dt;
         this.phaseTime    += this.dt;
         this.machineTimer += this.dt;
+
+        if (this.scheduledBreathTrigger) {
+            const triggerType = this.scheduledBreathTrigger;
+            this.scheduledBreathTrigger = null;
+            this._startNewBreath(triggerType, this.globalTime);
+        }
     }
 
     /**
@@ -587,6 +604,8 @@ export class SimulationEngine {
         this.neuralTimer       = 0;
         this.neuralInspActive  = false;
         this.pendingPatientTrigger = false;
+        this.patientEffortStartedThisTick = false;
+        this.scheduledBreathTrigger = null;
         this.breathCount       = 0;
         this.lastTriggerType   = 'machine';
         this.triggerEvents     = [];

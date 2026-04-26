@@ -1091,6 +1091,18 @@ assert('Effective RR > vent RR', bsTrig.breathCount > (12 * 15 / 60) ? 1 : 0, 1,
 assert('Trigger markers include patient breaths',
     trigEvents.some(event => event.type === 'patient') ? 1 : 0, 1, 0);
 
+const trigTimes = simTrig.buffers.time.toArray();
+const trigPressures = simTrig.buffers.pressure.toArray();
+const firstPatientEvent = trigEvents.find(event => event.type === 'patient');
+const firstPatientIdx = trigTimes.findIndex(t => t >= firstPatientEvent.time);
+if (firstPatientIdx > 0) {
+    const preTriggerWindow = trigPressures.slice(Math.max(0, firstPatientIdx - 8), firstPatientIdx);
+    const preTriggerNadir = Math.min(...preTriggerWindow);
+    console.log(`    Pre-trigger nadir: ${preTriggerNadir.toFixed(2)} cmH2O (PEEP=${ventTrig.peep})`);
+    assert('Patient-triggered breath has pre-trigger Paw dip',
+        preTriggerNadir < (ventTrig.peep - 0.5) ? 1 : 0, 1, 0);
+}
+
 console.log('\n  ⚕️ Teaching point: When patient RR > vent RR, the patient triggers');
 console.log('     additional breaths. The effective RR follows the patient.');
 console.log('     This is normal Assist/Control behavior.');

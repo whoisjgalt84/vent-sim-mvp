@@ -1097,31 +1097,63 @@ console.log('     This is normal Assist/Control behavior.');
 
 
 // =============================================================================
-// TEST 28B: SimEngine — Failed Trigger Metadata
+// TEST 28B: SimEngine — Lockout Effort Triggers After 100 ms
 // =============================================================================
-section('TEST 28B: SimEngine — Failed Trigger Metadata');
+section('TEST 28B: SimEngine — Lockout Effort Triggers After 100 ms');
 
-const lungFailed = new LungModel({ resistance: 10, compliance: 0.05 });
-const ventFailed = new Ventilator(lungFailed, {
+const lungLockout = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventLockout = new Ventilator(lungLockout, {
     mode: 'vc-cmv', flowPattern: 'square',
     tidalVolume: 0.500, respiratoryRate: 12, ieRatio: [1, 2], peep: 5,
     pMusMax: 8, neuralTi: 1.0,
 });
 
-const simFailed = new SimulationEngine(ventFailed, { sampleRate: 100, displaySeconds: 10 });
-simFailed.patientRR = 35;  // First neural effort lands <100 ms into expiration
+const simLockout = new SimulationEngine(ventLockout, { sampleRate: 100, displaySeconds: 10 });
+simLockout.patientRR = 35;  // First neural effort lands <100 ms into expiration
 
 for (let i = 0; i < 250; i++) {
-    simFailed.tick();
+    simLockout.tick();
 }
 
-const failedEvents = simFailed.getTriggerEvents(0, simFailed.globalTime);
-const failedOnly = failedEvents.filter(event => event.type === 'failed');
-console.log(`    Breath count after 2.5 s: ${simFailed.breathCount}`);
-console.log(`    Failed trigger markers: ${failedOnly.length}`);
+const lockoutEvents = simLockout.getTriggerEvents(0, simLockout.globalTime);
+const lockoutPatient = lockoutEvents.filter(event => event.type === 'patient');
+const lockoutFailed = lockoutEvents.filter(event => event.type === 'failed');
+console.log(`    Breath count after 2.5 s: ${simLockout.breathCount}`);
+console.log(`    Patient trigger markers: ${lockoutPatient.length}`);
+console.log(`    Failed trigger markers: ${lockoutFailed.length}`);
 
-assert('Failed trigger event recorded', failedOnly.length > 0 ? 1 : 0, 1, 0);
-assert('Failed trigger does not deliver a new breath', simFailed.breathCount, 1, 0);
+assert('Lockout-onset effort later triggers', lockoutPatient.length > 0 ? 1 : 0, 1, 0);
+assert('Persistent effort delivers a second breath', simLockout.breathCount, 2, 0);
+assert('Persistent effort is not marked failed', lockoutFailed.length, 0, 0);
+
+
+// =============================================================================
+// TEST 28C: SimEngine — Patient Trigger Wins Timer Ties
+// =============================================================================
+section('TEST 28C: SimEngine — Patient Trigger Wins Timer Ties');
+
+const lungTie = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventTie = new Ventilator(lungTie, {
+    mode: 'vc-cmv', flowPattern: 'square',
+    tidalVolume: 0.500, respiratoryRate: 12, ieRatio: [1, 2], peep: 5,
+    pMusMax: 8, neuralTi: 1.0,
+});
+
+const simTie = new SimulationEngine(ventTie, { sampleRate: 100, displaySeconds: 10 });
+simTie.patientRR = 12;  // Neural onset aligns with the machine timer
+
+for (let i = 0; i < 700; i++) {
+    simTie.tick();
+}
+
+const tieEvents = simTie.getTriggerEvents(0, simTie.globalTime);
+const tieSecondEvent = tieEvents[1];
+console.log(`    Breath count after 7.0 s: ${simTie.breathCount}`);
+console.log(`    Second trigger: ${tieSecondEvent?.type ?? 'none'} at ${tieSecondEvent?.time?.toFixed(2) ?? 'n/a'} s`);
+
+assert('Tie produces a second breath', simTie.breathCount, 2, 0);
+assert('Patient trigger wins timer tie',
+    tieSecondEvent && tieSecondEvent.type === 'patient' ? 1 : 0, 1, 0);
 
 
 // =============================================================================

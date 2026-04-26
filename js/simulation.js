@@ -116,6 +116,7 @@ export class SimulationEngine {
      * @param {Object} options
      * @param {number} options.sampleRate      - Hz (default 100)
      * @param {number} options.displaySeconds  - Visible time window (default 10)
+     * @param {number} options.triggerEventRetentionSeconds - Trigger metadata retention (default 60)
      */
     constructor(ventilator, options = {}) {
         this.vent = ventilator;
@@ -124,6 +125,8 @@ export class SimulationEngine {
         this.sampleRate     = options.sampleRate     ?? 100;
         this.dt             = 1 / this.sampleRate;
         this.displaySeconds = options.displaySeconds  ?? 10;
+        this.triggerEventRetentionSeconds = options.triggerEventRetentionSeconds ?? 60;
+        this.triggerLockoutSeconds = 0.10;
 
         // --- Ring Buffers (streaming display data) ---
         const bufSize = this.displaySeconds * this.sampleRate;
@@ -154,6 +157,7 @@ export class SimulationEngine {
         this.patientRR = 0;               // breaths/min (0 = passive)
         this.neuralTimer = 0;             // seconds within current neural cycle
         this.neuralInspActive = false;    // currently in neural inspiration?
+        this.pendingPatientTrigger = false; // effort began during expiratory lockout
 
         // --- Per-Breath Measurements ---
         //   Updated each breath for the parameter display panel.
@@ -236,7 +240,10 @@ export class SimulationEngine {
      * triggers a ventilator breath.
      */
     _advanceNeural() {
-        if (this.patientRR <= 0) return;
+        if (this.patientRR <= 0) {
+            this.pendingPatientTrigger = false;
+            return;
+        }
 
         const neuralCycleTime = 60 / this.patientRR;
         const neuralTi = this.vent.neuralTi;
@@ -247,6 +254,8 @@ export class SimulationEngine {
         if (this.neuralInspActive && this.neuralTimer >= neuralTi) {
             this.neuralInspActive = false;
         }
+
+        this._resolvePendingPatientTrigger();
 
         // Start new neural cycle when full cycle time elapsed
         if (this.neuralTimer >= neuralCycleTime) {
@@ -260,10 +269,12 @@ export class SimulationEngine {
             // We require a minimum 100ms into expiration to prevent
             // immediate double-triggering.
             if (this.phase === Phase.EXPIRATION) {
-                if (this.phaseTime > 0.10) {
+                if (this.phaseTime > this.triggerLockoutSeconds) {
+                    // Patient effort wins when it arrives on the same tick
+                    // as the machine timer.
                     this._startNewBreath('patient', this.globalTime);
                 } else {
-                    this._recordTriggerEvent('failed', this.globalTime);
+                    this.pendingPatientTrigger = true;
                 }
             }
         }
@@ -274,10 +285,30 @@ export class SimulationEngine {
     // BREATH STATE MACHINE
     // =========================================================================
 
+    _resolvePendingPatientTrigger() {
+        if (!this.pendingPatientTrigger) return;
+
+        if (this.phase !== Phase.EXPIRATION) {
+            this.pendingPatientTrigger = false;
+            return;
+        }
+
+        if (!this.neuralInspActive) {
+            this.pendingPatientTrigger = false;
+            this._recordTriggerEvent('failed', this.globalTime);
+            return;
+        }
+
+        if (this.phaseTime > this.triggerLockoutSeconds) {
+            this.pendingPatientTrigger = false;
+            this._startNewBreath('patient', this.globalTime);
+        }
+    }
+
     _recordTriggerEvent(type, time = this.globalTime) {
         this.triggerEvents.push({ type, time });
 
-        const cutoff = time - this.displaySeconds - 1;
+        const cutoff = time - this.triggerEventRetentionSeconds;
         while (this.triggerEvents.length > 0 && this.triggerEvents[0].time < cutoff) {
             this.triggerEvents.shift();
         }
@@ -341,7 +372,7 @@ export class SimulationEngine {
                 // Machine backup timer: if machineTimer reaches Ttot,
                 // the machine fires regardless of patient effort.
                 if (this.machineTimer >= ttot) {
-                    this._startNewBreath('machine', this.globalTime + this.dt);
+                    this._startNewBreath('machine', this.globalTime);
                 }
                 break;
         }
@@ -555,6 +586,7 @@ export class SimulationEngine {
         this.currentPressure   = this.vent.peep;
         this.neuralTimer       = 0;
         this.neuralInspActive  = false;
+        this.pendingPatientTrigger = false;
         this.breathCount       = 0;
         this.lastTriggerType   = 'machine';
         this.triggerEvents     = [];

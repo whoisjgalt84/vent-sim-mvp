@@ -552,6 +552,9 @@ html, body {
 .param-row__value--pressure { color: var(--color-pressure); }
 .param-row__value--volume   { color: var(--color-volume); }
 .param-row__value--flow     { color: var(--color-flow); }
+.param-row__value.ok        { color: var(--color-safe); }
+.param-row__value.warn      { color: var(--color-warning); }
+.param-row__value.danger    { color: var(--color-danger); }
 
 /* Large primary readouts (PIP, VT, RR) */
 .param-row--large .param-row__value {

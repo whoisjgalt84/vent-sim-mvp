@@ -159,6 +159,9 @@ assert('Resistive pressure (cmH2O)', ventNormal.resistivePressure, 3.5, 0.02);
 
 // Te/τ = 2.857/0.5 = 5.71 → no gas trapping
 assert('Te/τ', ventNormal.teOverTau, 5.71, 0.02);
+assert('Normal expiratory completion', ventNormal.expiratoryCompletion, 1 - Math.exp(-ventNormal.teOverTau), 0.001);
+assert('Normal expiratory completion (%)', ventNormal.expiratoryCompletionPercent, 99.7, 0.01);
+assert('Normal expiratory completion status', ventNormal.expiratoryCompletionStatus === 'complete' ? 1 : 0, 1, 0);
 assert('Gas trapping risk', ventNormal.gasTrappingRisk ? 1 : 0, 0);
 
 // V̇E = 0.5 × 14 = 7.0 L/min
@@ -179,6 +182,8 @@ const ventCOPD = new Ventilator(copdLung, {
 
 assert('Time constant (s)', copdLung.timeConstant, 1.5);
 assert('Te/τ', ventCOPD.teOverTau, 1.90, 0.02);
+assert('COPD expiratory completion (%)', ventCOPD.expiratoryCompletionPercent, 85.1, 0.02);
+assert('COPD expiratory completion status', ventCOPD.expiratoryCompletionStatus === 'incomplete' ? 1 : 0, 1, 0);
 assert('Gas trapping risk', ventCOPD.gasTrappingRisk ? 1 : 0, 1);
 assert('Auto-PEEP (cmH2O)', ventCOPD.autoPeep, 1.45, 0.1);
 
@@ -257,6 +262,9 @@ section('TEST 8: Full Summary — Normal Patient');
 
 const summary = ventNormal.summary();
 console.log(JSON.stringify(summary, null, 2));
+assert('Summary includes expiratory completion', summary.safety.expiratoryCompletion, ventNormal.expiratoryCompletion, 0.001);
+assert('Summary includes expiratory completion %', summary.safety.expiratoryCompletionPercent, ventNormal.expiratoryCompletionPercent, 0.001);
+assert('Summary includes expiratory completion status', summary.safety.expiratoryCompletionStatus === ventNormal.expiratoryCompletionStatus ? 1 : 0, 1, 0);
 
 
 // =============================================================================

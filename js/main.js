@@ -601,6 +601,20 @@ function updateParams() {
     setText('param-ti',     `${s.timing.inspiratoryTime_s}s`);
     setText('param-te',     `${s.timing.expiratoryTime_s}s`);
     setText('param-te-tau', `${s.safety.teOverTau}`);
+    setText('param-exp-completion', `${Math.round(s.safety.expiratoryCompletionPercent)}%`);
+
+    const expCompletionEl = document.getElementById('param-exp-completion');
+    if (expCompletionEl) {
+        expCompletionEl.classList.remove('ok', 'warn', 'danger');
+
+        if (s.safety.expiratoryCompletionStatus === 'complete') {
+            expCompletionEl.classList.add('ok');
+        } else if (s.safety.expiratoryCompletionStatus === 'borderline') {
+            expCompletionEl.classList.add('warn');
+        } else {
+            expCompletionEl.classList.add('danger');
+        }
+    }
 
     if (s.isPC && s.timing.tiOverTau !== null) {
         setText('param-ti-tau', `${s.timing.tiOverTau}`);

@@ -265,6 +265,25 @@ export class Ventilator {
         return this.expiratoryTime - this.effectiveHoldTime;
     }
 
+    /** Fraction of the breath exhaled during effective expiratory time. */
+    get expiratoryCompletion() {
+        return 1 - Math.exp(-this.effectiveExpiratoryTime / this.lung.timeConstant);
+    }
+
+    /** Expiratory completion expressed as a percentage. */
+    get expiratoryCompletionPercent() {
+        return this.expiratoryCompletion * 100;
+    }
+
+    /** Clinical interpretation of expiratory completion. */
+    get expiratoryCompletionStatus() {
+        const ec = this.expiratoryCompletion;
+
+        if (ec >= 0.95) return 'complete';
+        if (ec >= 0.90) return 'borderline';
+        return 'incomplete';
+    }
+
 
     // =========================================================================
     // PATIENT EFFORT (Pmus)
@@ -1220,6 +1239,9 @@ export class Ventilator {
             safety: {
                 teOverTau:           round(this.teOverTau, 1),
                 tiOverTau:           isPC ? round(this.tiOverTau, 1) : null,
+                expiratoryCompletion: this.expiratoryCompletion,
+                expiratoryCompletionPercent: this.expiratoryCompletionPercent,
+                expiratoryCompletionStatus: this.expiratoryCompletionStatus,
                 gasTrappingRisk:     this.gasTrappingRisk,
                 pplatAbove30:        this.pplat > 30,
                 drivingPressureAbove15: this.drivingPressure > 15,

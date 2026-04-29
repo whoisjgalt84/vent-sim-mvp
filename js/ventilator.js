@@ -47,6 +47,10 @@
 
 import { LungModel } from './lung-model.js';
 
+export const MODE_VC_CMV = 'vc-cmv';
+export const MODE_PC_CMV = 'pc-cmv';
+export const MODE_PC_CSV = 'PC-CSV';
+
 
 export class Ventilator {
 
@@ -55,7 +59,7 @@ export class Ventilator {
      *
      * @param {LungModel} lungModel   - The patient's lung physics
      * @param {Object}    settings    - Operator settings
-     * @param {string}    settings.mode              - 'vc-cmv' or 'pc-cmv'
+     * @param {string}    settings.mode              - 'vc-cmv', 'pc-cmv', or 'PC-CSV'
      * @param {string}    settings.flowPattern       - 'square' or 'ramp' (VC only)
      * @param {number}    settings.tidalVolume       - VT in L (VC mode, default 0.500)
      * @param {number}    settings.inspiratoryPressure - Pinsp above PEEP in cmH2O (PC mode, default 15)
@@ -68,7 +72,7 @@ export class Ventilator {
         this.lung = lungModel;
 
         // --- Mode ---
-        this.mode = settings.mode ?? 'vc-cmv';  // 'vc-cmv' or 'pc-cmv'
+        this.mode = settings.mode ?? MODE_VC_CMV;  // 'vc-cmv', 'pc-cmv', or 'PC-CSV'
 
         // --- Flow Pattern (VC only) ---
         // 'square' = constant flow throughout inspiration
@@ -104,6 +108,9 @@ export class Ventilator {
         // Pinsp = inspiratory pressure ABOVE PEEP (not total Paw)
         // Clinical range: 5–35 cmH2O above PEEP
         this.inspiratoryPressure = settings.inspiratoryPressure ?? 15; // cmH2O above PEEP
+        this.psPressure          = settings.psPressure          ?? 10; // cmH2O above PEEP
+        this.cyclePercent        = settings.cyclePercent        ?? 25; // % of peak inspiratory flow
+        this.triggerSensitivity  = settings.triggerSensitivity  ?? -2; // cmH2O below PEEP
 
         // --- Simulation Resolution ---
         this.sampleRate = 100; // Hz
@@ -245,9 +252,24 @@ export class Ventilator {
         return this.flowPattern === 'ramp' ? 'Ramp' : 'Square';
     }
 
+    /** Any pressure-targeted mode (PC-CMV or PC-CSV) */
+    isPressureMode() {
+        return this.mode === MODE_PC_CMV || this.mode === MODE_PC_CSV;
+    }
+
+    /** Spontaneous pressure-support mode */
+    isSpontaneousMode() {
+        return this.mode === MODE_PC_CSV;
+    }
+
+    /** Active inspiratory pressure target above PEEP (cmH2O) */
+    get pressureControlLevel() {
+        return this.isSpontaneousMode() ? this.psPressure : this.inspiratoryPressure;
+    }
+
     /** Is inspiratory hold active? */
     get holdActive() {
-        return this.holdTime > 0;
+        return this.effectiveHoldTime > 0;
     }
 
     /**
@@ -255,6 +277,7 @@ export class Ventilator {
      * In clinical practice, extremely long holds would compromise gas exchange.
      */
     get effectiveHoldTime() {
+        if (this.isSpontaneousMode()) return 0;
         if (this.holdTime <= 0) return 0;
         const maxHold = this.expiratoryTime - 0.2;  // leave 200ms minimum Te
         return Math.max(0, Math.min(this.holdTime, maxHold));
@@ -321,7 +344,8 @@ export class Ventilator {
 
     /** Mode display label */
     get modeLabel() {
-        return this.mode === 'vc-cmv' ? 'VC-CMV' : 'PC-CMV';
+        if (this.mode === MODE_PC_CSV) return 'PC-CSV';
+        return this.mode === MODE_VC_CMV ? 'VC-CMV' : 'PC-CMV';
     }
 
 
@@ -349,7 +373,7 @@ export class Ventilator {
      * If auto-PEEP ≥ Pinsp, no flow occurs (complete breath stacking).
      */
     get pcDrivingPressure() {
-        return Math.max(0, this.inspiratoryPressure - this.autoPeep);
+        return Math.max(0, this.pressureControlLevel - this.autoPeep);
     }
 
     /**
@@ -414,7 +438,7 @@ export class Ventilator {
 
     /** Steady-state auto-PEEP (cmH2O) — uses effective Te (accounts for hold) */
     get autoPeep() {
-        if (this.mode === 'pc-cmv') {
+        if (this.isPressureMode()) {
             return this._pcAutoPeep();
         }
         return this.lung.steadyStateAutoPeep(this.tidalVolume, this.effectiveExpiratoryTime);
@@ -427,7 +451,7 @@ export class Ventilator {
 
     /** Steady-state trapped gas volume (L) — uses effective Te */
     get trappedVolume() {
-        if (this.mode === 'pc-cmv') {
+        if (this.isPressureMode()) {
             return this._pcTrappedVolume();
         }
         return this.lung.steadyStateTrappedVolume(this.tidalVolume, this.effectiveExpiratoryTime);
@@ -463,7 +487,7 @@ export class Ventilator {
 
         if (denom < 1e-10) return Infinity;  // Essentially no exhalation
 
-        return this.inspiratoryPressure * C * beta * alpha / denom;
+        return this.pressureControlLevel * C * beta * alpha / denom;
     }
 
     /** @private PC-CMV steady-state auto-PEEP (cmH2O) */
@@ -477,7 +501,7 @@ export class Ventilator {
     _pcSteadyStateVt() {
         const autoPeep = this._pcAutoPeep();
         if (!isFinite(autoPeep)) return 0;
-        const drivePressure = Math.max(0, this.inspiratoryPressure - autoPeep);
+        const drivePressure = Math.max(0, this.pressureControlLevel - autoPeep);
         const beta = 1 - Math.exp(-this.inspiratoryTime / this.lung.timeConstant);
         return drivePressure * this.lung.compliance * beta;
     }
@@ -501,8 +525,8 @@ export class Ventilator {
      * PC-CMV: PIP = PEEP + Pinsp (constant throughout inspiration)
      */
     get pip() {
-        if (this.mode === 'pc-cmv') {
-            return this.peep + this.inspiratoryPressure;
+        if (this.isPressureMode()) {
+            return this.peep + this.pressureControlLevel;
         }
 
         if (this.flowPattern === 'ramp') {
@@ -572,7 +596,7 @@ export class Ventilator {
      *   This should equal PEEP + Pinsp if Ti >> τ (flow has stopped).
      */
     get pplat() {
-        if (this.mode === 'pc-cmv') {
+        if (this.isPressureMode()) {
             const vtDelivered = this._pcSteadyStateVt();
             return this.peep + this.autoPeep + vtDelivered / this.lung.compliance;
         }
@@ -590,7 +614,7 @@ export class Ventilator {
      * PC-CMV: ΔP = VT_delivered / C (the elastic pressure from delivered volume)
      */
     get drivingPressure() {
-        if (this.mode === 'pc-cmv') {
+        if (this.isPressureMode()) {
             return this._pcSteadyStateVt() / this.lung.compliance;
         }
         return this.tidalVolume / this.lung.compliance;
@@ -606,7 +630,7 @@ export class Ventilator {
      * PC-CMV: Report peak value = ΔP_drive
      */
     get resistivePressure() {
-        if (this.mode === 'pc-cmv') {
+        if (this.isPressureMode()) {
             return this.pcDrivingPressure;
         }
         if (this.flowPattern === 'ramp') {
@@ -659,7 +683,7 @@ export class Ventilator {
      *   {number[]} flow     - Flow (L/min)
      */
     generateBreathWaveforms(numBreaths = 4) {
-        if (this.mode === 'pc-cmv') {
+        if (this.isPressureMode()) {
             return this._generatePC(numBreaths);
         }
         if (this.flowPattern === 'ramp') {
@@ -949,10 +973,10 @@ export class Ventilator {
         // Steady-state values
         const autoPeepSS    = this.autoPeep;
         const trappedVol    = this.trappedVolume;
-        const drivePressure = Math.max(0, this.inspiratoryPressure - autoPeepSS);
+        const drivePressure = Math.max(0, this.pressureControlLevel - autoPeepSS);
 
         // Airway pressure during inspiration (constant)
-        const pInsp = peep + this.inspiratoryPressure;
+        const pInsp = peep + this.pressureControlLevel;
 
         // Hold and expiration timing
         const holdDur = this.effectiveHoldTime;
@@ -1127,13 +1151,13 @@ export class Ventilator {
 
     /** Exhaled minute ventilation: V̇E = VT × RR (L/min) */
     get minuteVentilation() {
-        const vt = this.mode === 'pc-cmv' ? this._pcSteadyStateVt() : this.tidalVolume;
+        const vt = this.isPressureMode() ? this._pcSteadyStateVt() : this.tidalVolume;
         return vt * this.respiratoryRate;
     }
 
     /** Effective tidal volume for display (L) — set in VC, calculated in PC */
     get effectiveVt() {
-        return this.mode === 'pc-cmv' ? this._pcSteadyStateVt() : this.tidalVolume;
+        return this.isPressureMode() ? this._pcSteadyStateVt() : this.tidalVolume;
     }
 
     /** Effective tidal volume in mL */
@@ -1154,7 +1178,7 @@ export class Ventilator {
      */
     summary() {
         const map = this.calculateMAP();
-        const isPC = this.mode === 'pc-cmv';
+        const isPC = this.isPressureMode();
         const isRamp = !isPC && this.flowPattern === 'ramp';
         const vtEffective = this.effectiveVt;
 
@@ -1182,7 +1206,7 @@ export class Ventilator {
             // --- Operator Settings ---
             settings: {
                 tidalVolume_mL:      isPC ? null : this.tidalVolume * 1000,
-                inspiratoryPressure: isPC ? this.inspiratoryPressure : null,
+                inspiratoryPressure: isPC ? this.pressureControlLevel : null,
                 respiratoryRate:     this.respiratoryRate,
                 ieRatio:             this.ieRatioString,
                 peep_cmH2O:          this.peep,
@@ -1210,7 +1234,7 @@ export class Ventilator {
                 totalPeep_cmH2O:     round(this.totalPeep, 1),
                 drivingPressure:     round(this.drivingPressure, 1),
                 resistivePressure:   round(this.resistivePressure, 1),
-                inspiratoryPressure: isPC ? this.inspiratoryPressure : null,
+                inspiratoryPressure: isPC ? this.pressureControlLevel : null,
             },
 
             // --- Lung Mechanics ---

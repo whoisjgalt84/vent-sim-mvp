@@ -128,8 +128,9 @@ export class WaveformRenderer {
      * @param {number[]} timeData  - X values (seconds)
      * @param {number[]} valueData - Y values (in display units)
      * @param {{ time: number, type: string }[]} triggerEvents - Overlay markers
+     * @param {{ tailWindow?: { start: number, end: number }, baselineReached?: boolean } | null} overlay
      */
-    render(timeData, valueData, triggerEvents = []) {
+    render(timeData, valueData, triggerEvents = [], overlay = null) {
         // Resize in case the window changed
         this._resizeCanvas();
 
@@ -248,6 +249,19 @@ export class WaveformRenderer {
         }
         ctx.stroke();
 
+        if (teachingMode && overlay?.tailWindow) {
+            this._drawTailHighlight(
+                ctx,
+                timeData,
+                valueData,
+                overlay.tailWindow,
+                overlay.baselineReached,
+                xScale,
+                yScale,
+                plot
+            );
+        }
+
         this._drawTriggerMarkers(ctx, triggerEvents, xScale, plot);
 
         // --- Draw Y-axis label (rotated, left side) ---
@@ -259,6 +273,40 @@ export class WaveformRenderer {
         ctx.translate(15, plot.y + plot.h / 2);
         ctx.rotate(-Math.PI / 2);
         ctx.fillText(this.label, 0, 0);
+        ctx.restore();
+    }
+
+    _drawTailHighlight(ctx, timeData, valueData, tailWindow, baselineReached, xScale, yScale, plot) {
+        const start = Math.max(0, Math.min(timeData.length - 1, tailWindow.start));
+        const end = Math.max(start + 1, Math.min(timeData.length, tailWindow.end));
+
+        if (end - start < 2) return;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(plot.x, plot.y, plot.w, plot.h);
+        ctx.clip();
+
+        ctx.strokeStyle = baselineReached
+            ? 'rgba(100, 200, 255, 0.25)'
+            : 'rgba(255, 120, 120, 0.35)';
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+
+        for (let i = start; i < end; i++) {
+            const px = xScale(timeData[i]);
+            const py = yScale(valueData[i]);
+            const cyp = Math.max(plot.y, Math.min(plot.y + plot.h, py));
+
+            if (i === start) {
+                ctx.moveTo(px, cyp);
+            } else {
+                ctx.lineTo(px, cyp);
+            }
+        }
+
+        ctx.stroke();
         ctx.restore();
     }
 
@@ -684,10 +732,16 @@ export class WaveformDisplay {
         if (time.length < 2) return;
 
         const triggerEvents = sim.getTriggerEvents(time[0], time[time.length - 1]);
+        const flowOverlay = sim.expTailWindow
+            ? {
+                tailWindow: sim.expTailWindow,
+                baselineReached: sim.flowBaselineReached,
+            }
+            : null;
 
         this.pressureRenderer.render(time, pressure, triggerEvents);
         this.volumeRenderer.render(time, volume, triggerEvents);
-        this.flowRenderer.render(time, flow, triggerEvents);
+        this.flowRenderer.render(time, flow, triggerEvents, flowOverlay);
     }
 
     /**

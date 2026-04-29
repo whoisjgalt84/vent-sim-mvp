@@ -143,6 +143,7 @@ export class SimulationEngine {
 
         // --- Breath State Machine ---
         this.phase      = Phase.EXPIRATION;
+        this.currentPhase = 'expiration';
         this.phaseTime  = 0;        // seconds within current phase
         this.machineTimer = 0;      // seconds since last breath start (machine clock)
 
@@ -168,6 +169,10 @@ export class SimulationEngine {
         this.measuredPplat     = null;    // plateau pressure (hold only)
         this.measuredVT_mL     = 0;       // delivered tidal volume
         this.peakInspFlow_Lpm  = 0;       // peak inspiratory flow
+        this.peakInspiratoryFlow = 0;     // L/s, used for flow cycling in PC-CSV
+        this.breathTimestamps = [];       // completed-breath timestamps (ms)
+        this.measuredRR = 0;              // breaths/min from completed breaths
+        this.measuredRespiratoryRate = 0; // backwards-compatible alias
 
         // --- Per-Breath Loop Data ---
         //   Collects (pressure, volume, flow) samples for the current breath.
@@ -175,6 +180,16 @@ export class SimulationEngine {
         //   "completed" always holds the most recent FULL breath for rendering.
         this.loopCurrent   = { pressure: [], volume: [], flow: [] };
         this.loopCompleted = { pressure: [], volume: [], flow: [] };
+
+        // --- Teaching Signals: Expiratory Flow Baseline Return ---
+        this.flowBaselineReached = true;
+        this.expFlowReturnPercent = 100;
+        this.expTailWindow = null;
+        this._expTailWindowSamples = null;
+        this._expStartSample = null;
+        this._expMinAbsFlow = Infinity;
+        this._prevFlowLpm = 0;
+        this._sampleCount = 0;
 
         // --- Breath Tracking ---
         this.breathCount     = 0;
@@ -207,7 +222,73 @@ export class SimulationEngine {
             this.buffers.volume.push(0);
             this.buffers.flow.push(0);
         }
-        this._startNewBreath('machine', this.globalTime);
+        this._sampleCount = this.buffers.flow.length;
+        this._prevFlowLpm = 0;
+        this._syncExpTailWindow();
+        this.currentPressure = peep;
+
+        if (!this.vent.isSpontaneousMode()) {
+            this._startNewBreath('machine', this.globalTime);
+        }
+    }
+
+    _updateExpFlowTracking(flowLpm, sampleIndex) {
+        const prevFlow = this._prevFlowLpm;
+
+        if (prevFlow >= 0 && flowLpm < 0) {
+            this._expStartSample = sampleIndex;
+            this._expMinAbsFlow = Math.abs(flowLpm);
+        } else if (this._expStartSample !== null && flowLpm <= 0) {
+            this._expMinAbsFlow = Math.min(this._expMinAbsFlow, Math.abs(flowLpm));
+        }
+
+        if (this._expStartSample !== null && prevFlow <= 0 && flowLpm > 0) {
+            const threshold = 0.5;  // L/min teaching threshold for "near baseline"
+            const minAbsFlow = isFinite(this._expMinAbsFlow)
+                ? this._expMinAbsFlow
+                : Math.abs(prevFlow);
+            const baselineReached = minAbsFlow <= threshold;
+            const percent = Math.max(
+                0,
+                Math.min(100, (threshold / (minAbsFlow + 1e-6)) * 100)
+            );
+
+            this.flowBaselineReached = baselineReached;
+            this.expFlowReturnPercent = baselineReached ? 100 : percent;
+            this._expTailWindowSamples = {
+                start: this._expStartSample,
+                end: sampleIndex,
+            };
+
+            this._expStartSample = null;
+            this._expMinAbsFlow = Infinity;
+        }
+
+        this._prevFlowLpm = flowLpm;
+    }
+
+    _syncExpTailWindow() {
+        if (!this._expTailWindowSamples) {
+            this.expTailWindow = null;
+            return;
+        }
+
+        const visibleCount = this.buffers.flow.length;
+        const oldestVisibleSample = this._sampleCount - visibleCount;
+        const start = this._expTailWindowSamples.start - oldestVisibleSample;
+        const end = this._expTailWindowSamples.end - oldestVisibleSample;
+
+        if (end <= 0 || start >= visibleCount) {
+            this.expTailWindow = null;
+            return;
+        }
+
+        const clampedStart = Math.max(0, start);
+        const clampedEnd = Math.min(visibleCount, end);
+
+        this.expTailWindow = clampedEnd > clampedStart
+            ? { start: clampedStart, end: clampedEnd }
+            : null;
     }
 
 
@@ -308,9 +389,55 @@ export class SimulationEngine {
         }
     }
 
+    _setPhase(phase) {
+        this.phase = phase;
+        this.currentPhase = phase === Phase.EXPIRATION ? 'expiration' : 'inspiration';
+    }
+
+    _updateMeasuredRR() {
+        const times = this.breathTimestamps;
+
+        if (times.length < 2) {
+            this.measuredRR = 0;
+            this.measuredRespiratoryRate = 0;
+            return;
+        }
+
+        let totalInterval = 0;
+        for (let i = 1; i < times.length; i++) {
+            totalInterval += (times[i] - times[i - 1]);
+        }
+
+        const avgIntervalMs = totalInterval / (times.length - 1);
+        const rawMeasuredRR = 60000 / avgIntervalMs;
+
+        this.measuredRR = this.measuredRR > 0
+            ? this.measuredRR * 0.7 + rawMeasuredRR * 0.3
+            : rawMeasuredRR;
+
+        if (!isFinite(this.measuredRR)) {
+            this.measuredRR = 0;
+        }
+
+        this.measuredRespiratoryRate = this.measuredRR;
+    }
+
+    _startExpiration() {
+        this.measuredVT_mL =
+            (this.volumeAboveEq - this.volumeAtBreathStart) * 1000;
+        this.breathTimestamps.push(this.globalTime * 1000);
+        if (this.breathTimestamps.length > 10) {
+            this.breathTimestamps.shift();
+        }
+        this._updateMeasuredRR();
+        this._setPhase(Phase.EXPIRATION);
+        this.phaseTime = 0;
+        this.peakInspiratoryFlow = 0;
+    }
+
     /** Start a new breath (machine-triggered or patient-triggered). */
     _startNewBreath(triggerType, eventTime = this.globalTime) {
-        this.phase = Phase.INSPIRATION;
+        this._setPhase(Phase.INSPIRATION);
         this.phaseTime = 0;
         this.volumeAtBreathStart = this.volumeAboveEq;
         this.breathCount++;
@@ -329,6 +456,7 @@ export class SimulationEngine {
         this.measuredPplat     = null;
         this.measuredVT_mL     = 0;
         this.peakInspFlow_Lpm  = 0;
+        this.peakInspiratoryFlow = 0;
     }
 
     /** Check for phase transitions based on timing. */
@@ -336,36 +464,47 @@ export class SimulationEngine {
         const ti      = this.vent.inspiratoryTime;
         const holdDur = this.vent.effectiveHoldTime;
         const ttot    = this.vent.totalCycleTime;
+        const isSpontaneous = this.vent.isSpontaneousMode();
 
         switch (this.phase) {
 
             case Phase.INSPIRATION:
-                if (this.phaseTime >= ti) {
-                    // Capture delivered VT
-                    this.measuredVT_mL =
-                        (this.volumeAboveEq - this.volumeAtBreathStart) * 1000;
+                if (isSpontaneous) {
+                    const cycleThreshold =
+                        this.peakInspiratoryFlow * (this.vent.cyclePercent / 100);
+                    const cycleReady =
+                        this.phaseTime > this.dt &&
+                        this.peakInspiratoryFlow > 0 &&
+                        this.currentFlow <= cycleThreshold;
+                    const maxTiReached =
+                        this.phaseTime >= Math.max(this.vent.inspiratoryTime, this.dt * 2);
 
+                    if (cycleReady || maxTiReached) {
+                        this._startExpiration();
+                    }
+                } else if (this.phaseTime >= ti) {
                     if (holdDur > 0) {
-                        this.phase = Phase.HOLD;
+                        this._setPhase(Phase.HOLD);
                         this.phaseTime = 0;
+                        this.measuredVT_mL =
+                            (this.volumeAboveEq - this.volumeAtBreathStart) * 1000;
                     } else {
-                        this.phase = Phase.EXPIRATION;
-                        this.phaseTime = 0;
+                        this._startExpiration();
                     }
                 }
                 break;
 
             case Phase.HOLD:
                 if (this.phaseTime >= holdDur) {
-                    this.phase = Phase.EXPIRATION;
-                    this.phaseTime = 0;
+                    this._startExpiration();
                 }
                 break;
 
             case Phase.EXPIRATION:
                 // Machine backup timer: if machineTimer reaches Ttot,
                 // the machine fires regardless of patient effort.
-                if (this.machineTimer >= ttot &&
+                if (!isSpontaneous &&
+                    this.machineTimer >= ttot &&
                     this.scheduledBreathTrigger !== 'patient') {
                     this._startNewBreath('machine', this.globalTime);
                 }
@@ -405,6 +544,15 @@ export class SimulationEngine {
         if (!this.neuralInspActive) return;
         if (this.phaseTime <= this.triggerLockoutSeconds) return;
 
+        if (this.vent.isSpontaneousMode()) {
+            const triggerThreshold = this.vent.peep + this.vent.triggerSensitivity;
+            if (this.currentPressure <= triggerThreshold) {
+                this.pendingPatientTrigger = false;
+                this.scheduledBreathTrigger = 'patient';
+            }
+            return;
+        }
+
         const triggerThreshold = this.vent.peep - this.triggerPressureDropCmH2O;
         const timerTie = this.patientEffortStartedThisTick &&
             (this.machineTimer + this.dt) >= this.vent.totalCycleTime;
@@ -425,10 +573,10 @@ export class SimulationEngine {
      *     V̇ = (Pinsp + Pmus − V_above_eq/C) / R
      */
     _computeInspiration(R, C, peep, pmus, dt) {
-        const mode = this.vent.mode;
+        const isPressureMode = this.vent.isPressureMode();
         const ti   = this.vent.inspiratoryTime;
 
-        if (mode === 'vc-cmv') {
+        if (!isPressureMode) {
             // --- Volume Control: flow is prescribed ---
             let flow;
             if (this.vent.flowPattern === 'ramp') {
@@ -447,7 +595,7 @@ export class SimulationEngine {
 
         } else {
             // --- Pressure Control: pressure prescribed, flow is ODE ---
-            const pinsp = this.vent.inspiratoryPressure;
+            const pinsp = this.vent.pressureControlLevel;
 
             // V̇ = (Pinsp + Pmus − V_above_eq/C) / R
             const flow = (pinsp + pmus - this.volumeAboveEq / C) / R;
@@ -467,6 +615,9 @@ export class SimulationEngine {
         }
         if (this.currentFlow * 60 > this.peakInspFlow_Lpm) {
             this.peakInspFlow_Lpm = this.currentFlow * 60;
+        }
+        if (this.vent.isSpontaneousMode()) {
+            this.peakInspiratoryFlow = Math.max(this.peakInspiratoryFlow, this.currentFlow);
         }
     }
 
@@ -537,16 +688,23 @@ export class SimulationEngine {
         // Volume display: delivered this breath (starts at 0 each breath)
         const displayVol =
             (this.volumeAboveEq - this.volumeAtBreathStart) * 1000;
+        const flowLpm = this.currentFlow * 60;
+        const sampleIndex = this._sampleCount;
+
+        this._updateExpFlowTracking(flowLpm, sampleIndex);
 
         this.buffers.time.push(this.globalTime);
         this.buffers.pressure.push(this.currentPressure);
         this.buffers.volume.push(Math.max(0, displayVol));
-        this.buffers.flow.push(this.currentFlow * 60);  // L/s → L/min
+        this.buffers.flow.push(flowLpm);  // L/s → L/min
 
         // Per-breath loop data (for P-V and F-V loop displays)
         this.loopCurrent.pressure.push(this.currentPressure);
         this.loopCurrent.volume.push(Math.max(0, displayVol));
-        this.loopCurrent.flow.push(this.currentFlow * 60);
+        this.loopCurrent.flow.push(flowLpm);
+
+        this._sampleCount++;
+        this._syncExpTailWindow();
 
         // Advance all clocks
         this.globalTime   += this.dt;
@@ -595,6 +753,7 @@ export class SimulationEngine {
     reset() {
         this.globalTime        = 0;
         this.phase             = Phase.EXPIRATION;
+        this.currentPhase      = 'expiration';
         this.phaseTime         = 0;
         this.machineTimer      = 0;
         this.volumeAboveEq     = 0;
@@ -613,6 +772,18 @@ export class SimulationEngine {
         this.measuredPplat     = null;
         this.measuredVT_mL     = 0;
         this.peakInspFlow_Lpm  = 0;
+        this.peakInspiratoryFlow = 0;
+        this.breathTimestamps  = [];
+        this.measuredRR        = 0;
+        this.measuredRespiratoryRate = 0;
+        this.flowBaselineReached = true;
+        this.expFlowReturnPercent = 100;
+        this.expTailWindow = null;
+        this._expTailWindowSamples = null;
+        this._expStartSample = null;
+        this._expMinAbsFlow = Infinity;
+        this._prevFlowLpm = 0;
+        this._sampleCount = 0;
 
         this.loopCurrent   = { pressure: [], volume: [], flow: [] };
         this.loopCompleted = { pressure: [], volume: [], flow: [] };
@@ -648,7 +819,7 @@ export class SimulationEngine {
             peakFlow_Lpm: Math.round(this.peakInspFlow_Lpm),
             triggerType:  this.lastTriggerType,
             breathCount:  this.breathCount,
-            phase:        this.phase,
+            phase:        this.currentPhase,
         };
     }
 }

@@ -22,7 +22,7 @@
  */
 
 import { LungModel }        from './lung-model.js?v=8';
-import { Ventilator }        from './ventilator.js?v=8';
+import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=8';
 import { SimulationEngine }  from './simulation.js?v=8';
 import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=8';
 
@@ -57,6 +57,9 @@ function init() {
         neuralTi:            1.0,
         tidalVolume:         0.500,
         inspiratoryPressure: 15,
+        psPressure:          10,
+        cyclePercent:        25,
+        triggerSensitivity:  -2,
         respiratoryRate:     14,
         ieRatio:             [1, 2],
         peep:                5,
@@ -96,10 +99,16 @@ function init() {
         traceColor: 'rgba(102, 187, 106, 0.3)',
     });
 
+    ensurePcCsvModeOption();
+    ensurePcCsvControls();
+    updateMonitorLabels();
+
     // --- Bind all controls ---
     bindSlider('vt',            onVtChange);
     bindSlider('rr',            onRrChange);
     bindSlider('pinsp',         onPinspChange);
+    bindSlider('ps-pressure',   onPsPressureChange);
+    bindSlider('cycle-percent', onCyclePercentChange);
     bindSlider('peep',          onPeepChange);
     bindSlider('fio2',          onFio2Change);
     bindSlider('compliance',    onComplianceChange);
@@ -127,12 +136,12 @@ function init() {
         resizeTimer = setTimeout(() => renderFrame(), 100);
     });
 
+    applyModeUI(vent.mode);
+
     // --- Start the animation loop ---
     lastFrameTs = performance.now();
     animFrame = requestAnimationFrame(animate);
 }
-
-
 // =============================================================================
 // ANIMATION LOOP
 // =============================================================================
@@ -181,6 +190,43 @@ function renderLoops() {
 // MODE SWITCHING
 // =============================================================================
 
+function ensurePcCsvModeOption() {
+    const group = document.getElementById('mode-toggle');
+    if (!group || group.querySelector(`[data-mode="${MODE_PC_CSV}"]`)) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'mode-btn';
+    btn.dataset.mode = MODE_PC_CSV;
+    btn.textContent = 'PC-CSV';
+    group.appendChild(btn);
+}
+
+function ensurePcCsvControls() {
+    const pinspControl = document.getElementById('pinsp-control');
+    if (!pinspControl) return;
+
+    if (!document.getElementById('ps-control')) {
+        pinspControl.insertAdjacentHTML('afterend', `
+            <div class="control control--primary control--hidden" id="ps-control">
+                <div class="control__header">
+                    <span class="control__label">Pressure Support</span>
+                    <span class="control__value" id="ps-pressure-display">${vent.psPressure} cmH2O</span>
+                </div>
+                <input type="range" class="control__range" id="ps-pressure"
+                       min="5" max="30" step="1" value="${vent.psPressure}">
+            </div>
+            <div class="control control--secondary control--hidden" id="cycle-percent-control">
+                <div class="control__header">
+                    <span class="control__label">Cycle %</span>
+                    <span class="control__value" id="cycle-percent-display">${vent.cyclePercent}%</span>
+                </div>
+                <input type="range" class="control__range" id="cycle-percent"
+                       min="10" max="60" step="1" value="${vent.cyclePercent}">
+            </div>
+        `);
+    }
+}
+
 function bindModeToggle() {
     const group = document.getElementById('mode-toggle');
     group.addEventListener('click', (e) => {
@@ -199,33 +245,46 @@ function bindModeToggle() {
 }
 
 function applyModeUI(mode) {
-    const isPC = mode === 'pc-cmv';
+    const isPressureMode = mode !== 'vc-cmv';
+    const isCsv = mode === MODE_PC_CSV;
     updateModeLabel();
 
     const vtControl      = document.getElementById('vt-control');
     const pinspControl   = document.getElementById('pinsp-control');
+    const psControl      = document.getElementById('ps-control');
+    const cycleControl   = document.getElementById('cycle-percent-control');
     const patternControl = document.getElementById('flow-pattern-control');
+    const rrControl      = document.getElementById('rr')?.closest('.control');
+    const pinspParamRow  = document.getElementById('pinsp-param-row');
+    const pinspParamLabel = pinspParamRow?.querySelector('.param-row__label');
 
-    if (isPC) {
+    if (isPressureMode) {
         vtControl.classList.add('control--hidden');
-        pinspControl.classList.remove('control--hidden');
         patternControl.classList.add('control--hidden');
     } else {
         vtControl.classList.remove('control--hidden');
-        pinspControl.classList.add('control--hidden');
         patternControl.classList.remove('control--hidden');
     }
 
-    document.getElementById('pinsp-param-row').style.display = isPC ? '' : 'none';
-    document.getElementById('ti-tau-row').style.display      = isPC ? '' : 'none';
+    pinspControl.classList.toggle('control--hidden', mode !== 'pc-cmv');
+    if (psControl) psControl.classList.toggle('control--hidden', !isCsv);
+    if (cycleControl) cycleControl.classList.toggle('control--hidden', !isCsv);
+    if (rrControl) rrControl.style.display = isCsv ? 'none' : '';
 
-    document.getElementById('vt-param-label').innerHTML = isPC
+    if (pinspParamRow) pinspParamRow.style.display = isPressureMode ? '' : 'none';
+    document.getElementById('ti-tau-row').style.display = mode === 'pc-cmv' ? '' : 'none';
+
+    if (pinspParamLabel) {
+        pinspParamLabel.innerHTML = isCsv ? 'P<sub>sup</sub>' : 'P<sub>insp</sub>';
+    }
+
+    document.getElementById('vt-param-label').innerHTML = isPressureMode
         ? 'V<sub>T</sub> <span style="font-size:9px;opacity:0.5">(del)</span>'
         : 'V<sub>T</sub>';
 
     updateFlowLabel();
 
-    document.getElementById('resist-label').innerHTML = isPC
+    document.getElementById('resist-label').innerHTML = isPressureMode
         ? 'ΔP<sub>eff</sub>' : 'P<sub>resist</sub>';
 
     updateHoldResultsVisibility();
@@ -233,10 +292,12 @@ function applyModeUI(mode) {
 
 function updateModeLabel() {
     const modeLabel = document.getElementById('mode-label');
-    const isPC = vent.mode === 'pc-cmv';
+    const isPC = vent.isPressureMode();
+    const isCsv = vent.isSpontaneousMode();
 
     let tag = 'set-point';
-    if (!isPC && vent.flowPattern === 'ramp') tag = 'ramp';
+    if (isCsv) tag = 'flow-cycled';
+    else if (!isPC && vent.flowPattern === 'ramp') tag = 'ramp';
 
     const holdTag = vent.holdActive
         ? '<span style="color:var(--color-pressure); margin-left:4px; font-size:10px;">⏸ HOLD</span>' : '';
@@ -244,13 +305,13 @@ function updateModeLabel() {
     const pmusTag = sim.patientRR > 0
         ? '<span style="color:var(--color-volume); margin-left:4px; font-size:10px;">💪 EFFORT</span>' : '';
 
-    const modeName = isPC ? 'PC-CMV' : 'VC-CMV';
+    const modeName = vent.modeLabel;
     modeLabel.innerHTML = `${modeName}<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${tag}</span>${holdTag}${pmusTag}`;
 }
 
 function updateFlowLabel() {
     const label = document.getElementById('flow-param-label');
-    if (vent.mode === 'pc-cmv') label.innerHTML = 'V̇<sub>peak</sub>';
+    if (vent.isPressureMode()) label.innerHTML = 'V̇<sub>peak</sub>';
     else if (vent.flowPattern === 'ramp') label.innerHTML = 'V̇<sub>peak</sub>';
     else label.innerHTML = 'V̇<sub>insp</sub>';
 }
@@ -321,7 +382,7 @@ function onHoldDurationChange(slider) {
 function updateHoldResultsVisibility() {
     const rawRow = document.getElementById('hold-raw-row');
     if (rawRow) {
-        const showRaw = vent.holdActive && vent.mode !== 'pc-cmv' && vent.flowPattern !== 'ramp';
+        const showRaw = vent.holdActive && !vent.isPressureMode() && vent.flowPattern !== 'ramp';
         rawRow.style.display = showRaw ? '' : 'none';
     }
 }
@@ -455,7 +516,6 @@ function bindTeachingModeToggle() {
     });
 }
 
-
 // =============================================================================
 // COLLAPSIBLE SECTIONS
 // =============================================================================
@@ -506,6 +566,18 @@ function onPinspChange(slider) {
     const pinsp = parseInt(slider.value);
     vent.inspiratoryPressure = pinsp;
     document.getElementById('pinsp-display').textContent = `${pinsp} cmH₂O`;
+}
+
+function onPsPressureChange(slider) {
+    const ps = parseInt(slider.value);
+    vent.psPressure = ps;
+    document.getElementById('ps-pressure-display').textContent = `${ps} cmH2O`;
+}
+
+function onCyclePercentChange(slider) {
+    const cyclePercent = parseInt(slider.value);
+    vent.cyclePercent = cyclePercent;
+    document.getElementById('cycle-percent-display').textContent = `${cyclePercent}%`;
 }
 
 function onRrChange(slider) {
@@ -579,6 +651,8 @@ function bindIEButtons() {
 function updateParams() {
     const s = vent.summary();
     const m = sim.breathSummary;
+    const isCsv = vent.isSpontaneousMode();
+    const measuredRR = Number.isFinite(sim.measuredRR) ? sim.measuredRR : 0;
 
     setText('param-pip',     m.pip > 0 ? `${m.pip}` : `${s.pressures.pip_cmH2O}`);
     setText('param-pplat',   `${s.pressures.pplat_cmH2O}`);
@@ -592,11 +666,20 @@ function updateParams() {
     setText('param-auto-peep',  `${s.pressures.autoPeep_cmH2O}`);
     setText('param-total-peep', `${s.pressures.totalPeep_cmH2O}`);
 
-    const displayVt = m.vt_mL > 0 ? m.vt_mL : s.volumes.tidalVolume_mL;
+    const displayVt = isCsv
+        ? m.vt_mL
+        : (m.vt_mL > 0 ? m.vt_mL : s.volumes.tidalVolume_mL);
+    const displayVe = isCsv
+        ? Math.round((displayVt / 1000) * measuredRR * 10) / 10
+        : s.volumes.minuteVentilation;
+    const displayFlow = isCsv && m.peakFlow_Lpm > 0
+        ? m.peakFlow_Lpm
+        : s.timing.inspFlow_Lpm;
+
     setText('param-vt',   `${Math.round(displayVt)}`);
-    setText('param-rr',   `${s.settings.respiratoryRate}`);
-    setText('param-ve',   `${s.volumes.minuteVentilation}`);
-    setText('param-flow', `${s.timing.inspFlow_Lpm}`);
+    setText('param-rr',   measuredRR.toFixed(1));
+    setText('param-ve',   `${displayVe}`);
+    setText('param-flow', `${displayFlow}`);
 
     setText('param-ti',     `${s.timing.inspiratoryTime_s}s`);
     setText('param-te',     `${s.timing.expiratoryTime_s}s`);
@@ -625,6 +708,7 @@ function updateParams() {
     setText('param-tau', `${s.mechanics.timeConstant_s}s`);
     setText('param-ers', `${s.mechanics.elastance}`);
 
+    updateTeachingIndicators();
     updateMechanicsBar(s);
     updateAlerts(s, m);
     updateHoldResults(s);
@@ -640,13 +724,15 @@ function updateBreathInfo() {
     const el = document.getElementById('breath-info');
     if (!el) return;
 
-    const trigTag = m.triggerType === 'patient'
-        ? '<span style="color:var(--color-volume)">⬆trig</span>'
-        : '<span style="opacity:0.4">mach</span>';
+    let trigTag = '<span style="opacity:0.4">mach</span>';
+    if (vent.isSpontaneousMode() && m.breathCount === 0) {
+        trigTag = '<span style="opacity:0.4">wait</span>';
+    } else if (m.triggerType === 'patient') {
+        trigTag = '<span style="color:var(--color-volume)">trig</span>';
+    }
 
-    el.innerHTML = `#${m.breathCount} ${trigTag} · ${m.phase.slice(0, 4)}`;
+    el.innerHTML = `#${m.breathCount} ${trigTag} | ${m.phase.slice(0, 4)}`;
 }
-
 
 // =============================================================================
 // UI HELPERS
@@ -655,6 +741,53 @@ function updateBreathInfo() {
 function setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
+}
+
+function updateMonitorLabels() {
+    const rrLabel = document.querySelector('#param-rr')?.closest('.param-row')
+        ?.querySelector('.param-row__label');
+    if (rrLabel) rrLabel.textContent = 'RR (Actual)';
+}
+
+function updateTeachingIndicators() {
+    const teachingMode = document.body.classList.contains('teaching-mode');
+    const autoPeepEl = document.getElementById('param-auto-peep');
+    const expCompletionEl = document.getElementById('param-exp-completion');
+    const autoPeepRow = autoPeepEl?.closest('.param-row');
+    const expCompletionRow = expCompletionEl?.closest('.param-row');
+    const autoPeepLabel = autoPeepRow?.querySelector('.param-row__label');
+
+    if (!autoPeepEl || !expCompletionEl || !autoPeepRow || !expCompletionRow || !autoPeepLabel) {
+        return;
+    }
+
+    if (teachingMode) {
+        const baselineText = sim.flowBaselineReached ? 'Yes' : 'No';
+        const percentText = `${Math.round(sim.expFlowReturnPercent)}%`;
+
+        autoPeepLabel.textContent = 'Flow Baseline';
+        autoPeepEl.textContent = baselineText;
+        autoPeepEl.classList.remove('ok', 'warn', 'danger');
+        autoPeepEl.classList.add(sim.flowBaselineReached ? 'ok' : 'danger');
+        autoPeepRow.style.display = 'flex';
+
+        expCompletionEl.textContent = percentText;
+        expCompletionEl.classList.remove('ok', 'warn', 'danger');
+        if (sim.flowBaselineReached) {
+            expCompletionEl.classList.add('ok');
+        } else if (sim.expFlowReturnPercent >= 90) {
+            expCompletionEl.classList.add('warn');
+        } else {
+            expCompletionEl.classList.add('danger');
+        }
+        expCompletionRow.style.display = 'flex';
+        return;
+    }
+
+    autoPeepLabel.textContent = 'Auto-PEEP';
+    autoPeepEl.classList.remove('ok', 'warn', 'danger');
+    autoPeepRow.style.display = '';
+    expCompletionRow.style.display = '';
 }
 
 function updateMechanicsBar(summary) {
@@ -764,3 +897,4 @@ function makeBadge(level, text) {
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', init);
+

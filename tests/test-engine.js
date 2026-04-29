@@ -13,7 +13,7 @@
  */
 
 import { LungModel } from '../js/lung-model.js';
-import { Ventilator } from '../js/ventilator.js';
+import { Ventilator, MODE_PC_CSV } from '../js/ventilator.js';
 import { SimulationEngine, RingBuffer } from '../js/simulation.js';
 
 let passed = 0;
@@ -1033,6 +1033,10 @@ assert('All breaths machine-triggered', bs1.triggerType === 'machine' ? 1 : 0, 1
 assert('Machine trigger markers recorded',
     sim1.getTriggerEvents(sim1.globalTime - sim1.displaySeconds, sim1.globalTime)
         .some(event => event.type === 'machine') ? 1 : 0, 1, 0);
+assert('Normal flow returns to baseline', sim1.flowBaselineReached ? 1 : 0, 1, 0);
+assert('Normal expiratory flow return percent', sim1.expFlowReturnPercent, 100, 0.001);
+assert('Normal expiratory tail window captured',
+    (sim1.expTailWindow && sim1.expTailWindow.end > sim1.expTailWindow.start) ? 1 : 0, 1, 0);
 
 
 // =============================================================================
@@ -1240,6 +1244,9 @@ console.log(`    Analytical trapped vol = ${analyticalTrap.toFixed(1)} mL`);
 assert('Gas trapping builds over breaths', vLungSS > 0.01 ? 1 : 0, 1, 0);
 assert('Trapping converges toward analytical',
     Math.abs(vLungSS * 1000 - analyticalTrap) < 30 ? 1 : 0, 1, 0);
+assert('COPD flow baseline not reached', simCOPD.flowBaselineReached ? 1 : 0, 0, 0);
+assert('COPD expiratory flow return percent < 100',
+    simCOPD.expFlowReturnPercent < 100 ? 1 : 0, 1, 0);
 
 console.log('\n  ⚕️ Teaching point: Gas trapping isn\'t a setting — it EMERGES');
 console.log('     from the physics when Te < 3τ. Watch it build breath-by-breath!');
@@ -1459,6 +1466,80 @@ section('TEST 37: Loop Reset');
 simLoop.reset();
 assert('Loop current empty after reset', simLoop.loopCurrent.pressure.length, 0, 0);
 assert('Loop completed empty after reset', simLoop.loopCompleted.pressure.length, 0, 0);
+
+
+// =============================================================================
+// TEST 38: Measured RR — CMV Matches Completed Breath Timing
+// =============================================================================
+section('TEST 38: Measured RR — CMV Completed Breaths');
+
+const lungMeasuredRR = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventMeasuredRR = new Ventilator(lungMeasuredRR, {
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 12,
+    ieRatio: [1, 2],
+    peep: 5,
+});
+const simMeasuredRR = new SimulationEngine(ventMeasuredRR, { sampleRate: 100, displaySeconds: 10 });
+
+const ticksMeasuredRR = Math.round(8 * ventMeasuredRR.totalCycleTime * 100);
+for (let i = 0; i < ticksMeasuredRR; i++) {
+    simMeasuredRR.tick();
+}
+
+console.log(`    Set RR=${ventMeasuredRR.respiratoryRate}  Measured RR=${simMeasuredRR.measuredRR.toFixed(1)}`);
+assert('Measured RR ≈ set RR in CMV', simMeasuredRR.measuredRR, ventMeasuredRR.respiratoryRate, 0.05);
+
+
+// =============================================================================
+// TEST 39: Measured RR — PC-CSV Stays Zero Without Effort
+// =============================================================================
+section('TEST 39: Measured RR — PC-CSV No Effort');
+
+const ventCsvPassive = new Ventilator(lungMeasuredRR, {
+    mode: MODE_PC_CSV,
+    inspiratoryPressure: 15,
+    psPressure: 10,
+    cyclePercent: 25,
+    peep: 5,
+});
+const simCsvPassive = new SimulationEngine(ventCsvPassive, { sampleRate: 100, displaySeconds: 10 });
+
+for (let i = 0; i < 1500; i++) {
+    simCsvPassive.tick();
+}
+
+console.log(`    Passive CSV breaths=${simCsvPassive.breathSummary.breathCount}  Measured RR=${simCsvPassive.measuredRR.toFixed(1)}`);
+assert('Passive CSV completes no breaths', simCsvPassive.breathSummary.breathCount, 0, 0);
+assert('Passive CSV measured RR = 0', simCsvPassive.measuredRR, 0, 0);
+
+
+// =============================================================================
+// TEST 40: Measured RR — PC-CSV Tracks Spontaneous Triggering
+// =============================================================================
+section('TEST 40: Measured RR — PC-CSV Patient Triggering');
+
+const ventCsvActive = new Ventilator(lungMeasuredRR, {
+    mode: MODE_PC_CSV,
+    inspiratoryPressure: 15,
+    psPressure: 10,
+    cyclePercent: 25,
+    peep: 5,
+    pMusMax: 8,
+    neuralTi: 1.0,
+});
+const simCsvActive = new SimulationEngine(ventCsvActive, { sampleRate: 100, displaySeconds: 10 });
+simCsvActive.patientRR = 18;
+
+for (let i = 0; i < 2500; i++) {
+    simCsvActive.tick();
+}
+
+console.log(`    Patient RR=${simCsvActive.patientRR}  Measured RR=${simCsvActive.measuredRR.toFixed(1)}`);
+assert('Active CSV measured RR > 0', simCsvActive.measuredRR > 0 ? 1 : 0, 1, 0);
+assert('Active CSV measured RR ≈ patient RR', simCsvActive.measuredRR, simCsvActive.patientRR, 0.1);
 
 
 // =============================================================================

@@ -101,7 +101,7 @@ function init() {
 
     ensurePcCsvModeOption();
     ensurePcCsvControls();
-    updateMonitorLabels();
+    syncMonitorLayout();
 
     // --- Bind all controls ---
     bindSlider('vt',            onVtChange);
@@ -652,7 +652,13 @@ function updateParams() {
     const s = vent.summary();
     const m = sim.breathSummary;
     const isCsv = vent.isSpontaneousMode();
+    const teachingMode = document.body.classList.contains('teaching-mode');
     const measuredRR = Number.isFinite(sim.measuredRR) ? sim.measuredRR : 0;
+    const rrActual = Math.round(measuredRR);
+    const rrSet = isCsv ? '—' : `${vent.respiratoryRate}`;
+    const rrDisplay = teachingMode
+        ? `${rrActual} <span class="rr-set">(Set: ${rrSet})</span>`
+        : `${rrActual}`;
 
     setText('param-pip',     m.pip > 0 ? `${m.pip}` : `${s.pressures.pip_cmH2O}`);
     setText('param-pplat',   `${s.pressures.pplat_cmH2O}`);
@@ -677,7 +683,8 @@ function updateParams() {
         : s.timing.inspFlow_Lpm;
 
     setText('param-vt',   `${Math.round(displayVt)}`);
-    setText('param-rr',   measuredRR.toFixed(1));
+    const rrEl = document.getElementById('param-rr');
+    if (rrEl) rrEl.innerHTML = rrDisplay;
     setText('param-ve',   `${displayVe}`);
     setText('param-flow', `${displayFlow}`);
 
@@ -743,10 +750,41 @@ function setText(id, text) {
     if (el) el.textContent = text;
 }
 
-function updateMonitorLabels() {
-    const rrLabel = document.querySelector('#param-rr')?.closest('.param-row')
-        ?.querySelector('.param-row__label');
-    if (rrLabel) rrLabel.textContent = 'RR (Actual)';
+function syncMonitorLayout() {
+    const timingGroup = document.getElementById('timing-vent-group');
+    const timingBody = timingGroup?.querySelector('.param-group__body');
+    const peepGroup = document.getElementById('peep-group');
+    const rrEl = document.getElementById('param-rr');
+    if (!rrEl) {
+        console.warn('RR element not found in DOM');
+        return;
+    }
+
+    const rrRow = rrEl.closest('.param-row');
+    const veRow = document.getElementById('param-ve')?.closest('.param-row');
+    const vtRow = document.getElementById('param-vt')?.closest('.param-row');
+
+    if (timingGroup && peepGroup && peepGroup.previousElementSibling !== timingGroup) {
+        peepGroup.parentNode.insertBefore(timingGroup, peepGroup);
+    }
+
+    if (!timingBody) return;
+
+    if (rrRow && rrRow.parentElement !== timingBody) {
+        timingBody.insertBefore(rrRow, timingBody.firstChild);
+    }
+
+    if (rrRow) {
+        rrRow.classList.remove('teaching-only');
+    }
+
+    if (veRow) {
+        veRow.classList.add('teaching-key');
+    }
+
+    if (veRow && vtRow && veRow.nextElementSibling !== vtRow) {
+        timingBody.insertBefore(veRow, vtRow);
+    }
 }
 
 function updateTeachingIndicators() {

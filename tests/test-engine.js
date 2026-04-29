@@ -31,6 +31,35 @@ function assert(label, actual, expected, tolerance = 0.01) {
     }
 }
 
+function assertBetween(label, actual, min, max) {
+    const ok = Number.isFinite(actual) && actual >= min && actual <= max;
+    if (ok) {
+        console.log(`  âœ“ ${label}: ${actual.toFixed(3)} within [${min}, ${max}]`);
+        passed++;
+    } else {
+        console.log(`  âœ— ${label}: got ${actual}, expected within [${min}, ${max}]`);
+        failed++;
+    }
+}
+
+function assertTrue(label, condition) {
+    if (condition) {
+        console.log(`  âœ“ ${label}`);
+        passed++;
+    } else {
+        console.log(`  âœ— ${label}`);
+        failed++;
+    }
+}
+
+function assertFinite(label, value) {
+    assertTrue(label, typeof value === 'number' && Number.isFinite(value));
+}
+
+function assertDefined(label, value) {
+    assertTrue(label, value !== undefined && value !== null);
+}
+
 function section(title) {
     console.log(`\n${'═'.repeat(60)}`);
     console.log(`  ${title}`);
@@ -124,6 +153,28 @@ console.log('  → Clinical note: Driving pressure 16.7 cmH2O > 15 — consider 
 // TEST 4: Ventilator — Normal Patient, Standard Settings
 // =============================================================================
 section('TEST 4: Ventilator — Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2');
+
+section('TEST 3A: Expiratory Completion - Analytical Time Constant Invariants');
+
+const tauAnalyticalTest = 1.0;
+
+assert('Completion at 1tau (%)',
+    expectedExpCompletionPercent(1 * tauAnalyticalTest, tauAnalyticalTest), 63.2, 0.01);
+
+assert('Completion at 2tau (%)',
+    expectedExpCompletionPercent(2 * tauAnalyticalTest, tauAnalyticalTest), 86.5, 0.01);
+
+assert('Completion at 3tau (%)',
+    expectedExpCompletionPercent(3 * tauAnalyticalTest, tauAnalyticalTest), 95.0, 0.01);
+
+assert('Completion at 5tau (%)',
+    expectedExpCompletionPercent(5 * tauAnalyticalTest, tauAnalyticalTest), 99.3, 0.01);
+
+
+// =============================================================================
+// TEST 4: Ventilator â€” Normal Patient, Standard Settings
+// =============================================================================
+section('TEST 4: Ventilator â€” Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2');
 
 const ventNormal = new Ventilator(normalLung, {
     tidalVolume: 0.500,
@@ -265,6 +316,364 @@ console.log(JSON.stringify(summary, null, 2));
 assert('Summary includes expiratory completion', summary.safety.expiratoryCompletion, ventNormal.expiratoryCompletion, 0.001);
 assert('Summary includes expiratory completion %', summary.safety.expiratoryCompletionPercent, ventNormal.expiratoryCompletionPercent, 0.001);
 assert('Summary includes expiratory completion status', summary.safety.expiratoryCompletionStatus === ventNormal.expiratoryCompletionStatus ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 9: Patient Presets
+// =============================================================================
+section('TEST 8A: Expiratory Metrics - Summary Data Contract');
+
+const simNormalContract = new SimulationEngine(ventNormal, {
+    sampleRate: 100,
+    displaySeconds: 10,
+});
+runSimForSeconds(simNormalContract, 4 * ventNormal.totalCycleTime);
+
+const metricsNormalContract = extractSafetyMetrics(ventNormal, simNormalContract);
+
+assertDefined('expiratoryCompletionPercent exists', metricsNormalContract.expiratoryCompletionPercent);
+assertFinite('expiratoryCompletionPercent is finite', metricsNormalContract.expiratoryCompletionPercent);
+
+assertDefined('flowBaselineReached exists', metricsNormalContract.flowBaselineReached);
+assertTrue('flowBaselineReached is boolean',
+    typeof metricsNormalContract.flowBaselineReached === 'boolean');
+
+assertDefined('expiratoryCompletionStatus exists', metricsNormalContract.expiratoryCompletionStatus);
+assertTrue('expiratoryCompletionStatus is string',
+    typeof metricsNormalContract.expiratoryCompletionStatus === 'string');
+
+
+// =============================================================================
+// TEST 8B: Flow Baseline + Exp Completion - Normal Lung
+// =============================================================================
+section('TEST 8B: Flow Baseline + Exp Completion - Normal VC-CMV');
+
+const normalExpectedCompletionTargeted =
+    expectedExpCompletionPercent(ventNormal.effectiveExpiratoryTime, normalLung.timeConstant);
+
+const normalExpectedEndFlowTargeted =
+    expectedEndExpFlowLpm(
+        ventNormal.tidalVolume,
+        normalLung.resistance,
+        normalLung.compliance,
+        ventNormal.effectiveExpiratoryTime
+    );
+
+const simNormalTargeted = new SimulationEngine(ventNormal, {
+    sampleRate: 100,
+    displaySeconds: 10,
+});
+runSimForSeconds(simNormalTargeted, 5 * ventNormal.totalCycleTime);
+
+console.log(`  Expected completion: ${normalExpectedCompletionTargeted.toFixed(1)}%`);
+console.log(`  Expected end-exp flow: ${normalExpectedEndFlowTargeted.toFixed(2)} L/min`);
+
+assertBetween('Normal exp completion is near complete',
+    normalExpectedCompletionTargeted, 99.0, 100.0);
+
+assertTrue('Normal expected flow baseline reached',
+    expectedFlowBaselineReached(
+        ventNormal.tidalVolume,
+        normalLung.resistance,
+        normalLung.compliance,
+        ventNormal.effectiveExpiratoryTime
+    ));
+
+const normalTargetedMetrics = extractSafetyMetrics(ventNormal, simNormalTargeted);
+
+assertBetween('Simulator exp completion normal (%)',
+    normalTargetedMetrics.expiratoryCompletionPercent, 99.0, 100.0);
+
+assertTrue('Simulator flow baseline reached normal',
+    normalTargetedMetrics.flowBaselineReached === true);
+
+
+// =============================================================================
+// TEST 8C: Flow Baseline + Exp Completion - COPD Short Te
+// =============================================================================
+section('TEST 8C: Flow Baseline + Exp Completion - COPD Short Te');
+
+const lungCOPDShortTeTargeted = new LungModel({ resistance: 25, compliance: 0.06 });
+
+const ventCOPDShortTeTargeted = new Ventilator(lungCOPDShortTeTargeted, {
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 30,
+    ieRatio: [1, 1],
+    peep: 5,
+});
+
+const copdShortExpectedCompletionTargeted =
+    expectedExpCompletionPercent(
+        ventCOPDShortTeTargeted.effectiveExpiratoryTime,
+        lungCOPDShortTeTargeted.timeConstant
+    );
+
+const copdShortExpectedEndFlowTargeted =
+    expectedEndExpFlowLpm(
+        ventCOPDShortTeTargeted.tidalVolume,
+        lungCOPDShortTeTargeted.resistance,
+        lungCOPDShortTeTargeted.compliance,
+        ventCOPDShortTeTargeted.effectiveExpiratoryTime
+    );
+
+const simCOPDShortTeTargeted = new SimulationEngine(ventCOPDShortTeTargeted, {
+    sampleRate: 100,
+    displaySeconds: 10,
+});
+runSimForSeconds(simCOPDShortTeTargeted, 8 * ventCOPDShortTeTargeted.totalCycleTime);
+
+console.log(`  Te=${ventCOPDShortTeTargeted.effectiveExpiratoryTime.toFixed(2)}s`);
+console.log(`  tau=${lungCOPDShortTeTargeted.timeConstant.toFixed(2)}s`);
+console.log(`  Te/tau=${ventCOPDShortTeTargeted.teOverTau.toFixed(2)}`);
+console.log(`  Expected completion=${copdShortExpectedCompletionTargeted.toFixed(1)}%`);
+console.log(`  Expected end-exp flow=${copdShortExpectedEndFlowTargeted.toFixed(1)} L/min`);
+
+assertTrue('COPD short Te has Te/tau < 3',
+    ventCOPDShortTeTargeted.teOverTau < 3);
+
+assertBetween('COPD short Te exp completion reduced (%)',
+    copdShortExpectedCompletionTargeted, 40, 90);
+
+assertTrue('COPD short Te expected flow baseline NOT reached',
+    expectedFlowBaselineReached(
+        ventCOPDShortTeTargeted.tidalVolume,
+        lungCOPDShortTeTargeted.resistance,
+        lungCOPDShortTeTargeted.compliance,
+        ventCOPDShortTeTargeted.effectiveExpiratoryTime
+    ) === false);
+
+const copdShortTargetedMetrics = extractSafetyMetrics(ventCOPDShortTeTargeted, simCOPDShortTeTargeted);
+
+assertBetween('Simulator COPD short Te exp completion (%)',
+    copdShortTargetedMetrics.expiratoryCompletionPercent, 40, 90);
+
+assertTrue('Simulator COPD short Te flow baseline NOT reached',
+    copdShortTargetedMetrics.flowBaselineReached === false);
+
+
+// =============================================================================
+// TEST 8D: Flow Baseline + Exp Completion - COPD Long Te Recovery
+// =============================================================================
+section('TEST 8D: Flow Baseline + Exp Completion - COPD Long Te Recovery');
+
+const lungCOPDLongTeTargeted = new LungModel({ resistance: 25, compliance: 0.06 });
+
+const ventCOPDLongTeTargeted = new Ventilator(lungCOPDLongTeTargeted, {
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 8,
+    ieRatio: [1, 4],
+    peep: 5,
+});
+
+const copdLongExpectedCompletionTargeted =
+    expectedExpCompletionPercent(
+        ventCOPDLongTeTargeted.effectiveExpiratoryTime,
+        lungCOPDLongTeTargeted.timeConstant
+    );
+
+const copdLongExpectedEndFlowTargeted =
+    expectedEndExpFlowLpm(
+        ventCOPDLongTeTargeted.tidalVolume,
+        lungCOPDLongTeTargeted.resistance,
+        lungCOPDLongTeTargeted.compliance,
+        ventCOPDLongTeTargeted.effectiveExpiratoryTime
+    );
+
+const simCOPDLongTeTargeted = new SimulationEngine(ventCOPDLongTeTargeted, {
+    sampleRate: 100,
+    displaySeconds: 10,
+});
+runSimForSeconds(simCOPDLongTeTargeted, 8 * ventCOPDLongTeTargeted.totalCycleTime);
+
+console.log(`  Te=${ventCOPDLongTeTargeted.effectiveExpiratoryTime.toFixed(2)}s`);
+console.log(`  tau=${lungCOPDLongTeTargeted.timeConstant.toFixed(2)}s`);
+console.log(`  Te/tau=${ventCOPDLongTeTargeted.teOverTau.toFixed(2)}`);
+console.log(`  Expected completion=${copdLongExpectedCompletionTargeted.toFixed(1)}%`);
+console.log(`  Expected end-exp flow=${copdLongExpectedEndFlowTargeted.toFixed(2)} L/min`);
+
+assertTrue('COPD long Te has Te/tau >= 3',
+    ventCOPDLongTeTargeted.teOverTau >= 3);
+
+assertBetween('COPD long Te exp completion near complete (%)',
+    copdLongExpectedCompletionTargeted, 95, 100);
+
+assertTrue('COPD long Te expected flow baseline reached',
+    expectedFlowBaselineReached(
+        ventCOPDLongTeTargeted.tidalVolume,
+        lungCOPDLongTeTargeted.resistance,
+        lungCOPDLongTeTargeted.compliance,
+        ventCOPDLongTeTargeted.effectiveExpiratoryTime
+    ));
+
+const copdLongTargetedMetrics = extractSafetyMetrics(ventCOPDLongTeTargeted, simCOPDLongTeTargeted);
+
+assertBetween('Simulator COPD long Te exp completion (%)',
+    copdLongTargetedMetrics.expiratoryCompletionPercent, 95, 100);
+
+assertTrue('Simulator COPD long Te flow baseline reached',
+    copdLongTargetedMetrics.flowBaselineReached === true);
+
+
+// =============================================================================
+// TEST 8E: Cross-Mode Consistency - VC-CMV vs PC-CMV Exp Completion
+// =============================================================================
+section('TEST 8E: Cross-Mode Consistency - VC-CMV vs PC-CMV Exp Completion');
+
+const lungCrossModeTargeted = new LungModel({ resistance: 10, compliance: 0.05 });
+
+const ventVCCrossMode = new Ventilator(lungCrossModeTargeted, {
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 14,
+    ieRatio: [1, 2],
+    peep: 5,
+});
+
+const ventPCCrossMode = new Ventilator(lungCrossModeTargeted, {
+    mode: 'pc-cmv',
+    inspiratoryPressure: 15,
+    respiratoryRate: 14,
+    ieRatio: [1, 2],
+    peep: 5,
+});
+
+const simVCCrossMode = new SimulationEngine(ventVCCrossMode, {
+    sampleRate: 100,
+    displaySeconds: 10,
+});
+const simPCCrossMode = new SimulationEngine(ventPCCrossMode, {
+    sampleRate: 100,
+    displaySeconds: 10,
+});
+runSimForSeconds(simVCCrossMode, 5 * ventVCCrossMode.totalCycleTime);
+runSimForSeconds(simPCCrossMode, 5 * ventPCCrossMode.totalCycleTime);
+
+const vcCrossModeMetrics = extractSafetyMetrics(ventVCCrossMode, simVCCrossMode);
+const pcCrossModeMetrics = extractSafetyMetrics(ventPCCrossMode, simPCCrossMode);
+
+assert('VC and PC Te/tau match',
+    ventVCCrossMode.teOverTau, ventPCCrossMode.teOverTau, 0.001);
+
+assert('VC and PC exp completion percent match',
+    vcCrossModeMetrics.expiratoryCompletionPercent,
+    pcCrossModeMetrics.expiratoryCompletionPercent,
+    0.01);
+
+assertTrue('VC flow baseline reached',
+    vcCrossModeMetrics.flowBaselineReached === true);
+
+assertTrue('PC flow baseline reached',
+    pcCrossModeMetrics.flowBaselineReached === true);
+
+
+// =============================================================================
+// TEST 8F: Measured RR - Real-Time Engine Accuracy
+// =============================================================================
+section('TEST 8F: Measured RR - Real-Time Engine Accuracy');
+
+const lungRRTargeted = new LungModel({ resistance: 10, compliance: 0.05 });
+
+const ventRRTargeted = new Ventilator(lungRRTargeted, {
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 14,
+    ieRatio: [1, 2],
+    peep: 5,
+});
+
+const simRRTargeted = new SimulationEngine(ventRRTargeted, {
+    sampleRate: 100,
+    displaySeconds: 10,
+});
+
+runSimForSeconds(simRRTargeted, 25);
+
+const rrTargetedMetrics = extractSafetyMetrics(ventRRTargeted, simRRTargeted);
+
+assertDefined('measuredRR exists', rrTargetedMetrics.measuredRR);
+assertFinite('measuredRR is finite', rrTargetedMetrics.measuredRR);
+
+console.log(`  Measured RR=${rrTargetedMetrics.measuredRR.toFixed(1)}; Set RR=14`);
+
+assertBetween('Measured RR approximates set RR',
+    rrTargetedMetrics.measuredRR, 13.5, 14.5);
+
+
+// =============================================================================
+// TEST 8G: PC-CSV - Measured RR Behavior (Conditional)
+// =============================================================================
+section('TEST 8G: PC-CSV - Measured RR Behavior (Conditional)');
+
+function supportsPcCsvTargeted() {
+    try {
+        const testLungPcCsv = new LungModel({ resistance: 10, compliance: 0.05 });
+        const testVentPcCsv = new Ventilator(testLungPcCsv, {
+            mode: MODE_PC_CSV,
+            inspiratoryPressure: 10,
+            pressureSupport: 10,
+            psPressure: 10,
+            cyclePercent: 25,
+            peep: 5,
+        });
+        return testVentPcCsv.mode === MODE_PC_CSV ||
+            testVentPcCsv.mode === 'pc-csv' ||
+            testVentPcCsv.modeLabel === 'PC-CSV';
+    } catch {
+        return false;
+    }
+}
+
+if (supportsPcCsvTargeted()) {
+    const lungCsvTargeted = new LungModel({ resistance: 10, compliance: 0.05 });
+    const ventCsvTargeted = new Ventilator(lungCsvTargeted, {
+        mode: MODE_PC_CSV,
+        inspiratoryPressure: 10,
+        pressureSupport: 10,
+        psPressure: 10,
+        cyclePercent: 25,
+        peep: 5,
+    });
+
+    const simCsvNoEffortTargeted = new SimulationEngine(ventCsvTargeted, {
+        sampleRate: 100,
+        displaySeconds: 10,
+    });
+
+    simCsvNoEffortTargeted.patientRR = 0;
+    runSimForSeconds(simCsvNoEffortTargeted, 15);
+
+    const csvNoEffortTargetedMetrics = extractSafetyMetrics(ventCsvTargeted, simCsvNoEffortTargeted);
+
+    assertDefined('PC-CSV measuredRR exists', csvNoEffortTargetedMetrics.measuredRR);
+    assertBetween('PC-CSV no effort RR = 0',
+        csvNoEffortTargetedMetrics.measuredRR, 0, 0.5);
+
+    const simCsvEffortTargeted = new SimulationEngine(ventCsvTargeted, {
+        sampleRate: 100,
+        displaySeconds: 10,
+    });
+
+    simCsvEffortTargeted.patientRR = 18;
+    if (ventCsvTargeted.pMusMax !== undefined) ventCsvTargeted.pMusMax = 8;
+    if (ventCsvTargeted.neuralTi !== undefined) ventCsvTargeted.neuralTi = 0.8;
+
+    runSimForSeconds(simCsvEffortTargeted, 25);
+
+    const csvEffortTargetedMetrics = extractSafetyMetrics(ventCsvTargeted, simCsvEffortTargeted);
+
+    assertDefined('PC-CSV effort measuredRR exists', csvEffortTargetedMetrics.measuredRR);
+    assertBetween('PC-CSV measuredRR follows patientRR',
+        csvEffortTargetedMetrics.measuredRR, 16, 20);
+
+} else {
+    console.log('  PC-CSV not implemented on this branch - skipping PC-CSV RR behavior test.');
+}
 
 
 // =============================================================================
@@ -1119,6 +1528,66 @@ console.log('\n  ⚕️ Teaching point: When patient RR > vent RR, the patient t
 console.log('     additional breaths. The effective RR follows the patient.');
 console.log('     This is normal Assist/Control behavior.');
 
+
+function expectedExpCompletionFraction(te, tau) {
+    return 1 - Math.exp(-te / tau);
+}
+
+function expectedExpCompletionPercent(te, tau) {
+    return expectedExpCompletionFraction(te, tau) * 100;
+}
+
+function expectedEndExpFlowLpm(vtL, resistance, compliance, te) {
+    const tau = resistance * compliance;
+    const initialExpFlowLps = vtL / compliance / resistance;
+    return -initialExpFlowLps * Math.exp(-te / tau) * 60;
+}
+
+function expectedFlowBaselineReached(vtL, resistance, compliance, te, thresholdLpm = 1.0) {
+    return Math.abs(expectedEndExpFlowLpm(vtL, resistance, compliance, te)) <= thresholdLpm;
+}
+
+function runSimForSeconds(sim, seconds) {
+    const steps = Math.round(seconds * sim.sampleRate);
+    for (let i = 0; i < steps; i++) {
+        sim.tick();
+    }
+}
+
+function extractSafetyMetrics(vent, sim = null) {
+    const summary = typeof vent.summary === 'function' ? vent.summary() : {};
+    const safety = summary.safety ?? {};
+
+    return {
+        expiratoryCompletionPercent:
+            safety.expiratoryCompletionPercent ??
+            safety.expCompletionPercent ??
+            summary.expiratoryCompletionPercent ??
+            summary.expCompletionPercent ??
+            sim?.expiratoryCompletionPercent ??
+            sim?.expCompletionPercent,
+
+        expiratoryCompletion:
+            safety.expiratoryCompletion ??
+            summary.expiratoryCompletion ??
+            sim?.expiratoryCompletion,
+
+        expiratoryCompletionStatus:
+            safety.expiratoryCompletionStatus ??
+            summary.expiratoryCompletionStatus ??
+            sim?.expiratoryCompletionStatus,
+
+        flowBaselineReached:
+            safety.flowBaselineReached ??
+            summary.flowBaselineReached ??
+            sim?.flowBaselineReached,
+
+        measuredRR:
+            summary.measuredRR ??
+            safety.measuredRR ??
+            sim?.measuredRR
+    };
+}
 
 // =============================================================================
 // TEST 28B: SimEngine — Lockout Effort Triggers After 100 ms

@@ -927,6 +927,18 @@ body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
     min-width: 60px;
 }
 
+.trigger-control {
+    margin-top: 10px;
+}
+
+.trigger-sensitivity-row {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
 
 /* --- Mode Toggle --- */
 

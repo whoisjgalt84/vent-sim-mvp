@@ -67,6 +67,9 @@ export class Ventilator {
      * @param {number[]}  settings.ieRatio           - [I, E] ratio (default [1, 2])
      * @param {number}    settings.peep              - PEEP in cmH2O (default 5)
      * @param {number}    settings.fio2              - FiO2 as fraction (default 0.40)
+     * @param {string}    settings.triggerType       - 'flow' or 'pressure' (default 'flow')
+     * @param {number}    settings.flowTriggerLpm    - Flow trigger threshold in L/min (default 2.0)
+     * @param {number}    settings.pressureTriggerCmH2O - Pressure trigger threshold in cmH2O (default 1.0)
      */
     constructor(lungModel, settings = {}) {
         this.lung = lungModel;
@@ -101,6 +104,18 @@ export class Ventilator {
         this.peep            = settings.peep             ?? 5;       // cmH2O
         this.fio2            = settings.fio2             ?? 0.40;    // fraction
 
+        // --- Trigger Sensitivity ---
+        // triggerType:
+        //   'flow'     -> trigger when patient-generated inspiratory flow reaches threshold
+        //   'pressure' -> trigger when patient-generated pressure deflection reaches threshold
+        //
+        // Typical clinical concepts:
+        //   pressure trigger: cmH2O below baseline
+        //   flow trigger: L/min inspiratory flow deflection
+        this.triggerType = settings.triggerType ?? 'flow';
+        this.flowTriggerLpm = settings.flowTriggerLpm ?? 2.0;
+        this.pressureTriggerCmH2O = settings.pressureTriggerCmH2O ?? 1.0;
+
         // --- VC-specific ---
         this.tidalVolume     = settings.tidalVolume     ?? 0.500;   // L
 
@@ -110,7 +125,7 @@ export class Ventilator {
         this.inspiratoryPressure = settings.inspiratoryPressure ?? 15; // cmH2O above PEEP
         this.psPressure          = settings.psPressure          ?? 10; // cmH2O above PEEP
         this.cyclePercent        = settings.cyclePercent        ?? 25; // % of peak inspiratory flow
-        this.triggerSensitivity  = settings.triggerSensitivity  ?? -2; // cmH2O below PEEP
+        this.triggerSensitivity  = settings.triggerSensitivity  ?? -2; // legacy pressure-trigger setting
 
         // --- Simulation Resolution ---
         this.sampleRate = 100; // Hz
@@ -134,7 +149,12 @@ export class Ventilator {
         //     Pmus(t) = pMusMax × sin(π × t / T_neural)
         //     for 0 ≤ t ≤ T_neural, then Pmus = 0
         //
-        //   pMusMax:   peak effort (cmH2O), typically 5–15 cmH2O
+        //   pMusMax:
+        //     0      = passive patient
+        //     <1     = very weak inspiratory effort
+        //     1-3    = mild/moderate spontaneous effort
+        //     4-8    = strong effort
+        //     >8     = very strong/distressed effort
         //   neuralTi:  neural inspiratory time (s), may differ from vent Ti
         //
         // EFFECT ON MODES:
@@ -1205,6 +1225,9 @@ export class Ventilator {
 
             // --- Operator Settings ---
             settings: {
+                triggerType:           this.triggerType,
+                flowTriggerLpm:        this.flowTriggerLpm,
+                pressureTriggerCmH2O:  this.pressureTriggerCmH2O,
                 tidalVolume_mL:      isPC ? null : this.tidalVolume * 1000,
                 inspiratoryPressure: isPC ? this.pressureControlLevel : null,
                 respiratoryRate:     this.respiratoryRate,

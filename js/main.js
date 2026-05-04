@@ -59,11 +59,13 @@ function init() {
         inspiratoryPressure: 15,
         psPressure:          10,
         cyclePercent:        25,
-        triggerSensitivity:  -2,
         respiratoryRate:     14,
         ieRatio:             [1, 2],
         peep:                5,
         fio2:                0.40,
+        triggerType:         'flow',
+        flowTriggerLpm:      2.0,
+        pressureTriggerCmH2O: 1.0,
     });
 
     sim = new SimulationEngine(vent, {
@@ -117,6 +119,8 @@ function init() {
     bindSlider('pmus-max',      onPmusMaxChange);
     bindSlider('neural-ti',     onNeuralTiChange);
     bindSlider('patient-rr',    onPatientRRChange);
+    bindSlider('flow-trigger',     onFlowTriggerChange);
+    bindSlider('pressure-trigger', onPressureTriggerChange);
 
     bindPresetSelector();
     bindIEButtons();
@@ -124,6 +128,7 @@ function init() {
     bindFlowPatternToggle();
     bindHoldToggle();
     bindPmusToggle();
+    bindTriggerTypeToggle();
     bindTransportControls();
     bindLoopToggle();
     bindTeachingModeToggle();
@@ -137,6 +142,7 @@ function init() {
     });
 
     applyModeUI(vent.mode);
+    updateTriggerDisplay();
 
     // --- Start the animation loop ---
     lastFrameTs = performance.now();
@@ -392,6 +398,10 @@ function updateHoldResultsVisibility() {
 // PATIENT EFFORT + PATIENT RR
 // =============================================================================
 
+function formatPmusValue(value) {
+    return `${Number(value).toFixed(2).replace(/\.?0+$/, '')} cmH₂O`;
+}
+
 function bindPmusToggle() {
     const btn = document.getElementById('pmus-toggle');
     btn.addEventListener('click', () => {
@@ -407,7 +417,7 @@ function bindPmusToggle() {
             document.getElementById('pmus-sliders').style.display = 'none';
             document.getElementById('patient-rr-control').style.display = 'none';
         } else {
-            const pmax = parseInt(document.getElementById('pmus-max').value);
+            const pmax = parseFloat(document.getElementById('pmus-max').value);
             const nti  = parseInt(document.getElementById('neural-ti').value) / 10;
             const prr  = parseInt(document.getElementById('patient-rr').value);
             vent.pMusMax  = pmax;
@@ -417,7 +427,7 @@ function bindPmusToggle() {
             btn.classList.add('hold-btn--active');
             document.getElementById('pmus-icon').textContent = '💪';
             document.getElementById('pmus-btn-label').textContent = 'Active';
-            document.getElementById('pmus-display').textContent = `${pmax} cmH₂O`;
+            document.getElementById('pmus-display').textContent = formatPmusValue(pmax);
             document.getElementById('pmus-sliders').style.display = '';
             document.getElementById('patient-rr-control').style.display = '';
         }
@@ -426,10 +436,10 @@ function bindPmusToggle() {
 }
 
 function onPmusMaxChange(slider) {
-    const pmax = parseInt(slider.value);
+    const pmax = parseFloat(slider.value);
     vent.pMusMax = pmax;
-    document.getElementById('pmus-max-display').textContent = `${pmax} cmH₂O`;
-    document.getElementById('pmus-display').textContent = `${pmax} cmH₂O`;
+    document.getElementById('pmus-max-display').textContent = formatPmusValue(pmax);
+    document.getElementById('pmus-display').textContent = formatPmusValue(pmax);
 }
 
 function onNeuralTiChange(slider) {
@@ -442,6 +452,72 @@ function onPatientRRChange(slider) {
     const prr = parseInt(slider.value);
     sim.patientRR = prr;
     document.getElementById('patient-rr-display').textContent = `${prr} /min`;
+}
+
+function formatTriggerValue(value, unit) {
+    return `${Number(value).toFixed(1)} ${unit}`;
+}
+
+function updateTriggerDisplay() {
+    const type = vent.triggerType ?? 'flow';
+
+    const flowRow = document.getElementById('flow-trigger-row');
+    const pressureRow = document.getElementById('pressure-trigger-row');
+    const group = document.getElementById('trigger-type-group');
+    const flowDisplay = document.getElementById('flow-trigger-display');
+    const pressureDisplay = document.getElementById('pressure-trigger-display');
+
+    if (flowRow) flowRow.style.display = type === 'flow' ? '' : 'none';
+    if (pressureRow) pressureRow.style.display = type === 'pressure' ? '' : 'none';
+
+    if (group) {
+        group.querySelectorAll('[data-trigger-type]').forEach((button) => {
+            button.classList.toggle('ie-btn--active', button.dataset.triggerType === type);
+        });
+    }
+
+    if (flowDisplay) {
+        flowDisplay.textContent = formatTriggerValue(vent.flowTriggerLpm, 'L/min');
+    }
+    if (pressureDisplay) {
+        pressureDisplay.textContent = formatTriggerValue(vent.pressureTriggerCmH2O, 'cmH₂O');
+    }
+
+    const label = type === 'pressure'
+        ? `Pressure ${formatTriggerValue(vent.pressureTriggerCmH2O, 'cmH₂O')}`
+        : `Flow ${formatTriggerValue(vent.flowTriggerLpm, 'L/min')}`;
+
+    const display = document.getElementById('trigger-display');
+    if (display) display.textContent = label;
+}
+
+function bindTriggerTypeToggle() {
+    const group = document.getElementById('trigger-type-group');
+    if (!group) return;
+
+    group.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-trigger-type]');
+        if (!btn) return;
+
+        vent.triggerType = btn.dataset.triggerType;
+        updateTriggerDisplay();
+    });
+}
+
+function onFlowTriggerChange(slider) {
+    const value = parseFloat(slider.value);
+    vent.flowTriggerLpm = value;
+    document.getElementById('flow-trigger-display').textContent =
+        formatTriggerValue(value, 'L/min');
+    updateTriggerDisplay();
+}
+
+function onPressureTriggerChange(slider) {
+    const value = parseFloat(slider.value);
+    vent.pressureTriggerCmH2O = value;
+    document.getElementById('pressure-trigger-display').textContent =
+        formatTriggerValue(value, 'cmH₂O');
+    updateTriggerDisplay();
 }
 
 

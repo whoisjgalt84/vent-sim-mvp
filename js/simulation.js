@@ -34,7 +34,8 @@
  * Neural Oscillator:
  *
  *   Independent patient clock at patientRR. When neural insp onset
- *   occurs during machine expiration → patient-triggered breath.
+ *   occurs during machine expiration, the effort may patient-trigger
+ *   a breath if the selected flow/pressure threshold is crossed.
  *   Pmus follows a half-sine: Pmus(t) = pMusMax × sin(π × t / neuralTi)
  *
  * ============================================================================
@@ -127,7 +128,6 @@ export class SimulationEngine {
         this.displaySeconds = options.displaySeconds  ?? 10;
         this.triggerEventRetentionSeconds = options.triggerEventRetentionSeconds ?? 60;
         this.triggerLockoutSeconds = 0.10;
-        this.triggerPressureDropCmH2O = 1.0;
 
         // --- Ring Buffers (streaming display data) ---
         const bufSize = this.displaySeconds * this.sampleRate;
@@ -160,7 +160,6 @@ export class SimulationEngine {
         this.neuralTimer = 0;             // seconds within current neural cycle
         this.neuralInspActive = false;    // currently in neural inspiration?
         this.pendingPatientTrigger = false; // effort began during expiratory lockout
-        this.patientEffortStartedThisTick = false;
         this.scheduledBreathTrigger = null;
 
         // --- Per-Breath Measurements ---
@@ -193,6 +192,8 @@ export class SimulationEngine {
 
         // --- Breath Tracking ---
         this.breathCount     = 0;
+        this.machineBreathCount = 0;
+        this.patientBreathCount = 0;
         this.lastTriggerType = 'machine';  // 'machine' or 'patient'
         this.triggerEvents   = [];         // delivered + failed trigger markers
 
@@ -320,12 +321,10 @@ export class SimulationEngine {
      * Advance the patient's neural oscillator by one time step.
      *
      * The oscillator cycles at patientRR independently. When a new
-     * neural inspiration begins during machine expiration, the patient
-     * triggers a ventilator breath.
+     * neural inspiration begins during machine expiration, it creates
+     * patient effort that may later satisfy the ventilator trigger.
      */
     _advanceNeural() {
-        this.patientEffortStartedThisTick = false;
-
         if (this.patientRR <= 0) {
             this.pendingPatientTrigger = false;
             return;
@@ -345,20 +344,46 @@ export class SimulationEngine {
         if (this.neuralTimer >= neuralCycleTime) {
             this.neuralTimer -= neuralCycleTime;  // carry remainder for timing accuracy
             this.neuralInspActive = true;
-            this.patientEffortStartedThisTick = true;
 
-            // TRIGGER: patient effort during machine expiration → new breath
-            //
-            // Clinical equivalent: the patient's inspiratory effort creates a
-            // small flow or pressure deflection that the ventilator detects.
-            // We require a minimum 100ms into expiration to prevent
-            // immediate double-triggering.
+            // Patient effort begins here, but the ventilator should only trigger
+            // if the selected trigger variable crosses its sensitivity threshold.
+            // Actual trigger detection occurs after expiration physics is computed.
             if (this.phase === Phase.EXPIRATION) {
                 this.pendingPatientTrigger = true;
             }
         }
 
         this._resolvePendingPatientTrigger();
+    }
+
+    _maybeTriggerFromPatientEffort() {
+        if (!this.pendingPatientTrigger) return;
+        if (this.phase !== Phase.EXPIRATION) return;
+        if (this.phaseTime <= this.triggerLockoutSeconds) return;
+        if (this.patientRR <= 0 || this.vent.pMusMax <= 0) return;
+        if (!this.neuralInspActive) return;
+
+        const pmus = this.currentPmus;
+        const elasticRecoilPressure = this.volumeAboveEq / this.lung.compliance;
+
+        // Effective patient-generated effort available at the airway opening
+        // after overcoming residual lung recoil / intrinsic PEEP load.
+        const pressureDeflectionCmH2O = Math.max(0, pmus - elasticRecoilPressure);
+
+        // Positive flow during expiration represents inspiratory flow demand.
+        const inspiratoryFlowDeflectionLpm = Math.max(0, this.currentFlow * 60);
+
+        const triggerType = this.vent.triggerType ?? 'flow';
+
+        const triggered =
+            triggerType === 'pressure'
+                ? pressureDeflectionCmH2O >= this.vent.pressureTriggerCmH2O
+                : inspiratoryFlowDeflectionLpm >= this.vent.flowTriggerLpm;
+
+        if (triggered) {
+            this.pendingPatientTrigger = false;
+            this.scheduledBreathTrigger = 'patient';
+        }
     }
 
 
@@ -441,6 +466,11 @@ export class SimulationEngine {
         this.phaseTime = 0;
         this.volumeAtBreathStart = this.volumeAboveEq;
         this.breathCount++;
+        if (triggerType === 'patient') {
+            this.patientBreathCount++;
+        } else {
+            this.machineBreathCount++;
+        }
         this.lastTriggerType = triggerType;
         this.machineTimer = 0;
         this._recordTriggerEvent(triggerType, eventTime);
@@ -535,31 +565,6 @@ export class SimulationEngine {
             case Phase.EXPIRATION:
                 this._computeExpiration(R, C, peep, pmus, dt);
                 break;
-        }
-    }
-
-    _queuePatientTriggerIfThresholdMet() {
-        if (!this.pendingPatientTrigger) return;
-        if (this.phase !== Phase.EXPIRATION) return;
-        if (!this.neuralInspActive) return;
-        if (this.phaseTime <= this.triggerLockoutSeconds) return;
-
-        if (this.vent.isSpontaneousMode()) {
-            const triggerThreshold = this.vent.peep + this.vent.triggerSensitivity;
-            if (this.currentPressure <= triggerThreshold) {
-                this.pendingPatientTrigger = false;
-                this.scheduledBreathTrigger = 'patient';
-            }
-            return;
-        }
-
-        const triggerThreshold = this.vent.peep - this.triggerPressureDropCmH2O;
-        const timerTie = this.patientEffortStartedThisTick &&
-            (this.machineTimer + this.dt) >= this.vent.totalCycleTime;
-
-        if (this.currentPressure <= triggerThreshold || timerTie) {
-            this.pendingPatientTrigger = false;
-            this.scheduledBreathTrigger = 'patient';
         }
     }
 
@@ -673,16 +678,17 @@ export class SimulationEngine {
      * Advance the simulation by one time step (dt = 1/sampleRate).
      *
      * Order matters:
-     *   1. Neural oscillator (may trigger new breath)
-     *   2. Physics computation (uses current phase)
-     *   3. Phase transitions (may change phase for next tick)
-     *   4. Record sample to ring buffers
-     *   5. Advance clocks
+     *   1. Neural oscillator (creates patient effort)
+     *   2. Physics computation (turns effort into flow/pressure deflection)
+     *   3. Trigger detection (checks whether effort crosses sensitivity threshold)
+     *   4. Phase transitions (may change phase for next tick)
+     *   5. Record sample to ring buffers
+     *   6. Advance clocks
      */
     tick() {
         this._advanceNeural();
         this._computePhysics();
-        this._queuePatientTriggerIfThresholdMet();
+        this._maybeTriggerFromPatientEffort();
         this._checkTransitions();
 
         // Volume display: delivered this breath (starts at 0 each breath)
@@ -763,9 +769,10 @@ export class SimulationEngine {
         this.neuralTimer       = 0;
         this.neuralInspActive  = false;
         this.pendingPatientTrigger = false;
-        this.patientEffortStartedThisTick = false;
         this.scheduledBreathTrigger = null;
         this.breathCount       = 0;
+        this.machineBreathCount = 0;
+        this.patientBreathCount = 0;
         this.lastTriggerType   = 'machine';
         this.triggerEvents     = [];
         this.measuredPIP       = 0;
@@ -819,6 +826,8 @@ export class SimulationEngine {
             peakFlow_Lpm: Math.round(this.peakInspFlow_Lpm),
             triggerType:  this.lastTriggerType,
             breathCount:  this.breathCount,
+            machineBreathCount: this.machineBreathCount,
+            patientBreathCount: this.patientBreathCount,
             phase:        this.currentPhase,
         };
     }

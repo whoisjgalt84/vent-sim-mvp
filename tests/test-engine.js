@@ -313,6 +313,12 @@ section('TEST 8: Full Summary — Normal Patient');
 
 const summary = ventNormal.summary();
 console.log(JSON.stringify(summary, null, 2));
+assert('Summary includes trigger type',
+    summary.settings.triggerType === ventNormal.triggerType ? 1 : 0, 1, 0);
+assert('Summary includes flow trigger threshold',
+    summary.settings.flowTriggerLpm, ventNormal.flowTriggerLpm, 0);
+assert('Summary includes pressure trigger threshold',
+    summary.settings.pressureTriggerCmH2O, ventNormal.pressureTriggerCmH2O, 0);
 assert('Summary includes expiratory completion', summary.safety.expiratoryCompletion, ventNormal.expiratoryCompletion, 0.001);
 assert('Summary includes expiratory completion %', summary.safety.expiratoryCompletionPercent, ventNormal.expiratoryCompletionPercent, 0.001);
 assert('Summary includes expiratory completion status', summary.safety.expiratoryCompletionStatus === ventNormal.expiratoryCompletionStatus ? 1 : 0, 1, 0);
@@ -1484,6 +1490,9 @@ const lungTrig = new LungModel({ resistance: 10, compliance: 0.05 });
 const ventTrig = new Ventilator(lungTrig, {
     mode: 'vc-cmv', flowPattern: 'square',
     tidalVolume: 0.500, respiratoryRate: 12, ieRatio: [1, 2], peep: 5,
+    triggerType: 'flow',
+    flowTriggerLpm: 2.0,
+    pressureTriggerCmH2O: 1.0,
     pMusMax: 8, neuralTi: 1.0,
 });
 
@@ -1509,6 +1518,8 @@ console.log(`    Trigger markers: ${trigEvents.length}`);
 // Actually more, since the vent delivers at its own Ti, not the patient's
 assert('Patient triggers detected', bsTrig.triggerType === 'patient' ? 1 : 0, 1, 0);
 assert('Effective RR > vent RR', bsTrig.breathCount > (12 * 15 / 60) ? 1 : 0, 1, 0);
+assert('Patient breath counter increments',
+    bsTrig.patientBreathCount > 0 ? 1 : 0, 1, 0);
 assert('Trigger markers include patient breaths',
     trigEvents.some(event => event.type === 'patient') ? 1 : 0, 1, 0);
 
@@ -1527,6 +1538,122 @@ if (firstPatientIdx > 0) {
 console.log('\n  ⚕️ Teaching point: When patient RR > vent RR, the patient triggers');
 console.log('     additional breaths. The effective RR follows the patient.');
 console.log('     This is normal Assist/Control behavior.');
+
+
+// =============================================================================
+// TEST 28D: Trigger Sensitivity — Weak Effort Easy Flow Trigger
+// =============================================================================
+section('TEST 28D: Trigger Sensitivity — Weak Effort Easy Flow Trigger');
+
+const lungEasyFlow = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventEasyFlow = new Ventilator(lungEasyFlow, {
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 6,
+    ieRatio: [1, 2],
+    peep: 5,
+    pMusMax: 2,
+    neuralTi: 1.0,
+    triggerType: 'flow',
+    flowTriggerLpm: 0.5,
+});
+
+const simEasyFlow = new SimulationEngine(ventEasyFlow, { sampleRate: 100, displaySeconds: 10 });
+simEasyFlow.patientRR = 20;
+
+for (let i = 0; i < 1500; i++) simEasyFlow.tick();
+
+assert('Easy flow trigger detects patient breaths',
+    simEasyFlow.breathSummary.patientBreathCount > 0 ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 28E: Trigger Sensitivity — Weak Effort Hard Flow Trigger
+// =============================================================================
+section('TEST 28E: Trigger Sensitivity — Weak Effort Hard Flow Trigger');
+
+const lungHardFlow = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventHardFlow = new Ventilator(lungHardFlow, {
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 6,
+    ieRatio: [1, 2],
+    peep: 5,
+    pMusMax: 0.5,
+    neuralTi: 1.0,
+    triggerType: 'flow',
+    flowTriggerLpm: 5.0,
+});
+
+const simHardFlow = new SimulationEngine(ventHardFlow, { sampleRate: 100, displaySeconds: 10 });
+simHardFlow.patientRR = 20;
+
+for (let i = 0; i < 1500; i++) simHardFlow.tick();
+
+assert('Hard flow trigger blocks weak patient efforts',
+    simHardFlow.breathSummary.patientBreathCount === 0 ? 1 : 0, 1, 0);
+assert('Hard flow trigger still allows machine backup breaths',
+    simHardFlow.breathSummary.machineBreathCount > 0 ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 28F: Trigger Sensitivity — Easy Pressure Trigger
+// =============================================================================
+section('TEST 28F: Trigger Sensitivity — Easy Pressure Trigger');
+
+const lungEasyPressure = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventEasyPressure = new Ventilator(lungEasyPressure, {
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 6,
+    ieRatio: [1, 2],
+    peep: 5,
+    pMusMax: 2,
+    neuralTi: 1.0,
+    triggerType: 'pressure',
+    pressureTriggerCmH2O: 0.5,
+});
+
+const simEasyPressure = new SimulationEngine(ventEasyPressure, { sampleRate: 100, displaySeconds: 10 });
+simEasyPressure.patientRR = 20;
+
+for (let i = 0; i < 1500; i++) simEasyPressure.tick();
+
+assert('Easy pressure trigger detects patient breaths',
+    simEasyPressure.breathSummary.patientBreathCount > 0 ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 28G: Trigger Sensitivity — Hard Pressure Trigger
+// =============================================================================
+section('TEST 28G: Trigger Sensitivity — Hard Pressure Trigger');
+
+const lungHardPressure = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventHardPressure = new Ventilator(lungHardPressure, {
+    mode: 'vc-cmv',
+    flowPattern: 'square',
+    tidalVolume: 0.500,
+    respiratoryRate: 6,
+    ieRatio: [1, 2],
+    peep: 5,
+    pMusMax: 0.5,
+    neuralTi: 1.0,
+    triggerType: 'pressure',
+    pressureTriggerCmH2O: 2.0,
+});
+
+const simHardPressure = new SimulationEngine(ventHardPressure, { sampleRate: 100, displaySeconds: 10 });
+simHardPressure.patientRR = 20;
+
+for (let i = 0; i < 1500; i++) simHardPressure.tick();
+
+assert('Hard pressure trigger blocks weak patient efforts',
+    simHardPressure.breathSummary.patientBreathCount === 0 ? 1 : 0, 1, 0);
+assert('Hard pressure trigger still allows machine backup breaths',
+    simHardPressure.breathSummary.machineBreathCount > 0 ? 1 : 0, 1, 0);
 
 
 function expectedExpCompletionFraction(te, tau) {

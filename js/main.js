@@ -905,19 +905,38 @@ function bindIEButtons() {
 // PARAMETER PANEL
 // =============================================================================
 
+function updateRRDisplay(summary) {
+    const rrEl = document.getElementById('param-rr');
+    if (!rrEl) return;
+
+    const rrActualSource =
+        Number.isFinite(sim?.measuredRR) ? sim.measuredRR :
+        Number.isFinite(sim?.measuredRespiratoryRate) ? sim.measuredRespiratoryRate :
+        Number.isFinite(summary?.measuredRR) ? summary.measuredRR :
+        Number.isFinite(summary?.timing?.measuredRR) ? summary.timing.measuredRR :
+        Number.isFinite(summary?.timing?.rrActual) ? summary.timing.rrActual :
+        Number.isFinite(summary?.safety?.measuredRR) ? summary.safety.measuredRR :
+        Number.isFinite(vent?.respiratoryRate) ? vent.respiratoryRate :
+        0;
+
+    const rrActual = Math.round(rrActualSource);
+    const rrSet = vent.isSpontaneousMode() ? '—' : `${vent.respiratoryRate}`;
+
+    if (document.body.classList.contains('teaching-mode')) {
+        rrEl.innerHTML = `<span class="rr-actual">${rrActual}</span><span class="rr-set-secondary">Set: ${rrSet}</span>`;
+        return;
+    }
+
+    rrEl.textContent = `${rrActual}`;
+}
+
 function updateParams() {
     const summary = vent.summary();
     const s = summary;
     const m = sim.breathSummary;
     const isCsv = vent.isSpontaneousMode();
-    const teachingMode = document.body.classList.contains('teaching-mode');
     const measuredRR = Number.isFinite(sim.measuredRR) ? sim.measuredRR : 0;
-    const rrActual = Math.round(measuredRR);
     const rrSet = isCsv ? '—' : `${vent.respiratoryRate}`;
-    const rrDisplay = teachingMode
-        ? `${rrActual} <span class="rr-set">(Set: ${rrSet})</span>`
-        : `${rrActual}`;
-
     setText('param-pip',     m.pip > 0 ? `${m.pip}` : `${s.pressures.pip_cmH2O}`);
     setText('param-pplat',   `${s.pressures.pplat_cmH2O}`);
     setText('param-map',     `${s.pressures.map_cmH2O}`);
@@ -941,8 +960,7 @@ function updateParams() {
         : s.timing.inspFlow_Lpm;
 
     setText('param-vt',   `${Math.round(displayVt)}`);
-    const rrEl = document.getElementById('param-rr');
-    if (rrEl) rrEl.innerHTML = rrDisplay;
+    updateRRDisplay(s);
     setText('param-ve',   `${displayVe}`);
     setText('param-flow', `${displayFlow}`);
 

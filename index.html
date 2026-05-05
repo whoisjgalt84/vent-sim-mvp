@@ -34,8 +34,13 @@
             <button class="transport-btn" id="btn-loops" title="Toggle P-V / F-V Loops">⊙</button>
             <button class="transport-btn transport-btn--label" id="btn-teaching-mode" type="button" aria-pressed="false" title="Toggle Teaching Mode">Teach</button>
         </div>
-        <div class="header__alerts" id="alerts">
-            <!-- Populated by main.js -->
+        <div class="header__alerts">
+            <div id="alarm-banner" class="alarm-banner alarm-banner--ok">
+                <span id="alarm-banner-text">No alerts</span>
+            </div>
+            <div class="header__alerts-list" id="alerts">
+                <!-- Populated by main.js -->
+            </div>
         </div>
     </header>
 
@@ -455,6 +460,7 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
+<script type="module" src="alarms.js?v=8"></script>
 <script type="module" src="js/main.js?v=8"></script>
 
 </body>

@@ -15,6 +15,7 @@
 import { LungModel } from '../js/lung-model.js';
 import { Ventilator, MODE_PC_CSV } from '../js/ventilator.js';
 import { SimulationEngine, RingBuffer } from '../js/simulation.js';
+import AlarmEngine from '../alarms.js';
 
 let passed = 0;
 let failed = 0;
@@ -2136,6 +2137,151 @@ for (let i = 0; i < 2500; i++) {
 console.log(`    Patient RR=${simCsvActive.patientRR}  Measured RR=${simCsvActive.measuredRR.toFixed(1)}`);
 assert('Active CSV measured RR > 0', simCsvActive.measuredRR > 0 ? 1 : 0, 1, 0);
 assert('Active CSV measured RR ≈ patient RR', simCsvActive.measuredRR, simCsvActive.patientRR, 0.1);
+
+
+// =============================================================================
+// TEST 41: Alarm Engine â€” No Alerts Normal
+// =============================================================================
+section('TEST 41: Alarm Engine â€” No Alerts Normal');
+
+let alarms = AlarmEngine.evaluateAlarms({
+    nowSec: 30,
+    elapsedSec: 30,
+    lastBreathStartSec: 28,
+    pipCmH2O: 18,
+    pawCmH2O: 12,
+    measuredRR: 14,
+    minuteVentilationLpm: 7,
+});
+
+assert('No alarms in normal state', alarms.length, 0, 0);
+
+
+// =============================================================================
+// TEST 42: Alarm Engine â€” High Pressure
+// =============================================================================
+section('TEST 42: Alarm Engine â€” High Pressure');
+
+alarms = AlarmEngine.evaluateAlarms({
+    nowSec: 30,
+    elapsedSec: 30,
+    lastBreathStartSec: 28,
+    pipCmH2O: 45,
+    pawCmH2O: 45,
+    measuredRR: 14,
+    minuteVentilationLpm: 7,
+});
+
+assert('High pressure alarm active',
+    alarms.some(alarm => alarm.id === 'HIGH_PRESSURE') ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 43: Alarm Engine â€” High RR
+// =============================================================================
+section('TEST 43: Alarm Engine â€” High RR');
+
+alarms = AlarmEngine.evaluateAlarms({
+    nowSec: 30,
+    elapsedSec: 30,
+    lastBreathStartSec: 29,
+    pipCmH2O: 18,
+    pawCmH2O: 12,
+    measuredRR: 40,
+    minuteVentilationLpm: 10,
+});
+
+assert('High RR alarm active',
+    alarms.some(alarm => alarm.id === 'HIGH_RR') ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 44: Alarm Engine â€” Apnea
+// =============================================================================
+section('TEST 44: Alarm Engine â€” Apnea');
+
+alarms = AlarmEngine.evaluateAlarms({
+    nowSec: 45,
+    elapsedSec: 45,
+    lastBreathStartSec: 20,
+    pipCmH2O: 5,
+    pawCmH2O: 5,
+    measuredRR: 0,
+    minuteVentilationLpm: 0,
+});
+
+assert('Apnea alarm active',
+    alarms.some(alarm => alarm.id === 'APNEA') ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 45: Alarm Engine â€” Low Minute Ventilation
+// =============================================================================
+section('TEST 45: Alarm Engine â€” Low Minute Ventilation');
+
+alarms = AlarmEngine.evaluateAlarms({
+    nowSec: 30,
+    elapsedSec: 30,
+    lastBreathStartSec: 28,
+    pipCmH2O: 18,
+    pawCmH2O: 12,
+    measuredRR: 8,
+    minuteVentilationLpm: 2,
+});
+
+assert('Low VE alarm active',
+    alarms.some(alarm => alarm.id === 'LOW_VE') ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 46: Alarm Engine â€” High Minute Ventilation
+// =============================================================================
+section('TEST 46: Alarm Engine â€” High Minute Ventilation');
+
+alarms = AlarmEngine.evaluateAlarms({
+    nowSec: 30,
+    elapsedSec: 30,
+    lastBreathStartSec: 29,
+    pipCmH2O: 18,
+    pawCmH2O: 12,
+    measuredRR: 35,
+    minuteVentilationLpm: 22,
+});
+
+assert('High VE alarm active',
+    alarms.some(alarm => alarm.id === 'HIGH_VE') ? 1 : 0, 1, 0);
+
+
+// =============================================================================
+// TEST 47: Alarm Engine â€” Auto Reset
+// =============================================================================
+section('TEST 47: Alarm Engine â€” Auto Reset');
+
+const alarmed = AlarmEngine.evaluateAlarms({
+    nowSec: 30,
+    elapsedSec: 30,
+    lastBreathStartSec: 29,
+    pipCmH2O: 45,
+    pawCmH2O: 45,
+    measuredRR: 14,
+    minuteVentilationLpm: 7,
+});
+
+const reset = AlarmEngine.evaluateAlarms({
+    nowSec: 31,
+    elapsedSec: 31,
+    lastBreathStartSec: 30,
+    pipCmH2O: 18,
+    pawCmH2O: 12,
+    measuredRR: 14,
+    minuteVentilationLpm: 7,
+});
+
+assert('Alarm activates initially',
+    alarmed.length > 0 ? 1 : 0, 1, 0);
+
+assert('Alarm auto-resets when condition resolves',
+    reset.length, 0, 0);
 
 
 // =============================================================================

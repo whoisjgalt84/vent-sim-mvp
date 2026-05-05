@@ -146,6 +146,7 @@ export class SimulationEngine {
         this.currentPhase = 'expiration';
         this.phaseTime  = 0;        // seconds within current phase
         this.machineTimer = 0;      // seconds since last breath start (machine clock)
+        this.lastBreathStartSec = 0;
 
         // --- Physical State ---
         this.volumeAboveEq = 0;           // L above PEEP equilibrium (total lung gas)
@@ -473,6 +474,7 @@ export class SimulationEngine {
         }
         this.lastTriggerType = triggerType;
         this.machineTimer = 0;
+        this.lastBreathStartSec = this.globalTime;
         this._recordTriggerEvent(triggerType, eventTime);
 
         // Swap loop data: current (now complete) → completed, then reset current
@@ -762,6 +764,7 @@ export class SimulationEngine {
         this.currentPhase      = 'expiration';
         this.phaseTime         = 0;
         this.machineTimer      = 0;
+        this.lastBreathStartSec = 0;
         this.volumeAboveEq     = 0;
         this.volumeAtBreathStart = 0;
         this.currentFlow       = 0;

@@ -25,6 +25,7 @@ import { LungModel }        from './lung-model.js?v=8';
 import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=8';
 import { SimulationEngine }  from './simulation.js?v=8';
 import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=8';
+import AlarmEngine from '../alarms.js?v=8';
 
 
 // =============================================================================
@@ -41,6 +42,10 @@ let loopsVisible = true;
 let currentIE   = [1, 2];
 let lastFrameTs = null;
 let animFrame   = null;
+const alarmLimits = {
+    ...AlarmEngine.DEFAULT_ALARM_LIMITS,
+};
+let activeAlarms = [];
 
 
 // =============================================================================
@@ -725,7 +730,8 @@ function bindIEButtons() {
 // =============================================================================
 
 function updateParams() {
-    const s = vent.summary();
+    const summary = vent.summary();
+    const s = summary;
     const m = sim.breathSummary;
     const isCsv = vent.isSpontaneousMode();
     const teachingMode = document.body.classList.contains('teaching-mode');
@@ -791,6 +797,10 @@ function updateParams() {
     setText('param-tau', `${s.mechanics.timeConstant_s}s`);
     setText('param-ers', `${s.mechanics.elastance}`);
 
+    const alarmMetrics = getCurrentAlarmMetrics(summary);
+    activeAlarms = AlarmEngine.evaluateAlarms(alarmMetrics, alarmLimits);
+    renderAlarms(activeAlarms);
+
     updateTeachingIndicators();
     updateMechanicsBar(s);
     updateAlerts(s, m);
@@ -815,6 +825,113 @@ function updateBreathInfo() {
     }
 
     el.innerHTML = `#${m.breathCount} ${trigTag} | ${m.phase.slice(0, 4)}`;
+}
+
+function getCurrentAlarmMetrics(summary) {
+    const pressures = summary?.pressures ?? {};
+    const volumes = summary?.volumes ?? {};
+    const timing = summary?.timing ?? {};
+    const safety = summary?.safety ?? {};
+    const measured = sim?.breathSummary ?? {};
+
+    const nowSec =
+        sim?.globalTime ??
+        sim?.time ??
+        sim?.timeSec ??
+        sim?.elapsedTime ??
+        sim?.elapsedSec ??
+        0;
+
+    const lastBreathStartSec =
+        sim?.lastBreathStartSec ??
+        sim?.lastBreathTimeSec ??
+        sim?.breathSummary?.lastBreathStartSec ??
+        null;
+
+    const pipCmH2O =
+        measured.pip ??
+        pressures.pip_cmH2O ??
+        pressures.pip ??
+        summary?.pip ??
+        summary?.PIP ??
+        safety.pip;
+
+    const pawCmH2O =
+        sim?.currentPressure ??
+        sim?.paw ??
+        sim?.currentPaw ??
+        pipCmH2O;
+
+    const measuredRR =
+        sim?.measuredRR ??
+        sim?.measuredRespiratoryRate ??
+        summary?.measuredRR ??
+        timing?.measuredRR ??
+        timing?.rrActual ??
+        safety?.measuredRR;
+
+    const deliveredVtL =
+        Number.isFinite(measured.vt_mL) && measured.vt_mL > 0
+            ? measured.vt_mL / 1000
+            : Number.isFinite(volumes.tidalVolume_mL) && volumes.tidalVolume_mL > 0
+                ? volumes.tidalVolume_mL / 1000
+                : null;
+
+    const minuteVentilationLpm =
+        Number.isFinite(measuredRR) && Number.isFinite(deliveredVtL) && deliveredVtL > 0
+            ? Math.round(deliveredVtL * measuredRR * 10) / 10
+            : volumes.minuteVentilation ??
+              volumes.minuteVentilationLpm ??
+              volumes.ve ??
+              volumes.VE ??
+              summary?.minuteVentilation ??
+              summary?.ve ??
+              summary?.VE;
+
+    return {
+        nowSec,
+        elapsedSec: nowSec,
+        lastBreathStartSec,
+        pipCmH2O,
+        pawCmH2O,
+        measuredRR,
+        minuteVentilationLpm,
+    };
+}
+
+function renderAlarms(alarms) {
+    const banner = document.getElementById('alarm-banner');
+    const text = document.getElementById('alarm-banner-text');
+
+    if (!banner || !text) return;
+
+    banner.classList.remove(
+        'alarm-banner--ok',
+        'alarm-banner--medium',
+        'alarm-banner--high'
+    );
+
+    if (!alarms || alarms.length === 0) {
+        banner.classList.add('alarm-banner--ok');
+        text.textContent = 'No alerts';
+        banner.title = '';
+        return;
+    }
+
+    const priority = AlarmEngine.highestAlarmPriority(alarms);
+    banner.classList.add(
+        priority === 'high' ? 'alarm-banner--high' : 'alarm-banner--medium'
+    );
+
+    if (alarms.length === 1) {
+        text.textContent = alarms[0].label;
+    } else {
+        text.textContent = `${alarms.length} alerts`;
+    }
+
+    banner.title = alarms
+        .map(alarm => `${alarm.label}: ${Number(alarm.value).toFixed(1)} ${alarm.unit} (limit ${alarm.limit})`)
+        .join('\n');
 }
 
 // =============================================================================
@@ -963,6 +1080,8 @@ function updateMechanicsBar(summary) {
 
 function updateAlerts(summary, measured) {
     const container = document.getElementById('alerts');
+    if (!container) return;
+
     const badges = [];
     const s = summary;
 
@@ -976,7 +1095,6 @@ function updateAlerts(summary, measured) {
         badges.push(makeBadge('info', '⬆ Patient triggered'));
     }
 
-    if (badges.length === 0) badges.push(makeBadge('ok', 'No alerts'));
     container.innerHTML = badges.join('');
 }
 

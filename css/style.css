@@ -129,7 +129,87 @@ html, body {
     font-size: 0.8rem;
     border: 1px solid rgba(255, 255, 255, 0.12);
     transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.alarm-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+}
+
+.alarm-banner__empty {
     white-space: nowrap;
+}
+
+.alarm-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.alarm-chip--high {
+    color: #ff7b7b;
+    background: rgba(255, 80, 80, 0.16);
+    border-color: rgba(255, 80, 80, 0.45);
+}
+
+.alarm-chip--medium {
+    color: #ffd166;
+    background: rgba(255, 190, 70, 0.14);
+    border-color: rgba(255, 190, 70, 0.38);
+}
+
+.alarm-chip--low {
+    color: #9bd3ff;
+    background: rgba(80, 140, 255, 0.12);
+    border-color: rgba(80, 140, 255, 0.30);
+}
+
+.alarm-audio-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+}
+
+.alarm-audio-btn {
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-primary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 5px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.alarm-audio-btn:hover {
+    border-color: rgba(255,255,255,0.28);
+}
+
+.alarm-audio-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.alarm-audio-btn--active {
+    color: #ffd166;
+    background: rgba(255, 190, 70, 0.12);
+    border-color: rgba(255, 190, 70, 0.35);
+}
+
+.alarm-audio-btn--muted {
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.03);
 }
 
 .alarm-banner--ok {

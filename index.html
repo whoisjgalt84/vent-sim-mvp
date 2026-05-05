@@ -36,7 +36,18 @@
         </div>
         <div class="header__alerts">
             <div id="alarm-banner" class="alarm-banner alarm-banner--ok">
-                <span id="alarm-banner-text">No alerts</span>
+                <div id="alarm-chip-list" class="alarm-chip-list">
+                    <span id="alarm-banner-text" class="alarm-banner__empty">No alerts</span>
+                </div>
+            </div>
+            <div class="alarm-audio-controls">
+                <button id="alarm-silence-btn" class="alarm-audio-btn" type="button" title="Silence alarms for 2 minutes">
+                    Silence
+                </button>
+
+                <button id="alarm-mute-btn" class="alarm-audio-btn" type="button" title="Toggle alarm sound">
+                    Sound On
+                </button>
             </div>
             <div class="header__alerts-list" id="alerts">
                 <!-- Populated by main.js -->

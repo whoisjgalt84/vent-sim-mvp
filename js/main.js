@@ -26,6 +26,12 @@ import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=8';
 import { SimulationEngine }  from './simulation.js?v=8';
 import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=8';
 import AlarmEngine from '../alarms.js?v=8';
+import {
+    DEFAULT_ALARM_AUDIO_SETTINGS,
+    alarmSignature,
+    highestPriority,
+    shouldPlayAlarmSound,
+} from '../alarm-audio.js?v=8';
 
 
 // =============================================================================
@@ -46,6 +52,17 @@ const alarmLimits = {
     ...AlarmEngine.DEFAULT_ALARM_LIMITS,
 };
 let activeAlarms = [];
+const alarmAudioSettings = {
+    ...DEFAULT_ALARM_AUDIO_SETTINGS,
+};
+const alarmAudioState = {
+    enabled: alarmAudioSettings.enabled,
+    silencedUntilSec: 0,
+    lastSoundAtSec: -Infinity,
+    lastAlarmSignature: '',
+    audioContext: null,
+    armed: false,
+};
 
 
 // =============================================================================
@@ -154,6 +171,8 @@ function init() {
     applyModeUI(vent.mode);
     updateTriggerDisplay();
     initializeAlarmControls();
+    bindAlarmAudioControls();
+    updateAlarmAudioControls(activeAlarms, 0);
 
     // --- Start the animation loop ---
     lastFrameTs = performance.now();
@@ -515,6 +534,107 @@ function initializeAlarmControls() {
     setText('alarm-high-ve-display', `${alarmLimits.highMinuteVentilationLpm.toFixed(1)} L/min`);
 }
 
+function bindAlarmAudioControls() {
+    const silenceBtn = document.getElementById('alarm-silence-btn');
+    const muteBtn = document.getElementById('alarm-mute-btn');
+
+    if (silenceBtn) {
+        silenceBtn.addEventListener('click', () => {
+            armAlarmAudio();
+
+            const nowSec = getAlarmNowSec();
+            alarmAudioState.silencedUntilSec =
+                nowSec + alarmAudioSettings.silenceDurationSec;
+
+            updateAlarmAudioControls(activeAlarms, nowSec);
+        });
+    }
+
+    if (muteBtn) {
+        muteBtn.addEventListener('click', () => {
+            armAlarmAudio();
+            alarmAudioState.enabled = !alarmAudioState.enabled;
+            if (alarmAudioState.enabled) {
+                alarmAudioState.lastSoundAtSec = -Infinity;
+            }
+            updateAlarmAudioControls(activeAlarms, getAlarmNowSec());
+        });
+    }
+}
+
+function armAlarmAudio() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    if (!alarmAudioState.audioContext) {
+        try {
+            alarmAudioState.audioContext = new AudioContextClass();
+        } catch (_error) {
+            return;
+        }
+    }
+
+    alarmAudioState.armed = true;
+
+    if (
+        alarmAudioState.audioContext.state === 'suspended' &&
+        typeof alarmAudioState.audioContext.resume === 'function'
+    ) {
+        alarmAudioState.audioContext.resume().catch(() => {});
+    }
+}
+
+function playTone({
+    frequency = 880,
+    durationSec = 0.12,
+    delaySec = 0,
+    volume = 0.035,
+}) {
+    const ctx = alarmAudioState.audioContext;
+    if (!ctx) return;
+
+    const start = ctx.currentTime + delaySec;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(frequency, start);
+
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(volume, start + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + durationSec);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+    };
+
+    osc.start(start);
+    osc.stop(start + durationSec + 0.02);
+}
+
+function playAlarmSound(priority) {
+    const ctx = alarmAudioState.audioContext;
+    if (!alarmAudioState.armed || !ctx) return false;
+
+    if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+        ctx.resume().catch(() => {});
+        return false;
+    }
+
+    if (priority === 'high') {
+        playTone({ frequency: 880, durationSec: 0.12, delaySec: 0 });
+        playTone({ frequency: 660, durationSec: 0.12, delaySec: 0.18 });
+        playTone({ frequency: 880, durationSec: 0.12, delaySec: 0.36 });
+    } else {
+        playTone({ frequency: 660, durationSec: 0.10, delaySec: 0, volume: 0.025 });
+    }
+
+    return true;
+}
+
 function formatTriggerValue(value, unit) {
     return `${Number(value).toFixed(1)} ${unit}`;
 }
@@ -856,6 +976,8 @@ function updateParams() {
     const alarmMetrics = getCurrentAlarmMetrics(summary);
     activeAlarms = AlarmEngine.evaluateAlarms(alarmMetrics, alarmLimits);
     renderAlarms(activeAlarms);
+    updateAlarmAudio(activeAlarms, alarmMetrics.nowSec ?? 0);
+    updateAlarmAudioControls(activeAlarms, alarmMetrics.nowSec ?? 0);
 
     updateTeachingIndicators();
     updateMechanicsBar(s);
@@ -883,6 +1005,17 @@ function updateBreathInfo() {
     el.innerHTML = `#${m.breathCount} ${trigTag} | ${m.phase.slice(0, 4)}`;
 }
 
+function getAlarmNowSec() {
+    return (
+        sim?.globalTime ??
+        sim?.time ??
+        sim?.timeSec ??
+        sim?.elapsedTime ??
+        sim?.elapsedSec ??
+        0
+    );
+}
+
 function getCurrentAlarmMetrics(summary) {
     const pressures = summary?.pressures ?? {};
     const volumes = summary?.volumes ?? {};
@@ -890,13 +1023,7 @@ function getCurrentAlarmMetrics(summary) {
     const safety = summary?.safety ?? {};
     const measured = sim?.breathSummary ?? {};
 
-    const nowSec =
-        sim?.globalTime ??
-        sim?.time ??
-        sim?.timeSec ??
-        sim?.elapsedTime ??
-        sim?.elapsedSec ??
-        0;
+    const nowSec = getAlarmNowSec();
 
     const lastBreathStartSec =
         sim?.lastBreathStartSec ??
@@ -955,11 +1082,46 @@ function getCurrentAlarmMetrics(summary) {
     };
 }
 
+function inferredComparator(alarm) {
+    if (alarm?.id === 'LOW_VE') return '<';
+    if (alarm?.id === 'HIGH_PRESSURE') return '>';
+    if (alarm?.id === 'HIGH_RR') return '>';
+    if (alarm?.id === 'HIGH_VE') return '>';
+    if (alarm?.id === 'APNEA') return '>';
+    return '>';
+}
+
+function formatAlarmNumber(value) {
+    if (!Number.isFinite(value)) return '';
+
+    if (Math.abs(value - Math.round(value)) < 0.05) {
+        return `${Math.round(value)}`;
+    }
+
+    return value.toFixed(1);
+}
+
+function formatAlarmChipText(alarm) {
+    const value = Number.isFinite(alarm?.value) ? Number(alarm.value) : null;
+    const limit = Number.isFinite(alarm?.limit) ? Number(alarm.limit) : null;
+    const comparator = alarm?.comparator ?? inferredComparator(alarm);
+
+    if (alarm?.id === 'HIGH_PRESSURE' || alarm?.id === 'APNEA') {
+        return alarm.label;
+    }
+
+    if (value !== null && limit !== null) {
+        return `${alarm.label} ${formatAlarmNumber(value)} ${comparator} ${formatAlarmNumber(limit)}`;
+    }
+
+    return alarm?.label ?? 'Alarm';
+}
+
 function renderAlarms(alarms) {
     const banner = document.getElementById('alarm-banner');
-    const text = document.getElementById('alarm-banner-text');
+    const chipList = document.getElementById('alarm-chip-list');
 
-    if (!banner || !text) return;
+    if (!banner || !chipList) return;
 
     banner.classList.remove(
         'alarm-banner--ok',
@@ -967,9 +1129,17 @@ function renderAlarms(alarms) {
         'alarm-banner--high'
     );
 
+    chipList.innerHTML = '';
+
     if (!alarms || alarms.length === 0) {
         banner.classList.add('alarm-banner--ok');
-        text.textContent = 'No alerts';
+
+        const empty = document.createElement('span');
+        empty.id = 'alarm-banner-text';
+        empty.className = 'alarm-banner__empty';
+        empty.textContent = 'No alerts';
+
+        chipList.appendChild(empty);
         banner.title = '';
         return;
     }
@@ -979,15 +1149,77 @@ function renderAlarms(alarms) {
         priority === 'high' ? 'alarm-banner--high' : 'alarm-banner--medium'
     );
 
-    if (alarms.length === 1) {
-        text.textContent = alarms[0].label;
-    } else {
-        text.textContent = `${alarms.length} alerts`;
+    const priorityRank = { high: 0, medium: 1, low: 2 };
+    const sorted = [...alarms].sort((a, b) => {
+        const pa = priorityRank[a.priority] ?? 99;
+        const pb = priorityRank[b.priority] ?? 99;
+        return pa - pb;
+    });
+
+    sorted.forEach((alarm) => {
+        const chip = document.createElement('span');
+        chip.className = `alarm-chip alarm-chip--${alarm.priority || 'medium'}`;
+        chip.textContent = formatAlarmChipText(alarm);
+        chip.title = alarm.message || alarm.label;
+        chipList.appendChild(chip);
+    });
+
+    banner.title = sorted
+        .map(alarm => alarm.message || alarm.label)
+        .join('\n');
+}
+
+function updateAlarmAudio(alarms, nowSec) {
+    const signature = alarmSignature(alarms);
+
+    const shouldPlay = shouldPlayAlarmSound({
+        activeAlarms: alarms,
+        nowSec,
+        audioEnabled: alarmAudioState.enabled,
+        silencedUntilSec: alarmAudioState.silencedUntilSec,
+        lastSoundAtSec: alarmAudioState.lastSoundAtSec,
+        lastAlarmSignature: alarmAudioState.lastAlarmSignature,
+        settings: alarmAudioSettings,
+    });
+
+    if (shouldPlay) {
+        const priority = highestPriority(alarms);
+        if (playAlarmSound(priority)) {
+            alarmAudioState.lastSoundAtSec = nowSec;
+        }
     }
 
-    banner.title = alarms
-        .map(alarm => `${alarm.label}: ${Number(alarm.value).toFixed(1)} ${alarm.unit} (limit ${alarm.limit})`)
-        .join('\n');
+    alarmAudioState.lastAlarmSignature = signature;
+
+    if (!alarms || alarms.length === 0) {
+        alarmAudioState.lastAlarmSignature = '';
+    }
+}
+
+function updateAlarmAudioControls(alarms = [], nowSec = 0) {
+    const silenceBtn = document.getElementById('alarm-silence-btn');
+    const muteBtn = document.getElementById('alarm-mute-btn');
+
+    const hasActiveAlarms = alarms && alarms.length > 0;
+    const isSilenced = nowSec < alarmAudioState.silencedUntilSec;
+
+    if (silenceBtn) {
+        silenceBtn.disabled = !hasActiveAlarms;
+
+        if (isSilenced) {
+            const remaining = Math.ceil(alarmAudioState.silencedUntilSec - nowSec);
+            silenceBtn.textContent = `Silenced ${remaining}s`;
+            silenceBtn.classList.add('alarm-audio-btn--active');
+        } else {
+            silenceBtn.textContent = 'Silence';
+            silenceBtn.classList.remove('alarm-audio-btn--active');
+        }
+    }
+
+    if (muteBtn) {
+        muteBtn.textContent = alarmAudioState.enabled ? 'Sound On' : 'Muted';
+        muteBtn.classList.toggle('alarm-audio-btn--muted', !alarmAudioState.enabled);
+    }
 }
 
 // =============================================================================
@@ -1184,5 +1416,7 @@ function makeBadge(level, text) {
 // START
 // =============================================================================
 
+document.addEventListener('pointerdown', armAlarmAudio, { once: true });
+document.addEventListener('keydown', armAlarmAudio, { once: true });
 document.addEventListener('DOMContentLoaded', init);
 

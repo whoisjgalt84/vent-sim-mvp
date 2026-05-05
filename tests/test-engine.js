@@ -16,6 +16,7 @@ import { LungModel } from '../js/lung-model.js';
 import { Ventilator, MODE_PC_CSV } from '../js/ventilator.js';
 import { SimulationEngine, RingBuffer } from '../js/simulation.js';
 import AlarmEngine from '../alarms.js';
+import { alarmSignature, shouldPlayAlarmSound } from '../alarm-audio.js';
 
 let passed = 0;
 let failed = 0;
@@ -2282,6 +2283,127 @@ assert('Alarm activates initially',
 
 assert('Alarm auto-resets when condition resolves',
     reset.length, 0, 0);
+
+
+// =============================================================================
+// TEST 48: Alarm Audio Policy - No Alarm No Sound
+// =============================================================================
+section('TEST 48: Alarm Audio Policy - No Alarm No Sound');
+
+assert(
+    'No alarms produce no sound',
+    shouldPlayAlarmSound({
+        activeAlarms: [],
+        nowSec: 10,
+        audioEnabled: true,
+    }) ? 1 : 0,
+    0,
+    0
+);
+
+
+// =============================================================================
+// TEST 49: Alarm Audio Policy - New Alarm Plays
+// =============================================================================
+section('TEST 49: Alarm Audio Policy - New Alarm Plays');
+
+const highPressureAlarm = [{
+    id: 'HIGH_PRESSURE',
+    label: 'High pressure',
+    priority: 'high',
+    value: 45,
+    limit: 40,
+}];
+
+assert(
+    'New alarm signature plays sound',
+    shouldPlayAlarmSound({
+        activeAlarms: highPressureAlarm,
+        nowSec: 10,
+        audioEnabled: true,
+        silencedUntilSec: 0,
+        lastSoundAtSec: -Infinity,
+        lastAlarmSignature: '',
+    }) ? 1 : 0,
+    1,
+    0
+);
+
+
+// =============================================================================
+// TEST 50: Alarm Audio Policy - Silence Suppresses Sound
+// =============================================================================
+section('TEST 50: Alarm Audio Policy - Silence Suppresses Sound');
+
+assert(
+    'Silenced alarm does not play',
+    shouldPlayAlarmSound({
+        activeAlarms: highPressureAlarm,
+        nowSec: 20,
+        audioEnabled: true,
+        silencedUntilSec: 100,
+        lastSoundAtSec: 0,
+        lastAlarmSignature: '',
+    }) ? 1 : 0,
+    0,
+    0
+);
+
+
+// =============================================================================
+// TEST 51: Alarm Audio Policy - Mute Suppresses Sound
+// =============================================================================
+section('TEST 51: Alarm Audio Policy - Mute Suppresses Sound');
+
+assert(
+    'Muted alarm does not play',
+    shouldPlayAlarmSound({
+        activeAlarms: highPressureAlarm,
+        nowSec: 20,
+        audioEnabled: false,
+        silencedUntilSec: 0,
+        lastSoundAtSec: 0,
+        lastAlarmSignature: '',
+    }) ? 1 : 0,
+    0,
+    0
+);
+
+
+// =============================================================================
+// TEST 52: Alarm Audio Policy - Repeat Interval Limits Annoyance
+// =============================================================================
+section('TEST 52: Alarm Audio Policy - Repeat Interval Limits Annoyance');
+
+const sig = alarmSignature(highPressureAlarm);
+
+assert(
+    'Persistent alarm does not repeat too soon',
+    shouldPlayAlarmSound({
+        activeAlarms: highPressureAlarm,
+        nowSec: 15,
+        audioEnabled: true,
+        silencedUntilSec: 0,
+        lastSoundAtSec: 10,
+        lastAlarmSignature: sig,
+    }) ? 1 : 0,
+    0,
+    0
+);
+
+assert(
+    'Persistent high alarm repeats after interval',
+    shouldPlayAlarmSound({
+        activeAlarms: highPressureAlarm,
+        nowSec: 23,
+        audioEnabled: true,
+        silencedUntilSec: 0,
+        lastSoundAtSec: 10,
+        lastAlarmSignature: sig,
+    }) ? 1 : 0,
+    1,
+    0
+);
 
 
 // =============================================================================

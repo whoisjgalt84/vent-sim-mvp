@@ -353,6 +353,12 @@ html, body {
 
 /* --- Controls Panel (Left) --- */
 
+.controls,
+.parameters {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(140, 170, 220, 0.65) rgba(255, 255, 255, 0.05);
+}
+
 .controls {
     background: var(--bg-panel);
     border-right: 1px solid var(--border-panel);
@@ -1107,20 +1113,28 @@ body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
 
 /* --- Scrollbar --- */
 
+/* Side rail scrollbar visibility */
 .controls::-webkit-scrollbar,
 .parameters::-webkit-scrollbar {
-    width: 4px;
+    width: 10px;
 }
 
 .controls::-webkit-scrollbar-track,
 .parameters::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
 }
 
 .controls::-webkit-scrollbar-thumb,
 .parameters::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
+    background: rgba(140, 170, 220, 0.55);
+    border-radius: 8px;
+    border: 2px solid rgba(10, 18, 30, 0.85);
+}
+
+.controls::-webkit-scrollbar-thumb:hover,
+.parameters::-webkit-scrollbar-thumb:hover {
+    background: rgba(170, 200, 255, 0.75);
 }
 
 /* Readability overrides for disclosure indicators */

@@ -126,6 +126,11 @@ function init() {
     bindSlider('patient-rr',    onPatientRRChange);
     bindSlider('flow-trigger',     onFlowTriggerChange);
     bindSlider('pressure-trigger', onPressureTriggerChange);
+    bindSlider('alarm-high-pressure', onAlarmHighPressureChange);
+    bindSlider('alarm-high-rr',       onAlarmHighRRChange);
+    bindSlider('alarm-apnea',         onAlarmApneaChange);
+    bindSlider('alarm-low-ve',        onAlarmLowVeChange);
+    bindSlider('alarm-high-ve',       onAlarmHighVeChange);
 
     bindPresetSelector();
     bindIEButtons();
@@ -148,6 +153,7 @@ function init() {
 
     applyModeUI(vent.mode);
     updateTriggerDisplay();
+    initializeAlarmControls();
 
     // --- Start the animation loop ---
     lastFrameTs = performance.now();
@@ -457,6 +463,56 @@ function onPatientRRChange(slider) {
     const prr = parseInt(slider.value);
     sim.patientRR = prr;
     document.getElementById('patient-rr-display').textContent = `${prr} /min`;
+}
+
+function onAlarmHighPressureChange(slider) {
+    const value = parseFloat(slider.value);
+    alarmLimits.highPressureCmH2O = value;
+    setText('alarm-high-pressure-display', `${value.toFixed(0)} cmH₂O`);
+}
+
+function onAlarmHighRRChange(slider) {
+    const value = parseFloat(slider.value);
+    alarmLimits.highRR = value;
+    setText('alarm-high-rr-display', `${value.toFixed(0)} /min`);
+}
+
+function onAlarmApneaChange(slider) {
+    const value = parseFloat(slider.value);
+    alarmLimits.apneaSeconds = value;
+    setText('alarm-apnea-display', `${value.toFixed(0)} s`);
+}
+
+function onAlarmLowVeChange(slider) {
+    const value = parseFloat(slider.value);
+    alarmLimits.lowMinuteVentilationLpm = value;
+    setText('alarm-low-ve-display', `${value.toFixed(1)} L/min`);
+}
+
+function onAlarmHighVeChange(slider) {
+    const value = parseFloat(slider.value);
+    alarmLimits.highMinuteVentilationLpm = value;
+    setText('alarm-high-ve-display', `${value.toFixed(1)} L/min`);
+}
+
+function initializeAlarmControls() {
+    const highPressure = document.getElementById('alarm-high-pressure');
+    const highRR = document.getElementById('alarm-high-rr');
+    const apnea = document.getElementById('alarm-apnea');
+    const lowVe = document.getElementById('alarm-low-ve');
+    const highVe = document.getElementById('alarm-high-ve');
+
+    if (highPressure) highPressure.value = `${alarmLimits.highPressureCmH2O}`;
+    if (highRR) highRR.value = `${alarmLimits.highRR}`;
+    if (apnea) apnea.value = `${alarmLimits.apneaSeconds}`;
+    if (lowVe) lowVe.value = `${alarmLimits.lowMinuteVentilationLpm}`;
+    if (highVe) highVe.value = `${alarmLimits.highMinuteVentilationLpm}`;
+
+    setText('alarm-high-pressure-display', `${alarmLimits.highPressureCmH2O.toFixed(0)} cmH₂O`);
+    setText('alarm-high-rr-display', `${alarmLimits.highRR.toFixed(0)} /min`);
+    setText('alarm-apnea-display', `${alarmLimits.apneaSeconds.toFixed(0)} s`);
+    setText('alarm-low-ve-display', `${alarmLimits.lowMinuteVentilationLpm.toFixed(1)} L/min`);
+    setText('alarm-high-ve-display', `${alarmLimits.highMinuteVentilationLpm.toFixed(1)} L/min`);
 }
 
 function formatTriggerValue(value, unit) {

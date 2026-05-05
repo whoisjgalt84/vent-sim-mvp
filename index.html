@@ -225,6 +225,57 @@
             </div>
         </div>
 
+        <!-- Alarms (collapsed by default) -->
+        <div class="control-group alarms-panel">
+            <div class="control-group__title" data-collapsible data-collapsed>Alarms</div>
+            <div class="control-group__body" style="display:none">
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">High Pressure</span>
+                        <span class="control__value" id="alarm-high-pressure-display">40 cmH₂O</span>
+                    </div>
+                    <input type="range" class="control__range" id="alarm-high-pressure"
+                           min="20" max="60" step="1" value="40">
+                </div>
+
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">High RR</span>
+                        <span class="control__value" id="alarm-high-rr-display">35 /min</span>
+                    </div>
+                    <input type="range" class="control__range" id="alarm-high-rr"
+                           min="10" max="60" step="1" value="35">
+                </div>
+
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">Apnea</span>
+                        <span class="control__value" id="alarm-apnea-display">20 s</span>
+                    </div>
+                    <input type="range" class="control__range" id="alarm-apnea"
+                           min="5" max="60" step="1" value="20">
+                </div>
+
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">Low V̇E</span>
+                        <span class="control__value" id="alarm-low-ve-display">3.0 L/min</span>
+                    </div>
+                    <input type="range" class="control__range" id="alarm-low-ve"
+                           min="0" max="15" step="0.5" value="3">
+                </div>
+
+                <div class="control">
+                    <div class="control__header">
+                        <span class="control__label">High V̇E</span>
+                        <span class="control__value" id="alarm-high-ve-display">20.0 L/min</span>
+                    </div>
+                    <input type="range" class="control__range" id="alarm-high-ve"
+                           min="5" max="40" step="0.5" value="20">
+                </div>
+            </div>
+        </div>
+
         <!-- Patient (combined: preset, effort, mechanics) (collapsed by default) -->
         <div class="control-group">
             <div class="control-group__title" data-collapsible data-collapsed>Patient</div>

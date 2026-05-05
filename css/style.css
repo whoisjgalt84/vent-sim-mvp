@@ -361,6 +361,14 @@ html, body {
     color: rgba(232, 236, 240, 0.88);
 }
 
+.alarms-panel .control {
+    margin-bottom: 10px;
+}
+
+.alarms-panel .control:last-child {
+    margin-bottom: 0;
+}
+
 .control__header {
     display: flex;
     justify-content: space-between;

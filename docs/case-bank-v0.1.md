@@ -12,7 +12,7 @@ immediate reinforcement, and debrief value.
 | --- | --- | --- | --- |
 | 1. Normal VC-CMV baseline | Yes | Phase 0 | Strong orientation case |
 | 2. COPD air trapping | Yes | Phase 0 | Teaching Mode helps reveal mechanism |
-| 3. ARDS lung protection | Yes | Phase 0 | Uses inspiratory hold well |
+| 3. ARDS lung protection | Yes | Phase 0 | Uses inspiratory hold well; loads "ARDS (Severe)" preset |
 | 4. PC-CMV compliance change | Partial | Phase 1 | Best with manual or automated change in mechanics |
 | 5. Patient effort in VC-CMV | Yes | Phase 0 | Good for synchrony reasoning |
 | 6. PC-CSV apnea / no effort | Yes | Phase 0 | Current alarms already support it |
@@ -166,7 +166,9 @@ not just look at peak pressure.
 Setup:
 - Mode VC-CMV, square flow
 - VT 500 mL, RR 24, I:E 1:2, PEEP 12, FiO2 60%
-- Severe ARDS preset
+- "ARDS (Severe)" preset (loads R=12, C=0.025 — stiffer than the ~0.035
+  ARDSnet planning figure for compliance, chosen intentionally so plateau and
+  driving-pressure reasoning are vivid; driving pressure ≈ 20 cmH2O at VT 500)
 - Passive patient
 - Inspiratory hold available for plateau check
 
@@ -234,14 +236,19 @@ and VE fall.
 
 Setup:
 - Mode PC-CMV
-- Pinsp 15 above PEEP, RR 14, I:E 1:2, PEEP 5, FiO2 40%
-- Start with Normal lung preset
-- Then manually change to ARDS severe while keeping vent settings the same
+- Pinsp 10 above PEEP, RR 14, I:E 1:2, PEEP 5, FiO2 40%
+- Start with Normal lung preset (delivered VT ≈ 545 mL, VE ≈ 7.6 L/min at these
+  settings)
+- Then manually change to the "ARDS (Severe)" preset while keeping vent settings
+  the same (delivered VT falls to ≈ 250 mL, VE drops to ≈ 3.5 L/min — just
+  above the 3.0 L/min low-VE alarm threshold)
 
 Primary signals:
 - pressure waveform remains pressure-targeted and visually similar
-- delivered VT falls as compliance worsens
-- VE falls unless compensated
+- delivered VT falls from ≈ 545 mL on Normal to ≈ 250 mL on "ARDS (Severe)" as
+  compliance worsens — the pressure waveform shape gives no warning
+- VE falls from ≈ 7.6 L/min to ≈ 3.5 L/min, sitting just above the 3.0 L/min
+  low-VE alarm threshold unless compensated
 
 Distractors/noise:
 - a stable pressure waveform may falsely reassure the learner
@@ -408,6 +415,13 @@ Instructor notes:
 - This case is strong because the alarm sequence is meaningful without being the
   diagnosis by itself.
 - It is also a good contrast case for weaning-mode discussions.
+- Engine note: PC-CSV in this build delivers NO backup or mandatory breath when
+  patient effort is zero (confirmed in js/simulation.js — the machine-timer
+  backup path is gated on non-spontaneous modes), so the patient will sit at
+  PEEP indefinitely until effort returns or the operator switches modes.
+- Engine note: alarms are suppressed during a 5-second startup grace
+  (stabilizationSeconds = 5 in DEFAULT_ALARM_LIMITS) before the apnea timer
+  becomes meaningful.
 
 Independent learner hints:
 - Ask whether this mode has a machine backup breath in the current MVP.
@@ -509,9 +523,11 @@ high plateau.
 Setup:
 - Best taught as two linked scenes under one case
 - Scene A resistance pattern:
-  VC-CMV, VT 500 mL, RR 14, I:E 1:2, PEEP 5, asthma or COPD preset
+  VC-CMV, VT 500 mL, RR 14, I:E 1:2, PEEP 5, "COPD" preset (R=25, C=0.060) —
+  alternative: "Asthma (Acute)" preset (R=20, C=0.060)
 - Scene B compliance pattern:
-  VC-CMV, VT 500 mL, RR 14, I:E 1:2, PEEP 5, severe ARDS preset
+  VC-CMV, VT 500 mL, RR 14, I:E 1:2, PEEP 5, "ARDS (Severe)" preset
+  (R=12, C=0.025)
 - Lower the high pressure alarm threshold if needed so both scenes trip it
 - Inspiratory hold available in both scenes
 

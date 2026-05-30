@@ -275,3 +275,73 @@ Use this checklist when drafting a new case:
 - Later phases can translate the same fields into structured data if needed.
 - The schema should support both instructor-led and independent learner flows
   without forcing every field to be shown at once on screen.
+
+## Authoring guardrail
+
+Cases must reference only preset keys/labels that appear in the Engine Ground
+Truth table below. If a clinical scenario needs a preset, mode, control range,
+or alarm threshold that does not exist in the current build, either pick the
+closest engine value or explicitly mark the case as blocked on a future build
+change rather than silently inventing parameters.
+
+## Engine Ground Truth (verified against current build)
+
+### Lung presets (js/lung-model.js, LungModel.presets())
+
+| Key | Label | R (cmH₂O·s/L) | C (L/cmH₂O) | τ from preset note |
+| --- | --- | --- | --- | --- |
+| normal | Normal Lung | 10 | 0.060 | 0.6 s |
+| ards_moderate | ARDS (Moderate) | 10 | 0.035 | 0.35 s |
+| ards_severe | ARDS (Severe) | 12 | 0.025 | 0.3 s |
+| copd | COPD | 25 | 0.060 | 1.5 s |
+| asthma | Asthma (Acute) | 20 | 0.060 | 1.2 s |
+| obesity | Morbid Obesity | 8 | 0.040 | 0.32 s |
+| fibrosis | Pulmonary Fibrosis | 8 | 0.030 | 0.24 s |
+
+### Alarm defaults (alarms.js, DEFAULT_ALARM_LIMITS)
+
+| Limit | Value |
+| --- | --- |
+| highPressureCmH2O | 40 |
+| highRR | 35 |
+| apneaSeconds | 20 |
+| lowMinuteVentilationLpm | 3 |
+| highMinuteVentilationLpm | 20 |
+| stabilizationSeconds (startup grace before alarms can fire) | 5 |
+
+### Mode constants (js/ventilator.js)
+
+| Constant | String value |
+| --- | --- |
+| MODE_VC_CMV | `vc-cmv` |
+| MODE_PC_CMV | `pc-cmv` |
+| MODE_PC_CSV | `PC-CSV` (capitalized, unlike the other two — string-equality footgun) |
+
+### VC flow patterns (js/ventilator.js, this.flowPattern)
+
+- `square` — constant flow throughout inspiration
+- `ramp` — descending ramp (linear deceleration from peak to zero)
+
+### Operator control ranges (index.html sliders + js/main.js for PC-CSV controls)
+
+| Control | min | max | step | default | Notes |
+| --- | --- | --- | --- | --- | --- |
+| Tidal Volume (mL) | 200 | 800 | 10 | 500 | VC modes |
+| Pinsp above PEEP (cmH₂O) | 5 | 35 | 1 | 15 | PC-CMV |
+| Respiratory Rate (/min) | 6 | 35 | 1 | 14 | |
+| I:E ratio | — | — | — | 1:2 | buttons: 1:1, 1:1.5, 1:2, 1:3, 1:4 |
+| PEEP (cmH₂O) | 0 | 24 | 1 | 5 | |
+| FiO₂ (%) | 21 | 100 | 1 | 40 | |
+| Flow trigger (L/min) | 0.5 | 5 | 0.5 | 2.0 | trigger-type buttons: flow, pressure |
+| Pressure trigger (cmH₂O) | 0.5 | 5 | 0.5 | 1.0 | |
+| Hold duration (slider raw) | 3 | 20 | 1 | 5 | displayed value = slider ÷ 10 (so 0.3–2.0 s, default 0.5 s) |
+| Pressure Support (cmH₂O) | 5 | 30 | 1 | 10 | PC-CSV (control injected dynamically by ensurePcCsvControls()) |
+| Cycle % | 10 | 60 | 1 | 25 | PC-CSV |
+| Alarm: High Pressure (cmH₂O) | 20 | 60 | 1 | 40 | |
+| Alarm: High RR (/min) | 10 | 60 | 1 | 35 | |
+| Alarm: Apnea (s) | 5 | 60 | 1 | 20 | |
+| Alarm: Low V̇E (L/min) | 0 | 15 | 0.5 | 3.0 | |
+| Alarm: High V̇E (L/min) | 5 | 40 | 0.5 | 20.0 | |
+
+Last verified: 2026-05-30, commit 0a96113. These values can drift — re-verify
+before authoring.

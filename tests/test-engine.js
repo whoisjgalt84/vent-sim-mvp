@@ -154,7 +154,7 @@ console.log('  → Clinical note: Driving pressure 16.7 cmH2O > 15 — consider 
 // =============================================================================
 // TEST 4: Ventilator — Normal Patient, Standard Settings
 // =============================================================================
-section('TEST 4: Ventilator — Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2');
+section('Banner: Ventilator — Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2 — full TEST 4 follows TEST 3A');
 
 section('TEST 3A: Expiratory Completion - Analytical Time Constant Invariants');
 
@@ -176,7 +176,7 @@ assert('Completion at 5tau (%)',
 // =============================================================================
 // TEST 4: Ventilator â€” Normal Patient, Standard Settings
 // =============================================================================
-section('TEST 4: Ventilator â€” Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2');
+section('TEST 4: Ventilator — Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2');
 
 const ventNormal = new Ventilator(normalLung, {
     tidalVolume: 0.500,
@@ -733,7 +733,7 @@ console.log(`    PIP=${ventCOPD2.pip.toFixed(1)}  autoPEEP=${ventCOPD2.autoPeep.
 // =============================================================================
 // TEST 7: PC-CMV — Normal Lung
 // =============================================================================
-section('TEST 7: PC-CMV — Normal Lung (R=10, C=0.05)');
+section('TEST 9A: PC-CMV — Normal Lung (R=10, C=0.05)');
 
 // Normal lung, Pinsp=15, RR=14, I:E=1:2, PEEP=5
 const lungPC1 = new LungModel({ resistance: 10, compliance: 0.05 });
@@ -776,7 +776,7 @@ assert('PC V̇E (L/min)', ventPC1.minuteVentilation, pcVtSS1 * 14, 0.02);
 // =============================================================================
 // TEST 8: PC-CMV — ARDS (Low Compliance → Less Volume)
 // =============================================================================
-section('TEST 8: PC-CMV — ARDS (R=10, C=0.035)');
+section('TEST 9B: PC-CMV — ARDS (R=10, C=0.035)');
 
 // Same Pinsp=15, but much stiffer lungs
 // τ = 10 × 0.035 = 0.35 s
@@ -804,7 +804,7 @@ console.log(`    Normal VT=${(pcVt1*1000).toFixed(0)} vs ARDS VT=${(pcVt2*1000).
 // =============================================================================
 // TEST 9: PC-CMV — COPD (Gas Trapping)
 // =============================================================================
-section('TEST 9: PC-CMV — COPD with Gas Trapping (R=25, C=0.06)');
+section('TEST 9C: PC-CMV — COPD with Gas Trapping (R=25, C=0.06)');
 
 // High resistance, normal compliance
 // τ = 25 × 0.06 = 1.5 s
@@ -2143,7 +2143,7 @@ assert('Active CSV measured RR ≈ patient RR', simCsvActive.measuredRR, simCsvA
 // =============================================================================
 // TEST 41: Alarm Engine â€” No Alerts Normal
 // =============================================================================
-section('TEST 41: Alarm Engine â€” No Alerts Normal');
+section('TEST 41: Alarm Engine — No Alerts Normal');
 
 let alarms = AlarmEngine.evaluateAlarms({
     nowSec: 30,
@@ -2161,7 +2161,7 @@ assert('No alarms in normal state', alarms.length, 0, 0);
 // =============================================================================
 // TEST 42: Alarm Engine â€” High Pressure
 // =============================================================================
-section('TEST 42: Alarm Engine â€” High Pressure');
+section('TEST 42: Alarm Engine — High Pressure');
 
 alarms = AlarmEngine.evaluateAlarms({
     nowSec: 30,
@@ -2180,7 +2180,7 @@ assert('High pressure alarm active',
 // =============================================================================
 // TEST 43: Alarm Engine â€” High RR
 // =============================================================================
-section('TEST 43: Alarm Engine â€” High RR');
+section('TEST 43: Alarm Engine — High RR');
 
 alarms = AlarmEngine.evaluateAlarms({
     nowSec: 30,
@@ -2199,7 +2199,7 @@ assert('High RR alarm active',
 // =============================================================================
 // TEST 44: Alarm Engine â€” Apnea
 // =============================================================================
-section('TEST 44: Alarm Engine â€” Apnea');
+section('TEST 44: Alarm Engine — Apnea');
 
 alarms = AlarmEngine.evaluateAlarms({
     nowSec: 45,
@@ -2218,7 +2218,7 @@ assert('Apnea alarm active',
 // =============================================================================
 // TEST 45: Alarm Engine â€” Low Minute Ventilation
 // =============================================================================
-section('TEST 45: Alarm Engine â€” Low Minute Ventilation');
+section('TEST 45: Alarm Engine — Low Minute Ventilation');
 
 alarms = AlarmEngine.evaluateAlarms({
     nowSec: 30,
@@ -2237,7 +2237,7 @@ assert('Low VE alarm active',
 // =============================================================================
 // TEST 46: Alarm Engine â€” High Minute Ventilation
 // =============================================================================
-section('TEST 46: Alarm Engine â€” High Minute Ventilation');
+section('TEST 46: Alarm Engine — High Minute Ventilation');
 
 alarms = AlarmEngine.evaluateAlarms({
     nowSec: 30,
@@ -2256,7 +2256,7 @@ assert('High VE alarm active',
 // =============================================================================
 // TEST 47: Alarm Engine â€” Auto Reset
 // =============================================================================
-section('TEST 47: Alarm Engine â€” Auto Reset');
+section('TEST 47: Alarm Engine — Auto Reset');
 
 const alarmed = AlarmEngine.evaluateAlarms({
     nowSec: 30,

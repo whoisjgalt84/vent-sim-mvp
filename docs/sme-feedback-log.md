@@ -46,22 +46,41 @@ Where the change would likely live, so we can gauge review risk early:
 
 | ID | Logged | Reviewer (role) | Bucket | Severity | Status | Summary | Implicated layer | Reproduction / detail |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| SME-001 | 2026-05-30 | TBD | Needs-investigation | should-fix | investigating | Missed patient triggers when patient rate set above ~22/min, in VC-CMV and PC-CMV | simulation.js / ventilator.js (trigger logic) | Set patient effort on, raise patient RR above ~22; some efforts fail to trigger. Adjudicate bug vs. realistic ineffective triggering against Mireles-Cabodevila PVI papers before any fix. |
-| SME-002 | 2026-05-30 | TBD | Usability | should-fix | new | Multiple UI notes (specifics pending) | main.js / style.css (TBD) | Awaiting detail — split each specific UI note into its own row when received. |
-| SME-003 | 2026-05-30 | TBD | Needs-investigation | should-fix | new | Alarm concern (specifics pending) | alarms.js / main.js (TBD) | Awaiting detail — clarify whether alarm fired incorrectly (Bug) or alarm behavior was annoying/unclear (Usability). |
+| SME-001 | 2026-05-30 | Christian (self, RT) | Needs-investigation | should-fix | confirmed | Missed patient triggers when patient rate set above ~22/min, in VC-CMV and PC-CMV | simulation.js / ventilator.js (trigger logic) | Set patient effort on, raise patient RR above ~22; some efforts fail to trigger. Adjudicate bug vs. realistic ineffective triggering against Mireles-Cabodevila PVI papers before any fix. CORROBORATED by SME-004 (Scott Mahoney) independently. Mechanism located: js/simulation.js:352 phase-gated trigger latch; efforts whose neural onset lands during machine INSPIRATION/HOLD are silently dropped. Read-only recon complete; awaiting parametric sweep to pin the cliff. |
+| SME-002 | 2026-05-30 | TBD | Usability | should-fix | confirmed | Patient-effort sliders (Pmus/T-neural) run off-screen out of sidebar; units hidden unless hovered | style.css / main.js | Reported by Denis C and Scott Mahoney. Pmus/T-neural sliders extend past the sidebar edge; units only visible on hover. See also SME-010 (slider precision). |
+| SME-003 | 2026-05-30 | TBD | Needs-investigation | should-fix | investigating | Audible alarm not heard when alarms trip (may be user error / missing arm gesture) | alarm-audio.js / main.js | Reported by Rebecca Downs and Karen/Sarah; John C. Frostad noted a no-sound environment. Visual alarm fires but no audible tone. Diagnose user-error / missing arm-gesture vs. real defect before confirming. See SME-007. |
+| SME-004 | 2026-06-11 | Scott Mahoney (RT, Dir. Clinical Ed, 20+ yr) | Bug | blocker | confirmed | Trouble capturing patient effort in PC-CMV and VC-CMV; trying to make patient overbreathe set rate produced severe dyssynchrony he did not expect | simulation.js (trigger logic) | Independent corroboration of SME-001. Same root cause suspected. Exact I:E/hold not recorded. |
+| SME-005 | 2026-06-11 | Andrea Ritz (RN, 11+ yr) | Bug | blocker | confirmed | PC-CSV with patient RR set to 35: apnea alarm fired AND monitor displayed RR as 6 instead of ~35 | simulation.js / main.js (measured RR in spontaneous mode) | Likely related to trigger-drop bug since PC-CSV breaths are all patient-triggered. Reviewer expected measured RR near 35 and no apnea. |
+| SME-006 | 2026-06-11 | Karen LaRoche & Sarah Malyon (Clinical Specialists, RT, 30+/15+) | Bug | blocker | confirmed | Measured rate did not match patient rate in spontaneous mode | simulation.js / main.js (measured RR) | Second report of the measured-RR-in-spontaneous-mode defect (with SME-005). Screenshot in email. |
+| SME-007 | 2026-06-11 | Rebecca Downs (RN, Sim Educator, 16 yr) | Bug | blocker | investigating | Triggered high-pressure alarm visually but no audible alarm | alarm-audio.js / main.js | Corroborates SME-003. Reviewer flagged possible user error. Diagnose before confirming. |
+| SME-008 | 2026-06-11 | Scott Mahoney (RT, Dir. Clinical Ed) | Bug | should-fix | confirmed | Switching modes occasionally auto-silenced alarms for ~400-1300 s; reproduced in Chrome and Firefox | main.js / alarms.js | Possible learner-mislead (could mask apnea during a demo). Wide random-seeming range suggests a units/variable error. Hard to reproduce reliably. |
+| SME-009 | 2026-06-11 | Denis C (CHSOS) | Bug | should-fix | confirmed | Inspiratory hold in PC-CSV will not release after activation; VC-CMV and PC-CMV release correctly | simulation.js / main.js (hold logic, PC-CSV path) | Mode-specific, cleanly reproducible. |
+| SME-010 | 2026-06-11 | Denis C (CHSOS) + Scott Mahoney | Usability | should-fix | confirmed | Trigger pressure slider too short/coarse (jumps 0.5 to 5.0, little precision); especially small in PC-CSV | main.js / style.css | Two reporters. |
+| SME-011 | 2026-06-11 | Joel (RT educator) | Usability | nice-to-have | new | Set vs. measured parameters are intermixed; should be grouped like a real vent screen (set together, measured together) | main.js / style.css | Greg touched on this too. |
+| SME-012 | 2026-06-11 | Scott Mahoney | Usability | nice-to-have | new | Loops only display when Teaching Mode is OFF; wants loops available regardless | main.js |  |
+| SME-013 | 2026-06-11 | Greg Carter (Program Dir, 30+ yr) + Scott Mahoney | Usability | nice-to-have | new | Want ventilator mode shown alongside measured values in Teaching Mode (for a vent/patient system check view) | main.js | Two reporters. |
+| SME-014 | 2026-06-11 | Scott Mahoney | Usability | nice-to-have | new | Peak-pressure number scaling is visually distracting (draws the eye) | main.js / style.css |  |
+| SME-015 | 2026-06-11 | Greg, Scott, Karen & Sarah, Joel (4 senior RTs) | Feature | should-fix | new | Want I-time and/or flow as a settable variable instead of (or alongside) I:E ratio; I:E-only is uncommon on modern vents and limits synchrony/intrinsic-PEEP teaching | ventilator.js / main.js | DEFERRED to feature-review pass. Logged now because 4 independent senior-RT reports is itself the finding. |
 
 ## Theme tracker (patterns across reviewers)
 
 | Theme | Reports | Bucket | Severity | Status | Linked IDs | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Missed triggers at high patient rate | 1 | Needs-investigation | should-fix | investigating | SME-001 | Leading candidate for the first real engine investigation. Watch for corroboration from other reviewers before opening trigger logic (very-high-danger file). |
+| Missed triggers at high patient rate | 2 | Needs-investigation | should-fix | confirmed | SME-001, SME-004 | Confirmed by two independent reviewers. Mechanism located (simulation.js:352). Next: read-only parametric sweep, then fix-design decision. |
+| Measured RR wrong in spontaneous mode | 2 | Bug | blocker | confirmed | SME-005, SME-006 | Likely same family as trigger drop. |
+| Audible alarm not heard | 3 | Bug | blocker | investigating | SME-003, SME-007 (+ John C. Frostad noted no-sound environment) | Confirm vs. user error before fixing. |
+| Effort/trigger sliders off-screen or too coarse | 2 | Usability | should-fix | confirmed | SME-002, SME-010 |  |
+| I-time / flow control instead of I:E | 4 | Feature | should-fix | new | SME-015 | Four senior RTs; revisit in feature pass. |
 
 ## Reading the log (current priorities)
-- No blockers logged yet.
-- The trigger item (SME-001) is the strongest single signal so far, but it's one
-  report. Hold for a pattern before touching `simulation.js`; when we
-  investigate, it's read-only first.
-- UI and alarm items are awaiting specifics — chase the detail so they can be
-  sorted and clustered.
+- Round-1 intake (12 reviewers) surfaced three blocker-level engine bug themes:
+  missed triggers at high patient rate, measured RR wrong in spontaneous mode,
+  and audible alarm not heard.
+- Triggers and measured-RR are confirmed; the audible-alarm theme is blocker
+  severity but still in user-error-vs-defect triage (SME-003 / SME-007).
+- The trigger investigation is furthest along: corroborated by two independent
+  reviewers and mechanism located at `simulation.js:352`. Next is a read-only
+  parametric sweep, then a fix-design decision. Measured-RR (SME-005 / SME-006)
+  is likely the same family as the trigger drop.
 
-Last updated: 2026-05-30.
+Last updated: 2026-06-11.

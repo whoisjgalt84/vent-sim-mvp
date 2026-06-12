@@ -61,26 +61,28 @@ Where the change would likely live, so we can gauge review risk early:
 | SME-013 | 2026-06-11 | Greg Carter (Program Dir, 30+ yr) + Scott Mahoney | Usability | nice-to-have | new | Want ventilator mode shown alongside measured values in Teaching Mode (for a vent/patient system check view) | main.js | Two reporters. |
 | SME-014 | 2026-06-11 | Scott Mahoney | Usability | nice-to-have | new | Peak-pressure number scaling is visually distracting (draws the eye) | main.js / style.css |  |
 | SME-015 | 2026-06-11 | Greg, Scott, Karen & Sarah, Joel (4 senior RTs) | Feature | should-fix | new | Want I-time and/or flow as a settable variable instead of (or alongside) I:E ratio; I:E-only is uncommon on modern vents and limits synchrony/intrinsic-PEEP teaching | ventilator.js / main.js | DEFERRED to feature-review pass. Logged now because 4 independent senior-RT reports is itself the finding. |
+| SME-016 | 2026-06-11 | Engine investigation (Vesper + parametric sweep) | Physiology | should-fix | new | Failed/ineffective patient efforts are dropped SILENTLY — no waveform marker, no counter — in both the phase-gate case (VC/PC-CMV overbreathing) and the trigger-insensitivity case (PC-CSV). Mireles-Cabodevila taxonomy treats ineffective triggering as a VISIBLE, diagnosable event. | simulation.js / waveforms.js / main.js | Unifying fix candidate for the trigger themes: render failed triggers as visible ineffective efforts (Pmus present, no Pvent). Addresses SME-001/004 (make drops honest+visible) and the SME-005/006 UX gap (show efforts failing the threshold). Design decision pending: (a) correct the phase-gate so drops occur only for physiological timing/threshold reasons, AND (b) surface failed triggers visually. Validate any fix across the full patientRR x I:E x hold space, not one operating point. |
 
 ## Theme tracker (patterns across reviewers)
 
 | Theme | Reports | Bucket | Severity | Status | Linked IDs | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Missed triggers at high patient rate | 2 | Needs-investigation | should-fix | confirmed | SME-001, SME-004 | Confirmed by two independent reviewers. Mechanism located (simulation.js:352). Next: read-only parametric sweep, then fix-design decision. |
-| Measured RR wrong in spontaneous mode | 2 | Bug | blocker | confirmed | SME-005, SME-006 | Likely same family as trigger drop. |
+| Missed triggers at high patient rate | 2 | Needs-investigation | should-fix | confirmed | SME-001, SME-004 | Confirmed by two independent reviewers. Mechanism located (simulation.js:352). Next: read-only parametric sweep, then fix-design decision. SWEEP COMPLETE (scratch harness vs real engine). Cliff is NOT fixed-rate — it slides with machine inspiratory dead-window: I:E 1:2 no-hold cliff ~RR 30; I:E 1:1 cliff ~RR 22; hold 0.5s cliff ~RR 24; PC-CMV ~RR 30. Reconciles SME-001's '~22' as an I:E 1:1 / hold condition (default settings would not show it until ~30). Mechanism = line-352 phase-gate; above cliff, dropped efforts are silent (no failed-trigger marker). |
+| Measured RR wrong in spontaneous mode | 2 | Bug | blocker (reclassifying) | investigating | SME-005, SME-006 | Sweep did NOT reproduce SME-005 via the line-352 phase gate — PC-CSV tracks set rate under default effort. The single-digit-RR + apnea profile IS reproduced by TRIGGER INSENSITIVITY vs effort (weak Pmus or stiff Ptrig): e.g. Ptrig 5.0 at set-35 -> measRR 0 + apnea. Likely CORRECT physiology lacking a visible cue, not a measured-RR calculation bug. Separate root cause from SME-001/004. Capture reviewers' actual trigger type/sensitivity + effort settings (not recorded). |
 | Audible alarm not heard | 3 | Bug | blocker | investigating | SME-003, SME-007 (+ John C. Frostad noted no-sound environment) | Confirm vs. user error before fixing. |
 | Effort/trigger sliders off-screen or too coarse | 2 | Usability | should-fix | confirmed | SME-002, SME-010 |  |
 | I-time / flow control instead of I:E | 4 | Feature | should-fix | new | SME-015 | Four senior RTs; revisit in feature pass. |
 
 ## Reading the log (current priorities)
-- Round-1 intake (12 reviewers) surfaced three blocker-level engine bug themes:
-  missed triggers at high patient rate, measured RR wrong in spontaneous mode,
-  and audible alarm not heard.
-- Triggers and measured-RR are confirmed; the audible-alarm theme is blocker
-  severity but still in user-error-vs-defect triage (SME-003 / SME-007).
-- The trigger investigation is furthest along: corroborated by two independent
-  reviewers and mechanism located at `simulation.js:352`. Next is a read-only
-  parametric sweep, then a fix-design decision. Measured-RR (SME-005 / SME-006)
-  is likely the same family as the trigger drop.
+- Trigger sweep complete (scratch harness vs real engine). The trigger blocker
+  (SME-001/004) is confirmed: a sliding cliff (slides with machine inspiratory
+  dead-window, ~RR 22 at I:E 1:1 up to ~RR 30 at default I:E 1:2) plus a
+  silent-drop defect (no failed-trigger marker).
+- The measured-RR theme (SME-005/006) is reclassifying from blocker-bug toward
+  correct-physiology-needing-a-visible-cue: PC-CSV tracks set rate under default
+  effort, and the single-digit-RR + apnea profile comes from trigger
+  insensitivity vs effort, not a measured-RR calculation bug.
+- Both point to one unifying fix (SME-016): render ineffective efforts visibly
+  (Pmus present, no Pvent). Audible-alarm (SME-003/007) remains in triage.
 
 Last updated: 2026-06-11.

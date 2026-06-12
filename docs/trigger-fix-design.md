@@ -1,6 +1,6 @@
 # Design Spec — Patient-Trigger Eligibility Fix + Failed-Trigger Rendering
 
-Status: **DRAFT for review** (planning only — no engine code in this PR)
+Status: **APPROVED — decisions recorded; ready for PR2 (failing tests)** (planning only — no engine code in this PR)
 Author: Engine investigation (Vesper) · Date: 2026-06-11
 Tracker refs: SME-001, SME-004 (trigger drop); SME-005, SME-006 (PC-CSV measured RR);
 SME-016 (silent-drop / unifying fix)
@@ -63,6 +63,17 @@ insensitivity vs effort** (weak `Pmus` or stiff `Ptrig`), not the phase gate.
 The fix below addresses both by making *every* unrewarded effort an explicit,
 visible, counted event.
 
+**Reclassification (decision Q7).** SME-005/006 is **correct physiology lacking a
+visible cue, not a measured-RR calculation bug.** When a patient's effort cannot
+cross the set trigger sensitivity, the vent correctly delivers no breath, the
+measured (delivered) RR is correctly low, and apnea correctly fires — that is what
+a real ventilator does. **This fix does NOT change the trigger-threshold math
+(§2 gate c) or the apnea logic.** It adds *visibility* only: failed-trigger
+markers, a Teaching-Mode neural/effort-rate readout, and an ineffective-effort
+counter, so the learner can see *why* the delivered rate is low instead of being
+surprised by it. The phase-accident drop (SME-001/004) is the only genuinely
+*incorrect* behavior being corrected.
+
 ---
 
 ## 2. Target behavior — the eligibility rule
@@ -77,7 +88,18 @@ Three gates (all must hold to deliver):
 **(a) Ventilator available.** The machine is not mid-mandatory-breath. In engine
 terms: `this.phase === Phase.EXPIRATION` (the machine has opened exhalation and
 is willing to be re-triggered). `INSPIRATION` and `HOLD` mean the vent is busy
-delivering/holding a mandatory breath and cannot honor a trigger.
+delivering/holding a mandatory breath and cannot honor a trigger. An effort here
+resolves to the **terminal** outcome `gateFailed='ventilator_unavailable'`
+(decision Q2). **HOLD is treated identically to INSPIRATION** (decision Q6): a
+hold is a momentary measurement maneuver, not a ventilation mode, so an effort
+during it is an ineffective effort — acceptable because a hold should not be left
+engaged long enough to matter clinically.
+
+> **Future extension point (Q2).** `ventilator_unavailable` is a single named
+> terminal outcome *now*. A future branch may subdivide it into breath-stacking /
+> double-triggering / reverse-triggering once those phenomena are modeled. We do
+> **not** design stacking here; we only leave the seam (the `gateFailed` reason
+> code) where that subdivision would attach.
 
 **(b) Past the genuine expiratory refractory.** Defined on `phaseTime` *within
 expiration*, not on the neural-rollover tick: `this.phaseTime > this.triggerLockoutSeconds`
@@ -146,7 +168,7 @@ onNeuralInspirationEnd():
 
 | Gate failed | Engine condition | Emits | Taxonomy |
 | --- | --- | --- | --- |
-| (a) ventilator unavailable | effort while `phase ∈ {INSPIRATION, HOLD}` | **FAILED TRIGGER** `gateFailed='ventilator_unavailable'` | ineffective/wasted effort (vent busy) |
+| (a) ventilator unavailable | effort while `phase ∈ {INSPIRATION, HOLD}` (HOLD same as INSPIRATION, Q6) | **FAILED TRIGGER** `gateFailed='ventilator_unavailable'` — terminal now; future subdivision seam (Q2) | ineffective/wasted effort (vent busy) |
 | (b) refractory | effort within first `triggerLockoutSeconds` of expiration | **nothing** (transient hold; effort persists and is re-checked) | n/a unless whole window is refractory (degenerate → failed) |
 | (c) threshold | eligible, but deflection `<` sensitivity for the whole neural insp | **FAILED TRIGGER** `gateFailed='threshold'` | ineffective effort (sub-threshold) |
 | — no effort | `pMusMax==0` or `patientRR==0` or not in neural insp | **nothing** | passive patient (correct silence) |
@@ -198,13 +220,24 @@ new buffer is required.
   baseline whose height tracks `pmus`, with a tooltip naming the gate). **No new
   render plumbing — just richer events.**
 
-- **How `main.js` consumes it (counter fix):** add an "ineffective efforts"
-  count for the teaching panel derived from
-  `sim.getTriggerEvents(window).filter(e => e.type === 'failed').length`.
-  Measured RR is already computed from *delivered* breaths
-  (`breathTimestamps` → `_updateMeasuredRR`, `js/simulation.js:423-449`), so it
-  remains correct without change; the new failed-event trail is what explains a
-  low delivered RR instead of leaving it unexplained.
+- **How `main.js` consumes it (counter + dual-rate readout):**
+  - **Ineffective-effort counter:** add an "ineffective efforts" count for the
+    teaching panel derived from
+    `sim.getTriggerEvents(window).filter(e => e.type === 'failed').length`.
+  - **Delivered measured RR (unchanged, both modes):** already computed from
+    *delivered* breaths (`breathTimestamps` → `_updateMeasuredRR`,
+    `js/simulation.js:423-449`), so it remains correct without change; the new
+    failed-event trail is what explains a low delivered RR instead of leaving it
+    unexplained.
+  - **Teaching-Mode-only neural/effort RR (decision Q4):** in **Teaching Mode
+    only**, show a *second* rate readout — the patient's neural/effort rate
+    (the commanded `sim.patientRR`, or equivalently the neural-onset rate) —
+    displayed alongside the existing delivered measured RR. **Standard mode is
+    unchanged: delivered RR only** (the clinical monitor view). Rationale: this
+    directly resolves the SME-005/006 "expected 35, saw 6" confusion — the
+    learner sees both the patient's drive (e.g. 35) and what the vent actually
+    delivered (e.g. 6), with the failed-effort markers between them explaining the
+    gap. It is a teaching overlay, not a change to the clinical readout.
 
 ---
 
@@ -221,6 +254,15 @@ mandatory inspiration/refractory (timing mismatch / reverse-triggering territory
 auto-PEEP load). The whole point of the fix is to make the simulator agree with
 the taxonomy: an ineffective effort should be **shown and counted**, never
 silently dropped.
+
+Consistent with decision Q7: a sub-threshold effort producing no breath — and the
+apnea alarm that follows when efforts stay sub-threshold — is **clinically correct
+behavior**, faithful to the taxonomy. The fix therefore leaves the trigger-threshold
+math (§2 gate c) and the apnea logic **untouched**; it only renders the
+already-correct ineffective effort visible (marker + Teaching-Mode neural rate +
+counter). The sole *incorrect* behavior corrected by this work is the line-352
+phase-accident drop (gate a), where an effort the vent *should* have honored was
+dropped by timing coincidence.
 
 ---
 
@@ -334,33 +376,72 @@ validated (numbers) independently of the visual change (pixels).
 
 ---
 
-## Open questions (need Christian's clinical judgment)
+## Design decisions (resolved)
 
-1. **Refractory value.** Keep the hardcoded `triggerLockoutSeconds = 0.10` s as
-   the genuine post-breath refractory, or set a clinically-motivated value? Is
-   100 ms the right valve-reset / re-trigger lockout for teaching?
-2. **Inspiration-phase efforts: ineffective vs. double-trigger.** Should an effort
-   during the machine's mandatory inspiration be shown purely as an *ineffective
-   effort* (honest, simplest), or should the model eventually represent
-   breath-stacking / double-triggering / reverse-triggering (more realistic A/C
-   behavior)? This decides whether `ventilator_unavailable` is a terminal failure
-   or a future branch point.
-3. **PC-CSV sub-threshold → apnea.** Today an insensitive trigger in PC-CSV leads
-   to apnea (SME-005). Is "apnea when effort can't cross the trigger" the desired
-   teaching outcome, or should there be a visible "effort detected, below trigger"
-   cue *before* the apnea alarm — and should PC-CSV have any backup at all?
-4. **Two rates on the monitor?** Should the display distinguish *delivered* RR
-   from *neural/effort* RR (two numbers), so the learner sees both the patient's
-   drive and what the vent actually delivered? This directly addresses the
-   SME-005/006 "expected 35, saw 6" confusion.
-5. **Marker density.** One failed marker per ineffective effort — acceptable
-   visual density at high rates, or should closely-spaced failures aggregate?
-6. **Hold stealing trigger opportunity.** An inspiratory hold pulls the cliff to
-   ~RR 24 because HOLD blocks triggering. Hold is a momentary maneuver, not a
-   ventilation mode — should efforts during a hold be treated the same as during
-   inspiration (`ventilator_unavailable`), or should the spec say holds shouldn't
-   be left engaged long enough to matter?
-7. **Severity reclassification.** Given the sweep, SME-005/006 looks like
-   *correct physiology lacking a visible cue* rather than a measured-RR
-   calculation bug. Confirm the reclassification (blocker-bug → physiology +
-   UX) before PR2 encodes it as the expected behavior.
+Decisions recorded by Christian (RT) on 2026-06-11. Original question text is
+preserved under each item so the reasoning trail survives.
+
+1. **Refractory value.** *Question:* Keep the hardcoded
+   `triggerLockoutSeconds = 0.10` s as the genuine post-breath refractory, or set
+   a clinically-motivated value? Is 100 ms the right valve-reset / re-trigger
+   lockout for teaching?
+   - **Decision (RESOLVED-for-now):** Keep `triggerLockoutSeconds = 0.10` s.
+     Revisit only if a test or an SME shows it's wrong. No change in this work.
+
+2. **Inspiration-phase efforts: ineffective vs. double-trigger.** *Question:*
+   Should an effort during the machine's mandatory inspiration be shown purely as
+   an *ineffective effort* (honest, simplest), or should the model eventually
+   represent breath-stacking / double-triggering / reverse-triggering (more
+   realistic A/C behavior)? This decides whether `ventilator_unavailable` is a
+   terminal failure or a future branch point.
+   - **Decision (RESOLVED):** Model it as a **terminal ineffective effort now**
+     (`gateFailed='ventilator_unavailable'`), but **architect for future
+     extension** — the `gateFailed` reason code is the seam where a future branch
+     may subdivide into breath-stacking / double-triggering / reverse-triggering.
+     **Do not design stacking now.** Reflected in §2 gate (a), the failure-mode
+     table, and the "future extension point" note.
+
+3. **PC-CSV sub-threshold → apnea.** *Question:* Today an insensitive trigger in
+   PC-CSV leads to apnea (SME-005). Is "apnea when effort can't cross the trigger"
+   the desired teaching outcome, or should there be a visible "effort detected,
+   below trigger" cue *before* the apnea alarm — and should PC-CSV have any backup
+   at all?
+   - **Decision (DEFERRED to Limb 2 / PR4):** The Teaching-Mode neural-rate readout
+     (Q4) plus the failed-effort markers **already provide a pre-apnea cue**, so a
+     dedicated "effort below trigger" banner is **optional**. Finalize during PR4
+     rendering design. Apnea logic itself is unchanged (see Q7).
+
+4. **Two rates on the monitor?** *Question:* Should the display distinguish
+   *delivered* RR from *neural/effort* RR (two numbers), so the learner sees both
+   the patient's drive and what the vent actually delivered? This directly
+   addresses the SME-005/006 "expected 35, saw 6" confusion.
+   - **Decision (RESOLVED):** Show **both** delivered RR and neural/effort RR, but
+     **only in Teaching Mode**; **standard mode shows delivered RR only** (clinical
+     view). Specified in §3 (main.js consumer subsection).
+
+5. **Marker density.** *Question:* One failed marker per ineffective effort —
+   acceptable visual density at high rates, or should closely-spaced failures
+   aggregate?
+   - **Decision (DEFERRED to PR4):** Implementation note — **aggregate
+     closely-spaced failures if visually noisy.** Decide concretely during the
+     rendering limb.
+
+6. **Hold stealing trigger opportunity.** *Question:* An inspiratory hold pulls the
+   cliff to ~RR 24 because HOLD blocks triggering. Hold is a momentary maneuver,
+   not a ventilation mode — should efforts during a hold be treated the same as
+   during inspiration (`ventilator_unavailable`), or should the spec say holds
+   shouldn't be left engaged long enough to matter?
+   - **Decision (RESOLVED):** Treat efforts during **HOLD identically to
+     INSPIRATION** (`gateFailed='ventilator_unavailable'`), consistent with Q2. A
+     hold is a momentary measurement maneuver that should not be left engaged long
+     enough to matter; this is acceptable. Reflected in §2 gate (a).
+
+7. **Severity reclassification.** *Question:* Given the sweep, SME-005/006 looks
+   like *correct physiology lacking a visible cue* rather than a measured-RR
+   calculation bug. Confirm the reclassification (blocker-bug → physiology + UX)
+   before PR2 encodes it as the expected behavior.
+   - **Decision (RESOLVED):** Confirmed — SME-005/006 is **correct physiology
+     lacking a visible cue, not a measured-RR calculation bug.** The trigger math
+     and apnea logic are correct and stay unchanged; the fix adds visibility only
+     (failed markers + Teaching-Mode neural rate + ineffective-effort counter).
+     Reflected in §1 and §4.

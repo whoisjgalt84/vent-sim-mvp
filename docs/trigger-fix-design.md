@@ -178,6 +178,15 @@ present resolves to exactly one of {delivered breath, failed event}** — never 
 silent drop. Refractory is the only "no event" state and it is transient by
 construction.
 
+> **Latent defect (PR3 must close, validated by NT6).** Today's engine emits
+> *phantom* `'failed'` events for a commanded **zero-effort** oscillator
+> (`pMusMax 0`, `patientRR > 0`): the `simulation.js:352` latch sets
+> `pendingPatientTrigger` without checking `pMusMax`, and the fizzle path then
+> records a `'failed'` marker even though no effort exists. The **`effortPresent`
+> gate** in §2's pseudo-code (which requires `pMusMax > 0`) must guard against
+> this so the "— no effort → nothing" row above actually holds. NT6 is the
+> regression check that proves it.
+
 ---
 
 ## 3. Failed-trigger event contract
@@ -294,12 +303,19 @@ because its `failed === 0` may conflict with correct new visibility behavior.
 
 ### New tests to add (descriptions, not code)
 
-- **NT1 — Overbreathing synchrony across the sweep grid.** For patRR ∈
+- **NT1 — No silent drops; synchrony where physiology allows.** For patRR ∈
   {22,24,26,28,30} under I:E 1:2, I:E 1:1, and hold 0.5 s, with supra-threshold
-  effort: assert every neural onset that occurs in expiration results in a
-  delivered patient breath (no silent drop), and effective delivered RR tracks
-  patRR up to the physiological overlap limit. Proves the line-352 accident is
-  gone.
+  effort: assert the **accounting identity closes per cell** — every neural onset
+  resolves to a delivered breath, a visible `'failed'` event, or an effort still
+  in progress at the run boundary (`delivered + failed + inProgress == onsets`),
+  so there are **no silent drops**. Note this is NOT "every expiration onset
+  delivers": consistent with §2 gate (c), an effort beginning in expiration can
+  legitimately fail on **threshold** (early-expiration elastic recoil
+  `volumeAboveEq / C` exceeds `pMus`) or on **ventilator-availability** (machine
+  backup preempts it, recorded `phase = INSPIRATION`). For the known-clean cells
+  (I:E 1:2 at patRR ≤ 28, where the pre-fix sweep showed 100 % delivery) add a
+  **synchrony guard** asserting `delivered == in-expiration onsets`, proving valid
+  efforts trigger. Proves the line-352 accident is gone.
 - **NT2 — Effort during machine inspiration fails VISIBLY.** Construct timing so a
   neural onset lands in machine `INSPIRATION`: assert `patientBreathCount`
   excludes it AND a `'failed'` event with `gateFailed === 'ventilator_unavailable'`
@@ -310,17 +326,25 @@ because its `failed === 0` may conflict with correct new visibility behavior.
   `patientBreathCount === 0` AND failed-event count > 0 with
   `gateFailed === 'threshold'`. Proves the PC-CSV "where did my rate go" gap is
   now explained on-screen.
-- **NT4 — Measured RR tracks DELIVERED breaths + failed trail.** In a high-rate
-  drop scenario, assert `measuredRR` equals the rate implied by delivered-breath
-  intervals (not neural intent), AND that the deficit is accounted for by
-  `'failed'` events (delivered + failed + machine reconciles with neural onsets).
-  Proves measured RR is honest, not silently low.
+- **NT4 — Measured RR tracks DELIVERED breaths + full accounting identity.** In a
+  high-rate drop scenario, assert `measuredRR` equals the rate implied by
+  delivered-breath intervals (not neural intent), AND that the **full** identity
+  closes: `onsets == delivered + failed + inProgress`, where `inProgress` is the
+  single effort that may still be mid-neural-inspiration at the run boundary (this
+  boundary term must be included or the identity is short by one). Proves measured
+  RR is honest, not silently low, and that nothing is dropped silently.
 - **NT5 — PC-CSV unchanged for adequate effort (regression guard).** patRR 18 and
   35 with strong effort + default flow trigger: `measuredRR ≈ set`, failed-event
   count ≈ 0. Mirrors TEST 40 and the sweep's grid-E baseline.
 - **NT6 — No-effort passive emits nothing.** `pMusMax === 0`: zero patient
   triggers AND zero failed events (failed events require `Pmus` present). Guards
-  against over-emitting.
+  against over-emitting. **RED until the fix** (corrected from an earlier green
+  prediction): today's engine latches `pendingPatientTrigger` at
+  `simulation.js:352` *regardless of `pMusMax`*, so a commanded zero-effort
+  oscillator (`pMusMax 0`, `patientRR > 0`) emits spurious `'failed'` events via
+  the fizzle path. The patient-breaths==0 half is green today; the
+  zero-failed-events half is red until the `effortPresent` gate in §2 lands.
+  Keep the assertion exactly as specified — only the prediction changes.
 
 ---
 

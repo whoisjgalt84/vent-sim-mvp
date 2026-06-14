@@ -2407,6 +2407,191 @@ assert(
 
 
 // =============================================================================
+// NT1–NT6 — Trigger-eligibility CONTRACT TESTS (PR2)
+// =============================================================================
+// These encode the behavior specified in docs/trigger-fix-design.md §5. Several
+// are EXPECTED to fail against today's engine (marked [RED until fix]); that is
+// the point — they pass once the eligibility fix + failed-event emission lands.
+// Tests fail by ASSERTION only: quantities the engine does not expose (neural
+// onsets, machine phase at onset) are DERIVED by stepping sim.tick() and reading
+// existing public state across ticks (mirrors scratch/trigger-sweep.mjs).
+// The enriched failed-event fields (gateFailed) are referenced only as filters
+// on event objects, so their being undefined today is a clean assertion failure,
+// never a crash.
+
+// Build a sim the way main.js / the existing trigger tests do. Patient effort is
+// strong (pMusMax 8) so drops are due to eligibility, not a weak-effort miss.
+function ntBuildSim(ventOverrides, patientRR, preset = 'normal') {
+    const lung = LungModel.fromPreset(preset);
+    const vent = new Ventilator(lung, Object.assign({
+        mode: 'vc-cmv', flowPattern: 'square', holdTime: 0,
+        pMusMax: 8, neuralTi: 1.0, tidalVolume: 0.500,
+        inspiratoryPressure: 15, psPressure: 10, cyclePercent: 25,
+        respiratoryRate: 14, ieRatio: [1, 2], peep: 5, fio2: 0.40,
+        triggerType: 'flow', flowTriggerLpm: 2.0, pressureTriggerCmH2O: 1.0,
+    }, ventOverrides));
+    const sim = new SimulationEngine(vent, { sampleRate: 100, displaySeconds: 10 });
+    sim.patientRR = patientRR;
+    return sim;
+}
+
+// Step the sim and count neural-inspiration onsets, classified by the machine
+// phase the line-352 gate sees (the phase BEFORE the tick, which _advanceNeural
+// reads first). Uses only existing public fields: sim.dt, sim.phase,
+// sim.neuralInspActive. With neuralTi 1.0 s and these rates the neural period
+// always exceeds neuralTi, so the false->true onset edge is detected cleanly.
+function ntInstrument(sim, seconds) {
+    const steps = Math.round(seconds / sim.dt);
+    let onsetExp = 0;
+    let onsetInspHold = 0;
+    for (let i = 0; i < steps; i++) {
+        const phaseBefore = sim.phase;
+        const neuralBefore = sim.neuralInspActive;
+        sim.tick();
+        if (!neuralBefore && sim.neuralInspActive) {
+            if (phaseBefore === 'EXPIRATION') onsetExp++;
+            else onsetInspHold++;            // INSPIRATION or HOLD
+        }
+    }
+    return { onsetExp, onsetInspHold, onsetTotal: onsetExp + onsetInspHold };
+}
+
+// Count failed-trigger events, optionally filtered by gateFailed reason. Reading
+// e.gateFailed on today's {type,time} events yields undefined (no crash); a
+// gate-filtered count is therefore 0 today, which is the intended RED.
+function ntFailedCount(sim, gate) {
+    const evs = sim.getTriggerEvents(0, sim.globalTime);
+    return evs.filter(e => e.type === 'failed' && (gate === undefined || e.gateFailed === gate)).length;
+}
+
+section('NT1 [FIXED to §2] — No silent drops; synchrony where physiology allows');
+{
+    // §2 guarantee: every neural effort resolves to a delivered breath, a VISIBLE
+    // failed event, or is still in progress at the run boundary — never a SILENT
+    // drop. An effort beginning in expiration may legitimately FAIL: on gate (c)
+    // threshold (early-expiration recoil volumeAboveEq/C exceeds pMus) or on
+    // gate (a) ventilator-availability (machine backup preempts it). So we assert
+    // the accounting identity, NOT forced delivery of every expiration onset.
+    // The strict per-onset decomposition by onset-phase is NOT reconstructable
+    // (a VU event from a preempted expiration onset records phase=INSPIRATION),
+    // so the correct strict invariant is the GLOBAL identity over all onsets.
+    const conds = [
+        { name: 'I:E 1:2',   ov: {} },
+        { name: 'I:E 1:1',   ov: { ieRatio: [1, 1] } },
+        { name: 'hold 0.5s', ov: { holdTime: 0.5 } },
+    ];
+    for (const c of conds) {
+        for (const rr of [22, 24, 26, 28, 30]) {
+            const sim = ntBuildSim(c.ov, rr);
+            const ins = ntInstrument(sim, 60);
+            const delivered = sim.patientBreathCount;
+            const failed = ntFailedCount(sim);  // all 'failed' events (VU + threshold)
+            const inProgress = (sim.neuralInspActive && !sim.neuralCycleResolved) ? 1 : 0;
+            // (1) No SILENT drop: delivered + failed + in-progress accounts for every onset.
+            assert(`NT1 ${c.name} patRR ${rr}: no silent drop (delivered+failed+inProgress == onsets)`,
+                delivered + failed + inProgress, ins.onsetTotal, 0);
+            // (2) Synchrony guard: in the known-clean cells (I:E 1:2, patRR <= 28)
+            //     physiology allows every in-expiration effort to deliver — prove it.
+            if (c.name === 'I:E 1:2' && rr <= 28) {
+                assert(`NT1 ${c.name} patRR ${rr}: synchrony — delivered == in-expiration onsets`,
+                    delivered, ins.onsetExp, 0);
+            }
+        }
+    }
+}
+
+section('NT2 [RED until fix] — Effort during machine INSPIRATION fails visibly');
+{
+    // I:E 1:1 at patRR 30 forces many neural onsets into machine INSPIRATION.
+    const sim = ntBuildSim({ ieRatio: [1, 1] }, 30);
+    const ins = ntInstrument(sim, 60);
+    const failedVU = ntFailedCount(sim, 'ventilator_unavailable');
+    // sanity: scenario really does land onsets in inspiration (green today)
+    assertTrue('NT2 scenario produces inspiration-phase onsets (onsetInspHold > 0)',
+        ins.onsetInspHold > 0);
+    // (a) those onsets deliver no breath — all deliveries come from expiration onsets (green)
+    assertTrue('NT2(a) inspiration-phase onsets deliver no breath',
+        sim.patientBreathCount <= ins.onsetExp);
+    // (b) each emits a failed(ventilator_unavailable) event (RED today: field absent / not emitted)
+    assert('NT2(b) failed(ventilator_unavailable) count == inspiration-phase onsets',
+        failedVU, ins.onsetInspHold, 0);
+}
+
+section('NT3 [RED until fix] — Sub-threshold effort fails visibly (mirror 28E/28G + PC-CSV)');
+{
+    // NT3a: VC flow, weak effort vs hard flow trigger (mirrors TEST 28E params)
+    const simA = ntBuildSim({ respiratoryRate: 6, pMusMax: 0.5, flowTriggerLpm: 5.0 }, 20);
+    ntInstrument(simA, 60);
+    assert('NT3a VC flow sub-threshold: patient breaths == 0', simA.patientBreathCount, 0, 0);
+    assertTrue('NT3a VC flow sub-threshold: emits failed(threshold) event',
+        ntFailedCount(simA, 'threshold') > 0);
+
+    // NT3b: VC pressure, weak effort vs hard pressure trigger (mirrors TEST 28G params)
+    const simB = ntBuildSim({ respiratoryRate: 6, pMusMax: 0.5, triggerType: 'pressure', pressureTriggerCmH2O: 2.0 }, 20);
+    ntInstrument(simB, 60);
+    assert('NT3b VC pressure sub-threshold: patient breaths == 0', simB.patientBreathCount, 0, 0);
+    assertTrue('NT3b VC pressure sub-threshold: emits failed(threshold) event',
+        ntFailedCount(simB, 'threshold') > 0);
+
+    // NT3c: PC-CSV, strong effort but stiff pressure trigger (SME-005 profile: set 35 -> collapse)
+    const simC = ntBuildSim({ mode: MODE_PC_CSV, psPressure: 10, cyclePercent: 25, triggerType: 'pressure', pressureTriggerCmH2O: 5.0 }, 35);
+    ntInstrument(simC, 60);
+    assertTrue('NT3c PC-CSV stiff trigger: delivered rate collapses (measuredRR < set 35)',
+        simC.measuredRR < 35);
+    assertTrue('NT3c PC-CSV stiff trigger: emits failed(threshold) event',
+        ntFailedCount(simC, 'threshold') > 0);
+}
+
+section('NT4 [FIXED to §2] — Full accounting identity + measured-RR honesty (high rate)');
+{
+    // VC I:E 1:2 at patRR 42 (well above cliff). Every neural onset must resolve
+    // to a delivered patient breath, a failed event, OR an effort still in its
+    // neural inspiration at the run boundary — no silent loss.
+    const sim = ntBuildSim({}, 42);
+    const ins = ntInstrument(sim, 60);
+    const failedAll = ntFailedCount(sim);
+    const inProgress = (sim.neuralInspActive && !sim.neuralCycleResolved) ? 1 : 0;
+    assert('NT4 full identity: onsets == delivered + failed + inProgress',
+        sim.patientBreathCount + failedAll + inProgress, ins.onsetTotal, 0);
+    // measured RR reflects DELIVERED breaths (self-consistency; green today and post-fix)
+    const deliveredRatePerMin = sim.breathCount / (sim.globalTime / 60);
+    assertBetween('NT4 measuredRR tracks delivered-breath rate',
+        sim.measuredRR, deliveredRatePerMin * 0.6, deliveredRatePerMin * 1.4);
+}
+
+section('NT5 [GREEN guard] — PC-CSV unchanged for adequate effort');
+{
+    // Strong effort + default flow trigger: PC-CSV already tracks set rate today
+    // and must keep doing so after the fix. Regression guard (mirrors TEST 40 +
+    // sweep grid E).
+    for (const rr of [18, 35]) {
+        const sim = ntBuildSim({ mode: MODE_PC_CSV, psPressure: 10, cyclePercent: 25 }, rr);
+        ntInstrument(sim, 60);
+        assertBetween(`NT5 PC-CSV patRR ${rr}: measuredRR ~= set`,
+            sim.measuredRR, rr * 0.85, rr * 1.15);
+        assertTrue(`NT5 PC-CSV patRR ${rr}: failed events ~= 0`,
+            ntFailedCount(sim) <= 1);
+    }
+}
+
+section('NT6 [RED until fix] — Passive (no effort) emits nothing');
+{
+    // Oscillator commanded (patientRR 20) but pMusMax 0: no Pmus -> no breaths,
+    // and per design-spec §2 ("no effort -> nothing") no failed events either.
+    // NOTE: the failed==0 part is RED today even though spec §5 predicted green —
+    // today's engine latches pending at simulation.js:352 regardless of pMusMax,
+    // so the fizzle path emits spurious 'failed' markers for a zero-effort
+    // oscillator. The fix's effortPresent gate (spec §2) closes this. The
+    // patient-breaths==0 part is green today.
+    const sim = ntBuildSim({ pMusMax: 0 }, 20);
+    ntInstrument(sim, 60);
+    assert('NT6 passive: patient breaths == 0', sim.patientBreathCount, 0, 0);
+    assertTrue('NT6 passive: failed events == 0 (no Pmus -> no ineffective effort)',
+        ntFailedCount(sim) === 0);
+}
+
+
+// =============================================================================
 // RESULTS
 // =============================================================================
 section('RESULTS');

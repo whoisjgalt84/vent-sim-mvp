@@ -160,7 +160,8 @@ export class SimulationEngine {
         this.patientRR = 0;               // breaths/min (0 = passive)
         this.neuralTimer = 0;             // seconds within current neural cycle
         this.neuralInspActive = false;    // currently in neural inspiration?
-        this.pendingPatientTrigger = false; // effort began during expiratory lockout
+        this.neuralCycleResolved = false; // one trigger outcome per neural inspiration (delivered OR failed)
+        this.neuralEligibleSeen = false;  // effort reached the threshold gate this neural inspiration
         this.scheduledBreathTrigger = null;
 
         // --- Per-Breath Measurements ---
@@ -321,13 +322,18 @@ export class SimulationEngine {
     /**
      * Advance the patient's neural oscillator by one time step.
      *
-     * The oscillator cycles at patientRR independently. When a new
-     * neural inspiration begins during machine expiration, it creates
-     * patient effort that may later satisfy the ventilator trigger.
+     * The oscillator cycles at patientRR independently of the ventilator. This
+     * method advances only the neural CLOCK and the neuralInspActive state; the
+     * trigger decision itself is made by _evaluatePatientTrigger() after physics
+     * is computed (design spec §2). A neural inspiration that ends without
+     * delivering a breath, yet was eligible to trigger, is resolved here as a
+     * 'threshold' ineffective effort.
      */
     _advanceNeural() {
         if (this.patientRR <= 0) {
-            this.pendingPatientTrigger = false;
+            // No neural drive → no per-cycle trigger state to carry.
+            this.neuralCycleResolved = false;
+            this.neuralEligibleSeen = false;
             return;
         }
 
@@ -336,34 +342,55 @@ export class SimulationEngine {
 
         this.neuralTimer += this.dt;
 
-        // End neural inspiration when neuralTi elapsed
+        // End neural inspiration when neuralTi elapsed.
         if (this.neuralInspActive && this.neuralTimer >= neuralTi) {
             this.neuralInspActive = false;
+            this._onNeuralInspirationEnd();
         }
 
-        // Start new neural cycle when full cycle time elapsed
+        // Start a new neural cycle when the full cycle time elapses. A fresh
+        // neural inspiration begins undecided (no outcome, no eligibility yet).
         if (this.neuralTimer >= neuralCycleTime) {
             this.neuralTimer -= neuralCycleTime;  // carry remainder for timing accuracy
             this.neuralInspActive = true;
-
-            // Patient effort begins here, but the ventilator should only trigger
-            // if the selected trigger variable crosses its sensitivity threshold.
-            // Actual trigger detection occurs after expiration physics is computed.
-            if (this.phase === Phase.EXPIRATION) {
-                this.pendingPatientTrigger = true;
-            }
+            this.neuralCycleResolved = false;
+            this.neuralEligibleSeen = false;
         }
-
-        this._resolvePendingPatientTrigger();
     }
 
-    _maybeTriggerFromPatientEffort() {
-        if (!this.pendingPatientTrigger) return;
-        if (this.phase !== Phase.EXPIRATION) return;
-        if (this.phaseTime <= this.triggerLockoutSeconds) return;
-        if (this.patientRR <= 0 || this.vent.pMusMax <= 0) return;
-        if (!this.neuralInspActive) return;
+    /**
+     * Three-gate patient-trigger eligibility, evaluated EVERY tick while a neural
+     * inspiration is active (design spec §2). Exactly one outcome per neural
+     * inspiration — a delivered patient breath OR a failed-trigger event — never
+     * a silent drop. The trigger MATH (gate c) is unchanged from before; only
+     * WHEN/HOW OFTEN it is evaluated, and what is recorded on failure, changed.
+     */
+    _evaluatePatientTrigger() {
+        // Effort must actually be present. A commanded oscillator with zero Pmus
+        // is passive and produces NO event (closes the zero-effort phantom failure).
+        const effortPresent =
+            this.patientRR > 0 && this.vent.pMusMax > 0 && this.neuralInspActive;
+        if (!effortPresent) return;
 
+        // One outcome per neural inspiration.
+        if (this.neuralCycleResolved) return;
+
+        // Gate (a) — ventilator available? A mandatory INSPIRATION/HOLD cannot
+        // honor a trigger; the effort is ineffective (HOLD treated as INSPIRATION).
+        if (this.phase !== Phase.EXPIRATION) {
+            this._recordFailedTrigger('ventilator_unavailable');
+            this.neuralCycleResolved = true;
+            return;
+        }
+
+        // Gate (b) — past the genuine post-breath refractory? Within it the effort
+        // is real but too soon: hold and re-check next tick (NOT a failure).
+        if (this.phaseTime <= this.triggerLockoutSeconds) return;
+
+        // Gates (a)+(b) passed → the effort is eligible to trigger this cycle.
+        this.neuralEligibleSeen = true;
+
+        // Gate (c) — does the effort cross sensitivity? (existing math, UNCHANGED)
         const pmus = this.currentPmus;
         const elasticRecoilPressure = this.volumeAboveEq / this.lung.compliance;
 
@@ -382,9 +409,31 @@ export class SimulationEngine {
                 : inspiratoryFlowDeflectionLpm >= this.vent.flowTriggerLpm;
 
         if (triggered) {
-            this.pendingPatientTrigger = false;
             this.scheduledBreathTrigger = 'patient';
+            this.neuralCycleResolved = true;
         }
+        // else: eligible but sub-threshold this tick → keep evaluating until the
+        // neural inspiration ends, where it resolves as a 'threshold' failure.
+    }
+
+    /**
+     * Neural inspiration just ended. If the effort became eligible (passed the
+     * ventilator-available and refractory gates) but never crossed the trigger
+     * threshold, it is an ineffective effort — record it as a failed trigger.
+     */
+    _onNeuralInspirationEnd() {
+        if (this.neuralEligibleSeen && !this.neuralCycleResolved) {
+            this._recordFailedTrigger('threshold');
+        }
+    }
+
+    /** Record an ineffective patient effort (Pmus present, no delivered breath). */
+    _recordFailedTrigger(gateFailed) {
+        this._recordTriggerEvent('failed', this.globalTime, {
+            gateFailed,
+            pmus: this.currentPmus,
+            phase: this.phase,
+        });
     }
 
 
@@ -392,22 +441,10 @@ export class SimulationEngine {
     // BREATH STATE MACHINE
     // =========================================================================
 
-    _resolvePendingPatientTrigger() {
-        if (!this.pendingPatientTrigger) return;
-
-        if (this.phase !== Phase.EXPIRATION) {
-            this.pendingPatientTrigger = false;
-            return;
-        }
-
-        if (!this.neuralInspActive) {
-            this.pendingPatientTrigger = false;
-            this._recordTriggerEvent('failed', this.globalTime);
-        }
-    }
-
-    _recordTriggerEvent(type, time = this.globalTime) {
-        this.triggerEvents.push({ type, time });
+    _recordTriggerEvent(type, time = this.globalTime, extra = {}) {
+        // Backward compatible: delivered ('machine'/'patient') events keep the
+        // {type, time} shape; failed events add {gateFailed, pmus, phase} (§3).
+        this.triggerEvents.push({ type, time, ...extra });
 
         const cutoff = time - this.triggerEventRetentionSeconds;
         while (this.triggerEvents.length > 0 && this.triggerEvents[0].time < cutoff) {
@@ -690,7 +727,7 @@ export class SimulationEngine {
     tick() {
         this._advanceNeural();
         this._computePhysics();
-        this._maybeTriggerFromPatientEffort();
+        this._evaluatePatientTrigger();
         this._checkTransitions();
 
         // Volume display: delivered this breath (starts at 0 each breath)
@@ -771,7 +808,8 @@ export class SimulationEngine {
         this.currentPressure   = this.vent.peep;
         this.neuralTimer       = 0;
         this.neuralInspActive  = false;
-        this.pendingPatientTrigger = false;
+        this.neuralCycleResolved = false;
+        this.neuralEligibleSeen = false;
         this.scheduledBreathTrigger = null;
         this.breathCount       = 0;
         this.machineBreathCount = 0;

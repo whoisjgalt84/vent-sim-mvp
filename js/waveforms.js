@@ -34,6 +34,7 @@ export class WaveformRenderer {
 
         // Display settings
         this.label     = options.label     ?? '';
+        this.kind      = options.kind      ?? null;  // 'pressure' | 'volume' | 'flow' — routes highlight segments
         this.color     = options.color     ?? '#00ff87';
         this.bgColor   = options.bgColor   ?? '#0d1117';
         this.gridColor = options.gridColor ?? 'rgba(255,255,255,0.07)';
@@ -129,8 +130,9 @@ export class WaveformRenderer {
      * @param {number[]} valueData - Y values (in display units)
      * @param {{ time: number, type: string }[]} triggerEvents - Overlay markers
      * @param {{ tailWindow?: { start: number, end: number }, baselineReached?: boolean } | null} overlay
+     * @param {Array} highlights - Reusable highlight segments (see _drawWaveformHighlights)
      */
-    render(timeData, valueData, triggerEvents = [], overlay = null) {
+    render(timeData, valueData, triggerEvents = [], overlay = null, highlights = []) {
         // Resize in case the window changed
         this._resizeCanvas();
 
@@ -262,6 +264,9 @@ export class WaveformRenderer {
             );
         }
 
+        // Reusable trace highlights (e.g. ineffective-effort flow deflection).
+        this._drawWaveformHighlights(ctx, highlights, timeData, valueData, xScale, yScale, plot);
+
         this._drawTriggerMarkers(ctx, triggerEvents, xScale, plot);
 
         // --- Draw Y-axis label (rotated, left side) ---
@@ -319,12 +324,14 @@ export class WaveformRenderer {
         ctx.clip();
 
         for (const event of triggerEvents) {
+            // Failed (ineffective) efforts are rendered as a highlighted amber
+            // segment on the flow trace by _drawWaveformHighlights — not a marker.
+            if (event.type === 'failed') continue;
+
             const x = xScale(event.time);
 
             if (event.type === 'patient') {
                 this._drawPatientTriggerMarker(ctx, x, plot);
-            } else if (event.type === 'failed') {
-                this._drawFailedTriggerMarker(ctx, x, plot);
             } else {
                 this._drawMachineTriggerMarker(ctx, x, plot);
             }
@@ -368,19 +375,92 @@ export class WaveformRenderer {
         ctx.fill();
     }
 
-    _drawFailedTriggerMarker(ctx, x, plot) {
-        const bottom = plot.y + plot.h - 2;
+    /**
+     * REUSABLE HIGHLIGHT PRIMITIVE — recolors and slightly thickens the existing
+     * trace polyline between tStart and tEnd. Trace-agnostic: any feature can feed
+     * segments (ineffective effort now; gas trapping, successful/auto trigger,
+     * etc. later). It changes NO data — it re-strokes the same sample points.
+     * Each segment: { trace, tStart, tEnd, color, lineWidthDelta, label, tooltip }.
+     * A segment is drawn only on the renderer whose `kind` matches `segment.trace`.
+     */
+    _drawWaveformHighlights(ctx, segments, timeData, valueData, xScale, yScale, plot) {
+        const mine = (segments || []).filter((s) => s && s.trace === this.kind);
+        this._highlightHoverRegions = [];
+        if (mine.length === 0) { this._syncHighlightTooltip(); return; }
 
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = 1.2;
+        const teachingMode = document.body.classList.contains('teaching-mode');
+        ctx.save();
         ctx.beginPath();
-        ctx.moveTo(x, bottom);
-        ctx.lineTo(x, bottom - 12);
-        ctx.stroke();
+        ctx.rect(plot.x, plot.y, plot.w, plot.h);
+        ctx.clip();
 
-        ctx.beginPath();
-        ctx.arc(x, bottom - 4, 3.2, 0, Math.PI * 2);
-        ctx.stroke();
+        for (const seg of mine) {
+            // sample indices inside [tStart, tEnd]
+            let i0 = -1, i1 = -1;
+            for (let i = 0; i < timeData.length; i++) {
+                if (timeData[i] >= seg.tStart && i0 === -1) i0 = i;
+                if (timeData[i] <= seg.tEnd) i1 = i;
+            }
+            if (i0 === -1 || i1 - i0 < 1) continue;
+
+            ctx.strokeStyle = seg.color;
+            ctx.lineWidth = 1.8 + (seg.lineWidthDelta ?? 0);   // base trace is 1.8
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            let minX = Infinity, maxX = -Infinity, topY = Infinity;
+            for (let i = i0; i <= i1; i++) {
+                const px = xScale(timeData[i]);
+                const py = Math.max(plot.y, Math.min(plot.y + plot.h, yScale(valueData[i])));
+                if (i === i0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                if (px < minX) minX = px;
+                if (px > maxX) maxX = px;
+                if (py < topY) topY = py;
+            }
+            ctx.stroke();
+
+            // Teaching Mode: small label near the segment.
+            if (teachingMode && seg.label) {
+                ctx.fillStyle = seg.color;
+                ctx.font = '10px system-ui, -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(seg.label, (minX + maxX) / 2, Math.max(plot.y + 10, topY - 4));
+            }
+            if (seg.tooltip) this._highlightHoverRegions.push({ x0: minX, x1: maxX, text: seg.tooltip });
+        }
+        ctx.restore();
+        this._ensureHighlightHover();
+        this._syncHighlightTooltip();
+    }
+
+    /** One-time hover wiring: surfaces a segment's tooltip via the canvas title. */
+    _ensureHighlightHover() {
+        if (this._highlightHoverBound) return;
+        this._highlightHoverBound = true;
+        this._highlightHoverX = null;
+        this.canvas.addEventListener('mousemove', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            this._highlightHoverX = e.clientX - rect.left;   // CSS px, same domain as xScale
+            this._syncHighlightTooltip();
+        });
+        this.canvas.addEventListener('mouseleave', () => {
+            this._highlightHoverX = null;
+            this._syncHighlightTooltip();
+        });
+    }
+
+    /** Set canvas.title to the tooltip of the highlighted segment under the cursor. */
+    _syncHighlightTooltip() {
+        const regions = this._highlightHoverRegions || [];
+        const x = this._highlightHoverX;
+        let text = '';
+        if (x != null) {
+            for (const r of regions) {
+                if (x >= r.x0 - 3 && x <= r.x1 + 3) { text = r.text; break; }
+            }
+        }
+        if (this.canvas.title !== text) this.canvas.title = text;
     }
 }
 
@@ -687,6 +767,7 @@ export class WaveformDisplay {
         // Pressure: Yellow/amber — the classic ventilator pressure color
         this.pressureRenderer = new WaveformRenderer(canvases.pressure, {
             label: 'Paw (cmH₂O)',
+            kind:  'pressure',
             color: '#f0c050',
             yMin:  0,
         });
@@ -694,6 +775,7 @@ export class WaveformDisplay {
         // Volume: Cyan — clearly distinct from pressure
         this.volumeRenderer = new WaveformRenderer(canvases.volume, {
             label: 'Vol (mL)',
+            kind:  'volume',
             color: '#4fc3f7',
             yMin: -20,
         });
@@ -701,6 +783,7 @@ export class WaveformDisplay {
         // Flow: Green — the standard flow trace color
         this.flowRenderer = new WaveformRenderer(canvases.flow, {
             label: 'Flow (L/min)',
+            kind:  'flow',
             color: '#66bb6a',
         });
     }
@@ -739,9 +822,14 @@ export class WaveformDisplay {
             }
             : null;
 
-        this.pressureRenderer.render(time, pressure, triggerEvents);
-        this.volumeRenderer.render(time, volume, triggerEvents);
-        this.flowRenderer.render(time, flow, triggerEvents, flowOverlay);
+        // PR4a producer: ineffective-effort flow highlights (tagged trace:'flow',
+        // so only the flow renderer draws them; the others filter them out).
+        const neuralTi = sim.vent?.neuralTi ?? 1.0;
+        const highlights = this._deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi);
+
+        this.pressureRenderer.render(time, pressure, triggerEvents, null, highlights);
+        this.volumeRenderer.render(time, volume, triggerEvents, null, highlights);
+        this.flowRenderer.render(time, flow, triggerEvents, flowOverlay, highlights);
     }
 
     /**
@@ -752,5 +840,62 @@ export class WaveformDisplay {
      */
     onResize(ventilator) {
         this.render(ventilator);
+    }
+
+    /**
+     * PRODUCER (the only one wired now): turn 'failed' trigger events into flow
+     * highlight segments. An ineffective effort recorded DURING EXPIRATION (a
+     * gate-c 'threshold' miss) leaves a visible flow deflection — the expiratory
+     * trace bends toward baseline without reaching it. VU failures during a
+     * mandatory inspiration have no expiratory flow deflection (they scallop
+     * pressure instead) and so are not highlighted on the flow trace.
+     */
+    _deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi) {
+        // Amber/orange from the existing caution palette (--color-warning, css/style.css:38).
+        const CAUTION_AMBER = '#ff9800';
+        const win = Math.max(0.3, neuralTi || 1.0);   // the effort's own mechanical window
+        const segments = [];
+        for (const ev of (triggerEvents || [])) {
+            if (ev.type !== 'failed') continue;
+            if (ev.phase !== 'EXPIRATION') continue;  // only expiratory efforts bend the flow trace
+            const span = this._deflectionSpan(time, flow, ev.time, win);
+            if (!span) continue;
+            segments.push({
+                trace: 'flow',
+                tStart: span.tStart,
+                tEnd: span.tEnd,
+                color: CAUTION_AMBER,
+                lineWidthDelta: 1.4,                  // ~1.8 base → ~3.2 px, clearly thicker
+                label: 'ineffective effort',
+                tooltip: 'Ineffective effort — patient pulled but did not trigger',
+            });
+        }
+        return segments;
+    }
+
+    /**
+     * Bound the deflection span from the FLOW DATA itself (not an arbitrary ±N ms).
+     * A 'threshold' failure is recorded at the effort's neural-inspiration END, so
+     * search the one-neuralTi window ending there, take the least-negative flow
+     * LOCAL MAX (the peak of the bend toward baseline), then expand to the flow
+     * minima on each side. The result is exactly the visible deflection bump.
+     */
+    _deflectionSpan(time, flow, eventTime, win) {
+        const n = time.length;
+        if (n < 3) return null;
+        let lo = 0, hi = 0, haveLo = false;
+        for (let i = 0; i < n; i++) {
+            if (time[i] >= eventTime - win && !haveLo) { lo = i; haveLo = true; }
+            if (time[i] <= eventTime + 1e-9) hi = i;
+        }
+        if (!haveLo || hi - lo < 2) return null;
+        let peak = lo;
+        for (let i = lo; i <= hi; i++) if (flow[i] > flow[peak]) peak = i;
+        let a = peak;
+        while (a > lo && flow[a - 1] <= flow[a]) a--;     // walk down the left slope to the trough
+        let b = peak;
+        while (b < hi && flow[b + 1] <= flow[b]) b++;      // walk down the right slope to the trough
+        if (b - a < 1) return null;
+        return { tStart: time[a], tEnd: time[b] };
     }
 }

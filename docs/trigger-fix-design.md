@@ -178,6 +178,15 @@ present resolves to exactly one of {delivered breath, failed event}** — never 
 silent drop. Refractory is the only "no event" state and it is transient by
 construction.
 
+> **Latent defect (PR3 must close, validated by NT6).** Today's engine emits
+> *phantom* `'failed'` events for a commanded **zero-effort** oscillator
+> (`pMusMax 0`, `patientRR > 0`): the `simulation.js:352` latch sets
+> `pendingPatientTrigger` without checking `pMusMax`, and the fizzle path then
+> records a `'failed'` marker even though no effort exists. The **`effortPresent`
+> gate** in §2's pseudo-code (which requires `pMusMax > 0`) must guard against
+> this so the "— no effort → nothing" row above actually holds. NT6 is the
+> regression check that proves it.
+
 ---
 
 ## 3. Failed-trigger event contract
@@ -320,7 +329,13 @@ because its `failed === 0` may conflict with correct new visibility behavior.
   count ≈ 0. Mirrors TEST 40 and the sweep's grid-E baseline.
 - **NT6 — No-effort passive emits nothing.** `pMusMax === 0`: zero patient
   triggers AND zero failed events (failed events require `Pmus` present). Guards
-  against over-emitting.
+  against over-emitting. **RED until the fix** (corrected from an earlier green
+  prediction): today's engine latches `pendingPatientTrigger` at
+  `simulation.js:352` *regardless of `pMusMax`*, so a commanded zero-effort
+  oscillator (`pMusMax 0`, `patientRR > 0`) emits spurious `'failed'` events via
+  the fizzle path. The patient-breaths==0 half is green today; the
+  zero-failed-events half is red until the `effortPresent` gate in §2 lands.
+  Keep the assertion exactly as specified — only the prediction changes.
 
 ---
 

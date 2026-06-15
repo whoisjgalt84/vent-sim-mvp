@@ -39,6 +39,12 @@
     --color-danger:   #ef5350;
     --color-safe:     #66bb6a;
 
+    /* Morphology / interpretation findings (NOT an alarm) — reused by waveform
+       highlights (ineffective effort now; gas trapping, auto-trigger later).
+       Candidates: A #d4a23c muted goldenrod (default) · B #c9962f deeper gold ·
+       C #e0b357 soft light gold — switch by changing this one value. */
+    --color-interpretation-highlight: #d4a23c;
+
     /* Borders */
     --border-subtle:  rgba(255, 255, 255, 0.06);
     --border-panel:   rgba(255, 255, 255, 0.08);

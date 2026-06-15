@@ -395,7 +395,7 @@ export class WaveformRenderer {
         ctx.clip();
 
         for (const seg of mine) {
-            // sample indices inside [tStart, tEnd]
+            // sample indices inside [tStart, tEnd] — IDENTICAL span to baseline
             let i0 = -1, i1 = -1;
             for (let i = 0; i < timeData.length; i++) {
                 if (timeData[i] >= seg.tStart && i0 === -1) i0 = i;
@@ -403,19 +403,29 @@ export class WaveformRenderer {
             }
             if (i0 === -1 || i1 - i0 < 1) continue;
 
-            ctx.strokeStyle = seg.color;
-            ctx.lineWidth = 1.8 + (seg.lineWidthDelta ?? 0);   // base trace is 1.8
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
-            ctx.beginPath();
+            // Collect the exact same sample points first, so the feathered
+            // gradient can span the segment from its left to right edge.
+            const pts = [];
             let minX = Infinity, maxX = -Infinity, topY = Infinity;
             for (let i = i0; i <= i1; i++) {
                 const px = xScale(timeData[i]);
                 const py = Math.max(plot.y, Math.min(plot.y + plot.h, yScale(valueData[i])));
-                if (i === i0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                pts.push(px, py);
                 if (px < minX) minX = px;
                 if (px > maxX) maxX = px;
                 if (py < topY) topY = py;
+            }
+
+            // Edge-feathered stroke: full highlight through the middle, fading to
+            // transparent at each end so it emerges from (not painted onto) the trace.
+            ctx.strokeStyle = this._featheredStroke(ctx, seg.color, minX, maxX);
+            ctx.lineWidth = 1.8 + (seg.lineWidthDelta ?? 0);   // base trace is 1.8
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            for (let k = 0; k < pts.length; k += 2) {
+                if (k === 0) ctx.moveTo(pts[k], pts[k + 1]);
+                else ctx.lineTo(pts[k], pts[k + 1]);
             }
             ctx.stroke();
 
@@ -461,6 +471,32 @@ export class WaveformRenderer {
             }
         }
         if (this.canvas.title !== text) this.canvas.title = text;
+    }
+
+    /**
+     * Build a left/right edge-feathered stroke style: full color through the
+     * middle, fading to transparent at each end (~9 px) so a highlight emerges
+     * from the trace instead of being painted on with a hard seam.
+     */
+    _featheredStroke(ctx, color, minX, maxX) {
+        const { r, g, b } = this._hexToRgb(color);
+        const width = Math.max(1, maxX - minX);
+        const f = Math.min(0.45, Math.max(0.06, 9 / width));   // ~9 px feather each end
+        const grad = ctx.createLinearGradient(minX, 0, maxX, 0);
+        grad.addColorStop(0,     `rgba(${r},${g},${b},0)`);
+        grad.addColorStop(f,     `rgba(${r},${g},${b},1)`);
+        grad.addColorStop(1 - f, `rgba(${r},${g},${b},1)`);
+        grad.addColorStop(1,     `rgba(${r},${g},${b},0)`);
+        return grad;
+    }
+
+    /** Parse #rgb / #rrggbb (or a trimmed CSS var value) to {r,g,b}. */
+    _hexToRgb(hex) {
+        let h = String(hex).trim().replace('#', '');
+        if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+        const n = parseInt(h, 16);
+        if (!Number.isFinite(n) || h.length < 6) return { r: 212, g: 162, b: 60 };  // #d4a23c
+        return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
     }
 }
 
@@ -851,8 +887,12 @@ export class WaveformDisplay {
      * pressure instead) and so are not highlighted on the flow trace.
      */
     _deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi) {
-        // Amber/orange from the existing caution palette (--color-warning, css/style.css:38).
-        const CAUTION_AMBER = '#ff9800';
+        // Muted amber-gold "interpretation" finding color (NOT an alarm) — single
+        // source of truth in css/style.css (--color-interpretation-highlight).
+        const HIGHLIGHT_COLOR = (typeof getComputedStyle === 'function'
+            ? getComputedStyle(document.documentElement)
+                .getPropertyValue('--color-interpretation-highlight').trim()
+            : '') || '#d4a23c';
         const win = Math.max(0.3, neuralTi || 1.0);   // the effort's own mechanical window
         const segments = [];
         for (const ev of (triggerEvents || [])) {
@@ -864,7 +904,7 @@ export class WaveformDisplay {
                 trace: 'flow',
                 tStart: span.tStart,
                 tEnd: span.tEnd,
-                color: CAUTION_AMBER,
+                color: HIGHLIGHT_COLOR,
                 lineWidthDelta: 1.4,                  // ~1.8 base → ~3.2 px, clearly thicker
                 label: 'ineffective effort',
                 tooltip: 'Ineffective effort — patient pulled but did not trigger',

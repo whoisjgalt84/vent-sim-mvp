@@ -930,7 +930,7 @@ function updateRRDisplay(summary) {
             && Number.isFinite(vent?.pMusMax) && vent.pMusMax > 0;
         const rrPatient = effortOn ? Math.round(sim.patientRR) : '—';
         const patientClass = effortOn ? 'rr-triple__num--patient' : 'rr-triple__num--off';
-        rrEl.innerHTML =
+        const html =
             '<span class="rr-triple">' +
               '<span class="rr-triple__line rr-triple__set" title="Set backup rate — mandatory (machine-triggered) breaths/min">' +
                 '<span class="rr-triple__lbl">Set</span>' +
@@ -947,6 +947,19 @@ function updateRRDisplay(summary) {
                 '</span>' +
               '</span>' +
             '</span>';
+        // Rebuild ONLY when the rendered content changes. updateRRDisplay runs
+        // every animation frame; reassigning innerHTML each frame was destroying
+        // the title-bearing cells ~60×/s, so the native tooltip's hover-dwell
+        // timer never completed (the title attrs were present, the nodes weren't
+        // stable). Guarding keeps the DOM stable so the Set/Delivered/Patient
+        // tooltips surface on hover. `haveTriple` also forces a rebuild after a
+        // standard-mode (textContent) render replaced the structure.
+        const haveTriple = rrEl.firstElementChild
+            && rrEl.firstElementChild.classList.contains('rr-triple');
+        if (!haveTriple || html !== rrEl._rrTripleHtml) {
+            rrEl.innerHTML = html;
+            rrEl._rrTripleHtml = html;
+        }
         return;
     }
 

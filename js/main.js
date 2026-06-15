@@ -923,7 +923,30 @@ function updateRRDisplay(summary) {
     const rrSet = vent.isSpontaneousMode() ? '—' : `${vent.respiratoryRate}`;
 
     if (document.body.classList.contains('teaching-mode')) {
-        rrEl.innerHTML = `<span class="rr-actual">${rrActual}</span><span class="rr-set-secondary">Set: ${rrSet}</span>`;
+        // PR4b — dual-rate readout (display only; reads values the engine already
+        // computes). Set = backup machine rate; Delivered = sim.measuredRR;
+        // Patient = sim.patientRR (— when effort is off, so it reads "no effort").
+        const effortOn = Number.isFinite(sim?.patientRR) && sim.patientRR > 0
+            && Number.isFinite(vent?.pMusMax) && vent.pMusMax > 0;
+        const rrPatient = effortOn ? Math.round(sim.patientRR) : '—';
+        const patientClass = effortOn ? 'rr-triple__num--patient' : 'rr-triple__num--off';
+        rrEl.innerHTML =
+            '<span class="rr-triple">' +
+              '<span class="rr-triple__line rr-triple__set" title="Set backup rate — mandatory (machine-triggered) breaths/min">' +
+                '<span class="rr-triple__lbl">Set</span>' +
+                `<span class="rr-triple__num">${rrSet}</span>` +
+              '</span>' +
+              '<span class="rr-triple__line rr-triple__outputs">' +
+                '<span class="rr-triple__cell" title="Delivered rate — breaths actually completed (f = 60/TCT)">' +
+                  '<span class="rr-triple__lbl">Delivered</span>' +
+                  `<span class="rr-triple__num rr-triple__num--delivered">${rrActual}</span>` +
+                '</span>' +
+                '<span class="rr-triple__cell" title="Patient effort rate (Pmus) — what the patient is asking for; may exceed delivered if efforts fail to trigger">' +
+                  '<span class="rr-triple__lbl">Patient</span>' +
+                  `<span class="rr-triple__num ${patientClass}">${rrPatient}</span>` +
+                '</span>' +
+              '</span>' +
+            '</span>';
         return;
     }
 

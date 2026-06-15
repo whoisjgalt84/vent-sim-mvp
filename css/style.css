@@ -706,6 +706,48 @@ html, body {
     white-space: nowrap;
 }
 
+/* PR4b — dual-rate Teaching-Mode RR readout: Set (input) over Delivered + Patient (outputs) */
+.rr-triple {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    line-height: 1.05;
+}
+.rr-triple__line {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+.rr-triple__outputs { gap: 14px; }
+.rr-triple__cell {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+.rr-triple__lbl {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+.rr-triple__num {
+    font-family: 'Courier New', monospace;
+    font-size: 17px;
+    font-weight: bold;
+    color: var(--text-bright);
+}
+.rr-triple__set .rr-triple__num {
+    font-size: 14px;
+    opacity: 0.82;
+    color: var(--color-volume);
+}
+.rr-triple__num--delivered { color: var(--color-volume); }
+.rr-triple__num--patient   { color: var(--color-interpretation-highlight); }
+.rr-triple__num--off       { color: var(--text-dim); opacity: 0.7; }
+
 /* Color-coded parameter values */
 .param-row__value--pressure { color: var(--color-pressure); }
 .param-row__value--volume   { color: var(--color-volume); }

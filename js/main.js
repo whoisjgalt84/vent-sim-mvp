@@ -588,7 +588,7 @@ function playTone({
     frequency = 880,
     durationSec = 0.12,
     delaySec = 0,
-    volume = 0.035,
+    volume = 0.25,
 }) {
     const ctx = alarmAudioState.audioContext;
     if (!ctx) return;
@@ -629,7 +629,7 @@ function playAlarmSound(priority) {
         playTone({ frequency: 660, durationSec: 0.12, delaySec: 0.18 });
         playTone({ frequency: 880, durationSec: 0.12, delaySec: 0.36 });
     } else {
-        playTone({ frequency: 660, durationSec: 0.10, delaySec: 0, volume: 0.025 });
+        playTone({ frequency: 660, durationSec: 0.10, delaySec: 0, volume: 0.18 });
     }
 
     return true;

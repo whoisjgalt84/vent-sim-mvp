@@ -1064,14 +1064,9 @@ function updateBreathInfo() {
 }
 
 function getAlarmNowSec() {
-    return (
-        sim?.globalTime ??
-        sim?.time ??
-        sim?.timeSec ??
-        sim?.elapsedTime ??
-        sim?.elapsedSec ??
-        0
-    );
+    // Wall-clock real seconds (monotonic), NOT sim.globalTime — so alarm-audio
+    // timers survive sim.reset() and stay real-time under speed/pause (SME-008).
+    return performance.now() / 1000;
 }
 
 function getCurrentAlarmMetrics(summary) {

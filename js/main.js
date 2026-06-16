@@ -588,7 +588,8 @@ function playTone({
     frequency = 880,
     durationSec = 0.12,
     delaySec = 0,
-    volume = 0.035,
+    volume = 0.25,
+    type = 'sine',
 }) {
     const ctx = alarmAudioState.audioContext;
     if (!ctx) return;
@@ -597,7 +598,7 @@ function playTone({
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = 'sine';
+    osc.type = type;
     osc.frequency.setValueAtTime(frequency, start);
 
     gain.gain.setValueAtTime(0.0001, start);
@@ -625,11 +626,14 @@ function playAlarmSound(priority) {
     }
 
     if (priority === 'high') {
-        playTone({ frequency: 880, durationSec: 0.12, delaySec: 0 });
-        playTone({ frequency: 660, durationSec: 0.12, delaySec: 0.18 });
-        playTone({ frequency: 880, durationSec: 0.12, delaySec: 0.36 });
+        // Square-wave triplet: harsh timbre, higher pitch, tight 0.15 s spacing.
+        playTone({ frequency: 880, durationSec: 0.10, delaySec: 0, type: 'square' });
+        playTone({ frequency: 988, durationSec: 0.10, delaySec: 0.15, type: 'square' });
+        playTone({ frequency: 880, durationSec: 0.10, delaySec: 0.30, type: 'square' });
     } else {
-        playTone({ frequency: 660, durationSec: 0.10, delaySec: 0, volume: 0.025 });
+        // Sine 2-note descending chime: calm timbre, lower pitch, relaxed 0.25 s spacing.
+        playTone({ frequency: 660, durationSec: 0.12, delaySec: 0, volume: 0.18, type: 'sine' });
+        playTone({ frequency: 550, durationSec: 0.14, delaySec: 0.25, volume: 0.18, type: 'sine' });
     }
 
     return true;

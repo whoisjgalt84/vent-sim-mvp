@@ -324,6 +324,7 @@ function applyModeUI(mode) {
         ? 'ΔP<sub>eff</sub>' : 'P<sub>resist</sub>';
 
     updateHoldResultsVisibility();
+    updateHoldControlState(isCsv);
 }
 
 function updateModeLabel() {
@@ -420,6 +421,29 @@ function updateHoldResultsVisibility() {
     if (rawRow) {
         const showRaw = vent.holdActive && !vent.isPressureMode() && vent.flowPattern !== 'ramp';
         rawRow.style.display = showRaw ? '' : 'none';
+    }
+}
+
+function updateHoldControlState(isSpontaneous) {
+    const btn      = document.getElementById('hold-toggle');
+    const slider   = document.getElementById('hold-duration');
+    if (isSpontaneous) {
+        // Engine already suppresses hold in spontaneous modes (effectiveHoldTime → 0).
+        // Reset any stale operator intent and lock the UI to match.
+        vent.holdTime = 0;
+        btn.disabled  = true;
+        btn.classList.remove('hold-btn--active');
+        document.getElementById('hold-icon').textContent      = '▶';
+        document.getElementById('hold-btn-label').textContent = 'Activate';
+        document.getElementById('hold-display').textContent   = 'Off';
+        document.getElementById('hold-duration-group').style.display = 'none';
+        document.getElementById('hold-results').style.display        = 'none';
+        if (slider) slider.disabled = true;
+        btn.title = 'Inspiratory hold is a passive-mechanics measurement; not available in spontaneous modes';
+    } else {
+        btn.disabled = false;
+        if (slider) slider.disabled = false;
+        btn.title = '';
     }
 }
 

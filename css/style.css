@@ -1027,6 +1027,14 @@ body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
     color: var(--color-pressure);
 }
 
+.hold-btn:disabled,
+.hold-btn:disabled:hover {
+    opacity: 0.35;
+    cursor: default;
+    border-color: var(--border);
+    color: var(--text-dim);
+}
+
 .hold-btn--active {
     background: rgba(255, 167, 38, 0.15);
     border-color: var(--color-pressure);

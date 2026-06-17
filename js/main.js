@@ -1034,8 +1034,13 @@ function updateParams() {
     const alarmMetrics = getCurrentAlarmMetrics(summary);
     activeAlarms = AlarmEngine.evaluateAlarms(alarmMetrics, alarmLimits);
     renderAlarms(activeAlarms);
-    updateAlarmAudio(activeAlarms, alarmMetrics.nowSec ?? 0);
-    updateAlarmAudioControls(activeAlarms, alarmMetrics.nowSec ?? 0);
+    // AUDIO policy runs on wall-clock (getAlarmNowSec), NOT the sim-time used for
+    // evaluation above: alarm-audio timers must survive sim.reset() and stay
+    // real-time under speed/pause (SME-008), and stay consistent with
+    // silencedUntilSec (also set from getAlarmNowSec). Do not re-couple these.
+    const audioNowSec = getAlarmNowSec();
+    updateAlarmAudio(activeAlarms, audioNowSec);
+    updateAlarmAudioControls(activeAlarms, audioNowSec);
 
     updateTeachingIndicators();
     updateMechanicsBar(s);
@@ -1076,7 +1081,12 @@ function getCurrentAlarmMetrics(summary) {
     const safety = summary?.safety ?? {};
     const measured = sim?.breathSummary ?? {};
 
-    const nowSec = getAlarmNowSec();
+    // Alarm EVALUATION runs on sim-time: apnea differences this against
+    // sim.lastBreathStartSec (sim-time), and sim.reset() zeroes both together, so
+    // a mode switch can't read a false "no recent breath" (SME-017). The low-VE
+    // stabilization grace (elapsedSec ≥ 5) also re-arms on reset this way. The
+    // AUDIO layer deliberately uses a DIFFERENT clock — see updateAlarmAudio below.
+    const nowSec = sim?.globalTime ?? 0;
 
     const lastBreathStartSec =
         sim?.lastBreathStartSec ??

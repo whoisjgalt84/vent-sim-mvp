@@ -53,7 +53,7 @@ Where the change would likely live, so we can gauge review risk early:
 | SME-005 | 2026-06-11 | Andrea Ritz (RN, 11+ yr) | Bug | blocker | confirmed | PC-CSV with patient RR set to 35: apnea alarm fired AND monitor displayed RR as 6 instead of ~35 | simulation.js / main.js (measured RR in spontaneous mode) | Likely related to trigger-drop bug since PC-CSV breaths are all patient-triggered. Reviewer expected measured RR near 35 and no apnea. |
 | SME-006 | 2026-06-11 | Karen LaRoche & Sarah Malyon (Clinical Specialists, RT, 30+/15+) | Bug | blocker | confirmed | Measured rate did not match patient rate in spontaneous mode | simulation.js / main.js (measured RR) | Second report of the measured-RR-in-spontaneous-mode defect (with SME-005). Screenshot in email. |
 | SME-007 | 2026-06-11 | Rebecca Downs (RN, Sim Educator, 16 yr) | Bug | blocker | done | Triggered high-pressure alarm visually but no audible alarm | alarm-audio.js / main.js | Corroborates SME-003. Reviewer flagged possible user error. Diagnose before confirming. RESOLVED (real defect, not user error): volume raised + urgency-tiered tones added (PR #12, commit 4ea15c1/eea373d); time-base phantom silence fixed (commit 078975c, SME-008). See "Audible alarm not heard" theme. |
-| SME-008 | 2026-06-11 | Scott Mahoney (RT, Dir. Clinical Ed) | Bug | should-fix | confirmed-fixed | Switching modes occasionally auto-silenced alarms for ~400-1300 s; reproduced in Chrome and Firefox | main.js / alarms.js | Possible learner-mislead (could mask apnea during a demo). Wide random-seeming range suggests a units/variable error. Hard to reproduce reliably. RESOLVED: Root cause was alarm-audio timers on sim-time; sim.reset() (mode/flow switch) stranded them. Fixed by moving getAlarmNowSec() to wall-clock (performance.now()). Verified live: mode switch no longer strands the silence timer. Commit 078975c. |
+| SME-008 | 2026-06-11 | Scott Mahoney (RT, Dir. Clinical Ed) | Bug | should-fix | confirmed-fixed | Switching modes occasionally auto-silenced alarms for ~400-1300 s; reproduced in Chrome and Firefox | main.js / alarms.js | Possible learner-mislead (could mask apnea during a demo). Wide random-seeming range suggests a units/variable error. Hard to reproduce reliably. RESOLVED: Root cause was alarm-audio timers on sim-time; sim.reset() (mode/flow switch) stranded them. Fixed by moving getAlarmNowSec() to wall-clock (performance.now()). Confirmed live by Christian (mode switch no longer strands the silence timer); not covered by npm test (browser audio). Commit 078975c. |
 | SME-009 | 2026-06-11 | Denis C (CHSOS) | Bug | should-fix | confirmed | Inspiratory hold in PC-CSV will not release after activation; VC-CMV and PC-CMV release correctly | simulation.js / main.js (hold logic, PC-CSV path) | Mode-specific, cleanly reproducible. |
 | SME-010 | 2026-06-11 | Denis C (CHSOS) + Scott Mahoney | Usability | should-fix | confirmed | Trigger pressure slider too short/coarse (jumps 0.5 to 5.0, little precision); especially small in PC-CSV | main.js / style.css | Two reporters. |
 | SME-011 | 2026-06-11 | Joel (RT educator) | Usability | nice-to-have | new | Set vs. measured parameters are intermixed; should be grouped like a real vent screen (set together, measured together) | main.js / style.css | Greg touched on this too. |
@@ -87,6 +87,11 @@ Where the change would likely live, so we can gauge review risk early:
   effort, and the single-digit-RR + apnea profile comes from trigger
   insensitivity vs effort, not a measured-RR calculation bug.
 - Both point to one unifying fix (SME-016): render ineffective efforts visibly
-  (Pmus present, no Pvent). Audible-alarm (SME-003/007) remains in triage.
+  (Pmus present, no Pvent).
+- Audible alarm (SME-003/007) is RESOLVED: volume, urgency-tiering, and the
+  time-base phantom-silence fix shipped (PRs #12, #13). What remains in the alarm
+  area is the round-2 cluster — the false-apnea-on-mode-switch blocker (SME-017,
+  needs investigation) plus silence-reset (SME-018) and medium-alarm tuning
+  (SME-019).
 
 Last updated: 2026-06-16.

@@ -792,6 +792,14 @@ function bindTeachingModeToggle() {
         btn.classList.toggle('transport-btn--teaching-active', enabled);
         btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
         btn.textContent = enabled ? 'Teach On' : 'Teach Off';
+        if (enabled) {
+            // Default loops OFF when entering Teaching Mode (big-waveform layout)
+            const loopRow = document.getElementById('loop-row');
+            const loopBtn = document.getElementById('btn-loops');
+            loopsVisible = false;
+            loopRow.classList.add('loop-row--hidden');
+            loopBtn.classList.remove('transport-btn--active');
+        }
         renderFrame();
     };
 

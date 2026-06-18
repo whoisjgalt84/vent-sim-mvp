@@ -794,17 +794,9 @@ body.teaching-mode .parameters {
     min-width: 0;
 }
 
-body.teaching-mode #btn-loops {
-    display: none;
-}
-
 body.teaching-mode .waveforms {
     padding: 6px 10px 8px;
     gap: 4px;
-}
-
-body.teaching-mode .loop-row {
-    display: none;
 }
 
 body.teaching-mode .parameters {

@@ -66,6 +66,8 @@ Where the change would likely live, so we can gauge review risk early:
 | SME-018 | 2026-06-16 | Christian (self, RT) | Usability | should-fix | new | No way to CANCEL an active alarm silence — once Silence is pressed, user must wait the full 120 s for it to expire; no un-silence/reset control. | main.js (silence control) | Add a toggle/reset so Silence can be cleared on demand. |
 | SME-019 | 2026-06-16 | Christian (self, RT) | Usability | should-fix | new | Medium/low-urgency alarm is still too quiet and its repeat cadence too slow to draw attention. | main.js (medium volume) / alarm-audio.js (mediumRepeatSec) | Tuning: raise medium volume; shorten mediumRepeatSec (~30s→~12s). Couples with the deferred repeat-interval retune + TEST 52 update. High-priority alarm tuning is fine as-is per live testing. |
 | SME-020 | 2026-06-16 | Christian (self, RT) | Bug | nice-to-have | new | Residual minor LOW-VE flicker: brief VE=0 blips at the stabilization-grace boundary and at VE-recompute gaps just after a mode switch (seen even on the correct sim-time base). Distinct from SME-017 (the false-apnea blocker, fixed) — this is a small pre-existing transient, deliberately scoped out of the SME-017 fix. | main.js (low-VE evaluation) / alarms.js (stabilization grace) | Polish: gate low-VE on "≥1 completed breath since reset" rather than a bare time threshold, so the grace can't expose a momentary VE=0. Low priority. |
+| SME-021 | 2026-06-16 | Christian (self, RT) | Needs-investigation | should-fix | done | VC-CMV flow-trigger ineffective-effort: ~20 L/min trace swing, no trigger | simulation.js / waveforms.js | VERDICT: not a bug (correct behavior, literature-faithful). Read-only investigation via scratch/diag-trigger.mjs (per-tick real-engine snapshots). The trace plots signed net lung flow (currentFlow×60, simulation.js:744) — rendered accurately, no fidelity error. The trigger evaluates positive-only flow (max(0, currentFlow×60), simulation.js:402) against 2.0 L/min threshold. During this effort: pMus 2.0 is ~2 mL short of overcoming elastic recoil (V/C ≈ 2.03 cmH₂O), so net flow crests at −0.15 L/min and never crosses into positive territory — trigger-flow stays 0.000 for the whole effort. The ~20 L/min swing is mostly passive expiratory decay (−16 toward −0.15), bent upward by the effort; it is NOT inspiratory trigger signal. Two conflated quantities: TRACE shows total net flow (mostly expiratory), TRIGGER watches positive inspiratory-direction flow. Literature (Mireles-Cabodevila 2021): high-threshold failed trigger described as "flow crossing toward baseline but not reaching trigger threshold" — exactly this morphology. No code change. See follow-on: SME-022 (teaching annotation). |
+| SME-022 | 2026-06-16 | Christian (self, RT) | Feature | nice-to-have | new | Teaching-mode annotation for ineffective-effort highlights | waveforms.js | When an ineffective effort is highlighted on the flow trace (existing amber highlight, _drawWaveformHighlights), add tooltip/label explaining WHY it failed — e.g. "effort bent expiratory flow toward baseline but did not generate positive inspiratory flow ≥ 2.0 L/min → failed trigger (Mireles-Cabodevila 2021)." Turns the counterintuitive 20-L/min-swing-no-trigger moment into a teachable lesson. Uses existing highlight primitive; Teaching-Mode only; display-only (no engine change). Scoped, not built. |
 
 ## Theme tracker (patterns across reviewers)
 
@@ -79,6 +81,16 @@ Where the change would likely live, so we can gauge review risk early:
 | Alarm bugs surfaced in deep testing | 1 (self, deep testing) | Bug+Usability | mixed | mixed (17 confirmed-fixed; 18-20 new) | SME-017, SME-018, SME-019, SME-020 | Found while stress-testing the alarm subsystem. SME-017 false apnea/low-VE blocker FIXED (commit 921a469). Residual: SME-020 minor low-VE flicker (nice-to-have), plus SME-018 silence-reset and SME-019 medium-alarm tuning (usability). |
 
 ## Reading the log (current priorities)
+- **Flow-trigger investigation resolved (SME-021).** The apparent contradiction
+  — a ~20 L/min swing on the flow-time trace with no trigger — was investigated
+  via per-tick real-engine diagnostics (scratch/diag-trigger.mjs). Verdict: not a
+  bug. The trace plots total net lung flow (signed, expiratory-negative); the
+  trigger watches positive (inspiratory-direction) flow only. The swing stays
+  below zero (mostly passive exhalation bent by effort); trigger-flow never
+  crosses into positive territory. Literature confirms this as correct physiology
+  (Mireles-Cabodevila 2021: high-threshold failed trigger, flow toward baseline
+  but sub-threshold). Follow-on: teaching annotation to explain the morphology
+  (SME-022, scoped, not built).
 - Trigger sweep complete (scratch harness vs real engine). The trigger blocker
   (SME-001/004) is confirmed: a sliding cliff (slides with machine inspiratory
   dead-window, ~RR 22 at I:E 1:1 up to ~RR 30 at default I:E 1:2) plus a

@@ -1097,8 +1097,14 @@ body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
 
 .pmus-controls {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;   /* stack toggle above sliders so the sliders get the full rail width */
+    align-items: stretch;
     gap: 8px;
+}
+
+/* Keep the Passive/Active toggle at its natural width when stacked (don't stretch full-width) */
+.pmus-controls .hold-btn {
+    align-self: flex-start;
 }
 
 .pmus-sliders {
@@ -1121,7 +1127,9 @@ body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
 }
 
 .pmus-slider-row .control__range {
-    width: 80px;
+    flex: 1;          /* fill the row instead of a fixed 80px that overflowed the rail */
+    width: auto;
+    min-width: 0;     /* allow the range to shrink within the flex row so the value/units stay on-screen */
 }
 
 .pmus-slider-row .control__value {

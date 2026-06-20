@@ -492,7 +492,6 @@ function bindPmusToggle() {
 function onPmusMaxChange(slider) {
     const pmax = parseFloat(slider.value);
     vent.pMusMax = pmax;
-    document.getElementById('pmus-max-display').textContent = formatPmusValue(pmax);
     document.getElementById('pmus-display').textContent = formatPmusValue(pmax);
 }
 

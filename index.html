@@ -83,7 +83,7 @@
                 <!-- Inspiratory Pressure (PC only) -->
                 <div class="control control--primary control--hidden" id="pinsp-control">
                     <div class="control__header">
-                        <span class="control__label">P<sub>insp</sub> above PEEP</span>
+                        <span class="control__label" title="Set above PEEP">P<sub>insp</sub></span>
                         <span class="control__value" id="pinsp-display">15 cmH₂O</span>
                     </div>
                     <input type="range" class="control__range" id="pinsp"
@@ -164,14 +164,12 @@
                     </div>
 
                     <div class="trigger-sensitivity-row" id="flow-trigger-row">
-                        <span class="pmus-slider-label">Flow</span>
                         <input type="range" class="control__range" id="flow-trigger"
                                min="0.5" max="5" step="0.1" value="2">
                         <span class="control__value" id="flow-trigger-display">2.0 L/min</span>
                     </div>
 
                     <div class="trigger-sensitivity-row" id="pressure-trigger-row" style="display:none">
-                        <span class="pmus-slider-label">Pressure</span>
                         <input type="range" class="control__range" id="pressure-trigger"
                                min="0.5" max="5" step="0.1" value="1">
                         <span class="control__value" id="pressure-trigger-display">1.0 cmH₂O</span>
@@ -333,7 +331,6 @@
                                 <span class="pmus-slider-label">Effort</span>
                                 <input type="range" class="control__range" id="pmus-max"
                                        min="0.25" max="12" step="0.25" value="2">
-                                <span class="control__value" id="pmus-max-display">2.0 cmH₂O</span>
                             </div>
                             <div class="pmus-slider-row">
                                 <span class="pmus-slider-label">T<sub>neural</sub></span>

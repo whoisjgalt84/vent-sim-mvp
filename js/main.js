@@ -1009,7 +1009,7 @@ function updateParams() {
     const measuredRR = Number.isFinite(sim.measuredRR) ? sim.measuredRR : 0;
     const rrSet = isCsv ? '—' : `${vent.respiratoryRate}`;
     setText('param-pip',     m.pip > 0 ? `${m.pip}` : `${s.pressures.pip_cmH2O}`);
-    setText('param-pplat',   `${s.pressures.pplat_cmH2O}`);
+    setText('param-pplat',   s.holdActive ? `${s.pressures.pplat_cmH2O}` : '—');
     setText('param-map',     `${s.pressures.map_cmH2O}`);
     setText('param-dp',      `${s.pressures.drivingPressure}`);
     setText('param-pr',      `${s.pressures.resistivePressure}`);

@@ -174,7 +174,7 @@ assert('Completion at 5tau (%)',
 
 
 // =============================================================================
-// TEST 4: Ventilator â€” Normal Patient, Standard Settings
+// TEST 4: Ventilator — Normal Patient, Standard Settings
 // =============================================================================
 section('TEST 4: Ventilator — Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2');
 
@@ -2141,7 +2141,7 @@ assert('Active CSV measured RR ≈ patient RR', simCsvActive.measuredRR, simCsvA
 
 
 // =============================================================================
-// TEST 41: Alarm Engine â€” No Alerts Normal
+// TEST 41: Alarm Engine — No Alerts Normal
 // =============================================================================
 section('TEST 41: Alarm Engine — No Alerts Normal');
 
@@ -2159,7 +2159,7 @@ assert('No alarms in normal state', alarms.length, 0, 0);
 
 
 // =============================================================================
-// TEST 42: Alarm Engine â€” High Pressure
+// TEST 42: Alarm Engine — High Pressure
 // =============================================================================
 section('TEST 42: Alarm Engine — High Pressure');
 
@@ -2178,7 +2178,7 @@ assert('High pressure alarm active',
 
 
 // =============================================================================
-// TEST 43: Alarm Engine â€” High RR
+// TEST 43: Alarm Engine — High RR
 // =============================================================================
 section('TEST 43: Alarm Engine — High RR');
 
@@ -2197,7 +2197,7 @@ assert('High RR alarm active',
 
 
 // =============================================================================
-// TEST 44: Alarm Engine â€” Apnea
+// TEST 44: Alarm Engine — Apnea
 // =============================================================================
 section('TEST 44: Alarm Engine — Apnea');
 
@@ -2216,7 +2216,7 @@ assert('Apnea alarm active',
 
 
 // =============================================================================
-// TEST 45: Alarm Engine â€” Low Minute Ventilation
+// TEST 45: Alarm Engine — Low Minute Ventilation
 // =============================================================================
 section('TEST 45: Alarm Engine — Low Minute Ventilation');
 
@@ -2235,7 +2235,7 @@ assert('Low VE alarm active',
 
 
 // =============================================================================
-// TEST 46: Alarm Engine â€” High Minute Ventilation
+// TEST 46: Alarm Engine — High Minute Ventilation
 // =============================================================================
 section('TEST 46: Alarm Engine — High Minute Ventilation');
 
@@ -2254,7 +2254,7 @@ assert('High VE alarm active',
 
 
 // =============================================================================
-// TEST 47: Alarm Engine â€” Auto Reset
+// TEST 47: Alarm Engine — Auto Reset
 // =============================================================================
 section('TEST 47: Alarm Engine — Auto Reset');
 
@@ -2500,24 +2500,24 @@ section('NT1 [FIXED to §2] — No silent drops; synchrony where physiology allo
     }
 }
 
-section('NT2 [RED until fix] — Effort during machine INSPIRATION fails visibly');
+section('NT2 [FIXED to §2] — Effort during machine INSPIRATION fails visibly');
 {
     // I:E 1:1 at patRR 30 forces many neural onsets into machine INSPIRATION.
     const sim = ntBuildSim({ ieRatio: [1, 1] }, 30);
     const ins = ntInstrument(sim, 60);
     const failedVU = ntFailedCount(sim, 'ventilator_unavailable');
-    // sanity: scenario really does land onsets in inspiration (green today)
+    // sanity: scenario really does land onsets in inspiration (verified)
     assertTrue('NT2 scenario produces inspiration-phase onsets (onsetInspHold > 0)',
         ins.onsetInspHold > 0);
     // (a) those onsets deliver no breath — all deliveries come from expiration onsets (green)
     assertTrue('NT2(a) inspiration-phase onsets deliver no breath',
         sim.patientBreathCount <= ins.onsetExp);
-    // (b) each emits a failed(ventilator_unavailable) event (RED today: field absent / not emitted)
+    // (b) each emits a failed(ventilator_unavailable) event (now fixed: field present and emitted)
     assert('NT2(b) failed(ventilator_unavailable) count == inspiration-phase onsets',
         failedVU, ins.onsetInspHold, 0);
 }
 
-section('NT3 [RED until fix] — Sub-threshold effort fails visibly (mirror 28E/28G + PC-CSV)');
+section('NT3 [FIXED to §2] — Sub-threshold effort fails visibly (mirror 28E/28G + PC-CSV)');
 {
     // NT3a: VC flow, weak effort vs hard flow trigger (mirrors TEST 28E params)
     const simA = ntBuildSim({ respiratoryRate: 6, pMusMax: 0.5, flowTriggerLpm: 5.0 }, 20);
@@ -2574,15 +2574,12 @@ section('NT5 [GREEN guard] — PC-CSV unchanged for adequate effort');
     }
 }
 
-section('NT6 [RED until fix] — Passive (no effort) emits nothing');
+section('NT6 [FIXED to §2] — Passive (no effort) emits nothing');
 {
     // Oscillator commanded (patientRR 20) but pMusMax 0: no Pmus -> no breaths,
     // and per design-spec §2 ("no effort -> nothing") no failed events either.
-    // NOTE: the failed==0 part is RED today even though spec §5 predicted green —
-    // today's engine latches pending at simulation.js:352 regardless of pMusMax,
-    // so the fizzle path emits spurious 'failed' markers for a zero-effort
-    // oscillator. The fix's effortPresent gate (spec §2) closes this. The
-    // patient-breaths==0 part is green today.
+    // Both assertions now pass: effortPresent gate (spec §2) properly prevents
+    // spurious 'failed' markers for zero-effort oscillators. No latching artifact.
     const sim = ntBuildSim({ pMusMax: 0 }, 20);
     ntInstrument(sim, 60);
     assert('NT6 passive: patient breaths == 0', sim.patientBreathCount, 0, 0);

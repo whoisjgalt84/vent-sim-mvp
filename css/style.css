@@ -692,20 +692,6 @@ html, body {
     flex-wrap: wrap;
 }
 
-.rr-actual {
-    font-size: inherit;
-    font-weight: inherit;
-    color: inherit;
-}
-
-.rr-set-secondary {
-    font-size: 0.55em;
-    line-height: 1;
-    opacity: 0.72;
-    color: var(--color-volume);
-    white-space: nowrap;
-}
-
 /* PR4b — dual-rate Teaching-Mode RR readout: Set (input) over Delivered + Patient (outputs) */
 .rr-triple {
     display: flex;

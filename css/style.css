@@ -1089,7 +1089,7 @@ body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
 
 .pmus-slider-label {
     color: var(--text-dim);
-    font-size: 10px;
+    font-size: 12px;
     min-width: 36px;
 }
 
@@ -1100,7 +1100,7 @@ body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
 }
 
 .pmus-slider-row .control__value {
-    font-size: 10px;
+    font-size: 14px;
     min-width: 60px;
 }
 
@@ -1110,7 +1110,7 @@ body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
 
 .trigger-sensitivity-row {
     display: grid;
-    grid-template-columns: 64px 1fr auto;
+    grid-template-columns: 1fr auto;
     align-items: center;
     gap: 8px;
     margin-top: 8px;

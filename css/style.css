@@ -266,10 +266,6 @@ html, body {
     color: var(--text-dim);
 }
 
-.header__transport-extra {
-    display: none;
-}
-
 .transport-btn {
     width: 30px;
     height: 30px;
@@ -347,13 +343,6 @@ html, body {
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
     border-color: var(--text-dim);
-}
-
-.transport-label {
-    font-size: 10px;
-    color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace;
-    white-space: nowrap;
 }
 
 

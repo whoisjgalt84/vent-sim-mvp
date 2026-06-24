@@ -293,7 +293,7 @@ export class WaveformRenderer {
         ctx.clip();
 
         // Gas trapping (expiratory flow did NOT return to baseline) gets a louder,
-        // distinct treatment: a vivid crimson overstroke + a "gas trapping" label.
+        // distinct treatment: a vivid crimson overstroke + an "air trapping" label.
         // The crimson stays clearly separate from the amber-gold ineffective-effort
         // highlight. The baseline-reached case keeps its original quiet blue cue.
         const GAS_TRAPPING_COLOR = 'rgba(255, 45, 85, 0.80)';
@@ -332,7 +332,7 @@ export class WaveformRenderer {
             ctx.font = '10px system-ui, -apple-system, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
-            ctx.fillText('gas trapping', (minX + maxX) / 2, Math.max(plot.y + 10, topY - 4));
+            ctx.fillText('air trapping', (minX + maxX) / 2, Math.max(plot.y + 10, topY - 4));
         }
 
         ctx.restore();

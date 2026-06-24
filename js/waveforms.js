@@ -292,13 +292,20 @@ export class WaveformRenderer {
         ctx.rect(plot.x, plot.y, plot.w, plot.h);
         ctx.clip();
 
+        // Gas trapping (expiratory flow did NOT return to baseline) gets a louder,
+        // distinct treatment: a vivid crimson overstroke + a "gas trapping" label.
+        // The crimson stays clearly separate from the amber-gold ineffective-effort
+        // highlight. The baseline-reached case keeps its original quiet blue cue.
+        const GAS_TRAPPING_COLOR = 'rgba(255, 45, 85, 0.80)';
+
         ctx.strokeStyle = baselineReached
             ? 'rgba(100, 200, 255, 0.25)'
-            : 'rgba(255, 120, 120, 0.35)';
-        ctx.lineWidth = 2;
+            : GAS_TRAPPING_COLOR;
+        ctx.lineWidth = baselineReached ? 2 : 3.5;
         ctx.lineJoin = 'round';
         ctx.beginPath();
 
+        let minX = Infinity, maxX = -Infinity, topY = Infinity;
         for (let i = start; i < end; i++) {
             const px = xScale(timeData[i]);
             const py = yScale(valueData[i]);
@@ -309,9 +316,25 @@ export class WaveformRenderer {
             } else {
                 ctx.lineTo(px, cyp);
             }
+            if (px < minX) minX = px;
+            if (px > maxX) maxX = px;
+            if (cyp < topY) topY = cyp;
         }
 
         ctx.stroke();
+
+        // Teaching Mode label on the non-returning expiratory limb (mirrors the
+        // ineffective-effort label in _drawWaveformHighlights). The whole tail
+        // highlight is already teaching-gated at the call site, so this is
+        // teaching-only. Gas-trapping branch only — the blue branch stays unlabeled.
+        if (!baselineReached) {
+            ctx.fillStyle = GAS_TRAPPING_COLOR;
+            ctx.font = '10px system-ui, -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('gas trapping', (minX + maxX) / 2, Math.max(plot.y + 10, topY - 4));
+        }
+
         ctx.restore();
     }
 

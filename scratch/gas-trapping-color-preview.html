@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gas-trapping highlight — color preview (READ-ONLY mockup)</title>
+<style>
+  body { margin: 0; background: #0d1117; color: #e8ecf0;
+         font-family: system-ui, -apple-system, sans-serif; padding: 24px; }
+  h1 { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+  p.sub { color: #9aa4ad; font-size: 13px; margin: 0 0 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .panel { background: #0d1117; border: 1px solid rgba(255,255,255,0.12);
+           border-radius: 8px; padding: 12px; }
+  .panel h2 { font-size: 14px; font-weight: 500; margin: 0 0 2px; }
+  .panel .meta { font-size: 12px; color: #9aa4ad; margin: 0 0 8px; font-family: ui-monospace, monospace; }
+  canvas { width: 100%; height: 130px; display: block; border-radius: 4px; }
+  .swatches { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+  .sw { width: 28px; height: 28px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); }
+  .swlabel { font-size: 11px; color: #9aa4ad; font-family: ui-monospace, monospace; }
+  .note { font-size: 12px; color: #c9d1d9; margin-top: 8px; line-height: 1.5; }
+  .legend { font-size: 12px; color: #9aa4ad; margin: 16px 0 0; font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+  <h1>Gas-trapping expiratory-flow highlight — candidate colors over the green trace</h1>
+  <p class="sub">READ-ONLY mockup. Faithful canvas alpha-compositing (globalAlpha) over flow trace #66bb6a on bg #0d1117.
+     Base trace 1.8&nbsp;px · highlight overstroke 3.5&nbsp;px. Nothing in the app is modified.</p>
+  <div class="grid" id="grid"></div>
+  <p class="legend">Composite math: result = alpha·candidate + (1−alpha)·rgb(102,187,106). Amber-gold (ineffective effort) = #d4a23c = rgb(212,162,60).</p>
+
+<script>
+const GREEN = [102, 187, 106];           // --color-safe / flow trace
+const AMBER = [212, 162, 60];            // --color-interpretation-highlight #d4a23c
+
+const candidates = [
+  { key: 'CURRENT', name: 'Current (the problem)', rgb: [255,120,120], a: 0.35,
+    note: 'Red-over-green at low alpha → muddy yellow-green. Reads almost like the normal trace. This is what we are replacing.' },
+  { key: 'A', name: 'A — saturated orange', rgb: [255,140,0], a: 0.70,
+    note: 'Clean and bright, BUT composites very close to the amber-gold ineffective-effort color. Risk: the two highlights look alike.' },
+  { key: 'B', name: 'B — clear red', rgb: [230,60,60], a: 0.75,
+    note: 'Reads as a clean warm red/coral. Well separated from amber-gold. Conventional — but red can imply "alarm" (this finding is not an alarm).' },
+  { key: 'C', name: 'C — crimson / rose (recommended)', rgb: [255,45,85], a: 0.80,
+    note: 'Blue-leaning crimson. Hardest separation from BOTH the green trace and amber-gold. Distinctly a different highlight, not an alarm-red.' },
+];
+
+function composite(rgb, a, base) {
+  return rgb.map((c, i) => Math.round(a * c + (1 - a) * base[i]));
+}
+function dist(p, q) {
+  return Math.round(Math.sqrt(p.reduce((s, _, i) => s + (p[i]-q[i])**2, 0)));
+}
+function rgbStr(c) { return `rgb(${c[0]}, ${c[1]}, ${c[2]})`; }
+
+const grid = document.getElementById('grid');
+
+for (const cand of candidates) {
+  const comp = composite(cand.rgb, cand.a, GREEN);
+  const dAmber = dist(comp, AMBER);
+  const dGreen = dist(comp, GREEN);
+
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+  panel.innerHTML = `
+    <h2>${cand.name}</h2>
+    <p class="meta">rgba(${cand.rgb.join(',')}, ${cand.a}) &nbsp;→&nbsp; composite ${rgbStr(comp)}</p>
+    <canvas></canvas>
+    <div class="swatches">
+      <div class="sw" style="background:${rgbStr(cand.rgb)}"></div><span class="swlabel">raw</span>
+      <div class="sw" style="background:${rgbStr(comp)}"></div><span class="swlabel">over&nbsp;green</span>
+      <div class="sw" style="background:${rgbStr(AMBER)}"></div><span class="swlabel">amber&nbsp;#d4a23c</span>
+    </div>
+    <p class="note">${cand.note}<br>
+      Δ from amber-gold: <b>${dAmber}</b> &nbsp;·&nbsp; Δ from green trace: <b>${dGreen}</b> &nbsp;(bigger = more distinct)</p>
+  `;
+  grid.appendChild(panel);
+
+  const canvas = panel.querySelector('canvas');
+  drawTrace(canvas, cand);
+}
+
+function drawTrace(canvas, cand) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width || 300, h = 130;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // dark plot bg + zero line, mimicking the waveform panel
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, h*0.42); ctx.lineTo(w, h*0.42); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // A flow-trace-like curve: inspiratory rise, expiratory dip that does NOT
+  // return to baseline (the gas-trapping tail), then next breath.
+  const zero = h * 0.42;
+  const pts = [];
+  const N = 240;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    let v;                                  // +up inspiration, -down expiration (screen y inverted)
+    if (t < 0.18) v = Math.sin((t/0.18) * Math.PI) * 0.9;          // insp peak
+    else if (t < 0.78) {                                            // expiration
+      const e = (t - 0.18) / 0.60;
+      v = -Math.exp(-e * 2.4) * 0.85;                              // decays toward but not to 0
+    } else {                                                        // next insp begins
+      const e = (t - 0.78) / 0.22;
+      v = -0.16 * (1 - e) + Math.sin(e * Math.PI) * 0.4;
+    }
+    const x = t * w;
+    const y = zero - v * (h * 0.34);
+    pts.push([x, y]);
+  }
+
+  // base green trace
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = '#66bb6a'; ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+  ctx.stroke();
+
+  // highlight overstroke on the expiratory tail window (gas-trapping segment)
+  const i0 = Math.round(0.42 * N), i1 = Math.round(0.78 * N);
+  ctx.save();
+  ctx.globalAlpha = cand.a;                              // faithful translucent overstroke
+  ctx.strokeStyle = `rgb(${cand.rgb.join(',')})`;
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  for (let i = i0; i <= i1; i++) i === i0 ? ctx.moveTo(pts[i][0], pts[i][1]) : ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.stroke();
+  ctx.restore();
+
+  // teaching-mode style label
+  ctx.fillStyle = `rgb(${cand.rgb.join(',')})`;
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('gas trapping', (pts[i0][0]+pts[i1][0])/2, h - 8);
+}
+</script>
+</body>
+</html>

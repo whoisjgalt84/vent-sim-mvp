@@ -927,17 +927,35 @@ export class WaveformDisplay {
      * @param {import('./simulation.js').SimulationEngine} sim
      */
     renderFromSim(sim) {
-        const time     = sim.buffers.time.toArray();
-        const pressure = sim.buffers.pressure.toArray();
-        const volume   = sim.buffers.volume.toArray();
-        const flow     = sim.buffers.flow.toArray();
+        const fullTime = sim.buffers.time.toArray();
+        if (fullTime.length < 2) return;
+
+        // The buffers hold maxDisplaySeconds of history; draw only the newest
+        // displaySeconds of it. Slicing here (rather than resizing the buffers) is
+        // what lets the window change without losing data — and sweep mode
+        // requires it, since anything older than one sweep would wrap back on top
+        // of the current trace.
+        const wanted = Math.round((sim.displaySeconds ?? 10) * (sim.sampleRate ?? 100));
+        const offset = Math.max(0, fullTime.length - wanted);
+
+        const time     = offset ? fullTime.slice(offset) : fullTime;
+        const pressure = sim.buffers.pressure.toArray().slice(offset);
+        const volume   = sim.buffers.volume.toArray().slice(offset);
+        const flow     = sim.buffers.flow.toArray().slice(offset);
 
         if (time.length < 2) return;
 
         const triggerEvents = sim.getTriggerEvents(time[0], time[time.length - 1]);
+
+        // expTailWindow indices are buffer-relative — rebase them onto the slice.
+        // _drawTailHighlight clamps out-of-range values, so a tail that has already
+        // scrolled out of the visible window simply stops drawing.
         const flowOverlay = sim.expTailWindow
             ? {
-                tailWindow: sim.expTailWindow,
+                tailWindow: {
+                    start: sim.expTailWindow.start - offset,
+                    end:   sim.expTailWindow.end   - offset,
+                },
                 baselineReached: sim.flowBaselineReached,
             }
             : null;

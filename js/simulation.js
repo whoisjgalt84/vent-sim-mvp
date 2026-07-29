@@ -125,12 +125,18 @@ export class SimulationEngine {
 
         this.sampleRate     = options.sampleRate     ?? 100;
         this.dt             = 1 / this.sampleRate;
-        this.displaySeconds = options.displaySeconds  ?? 10;
+        // Buffers are sized to the LARGEST selectable window; displaySeconds only
+        // decides how much of that history is shown. Widening the window is
+        // therefore instant and non-destructive — switching 10 s → 30 s reveals
+        // breaths that already happened instead of blanking the screen and
+        // waiting 30 s to refill.
+        this.maxDisplaySeconds = options.maxDisplaySeconds ?? 30;
+        this.displaySeconds = Math.min(options.displaySeconds ?? 10, this.maxDisplaySeconds);
         this.triggerEventRetentionSeconds = options.triggerEventRetentionSeconds ?? 60;
         this.triggerLockoutSeconds = 0.10;
 
         // --- Ring Buffers (streaming display data) ---
-        const bufSize = this.displaySeconds * this.sampleRate;
+        const bufSize = Math.round(this.maxDisplaySeconds * this.sampleRate);
         this.buffers = {
             time:     new RingBuffer(bufSize),
             pressure: new RingBuffer(bufSize),
@@ -216,11 +222,31 @@ export class SimulationEngine {
      * Pre-fill buffers with PEEP baseline so the display isn't blank
      * on startup, then immediately start the first breath.
      */
+    /**
+     * Change the visible time window without disturbing the simulation. The
+     * buffers already hold maxDisplaySeconds of history, so this only changes how
+     * much of it is drawn — no data is lost when narrowing, and widening
+     * immediately shows real recorded breaths rather than a blank stretch.
+     *
+     * @param {number} seconds - Desired window, clamped to [1, maxDisplaySeconds]
+     * @returns {number} The window actually applied
+     */
+    setDisplaySeconds(seconds) {
+        const requested = Number(seconds);
+        if (!Number.isFinite(requested)) return this.displaySeconds;
+        this.displaySeconds = Math.max(1, Math.min(requested, this.maxDisplaySeconds));
+        return this.displaySeconds;
+    }
+
     _prefill() {
         const peep = this.vent.peep;
         const n = this.buffers.time.capacity;
+        // Stamp the baseline so the newest prefilled sample lands at t≈0: the run
+        // of pre-history must match the BUFFER's span, not the visible window,
+        // or the timestamps skew once the two differ.
+        const bufferSpan = n * this.dt;
         for (let i = 0; i < n; i++) {
-            this.buffers.time.push(-this.displaySeconds + i * this.dt);
+            this.buffers.time.push(-bufferSpan + i * this.dt);
             this.buffers.pressure.push(peep);
             this.buffers.volume.push(0);
             this.buffers.flow.push(0);

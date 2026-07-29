@@ -333,6 +333,17 @@ html, body {
     font-family: 'JetBrains Mono', monospace;
 }
 
+/* The time-window selector reuses the speed pill styling, but the base rule above
+   labels buttons from data-speed — which these don't have, so they would render as
+   a bare 'x'. The attribute selector outranks it and labels them from data-window. */
+.speed-group--status .speed-btn[data-window]::after {
+    content: attr(data-window) 's';
+}
+
+#window-group {
+    margin-left: 8px;
+}
+
 .speed-group--status .speed-btn:first-child { border-radius: 999px 0 0 999px; }
 .speed-group--status .speed-btn:last-child  { border-radius: 0 999px 999px 0; }
 

@@ -756,6 +756,23 @@ function bindTransportControls() {
             b.classList.remove('speed-btn--active'));
         btn.classList.add('speed-btn--active');
     });
+
+    // Waveform time window. Short windows expose within-breath detail (rise time,
+    // trigger deflection, flow morphology); long windows expose across-breath
+    // patterns (air trapping accumulating, asynchrony recurring). The engine keeps
+    // maxDisplaySeconds of history regardless, so widening reveals breaths that
+    // already happened instead of blanking the trace.
+    const windowGroup = document.getElementById('window-group');
+    windowGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.speed-btn');
+        if (!btn) return;
+        sim.setDisplaySeconds(parseInt(btn.dataset.window, 10));
+        windowGroup.querySelectorAll('.speed-btn').forEach(b =>
+            b.classList.remove('speed-btn--active'));
+        btn.classList.add('speed-btn--active');
+        // Redraw now so the change is visible even while paused.
+        renderFrame();
+    });
 }
 
 

@@ -132,7 +132,7 @@ export class WaveformRenderer {
      * @param {{ tailWindow?: { start: number, end: number }, baselineReached?: boolean } | null} overlay
      * @param {Array} highlights - Reusable highlight segments (see _drawWaveformHighlights)
      */
-    render(timeData, valueData, triggerEvents = [], overlay = null, highlights = []) {
+    render(timeData, valueData, triggerEvents = [], overlay = null, highlights = [], sweepSeconds = null) {
         // Resize in case the window changed
         this._resizeCanvas();
 
@@ -166,8 +166,36 @@ export class WaveformRenderer {
         ctx.fillRect(0, 0, this.width, this.height);
 
         // --- Coordinate transforms ---
-        const xScale = (t) => plot.x + ((t - tMin) / (tMax - tMin)) * plot.w;
+        // SWEEP mode (how real ventilators draw): the time axis is FIXED at
+        // [0, sweepSeconds]. A sample's x position is (t mod T), so an already-drawn
+        // sample keeps the same x on every subsequent frame — the trace does not
+        // slide, and the eye reads it as a pen painting left to right. The pen wraps
+        // at the right edge and overwrites the oldest data behind an erase band.
+        //
+        // SCROLL mode (legacy) maps the visible window [tMin, tMax] onto the plot.
+        // Because tMin/tMax both advance every frame, every pixel of the trace moves
+        // every frame — which reads as a continuous scroll, not as drawing.
+        // Retained for the static `render(ventilator)` preview path, which has no
+        // wall clock to sweep against.
+        const sweeping = sweepSeconds > 0;
+        const T = sweeping ? sweepSeconds : (tMax - tMin);
+        const xScale = sweeping
+            ? (t) => plot.x + ((((t % T) + T) % T) / T) * plot.w
+            : (t) => plot.x + ((t - tMin) / (tMax - tMin)) * plot.w;
         const yScale = (v) => plot.y + plot.h - ((v - yMin) / (yMax - yMin)) * plot.h;
+
+        // The pen sits at the newest sample; the erase band is the strip immediately
+        // ahead of it, holding the oldest data from the previous sweep. Blanking that
+        // strip is what gives a real ventilator display its leading edge.
+        const penX = sweeping ? xScale(tMax) : plot.x + plot.w;
+        const eraseW = sweeping ? Math.max(6, plot.w * 0.035) : 0;
+        const hidden = sweeping
+            ? (px) => {
+                const d = px - penX;
+                const ahead = d >= 0 ? d : d + plot.w;
+                return ahead > 0 && ahead <= eraseW;
+            }
+            : () => false;
 
         // --- Draw horizontal grid lines and Y-axis labels ---
         ctx.font = gridFont;
@@ -192,24 +220,34 @@ export class WaveformRenderer {
         }
 
         // --- Draw vertical grid lines (every second) with time labels ---
-        const tStart = Math.ceil(tMin);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        for (let t = tStart; t <= tMax; t += 1) {
-            const px = xScale(t);
+
+        // In sweep mode the axis is stationary: 0..T, redrawn identically every
+        // frame. In scroll mode the labels advance with the window.
+        const gridTicks = [];
+        if (sweeping) {
+            for (let s = 0; s <= T + 1e-6; s += 1) {
+                gridTicks.push({ px: plot.x + (s / T) * plot.w, label: s.toString() });
+            }
+        } else {
+            for (let t = Math.ceil(tMin); t <= tMax; t += 1) {
+                gridTicks.push({ px: xScale(t), label: Math.abs(t % 60).toString() });
+            }
+        }
+
+        for (const tick of gridTicks) {
             ctx.strokeStyle = this.gridColor;
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(px, plot.y);
-            ctx.lineTo(px, plot.y + plot.h);
+            ctx.moveTo(tick.px, plot.y);
+            ctx.lineTo(tick.px, plot.y + plot.h);
             ctx.stroke();
 
             // Time label below plot area
             ctx.fillStyle = this.textColor;
             ctx.font = timeFont;
-            // Show relative seconds (mod 60 for readability)
-            const label = Math.abs(t % 60).toString();
-            ctx.fillText(label, px, plot.y + plot.h + 3);
+            ctx.fillText(tick.label, tick.px, plot.y + plot.h + 3);
         }
 
         // --- Draw zero line (if zero is in range) ---
@@ -236,18 +274,33 @@ export class WaveformRenderer {
         ctx.lineJoin = 'round';
         ctx.beginPath();
 
+        let penDown = false;
+        let prevPx = -Infinity;
         for (let i = 0; i < timeData.length; i++) {
             const px = xScale(timeData[i]);
+
+            // Samples inside the erase band are the previous sweep's oldest data —
+            // suppress them so the leading edge reads as blank, not as stale trace.
+            if (hidden(px)) {
+                penDown = false;
+                prevPx = px;
+                continue;
+            }
+
             const py = yScale(valueData[i]);
 
             // Clamp to plot area
             const cyp = Math.max(plot.y, Math.min(plot.y + plot.h, py));
 
-            if (i === 0) {
+            // Lift the pen at the sweep wrap (x jumps back to the left edge);
+            // connecting across it would streak a horizontal line over the plot.
+            if (!penDown || px < prevPx) {
                 ctx.moveTo(px, cyp);
             } else {
                 ctx.lineTo(px, cyp);
             }
+            penDown = true;
+            prevPx = px;
         }
         ctx.stroke();
 
@@ -267,7 +320,7 @@ export class WaveformRenderer {
         // Reusable trace highlights (e.g. ineffective-effort flow deflection).
         this._drawWaveformHighlights(ctx, highlights, timeData, valueData, xScale, yScale, plot);
 
-        this._drawTriggerMarkers(ctx, triggerEvents, xScale, plot);
+        this._drawTriggerMarkers(ctx, triggerEvents, xScale, plot, hidden);
 
         // --- Draw Y-axis label (rotated, left side) ---
         ctx.save();
@@ -306,16 +359,19 @@ export class WaveformRenderer {
         ctx.beginPath();
 
         let minX = Infinity, maxX = -Infinity, topY = Infinity;
+        let prevPx = -Infinity;
         for (let i = start; i < end; i++) {
             const px = xScale(timeData[i]);
             const py = yScale(valueData[i]);
             const cyp = Math.max(plot.y, Math.min(plot.y + plot.h, py));
 
-            if (i === start) {
+            // Lift the pen at the sweep wrap (see render()).
+            if (i === start || px < prevPx) {
                 ctx.moveTo(px, cyp);
             } else {
                 ctx.lineTo(px, cyp);
             }
+            prevPx = px;
             if (px < minX) minX = px;
             if (px > maxX) maxX = px;
             if (cyp < topY) topY = cyp;
@@ -338,7 +394,7 @@ export class WaveformRenderer {
         ctx.restore();
     }
 
-    _drawTriggerMarkers(ctx, triggerEvents, xScale, plot) {
+    _drawTriggerMarkers(ctx, triggerEvents, xScale, plot, hidden = () => false) {
         if (!triggerEvents || triggerEvents.length === 0) return;
 
         ctx.save();
@@ -352,6 +408,10 @@ export class WaveformRenderer {
             if (event.type === 'failed') continue;
 
             const x = xScale(event.time);
+
+            // A marker inside the erase band belongs to the sweep being overwritten;
+            // leaving it would float a stale arrow over the blank leading edge.
+            if (hidden(x)) continue;
 
             if (event.type === 'patient') {
                 this._drawPatientTriggerMarker(ctx, x, plot);
@@ -447,7 +507,8 @@ export class WaveformRenderer {
             ctx.lineCap = 'round';
             ctx.beginPath();
             for (let k = 0; k < pts.length; k += 2) {
-                if (k === 0) ctx.moveTo(pts[k], pts[k + 1]);
+                // Lift the pen at the sweep wrap (see render()).
+                if (k === 0 || pts[k] < pts[k - 2]) ctx.moveTo(pts[k], pts[k + 1]);
                 else ctx.lineTo(pts[k], pts[k + 1]);
             }
             ctx.stroke();
@@ -866,17 +927,35 @@ export class WaveformDisplay {
      * @param {import('./simulation.js').SimulationEngine} sim
      */
     renderFromSim(sim) {
-        const time     = sim.buffers.time.toArray();
-        const pressure = sim.buffers.pressure.toArray();
-        const volume   = sim.buffers.volume.toArray();
-        const flow     = sim.buffers.flow.toArray();
+        const fullTime = sim.buffers.time.toArray();
+        if (fullTime.length < 2) return;
+
+        // The buffers hold maxDisplaySeconds of history; draw only the newest
+        // displaySeconds of it. Slicing here (rather than resizing the buffers) is
+        // what lets the window change without losing data — and sweep mode
+        // requires it, since anything older than one sweep would wrap back on top
+        // of the current trace.
+        const wanted = Math.round((sim.displaySeconds ?? 10) * (sim.sampleRate ?? 100));
+        const offset = Math.max(0, fullTime.length - wanted);
+
+        const time     = offset ? fullTime.slice(offset) : fullTime;
+        const pressure = sim.buffers.pressure.toArray().slice(offset);
+        const volume   = sim.buffers.volume.toArray().slice(offset);
+        const flow     = sim.buffers.flow.toArray().slice(offset);
 
         if (time.length < 2) return;
 
         const triggerEvents = sim.getTriggerEvents(time[0], time[time.length - 1]);
+
+        // expTailWindow indices are buffer-relative — rebase them onto the slice.
+        // _drawTailHighlight clamps out-of-range values, so a tail that has already
+        // scrolled out of the visible window simply stops drawing.
         const flowOverlay = sim.expTailWindow
             ? {
-                tailWindow: sim.expTailWindow,
+                tailWindow: {
+                    start: sim.expTailWindow.start - offset,
+                    end:   sim.expTailWindow.end   - offset,
+                },
                 baselineReached: sim.flowBaselineReached,
             }
             : null;
@@ -886,9 +965,14 @@ export class WaveformDisplay {
         const neuralTi = sim.vent?.neuralTi ?? 1.0;
         const highlights = this._deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi);
 
-        this.pressureRenderer.render(time, pressure, triggerEvents, null, highlights);
-        this.volumeRenderer.render(time, volume, triggerEvents, null, highlights);
-        this.flowRenderer.render(time, flow, triggerEvents, flowOverlay, highlights);
+        // Sweep window = the engine's display window, so the buffer holds exactly one
+        // sweep and the pen overwrites data of its own age. Passing this switches the
+        // renderers from scroll to sweep (see WaveformRenderer.render).
+        const sweepSeconds = sim.displaySeconds ?? null;
+
+        this.pressureRenderer.render(time, pressure, triggerEvents, null, highlights, sweepSeconds);
+        this.volumeRenderer.render(time, volume, triggerEvents, null, highlights, sweepSeconds);
+        this.flowRenderer.render(time, flow, triggerEvents, flowOverlay, highlights, sweepSeconds);
     }
 
     /**

@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ventilator Simulator — VC/PC-CMV</title>
-    <link rel="stylesheet" href="css/style.css">
+    <!-- Cache-bust the stylesheet on the SAME ?v= as the JS modules below. Without
+         it, a returning browser pairs new markup and new JS with a cached old
+         style.css: markup-dependent rules silently vanish (the Teaching-Mode
+         mode row disappears, the RR readout falls back to its old cramped
+         layout) with no error anywhere. Bump all three together. -->
+    <link rel="stylesheet" href="css/style.css?v=9">
 </head>
 <body>
 
@@ -336,13 +341,16 @@
                             <div class="pmus-slider-row">
                                 <span class="pmus-slider-label">Effort</span>
                                 <input type="range" class="control__range" id="pmus-max"
-                                       min="0.25" max="12" step="0.25" value="2">
+                                       min="0.25" max="12" step="0.25" value="2"
+                                       title="Peak inspiratory muscle pressure (Pmus), 0.25–12 cmH₂O">
+                                <span class="control__value" id="pmus-max-display">2 cmH₂O</span>
                             </div>
                             <div class="pmus-slider-row">
                                 <span class="pmus-slider-label">T<sub>neural</sub></span>
                                 <input type="range" class="control__range" id="neural-ti"
-                                       min="4" max="20" step="1" value="10">
-                                <span class="control__value" id="neural-ti-display">1.0s</span>
+                                       min="4" max="20" step="1" value="10"
+                                       title="Neural inspiratory time, 0.4–2.0 s">
+                                <span class="control__value" id="neural-ti-display">1.0 s</span>
                             </div>
                         </div>
                     </div>
@@ -395,6 +403,16 @@
     <!-- ================================================================ -->
     <aside class="parameters">
 
+        <!-- SME-013 — active mode at the head of the monitored-value column, so
+             Teaching Mode reads top-to-bottom as a vent/patient system check:
+             what the ventilator is set to do, then what it actually produced.
+             The header already carries the mode; this is the same string in the
+             glance path RTs asked for. -->
+        <div class="param-mode teaching-only" id="param-mode-row">
+            <span class="param-mode__label">Mode</span>
+            <span class="param-mode__value" id="param-mode"><span class="param-mode__name">VC-CMV</span></span>
+        </div>
+
         <!-- Primary Readouts -->
         <div class="param-group param-group--teaching">
             <div class="param-group__title" data-collapsible>Pressures</div>
@@ -415,7 +433,7 @@
                     <span class="param-row__label">MAP</span>
                     <span class="param-row__value param-row__value--pressure" id="param-map">—</span>
                 </div>
-                <div class="param-row param-row--large teaching-key teaching-only">
+                <div class="param-row param-row--large param-row--rr teaching-key teaching-only">
                     <span class="param-row__label">RR</span>
                     <span class="param-row__value param-row__value--volume" id="param-rr">—</span>
                 </div>
@@ -519,8 +537,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=8"></script>
-<script type="module" src="js/main.js?v=8"></script>
+<script type="module" src="alarms.js?v=9"></script>
+<script type="module" src="js/main.js?v=9"></script>
 
 </body>
 </html>

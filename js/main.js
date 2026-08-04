@@ -21,17 +21,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=8';
-import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=8';
-import { SimulationEngine }  from './simulation.js?v=8';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=8';
-import AlarmEngine from '../alarms.js?v=8';
+import { LungModel }        from './lung-model.js?v=9';
+import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=9';
+import { SimulationEngine }  from './simulation.js?v=9';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=9';
+import AlarmEngine from '../alarms.js?v=9';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=8';
+} from '../alarm-audio.js?v=9';
 
 
 // =============================================================================
@@ -46,6 +46,17 @@ let pvLoop;
 let fvLoop;
 let loopsVisible = true;
 let currentIE   = [1, 2];
+
+// Trailing window for the Teaching-Mode ineffective-effort counter, in seconds.
+// Fixed (not tied to the display window) so the number means the same thing at
+// every zoom level; matches the engine's triggerEventRetentionSeconds.
+const INEFFECTIVE_WINDOW_SEC = 60;
+// COPY — pending SME sign-off (see docs/sme-feedback-log.md, SME-016).
+const INEFFECTIVE_COUNTER_TOOLTIP =
+    'Ineffective efforts — patient attempts in the last 60 s that did not '
+    + 'produce a breath, either because the ventilator was mid-breath or '
+    + 'because the effort never reached the trigger threshold. This is the gap '
+    + 'between Patient and Delivered.';
 let lastFrameTs = null;
 let animFrame   = null;
 const alarmLimits = {
@@ -344,6 +355,18 @@ function updateModeLabel() {
 
     const modeName = vent.modeLabel;
     modeLabel.innerHTML = `${modeName}<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${tag}</span>${holdTag}${pmusTag}`;
+
+    // Mirror the mode into the monitored-value column (SME-013). Same strings as
+    // the header — this is a second glance path, not new copy.
+    const paramMode = document.getElementById('param-mode');
+    if (paramMode) {
+        const html = `<span class="param-mode__name">${modeName}</span>`
+                   + `<span class="param-mode__tag">${tag}</span>`;
+        if (paramMode._modeHtml !== html) {
+            paramMode.innerHTML = html;
+            paramMode._modeHtml = html;
+        }
+    }
 }
 
 function updateFlowLabel() {
@@ -482,6 +505,8 @@ function bindPmusToggle() {
             document.getElementById('pmus-icon').textContent = '💪';
             document.getElementById('pmus-btn-label').textContent = 'Active';
             document.getElementById('pmus-display').textContent = formatPmusValue(pmax);
+            setText('pmus-max-display', formatPmusValue(pmax));
+            setText('neural-ti-display', `${nti.toFixed(1)} s`);
             document.getElementById('pmus-sliders').style.display = '';
             document.getElementById('patient-rr-control').style.display = '';
         }
@@ -493,12 +518,15 @@ function onPmusMaxChange(slider) {
     const pmax = parseFloat(slider.value);
     vent.pMusMax = pmax;
     document.getElementById('pmus-display').textContent = formatPmusValue(pmax);
+    // Units beside the slider itself, not only in the collapsed group header —
+    // the Effort row was the one control with no inline value at all (SME-002).
+    setText('pmus-max-display', formatPmusValue(pmax));
 }
 
 function onNeuralTiChange(slider) {
     const nti = parseInt(slider.value) / 10;
     vent.neuralTi = nti;
-    document.getElementById('neural-ti-display').textContent = `${nti.toFixed(1)}s`;
+    document.getElementById('neural-ti-display').textContent = `${nti.toFixed(1)} s`;
 }
 
 function onPatientRRChange(slider) {
@@ -566,8 +594,26 @@ function bindAlarmAudioControls() {
             armAlarmAudio();
 
             const nowSec = getAlarmNowSec();
-            alarmAudioState.silencedUntilSec =
-                nowSec + alarmAudioSettings.silenceDurationSec;
+            // Toggle, not re-arm (SME-018). Pressing Silence while a silence is
+            // already running used to extend it by another full duration, with
+            // no way to cancel; now a second press clears it. Clearing lets the
+            // next frame sound immediately if an alarm is still active, which is
+            // the point of cancelling.
+            const silenced = nowSec < alarmAudioState.silencedUntilSec;
+            alarmAudioState.silencedUntilSec = silenced
+                ? 0
+                : nowSec + alarmAudioSettings.silenceDurationSec;
+            if (silenced) {
+                // Clearing silencedUntilSec is not enough to actually restore
+                // sound. shouldPlayAlarmSound() still gates on
+                // `nowSec - lastSoundAtSec >= repeatSec`, and updateAlarmAudio()
+                // keeps lastAlarmSignature current all the way through the
+                // silence — so the new-alarm fast path is already spent and the
+                // alarm would stay mute for up to a full repeat interval (12 s
+                // high, 30 s medium) AFTER the user explicitly cancelled. Same
+                // reset the mute toggle does when sound is switched back on.
+                alarmAudioState.lastSoundAtSec = -Infinity;
+            }
 
             updateAlarmAudioControls(activeAlarms, nowSec);
         });
@@ -808,14 +854,11 @@ function bindTeachingModeToggle() {
         btn.classList.toggle('transport-btn--teaching-active', enabled);
         btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
         btn.textContent = enabled ? 'Teach On' : 'Teach Off';
-        if (enabled) {
-            // Default loops OFF when entering Teaching Mode (big-waveform layout)
-            const loopRow = document.getElementById('loop-row');
-            const loopBtn = document.getElementById('btn-loops');
-            loopsVisible = false;
-            loopRow.classList.add('loop-row--hidden');
-            loopBtn.classList.remove('transport-btn--active');
-        }
+        // Loops are NOT forced off on entering Teaching Mode any more (SME-012).
+        // The old behaviour silently discarded the user's loop choice on the way
+        // in and never restored it on the way out, so loops read as unavailable
+        // in Teaching Mode even though the button still worked. Loop visibility
+        // is now purely the user's, in both modes.
         renderFrame();
     };
 
@@ -982,6 +1025,21 @@ function updateRRDisplay(summary) {
             && Number.isFinite(vent?.pMusMax) && vent.pMusMax > 0;
         const rrPatient = effortOn ? Math.round(sim.patientRR) : '—';
         const patientClass = effortOn ? 'rr-triple__num--patient' : 'rr-triple__num--off';
+        // Ineffective-effort counter (PR4). The Patient-vs-Delivered gap is only
+        // half the story — this is the count of efforts that failed to trigger,
+        // which is what closes it. Shown whenever effort is on, including at 0,
+        // because "0 ineffective" is itself the informative reading.
+        const ineffectiveRow = effortOn
+            ? '<span class="rr-triple__line rr-triple__ineffective" ' +
+                  `title="${INEFFECTIVE_COUNTER_TOOLTIP}">` +
+                '<span class="rr-triple__lbl">Ineffective</span>' +
+                '<span class="rr-triple__val">' +
+                  '<span class="rr-triple__num rr-triple__num--ineffective" ' +
+                      'id="rr-ineffective-count">0</span>' +
+                  `<span class="rr-triple__unit">/${INEFFECTIVE_WINDOW_SEC}s</span>` +
+                '</span>' +
+              '</span>'
+            : '';
         const html =
             '<span class="rr-triple">' +
               '<span class="rr-triple__line rr-triple__set" title="Set backup rate — mandatory (machine-triggered) breaths/min">' +
@@ -998,6 +1056,7 @@ function updateRRDisplay(summary) {
                   `<span class="rr-triple__num ${patientClass}">${rrPatient}</span>` +
                 '</span>' +
               '</span>' +
+              ineffectiveRow +
             '</span>';
         // Rebuild ONLY when the rendered content changes. updateRRDisplay runs
         // every animation frame; reassigning innerHTML each frame was destroying
@@ -1012,10 +1071,36 @@ function updateRRDisplay(summary) {
             rrEl.innerHTML = html;
             rrEl._rrTripleHtml = html;
         }
+        // The count is written by textContent AFTER the guarded rebuild, and is
+        // deliberately kept out of `html`: folding a value that changes on every
+        // failed effort into the guarded string would rebuild the whole triple
+        // and re-break the tooltip hover-dwell the guard above exists to protect.
+        if (effortOn) setText('rr-ineffective-count', `${countIneffectiveEfforts()}`);
         return;
     }
 
     rrEl.textContent = `${rrActual}`;
+}
+
+/**
+ * Ineffective (failed) patient efforts in the trailing INEFFECTIVE_WINDOW_SEC.
+ *
+ * Counts BOTH failure modes the engine records — efforts blocked because the
+ * ventilator was mid-breath (`ventilator_unavailable`) and efforts that never
+ * crossed the trigger threshold (`threshold`). That matters: only the threshold
+ * case bends the expiratory flow trace enough to draw the amber highlight, so
+ * the phase-gate failures behind SME-001/004 have no waveform mark at all and
+ * this counter is the only place they become visible.
+ *
+ * The window is fixed at 60 s rather than following the display window, so the
+ * number keeps one meaning when the user switches between 5/10/20/30 s. 60 s is
+ * also exactly what the engine retains (triggerEventRetentionSeconds).
+ */
+function countIneffectiveEfforts() {
+    if (typeof sim?.getTriggerEvents !== 'function') return 0;
+    const now = Number.isFinite(sim.globalTime) ? sim.globalTime : 0;
+    return sim.getTriggerEvents(now - INEFFECTIVE_WINDOW_SEC, now)
+        .filter((e) => e.type === 'failed').length;
 }
 
 function updateParams() {
@@ -1025,7 +1110,14 @@ function updateParams() {
     const isCsv = vent.isSpontaneousMode();
     const measuredRR = Number.isFinite(sim.measuredRR) ? sim.measuredRR : 0;
     const rrSet = isCsv ? '—' : `${vent.respiratoryRate}`;
-    setText('param-pip',     m.pip > 0 ? `${m.pip}` : `${s.pressures.pip_cmH2O}`);
+    // PIP shows the LATCHED peak of the last completed breath, so the largest
+    // number on the monitor changes once per breath instead of tracking the
+    // inspiratory ramp ~4x/second (SME-014). Falls back to the running peak
+    // before the first breath completes, then to the setting.
+    const displayPip = m.pipLatched > 0
+        ? m.pipLatched
+        : (m.pip > 0 ? m.pip : s.pressures.pip_cmH2O);
+    setText('param-pip',     `${displayPip}`);
     setText('param-pplat',   s.holdActive ? `${s.pressures.pplat_cmH2O}` : '—');
     setText('param-map',     `${s.pressures.map_cmH2O}`);
     setText('param-dp',      `${s.pressures.drivingPressure}`);
@@ -1315,14 +1407,20 @@ function updateAlarmAudioControls(alarms = [], nowSec = 0) {
     const isSilenced = nowSec < alarmAudioState.silencedUntilSec;
 
     if (silenceBtn) {
-        silenceBtn.disabled = !hasActiveAlarms;
+        // Stay clickable while a silence is running even if the alarm condition
+        // has since cleared — otherwise the button greys out mid-countdown and
+        // the silence becomes uncancellable, which is the SME-018 complaint in
+        // its worst form.
+        silenceBtn.disabled = !hasActiveAlarms && !isSilenced;
 
         if (isSilenced) {
             const remaining = Math.ceil(alarmAudioState.silencedUntilSec - nowSec);
             silenceBtn.textContent = `Silenced ${remaining}s`;
+            silenceBtn.title = 'Silence active — click to cancel and restore alarm sound';
             silenceBtn.classList.add('alarm-audio-btn--active');
         } else {
             silenceBtn.textContent = 'Silence';
+            silenceBtn.title = 'Silence alarms for 2 minutes';
             silenceBtn.classList.remove('alarm-audio-btn--active');
         }
     }

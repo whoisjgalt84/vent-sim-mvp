@@ -963,7 +963,14 @@ export class WaveformDisplay {
         // PR4a producer: ineffective-effort flow highlights (tagged trace:'flow',
         // so only the flow renderer draws them; the others filter them out).
         const neuralTi = sim.vent?.neuralTi ?? 1.0;
-        const highlights = this._deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi);
+        // Live trigger settings, so the tooltip can name the actual threshold the
+        // effort failed to reach rather than a hard-coded one (SME-022).
+        const trigger = {
+            type: sim.vent?.triggerType ?? 'flow',
+            flowLpm: sim.vent?.flowTriggerLpm ?? 2.0,
+            pressureCmH2O: sim.vent?.pressureTriggerCmH2O ?? 1.0,
+        };
+        const highlights = this._deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi, trigger);
 
         // Sweep window = the engine's display window, so the buffer holds exactly one
         // sweep and the pen overwrites data of its own age. Passing this switches the
@@ -993,7 +1000,7 @@ export class WaveformDisplay {
      * mandatory inspiration have no expiratory flow deflection (they scallop
      * pressure instead) and so are not highlighted on the flow trace.
      */
-    _deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi) {
+    _deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi, trigger = null) {
         // Muted amber-gold "interpretation" finding color (NOT an alarm) — single
         // source of truth in css/style.css (--color-interpretation-highlight).
         const HIGHLIGHT_COLOR = (typeof getComputedStyle === 'function'
@@ -1014,10 +1021,39 @@ export class WaveformDisplay {
                 color: HIGHLIGHT_COLOR,
                 lineWidthDelta: 1.4,                  // ~1.8 base → ~3.2 px, clearly thicker
                 label: 'ineffective effort',
-                tooltip: 'Ineffective effort — patient pulled but did not trigger',
+                tooltip: this._failedEffortTooltip(ev, trigger),
             });
         }
         return segments;
+    }
+
+    /**
+     * SME-022 — say WHY the effort failed, not just that it did.
+     *
+     * The counterintuitive moment this exists for: a ~20 L/min swing on the flow
+     * trace with no triggered breath. The trace plots total net (signed) lung
+     * flow, which is mostly passive expiration bent upward by the effort; the
+     * trigger watches inspiratory-direction flow only, and it never crosses the
+     * threshold. Naming the actual threshold turns that from a bug-looking event
+     * into a readable one (SME-021 verdict; Mireles-Cabodevila 2021).
+     */
+    _failedEffortTooltip(ev, trigger) {
+        if (ev.gateFailed === 'ventilator_unavailable') {
+            const phase = ev.phase === 'HOLD' ? 'an inspiratory hold' : 'a mandatory breath';
+            return `Ineffective effort — the patient pulled during ${phase}, `
+                 + 'so the ventilator was not available to be triggered.';
+        }
+        const kind = trigger?.type === 'pressure' ? 'pressure' : 'flow';
+        const limit = kind === 'pressure'
+            ? `${Number(trigger?.pressureCmH2O ?? 1).toFixed(1)} cmH₂O`
+            : `${Number(trigger?.flowLpm ?? 2).toFixed(1)} L/min`;
+        const signal = kind === 'pressure'
+            ? `drop airway pressure by ${limit} below PEEP`
+            : `generate ${limit} of inspiratory flow`;
+        return 'Ineffective effort — the effort bent expiratory flow toward '
+             + `baseline but did not ${signal}, so it never reached the trigger `
+             + 'threshold. The large swing on this trace is mostly passive '
+             + 'exhalation, not trigger signal.';
     }
 
     /**

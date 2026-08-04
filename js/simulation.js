@@ -172,7 +172,8 @@ export class SimulationEngine {
 
         // --- Per-Breath Measurements ---
         //   Updated each breath for the parameter display panel.
-        this.measuredPIP       = 0;       // peak inspiratory pressure
+        this.measuredPIP       = 0;       // peak inspiratory pressure (running, this breath)
+        this.lastBreathPIP     = 0;       // PIP latched from the last COMPLETED breath (SME-014)
         this.measuredPplat     = null;    // plateau pressure (hold only)
         this.measuredVT_mL     = 0;       // delivered tidal volume
         this.peakInspFlow_Lpm  = 0;       // peak inspiratory flow
@@ -519,6 +520,20 @@ export class SimulationEngine {
             this.breathTimestamps.shift();
         }
         this._updateMeasuredRR();
+        // Latch the peak THIS breath reached, at the moment inspiration ends —
+        // NOT at the start of the next breath. measuredPIP is written only in
+        // _computeInspiration, so it is already final here and cannot change
+        // before the next _startNewBreath. Latching here is what makes the
+        // monitor show the breath that just finished for the whole expiratory
+        // phase (2/3 of the cycle at I:E 1:2) instead of the one before it —
+        // latching at breath start meant a pressure excursion could raise the
+        // high-pressure alarm while PIP still read the previous, normal value.
+        // Every inspiration exit funnels through here: mandatory, post-HOLD,
+        // and the PC-CSV flow-cycled path. measuredPIP itself is untouched —
+        // the alarm must still see pressure the instant it rises (SME-014).
+        if (this.measuredPIP > 0) {
+            this.lastBreathPIP = this.measuredPIP;
+        }
         this._setPhase(Phase.EXPIRATION);
         this.phaseTime = 0;
         this.peakInspiratoryFlow = 0;
@@ -547,6 +562,8 @@ export class SimulationEngine {
         this.loopCurrent = { pressure: [], volume: [], flow: [] };
 
         // Reset per-breath measurements
+        //   (lastBreathPIP is latched in _startExpiration, where the peak is
+        //   final — deliberately NOT here. One latch site only.)
         this.measuredPIP       = 0;
         this.measuredPplat     = null;
         this.measuredVT_mL     = 0;
@@ -843,6 +860,7 @@ export class SimulationEngine {
         this.lastTriggerType   = 'machine';
         this.triggerEvents     = [];
         this.measuredPIP       = 0;
+        this.lastBreathPIP     = 0;
         this.measuredPplat     = null;
         this.measuredVT_mL     = 0;
         this.peakInspFlow_Lpm  = 0;
@@ -886,6 +904,9 @@ export class SimulationEngine {
     get breathSummary() {
         return {
             pip:          Math.round(this.measuredPIP * 10) / 10,
+            // Latched peak of the last completed breath — what the monitor shows
+            // (SME-014). `pip` above stays live for alarm evaluation.
+            pipLatched:   Math.round(this.lastBreathPIP * 10) / 10,
             pplat:        this.measuredPplat !== null
                               ? Math.round(this.measuredPplat * 10) / 10
                               : null,

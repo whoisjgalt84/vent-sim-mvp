@@ -734,6 +734,98 @@ html, body {
 .rr-triple__num--patient   { color: var(--color-interpretation-highlight); }
 .rr-triple__num--off       { color: var(--text-dim); opacity: 0.7; }
 
+/* The triple is built only in Teaching Mode, where the monitor column narrows to
+   208px. Laying Delivered and Patient side by side needed ~165px of content in a
+   ~150px box, so both cells were clipped at the panel edge (SET/PATIENT lost
+   their digits). Stack the lines into a label/value mini-table instead: it fits,
+   it reads as a table, and it leaves room for the ineffective-effort row. */
+.rr-triple {
+    width: 100%;
+    align-items: stretch;
+}
+.rr-triple__line,
+.rr-triple__cell {
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+}
+.rr-triple__outputs {
+    flex-direction: column;
+    align-items: stretch;   /* full-width rows, so every value shares a right edge */
+    gap: 3px;
+}
+/* Keep the count and its unit together against the right edge. */
+.rr-triple__val {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+}
+.rr-triple__lbl { white-space: nowrap; }
+.rr-triple__ineffective {
+    margin-top: 2px;
+    padding-top: 3px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.rr-triple__num--ineffective { color: var(--color-interpretation-highlight); }
+.rr-triple__unit {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-left: 3px;
+}
+
+/* Teaching Mode gives the RR readout the full column width, under its label. */
+body.teaching-mode .param-row--rr { flex-wrap: wrap; }
+body.teaching-mode #param-rr {
+    flex: 1 0 100%;
+    justify-content: flex-start;
+    margin-top: 3px;
+}
+
+/* SME-013 — active mode at the head of the monitored-value column. */
+.param-mode {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.02);
+}
+.param-mode__label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+/* At 208px the longest pairing (PC-CSV + flow-cycled) does not fit on one line.
+   Wrap BETWEEN the mode name and its control-variable tag, never inside either —
+   left to itself the browser breaks "PC-CSV" at the hyphen. */
+.param-mode__value {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: baseline;
+    text-align: right;
+}
+.param-mode__name {
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--text-bright);
+    white-space: nowrap;
+}
+.param-mode__tag {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.5;
+    margin-left: 5px;
+    white-space: nowrap;
+}
+
 /* Color-coded parameter values */
 .param-row__value--pressure { color: var(--color-pressure); }
 .param-row__value--volume   { color: var(--color-volume); }
@@ -758,6 +850,13 @@ html, body {
 
 
 /* --- Teaching Mode --- */
+
+/* `.teaching-only` is display:none globally and is never re-shown by CSS (the
+   RR row works only because main.js strips the class at runtime). The mode row
+   needs the matching un-hide. */
+body.teaching-mode .parameters .param-mode {
+    display: flex;
+}
 
 body.teaching-mode .app {
     grid-template-columns: 0 minmax(0, 1fr) 208px;
@@ -1113,6 +1212,10 @@ body.teaching-mode .parameters .param-row.teaching-only .param-row__value {
 .pmus-slider-row .control__value {
     font-size: 14px;
     min-width: 60px;
+    /* The range next to it is flex:1/min-width:0, so without this the value box
+       is the one that shrinks and "6 cmH₂O" loses its last character. */
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .trigger-control {

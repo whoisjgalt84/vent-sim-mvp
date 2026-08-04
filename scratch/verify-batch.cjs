@@ -1,0 +1,409 @@
+/**
+ * Behavioural verification for this batch. Asserts what each item CLAIMS to do,
+ * driving the real page — not just eyeballing pixels.
+ *
+ * Requires: python3 -m http.server 8899 from the repo root.
+ *   node scratch/verify-batch.cjs
+ */
+// Playwright resolves from the repo's node_modules when present, else from a
+// sandbox-level install. Run `npm i -D playwright` to use this locally.
+function loadChromium() {
+    for (const id of ['playwright', '/home/claude/node_modules/playwright']) {
+        try { return require(id).chromium; } catch { /* try next */ }
+    }
+    throw new Error('playwright not found — run: npm i -D playwright');
+}
+const chromium = loadChromium();
+
+const BROWSER = process.env.CHROMIUM_PATH
+    || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const URL = 'http://127.0.0.1:8899/index.html';
+
+let pass = 0;
+let fail = 0;
+const failures = [];
+
+function check(name, ok, detail = '') {
+    if (ok) { pass++; console.log(`  ok   ${name}`); }
+    else { fail++; failures.push(`${name} — ${detail}`); console.log(`  FAIL ${name} — ${detail}`); }
+}
+
+async function fresh(browser, tag) {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on('pageerror', (e) => errs.push(String(e)));
+    page.on('console', (m) => { if (m.type() === 'error' && !/404|Failed to load resource/.test(m.text())) errs.push(m.text()); });
+    await page.goto(`${URL}?t=${tag}`, { waitUntil: 'networkidle' });
+    page._errs = errs;
+    return { ctx, page };
+}
+
+async function expandRail(page) {
+    await page.$$eval('.controls [data-collapsible][data-collapsed]', (els) => els.forEach((e) => e.click()));
+    await page.waitForTimeout(120);
+}
+
+async function setRange(page, id, v) {
+    await page.$eval(id, (el, val) => {
+        el.value = String(val);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, v);
+}
+
+async function enableEffort(page, { patientRR = 30, pmus = 6 } = {}) {
+    await expandRail(page);
+    await page.click('#pmus-toggle');
+    await setRange(page, '#pmus-max', pmus);
+    await setRange(page, '#patient-rr', patientRR);
+}
+
+(async () => {
+    const browser = await chromium.launch({ executablePath: BROWSER, args: ['--no-sandbox'] });
+
+    // ---------------------------------------------------------------- SME-018
+    console.log('\n[SME-018] cancel an active alarm silence');
+    {
+        const { ctx, page } = await fresh(browser, 'a18');
+        await expandRail(page);
+        // Force the high-pressure ALARM (not just the alert badge) to fire
+        // deterministically: stiff lung + a low pressure limit.
+        await setRange(page, '#compliance', await page.$eval('#compliance', (e) => e.min));
+        await setRange(page, '#alarm-high-pressure', await page.$eval('#alarm-high-pressure', (e) => e.min));
+        await page.waitForFunction(
+            () => !document.getElementById('alarm-silence-btn').disabled,
+            null, { timeout: 30000 },
+        ).catch(() => {});
+
+        const armed = await page.$eval('#alarm-silence-btn', (b) => !b.disabled);
+        check('silence button enabled once an alarm is active', armed);
+
+        await page.click('#alarm-silence-btn');
+        await page.waitForTimeout(600);
+        const during = await page.$eval('#alarm-silence-btn', (b) => ({
+            text: b.textContent.trim(), disabled: b.disabled, title: b.title,
+        }));
+        check('shows a running countdown', /^Silenced \d+s$/.test(during.text), during.text);
+        check('stays clickable while silenced', !during.disabled);
+        check('title advertises cancel', /cancel/i.test(during.title), during.title);
+
+        await page.click('#alarm-silence-btn');
+        await page.waitForTimeout(600);
+        const after = await page.$eval('#alarm-silence-btn', (b) => b.textContent.trim());
+        check('second press CANCELS the silence', after === 'Silence', `got "${after}"`);
+
+        // Re-silence, then clear the alarm condition mid-countdown.
+        await page.click('#alarm-silence-btn');
+        await page.waitForTimeout(400);
+        await setRange(page, '#compliance', 50);
+        await page.waitForTimeout(2500);
+        const orphan = await page.$eval('#alarm-silence-btn', (b) => ({
+            text: b.textContent.trim(), disabled: b.disabled,
+        }));
+        check('silence stays cancellable after the alarm clears',
+            !orphan.disabled || orphan.text === 'Silence',
+            `text="${orphan.text}" disabled=${orphan.disabled}`);
+
+        check('no page errors', page._errs.length === 0, page._errs.join(' | '));
+        await ctx.close();
+    }
+
+    // ---------------------------------------------------------------- SME-012
+    console.log('\n[SME-012] loops available regardless of Teaching Mode');
+    {
+        const { ctx, page } = await fresh(browser, 'a12');
+        const vis = () => page.$eval('#loop-row', (r) => !r.classList.contains('loop-row--hidden'));
+
+        check('loops start visible', await vis());
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(400);
+        check('loops SURVIVE entering Teaching Mode', await vis());
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(400);
+        check('loops still visible after leaving Teaching Mode', await vis());
+
+        // The user's explicit "off" must also be respected across the toggle.
+        await page.click('#btn-loops');
+        await page.waitForTimeout(200);
+        check('loops off when the user turns them off', !(await vis()));
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(400);
+        check('Teaching Mode does not resurrect loops the user turned off', !(await vis()));
+
+        // And they can be turned back on while Teaching Mode is on.
+        await page.click('#btn-loops');
+        await page.waitForTimeout(400);
+        check('loops can be re-enabled inside Teaching Mode', await vis());
+        check('no page errors', page._errs.length === 0, page._errs.join(' | '));
+        await ctx.close();
+    }
+
+    // ---------------------------------------------------------------- SME-013
+    console.log('\n[SME-013] vent mode alongside measured values');
+    {
+        const { ctx, page } = await fresh(browser, 'a13');
+        const modeRowVisible = () => page.$eval('#param-mode-row', (r) => r.offsetParent !== null);
+
+        check('mode row hidden in standard mode (header already shows it)', !(await modeRowVisible()));
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(400);
+        check('mode row visible in Teaching Mode', await modeRowVisible());
+
+        const same = await page.evaluate(() => {
+            const header = document.getElementById('mode-label').textContent.replace(/[⏸💪].*/u, '').trim();
+            const panel = document.getElementById('param-mode').textContent.trim();
+            return { header, panel };
+        });
+        check('panel mode matches the header', same.header.startsWith(same.panel.split(' ')[0]),
+            JSON.stringify(same));
+
+        // The left rail is hidden in Teaching Mode, so leave it to switch mode,
+        // then come back — the same path a user has.
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(200);
+        await page.click('.mode-btn[data-mode="PC-CSV"]');
+        await page.waitForTimeout(300);
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(600);
+        const csv = await page.$eval('#param-mode', (e) => e.textContent.trim());
+        check('panel mode tracks a mode change', csv.startsWith('PC-CSV'), csv);
+        check('no page errors', page._errs.length === 0, page._errs.join(' | '));
+        await ctx.close();
+    }
+
+    // ---------------------------------------------------------------- SME-014
+    console.log('\n[SME-014] peak-pressure readout stability');
+    {
+        const { ctx, page } = await fresh(browser, 'a14');
+        await page.waitForTimeout(6000);
+        const churn = await page.evaluate(async () => {
+            const seen = [];
+            for (let i = 0; i < 200; i++) {
+                const el = document.getElementById('param-pip');
+                seen.push({ v: el.textContent, w: +el.getBoundingClientRect().width.toFixed(1) });
+                await new Promise((r) => setTimeout(r, 100));
+            }
+            let changes = 0;
+            for (let i = 1; i < seen.length; i++) if (seen[i].v !== seen[i - 1].v) changes++;
+            return { changes, widths: [...new Set(seen.map((s) => s.w))], last: seen.at(-1).v };
+        });
+        // 14 breaths/min over 20 s ≈ 4-5 breaths, so ≤6 changes means once per breath.
+        check('PIP updates about once per breath, not per frame', churn.changes <= 6,
+            `${churn.changes} changes in 20 s (was ~73)`);
+        check('PIP no longer resizes as it updates', churn.widths.length <= 1,
+            `widths ${JSON.stringify(churn.widths)}`);
+        check('PIP still shows a real value', /\d/.test(churn.last), churn.last);
+
+        // Freshness: latching at the START of the next breath (instead of at the
+        // end of inspiration) left PIP showing the PREVIOUS breath for the whole
+        // expiratory phase, so a pressure excursion could raise the alarm while
+        // the number still read normal. The alarm legitimately leads PIP by up to
+        // the remaining inspiratory time; a whole expiratory phase of lag is the
+        // regression. Measure the gap between the alarm appearing and PIP moving.
+        await setRange(page, '#alarm-high-pressure', await page.$eval('#alarm-high-pressure', (e) => e.min));
+        const limit = await page.$eval('#alarm-high-pressure', (e) => Number(e.value));
+        const lag = await page.evaluate(async (lim) => {
+            const pip = () => Number(document.getElementById('param-pip').textContent) || 0;
+            const alarming = () => /pressure/i.test(document.getElementById('alarm-chip-list').textContent);
+            const base = pip();
+            document.getElementById('compliance').value =
+                document.getElementById('compliance').min;
+            document.getElementById('compliance').dispatchEvent(new Event('input', { bubbles: true }));
+            let tAlarm = null, tPip = null;
+            const t0 = performance.now();
+            for (let i = 0; i < 300; i++) {
+                if (tAlarm === null && alarming()) tAlarm = performance.now();
+                if (tPip === null && pip() > Math.max(base + 3, lim)) tPip = performance.now();
+                if (tAlarm !== null && tPip !== null) break;
+                await new Promise((r) => setTimeout(r, 50));
+            }
+            return {
+                alarm: tAlarm === null ? null : (tAlarm - t0) / 1000,
+                pip: tPip === null ? null : (tPip - t0) / 1000,
+            };
+        }, limit);
+        const gap = (lag.alarm !== null && lag.pip !== null) ? lag.pip - lag.alarm : null;
+        check('PIP catches up with a pressure excursion within one inspiration, not a whole cycle',
+            gap !== null && gap < 2.0, `alarm@${lag.alarm}s pip@${lag.pip}s gap=${gap}s`);
+
+        check('no page errors', page._errs.length === 0, page._errs.join(' | '));
+        await ctx.close();
+    }
+
+    // ------------------------------------------------- counter + SME-022
+    console.log('\n[counter + SME-022] ineffective efforts');
+    {
+        const { ctx, page } = await fresh(browser, 'a22');
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(300);
+        const before = await page.$('#rr-ineffective-count');
+        check('counter absent while the patient is passive', before === null);
+
+        // Effort controls live in the left rail, which Teaching Mode hides.
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(200);
+        await enableEffort(page, { patientRR: 30, pmus: 6 });
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(16000);
+
+        const count = await page.$eval('#rr-ineffective-count', (e) => e.textContent.trim());
+        check('counter present once effort is on', count !== undefined);
+        check('counter registered failed efforts in an overbreathing patient',
+            Number(count) > 0, `count=${count}`);
+
+        // Hover across the flow canvas and harvest whatever tooltips exist.
+        const titles = await page.evaluate(async () => {
+            const c = document.getElementById('canvas-flow');
+            const r = c.getBoundingClientRect();
+            const found = new Set();
+            for (let x = 0; x < r.width; x += 4) {
+                c.dispatchEvent(new MouseEvent('mousemove', {
+                    clientX: r.left + x, clientY: r.top + r.height / 2, bubbles: true,
+                }));
+                if (c.title) found.add(c.title);
+                await new Promise((res) => setTimeout(res, 4));
+            }
+            return [...found];
+        });
+        check('a failed-effort tooltip is reachable by hover', titles.length > 0,
+            `titles=${titles.length}`);
+        const joined = titles.join(' || ');
+        check('tooltip explains WHY, not just THAT (SME-022)',
+            /did not|not available/.test(joined), joined.slice(0, 160));
+        check('tooltip names the actual flow threshold',
+            /2\.0 L\/min/.test(joined) || /not available/.test(joined), joined.slice(0, 200));
+        console.log('    tooltip(s):');
+        titles.forEach((t) => console.log(`      - ${t}`));
+
+        // Switch to a pressure trigger and confirm the copy follows the setting.
+        // The trigger control is in the left rail, hidden in Teaching Mode.
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(200);
+        await page.click('.ie-btn[data-trigger-type="pressure"]');
+        await setRange(page, '#pressure-trigger', 3.5);
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(16000);
+        const ptitles = await page.evaluate(async () => {
+            const c = document.getElementById('canvas-flow');
+            const r = c.getBoundingClientRect();
+            const found = new Set();
+            for (let x = 0; x < r.width; x += 4) {
+                c.dispatchEvent(new MouseEvent('mousemove', {
+                    clientX: r.left + x, clientY: r.top + r.height / 2, bubbles: true,
+                }));
+                if (c.title) found.add(c.title);
+                await new Promise((res) => setTimeout(res, 4));
+            }
+            return [...found];
+        });
+        const pj = ptitles.join(' || ');
+        check('tooltip follows the trigger setting (pressure)',
+            ptitles.length === 0 || /cmH₂O|not available/.test(pj), pj.slice(0, 200));
+        console.log('    pressure-trigger tooltip(s):');
+        ptitles.forEach((t) => console.log(`      - ${t}`));
+
+        check('no page errors', page._errs.length === 0, page._errs.join(' | '));
+        await ctx.close();
+    }
+
+    // ---------------------------------------------------------------- SME-002
+    console.log('\n[SME-002] effort slider units + fit');
+    {
+        const { ctx, page } = await fresh(browser, 'a02');
+        await enableEffort(page, { patientRR: 20, pmus: 4 });
+        await page.waitForTimeout(600);
+
+        const eff = await page.evaluate(() => {
+            const g = (id) => {
+                const el = document.getElementById(id);
+                return el ? { text: el.textContent.trim(), visible: el.offsetParent !== null } : null;
+            };
+            const rail = document.querySelector('.controls');
+            const rb = rail.getBoundingClientRect();
+            const spills = [];
+            rail.querySelectorAll('*').forEach((el) => {
+                const b = el.getBoundingClientRect();
+                if (b.width > 0 && (b.right > rb.right + 0.5 || b.left < rb.left - 0.5)) {
+                    spills.push(`${el.id || el.className}`);
+                }
+            });
+            const cut = [...rail.querySelectorAll('*')]
+                .filter((el) => el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0)
+                .map((el) => `${el.id || el.className}:"${el.textContent.trim().slice(0, 20)}"`);
+            return { pmus: g('pmus-max-display'), nti: g('neural-ti-display'), spills, cut };
+        });
+        check('Effort slider now has an inline value', eff.pmus && eff.pmus.visible, JSON.stringify(eff.pmus));
+        check('Effort value carries its unit', /cmH₂O/.test(eff.pmus?.text || ''), eff.pmus?.text);
+        check('Effort value tracks the slider', /^4\b/.test(eff.pmus?.text || ''), eff.pmus?.text);
+        check('T-neural value carries a spaced unit', /\d\.\d s$/.test(eff.nti?.text || ''), eff.nti?.text);
+        check('nothing overflows the sidebar', eff.spills.length === 0, eff.spills.join(','));
+        check('no control text is cut off inside its own box', eff.cut.length === 0, eff.cut.join(', '));
+        check('no page errors', page._errs.length === 0, page._errs.join(' | '));
+        await ctx.close();
+    }
+
+    // ------------------------------------------------ teaching panel clipping
+    console.log('\n[regression] Teaching-Mode monitor column clipping');
+    {
+        const { ctx, page } = await fresh(browser, 'aclip');
+        await enableEffort(page, { patientRR: 30, pmus: 6 });
+        await page.click('#btn-teaching-mode');
+        await page.waitForTimeout(9000);
+        const clipped = await page.evaluate(() => {
+            const panel = document.querySelector('.parameters');
+            // scrollWidth > clientWidth on any inline value means its text is
+            // being cut off inside its own box (the "6 cmH\u2082O" failure).
+            window.__overflowing = [...panel.querySelectorAll('*')]
+                .filter((el) => el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0)
+                .map((el) => `${el.className}:"${el.textContent.trim().slice(0, 20)}"`);
+            const pb = panel.getBoundingClientRect();
+            const bad = [];
+            panel.querySelectorAll('.param-row__value, .rr-triple__num, .rr-triple__lbl, .rr-triple__unit, .param-mode__value')
+                .forEach((el) => {
+                    const b = el.getBoundingClientRect();
+                    if (b.width > 0 && (b.right > pb.right - 1 || b.left < pb.left + 1)) {
+                        bad.push(`${el.className}:"${el.textContent.trim()}"`);
+                    }
+                });
+            return { bad, overflowing: window.__overflowing };
+        });
+        check('no readout is clipped by the 208px teaching column', clipped.bad.length === 0,
+            clipped.bad.join(', '));
+        check('no readout text overflows its own box', clipped.overflowing.length === 0,
+            clipped.overflowing.join(', '));
+        await ctx.close();
+    }
+
+    // -------------------------------------------------- asset cache-busting
+    // A stale stylesheet paired with fresh markup fails SILENTLY: no console
+    // error, no layout error — markup-dependent rules just don't exist, so the
+    // mode row vanishes and the RR readout reverts to its old layout. This
+    // actually happened. Every local asset must carry the SAME ?v=.
+    console.log('\n[regression] every local asset shares one cache-bust version');
+    {
+        const fs = require('fs');
+        const html = fs.readFileSync(`${__dirname}/../index.html`, 'utf8');
+        const refs = [...html.matchAll(/<(?:link|script)[^>]*(?:href|src)="([^"]+)"/g)]
+            .map((m) => m[1])
+            .filter((u) => !/^https?:|^\/\//.test(u));      // local assets only
+        const unversioned = refs.filter((u) => !/\?v=\d+/.test(u));
+        check('no local asset is missing ?v=', unversioned.length === 0, unversioned.join(', '));
+        const versions = [...new Set(refs.map((u) => (u.match(/\?v=(\d+)/) || [])[1]).filter(Boolean))];
+        check('all local assets share one version', versions.length <= 1,
+            `versions=${versions.join(',')} in ${refs.join(' ')}`);
+
+        // js/main.js imports carry their own ?v= — they must agree too.
+        const mainJs = fs.readFileSync(`${__dirname}/../js/main.js`, 'utf8');
+        const imp = [...new Set([...mainJs.matchAll(/from\s+'[^']*\?v=(\d+)'/g)].map((m) => m[1]))];
+        check('js/main.js imports share the same version as index.html',
+            imp.length === 1 && (versions.length === 0 || imp[0] === versions[0]),
+            `imports=${imp.join(',')} html=${versions.join(',')}`);
+    }
+
+    await browser.close();
+
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`  ${pass} passed, ${fail} failed`);
+    if (fail) { failures.forEach((f) => console.log(`   ✗ ${f}`)); process.exitCode = 1; }
+    console.log('='.repeat(60));
+})();

@@ -2587,6 +2587,204 @@ section('NT6 [FIXED to §2] — Passive (no effort) emits nothing');
         ntFailedCount(sim) === 0);
 }
 
+section('SME-018 — cancelling a silence must actually restore sound');
+{
+    // The bug this pins: clearing silencedUntilSec alone is NOT enough.
+    // shouldPlayAlarmSound still gates on `nowSec - lastSoundAtSec >= repeatSec`,
+    // and updateAlarmAudio keeps lastAlarmSignature current all through the
+    // silence — so the new-alarm fast path is already spent, and the alarm stays
+    // mute for up to a full repeat interval (12 s high / 30 s medium) after the
+    // user explicitly cancelled. The handler therefore also resets lastSoundAtSec.
+    const alarm = highPressureAlarm;
+    const sig = alarmSignature(alarm);
+
+    // Silence pressed at t=10 (sound had just played), cancelled at t=12.
+    assert(
+        'BROKEN state — silence cleared but lastSoundAtSec stale: still mute',
+        shouldPlayAlarmSound({
+            activeAlarms: alarm, nowSec: 12, audioEnabled: true,
+            silencedUntilSec: 0, lastSoundAtSec: 10, lastAlarmSignature: sig,
+        }) ? 1 : 0,
+        0, 0
+    );
+
+    // What the fixed handler leaves behind: lastSoundAtSec reset.
+    assert(
+        'FIXED state — cancel resets lastSoundAtSec: sounds on the next frame',
+        shouldPlayAlarmSound({
+            activeAlarms: alarm, nowSec: 12, audioEnabled: true,
+            silencedUntilSec: 0, lastSoundAtSec: -Infinity, lastAlarmSignature: sig,
+        }) ? 1 : 0,
+        1, 0
+    );
+
+    // The reset must not defeat the silence itself — re-silencing still mutes.
+    assert(
+        'a fresh silence still suppresses sound after a previous cancel',
+        shouldPlayAlarmSound({
+            activeAlarms: alarm, nowSec: 12, audioEnabled: true,
+            silencedUntilSec: 132, lastSoundAtSec: -Infinity, lastAlarmSignature: sig,
+        }) ? 1 : 0,
+        0, 0
+    );
+}
+
+section('SME-014 — latched per-breath PIP (display) vs live PIP (alarms)');
+{
+    // The monitor shows `pipLatched`, the peak of the last COMPLETED breath, so
+    // the biggest number on the screen updates once per breath instead of
+    // tracking the inspiratory ramp. `pip` must stay LIVE, because the
+    // high-pressure alarm reads it and has to fire the instant pressure rises,
+    // not a breath later. These two properties are the whole contract.
+    const lungP = new LungModel({ resistance: 10, compliance: 0.05 });
+    const ventP = new Ventilator(lungP, {
+        mode: 'vc-cmv', flowPattern: 'square',
+        tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 2], peep: 5,
+    });
+    const simP = new SimulationEngine(ventP, { sampleRate: 100, displaySeconds: 10 });
+
+    assert('pipLatched starts at 0 (nothing completed yet)', simP.breathSummary.pipLatched, 0, 0);
+
+    // Settle for several breaths.
+    const ticksPerBreath = Math.round(ventP.totalCycleTime * 100);
+    for (let i = 0; i < ticksPerBreath * 4; i++) simP.tick();
+
+    const after = simP.breathSummary;
+    assertTrue('pipLatched is populated once a breath completes', after.pipLatched > 0);
+    // NOTE: assert()'s tolerance is RELATIVE (diff <= tol * |expected|), so
+    // `0.5` here would mean ±50% and would wave through a 30% error. Absolute
+    // bound instead.
+    assertBetween('pipLatched is within 0.5 cmH2O of the analytical PIP',
+        after.pipLatched, ventP.pip - 0.5, ventP.pip + 0.5);
+
+    // Vary compliance BETWEEN breaths so consecutive peaks actually differ. In
+    // steady state every breath peaks identically, which makes "the latched
+    // value is stable" true no matter WHEN the latch fires — that blind spot is
+    // exactly how a one-breath-late latch shipped. Only a changing peak pins the
+    // latch point. Requirement: for the WHOLE expiratory phase, pipLatched is
+    // the peak of the breath that just ended, not the one before it.
+    const cycleC = [0.050, 0.022, 0.035];
+    let ci = 0, breathPeak = 0, lastCompleted = null, checks = 0, stale = 0;
+    const liveSeen = new Set();
+    for (let i = 0; i < ticksPerBreath * 8; i++) {
+        const before = simP.phase;
+        simP.tick();
+        liveSeen.add(simP.breathSummary.pip);
+        if (before === 'INSPIRATION') breathPeak = Math.max(breathPeak, simP.measuredPIP);
+        if (before !== 'EXPIRATION' && simP.phase === 'EXPIRATION') {
+            lastCompleted = Math.round(breathPeak * 10) / 10;
+            breathPeak = 0;
+        }
+        if (before === 'EXPIRATION' && simP.phase === 'INSPIRATION') {
+            lungP.compliance = cycleC[ci++ % cycleC.length];   // change only at breath start
+        }
+        if (simP.phase === 'EXPIRATION' && lastCompleted !== null) {
+            checks++;
+            if (Math.abs(simP.breathSummary.pipLatched - lastCompleted) > 0.06) stale++;
+        }
+    }
+    assertTrue('pipLatched equals the peak of the breath that just ended, for the whole expiratory phase',
+        checks > 200 && stale === 0);
+    assertTrue('live pip still moves within the breath (alarm path intact)',
+        liveSeen.size > 5);
+
+    // A pressure excursion must be visible to the LIVE value immediately —
+    // this is what the high-pressure alarm consumes.
+    const preLatched = simP.breathSummary.pipLatched;
+    lungP.compliance = 0.015;                     // sudden stiffening mid-run
+    let livePeak = 0;
+    for (let i = 0; i < Math.round(ticksPerBreath * 0.5); i++) {
+        simP.tick();
+        livePeak = Math.max(livePeak, simP.breathSummary.pip);
+    }
+    assertTrue('live pip reflects a mid-breath pressure rise before the breath ends',
+        livePeak > preLatched);
+
+    // reset() must clear the latch, or a mode switch would show a stale peak.
+    simP.reset();
+    assert('reset() clears pipLatched', simP.breathSummary.pipLatched, 0, 0);
+}
+
+section('Ineffective-effort counter — window semantics');
+{
+    // The Teaching-Mode counter is getTriggerEvents(now-60, now) filtered to
+    // 'failed'. Two things have to hold for that number to mean anything:
+    // failed events must be retained for the full window, and both failure
+    // modes must be counted (only the 'threshold' ones draw a flow highlight,
+    // so the phase-gate ones exist ONLY in this counter).
+    const lungC = new LungModel({ resistance: 10, compliance: 0.05 });
+    const ventC = new Ventilator(lungC, {
+        mode: 'vc-cmv', flowPattern: 'square',
+        tidalVolume: 0.500, respiratoryRate: 14, ieRatio: [1, 1], peep: 5,
+        pMusMax: 6, neuralTi: 1.0,
+    });
+    const simC = new SimulationEngine(ventC, { sampleRate: 100, displaySeconds: 10 });
+    simC.patientRR = 34;                          // overbreathe well past the cliff
+
+    // Run PAST the 60 s window (90 s), capturing ground truth as events appear,
+    // so retention and the tMin bound are both actually exercised. A 45 s run
+    // against a 60 s window can never leave the window, and would stay green
+    // even if retention were cut to 8 s.
+    const truth = new Set();
+    for (let i = 0; i < 100 * 90; i++) {
+        simC.tick();
+        for (const e of simC.getTriggerEvents(-Infinity, Infinity)) {
+            if (e.type === 'failed') truth.add(e.time);
+        }
+    }
+
+    const nowC = simC.globalTime;
+    const windowed = simC.getTriggerEvents(nowC - 60, nowC).filter(e => e.type === 'failed');
+    const truthIn  = [...truth].filter(t => t >= nowC - 60 && t <= nowC);
+    const truthOld = [...truth].filter(t => t <  nowC - 60);
+
+    assertTrue('overbreathing at RR 34 produces failed efforts to count',
+        windowed.length > 0);
+    assertTrue('the run outlives the window (failed efforts exist outside it)',
+        truthOld.length > 0);
+    assert('the 60 s window returns every failed effort produced inside it (retention covers the window)',
+        windowed.length, truthIn.length, 0);
+
+    const vu = windowed.filter(e => e.gateFailed === 'ventilator_unavailable').length;
+    assertTrue('phase-gate failures are present (these have NO waveform highlight)',
+        vu > 0);
+
+    // Every counted event carries the fields the tooltip and counter rely on.
+    assertTrue('every failed event has a gateFailed reason',
+        windowed.every(e => typeof e.gateFailed === 'string'));
+    assertTrue('every failed event has a phase',
+        windowed.every(e => typeof e.phase === 'string'));
+
+    // Cross-check tMin against a NARROWER read rather than re-checking the
+    // predicate that produced `windowed` — asserting `windowed.every(e => e.time
+    // >= now - 60)` is tautological, and stays green even if the tMin bound is
+    // deleted from getTriggerEvents entirely.
+    const narrow = simC.getTriggerEvents(nowC - 10, nowC).filter(e => e.type === 'failed');
+    assertTrue('tMin is honoured: a 10 s read is a strict subset of the 60 s read',
+        narrow.length > 0 && narrow.length < windowed.length
+        && narrow.every(e => e.time >= nowC - 10));
+
+    // The counter shares triggerEvents with the waveform layer, so a read must
+    // never prune in place. (Reading twice and comparing answers only asserts
+    // that Array.filter is deterministic.)
+    const lenBefore = simC.triggerEvents.length;
+    simC.getTriggerEvents(nowC - 60, nowC);
+    simC.getTriggerEvents(nowC - 5, nowC);
+    assert('reading the counter does not mutate the event store',
+        simC.triggerEvents.length, lenBefore, 0);
+
+    // reset() (mode switch, flow-pattern change) must zero the counter. It does
+    // NOT empty triggerEvents outright: _prefill() immediately starts the first
+    // mandatory breath, which legitimately records one 'machine' event. The
+    // counter only ever reads 'failed', so that is what has to be clear.
+    simC.reset();
+    const afterReset = simC.getTriggerEvents(-Infinity, Infinity);
+    assertTrue('reset() zeroes the ineffective-effort counter',
+        afterReset.filter(e => e.type === 'failed').length === 0);
+    assertTrue('reset() leaves only the freshly-started mandatory breath',
+        afterReset.every(e => e.type === 'machine'));
+}
+
 
 // =============================================================================
 // RESULTS

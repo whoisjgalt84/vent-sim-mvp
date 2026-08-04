@@ -1,3 +1,6 @@
 node_modules
 dist
 .DS_Store
+
+# screenshot output from the verification harness
+scratch/shots-*/

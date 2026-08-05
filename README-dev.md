@@ -90,9 +90,9 @@ script-tagged in `index.html`, where it publishes `window.AlarmEngine` — but
 **nothing reads that global.** The tag is vestigial and removable; it is one of
 the nine `?v=` sites currently maintained by hand.
 
-`package.json` still declares `typescript`, `tsx` and `vitest` as
-devDependencies. None is used — no `.ts` files, no config, no imports. They are
-vestigial and slated for removal; `npm ci` installs them on every CI run.
+The only devDependency is `@playwright/test`, used by the visual suite and the
+`scratch/*.cjs` harnesses. (`typescript`, `tsx` and `vitest` were declared but
+never used anywhere; removed 2026-08-05.)
 
 ### Responsibilities
 
@@ -174,9 +174,14 @@ The harness is not optional — it is the **ground truth**.
 
 ```bash
 npm test                              # 300 engine assertions
-node scratch/verify-batch.cjs         # 44 browser assertions (needs the server + playwright)
-node scratch/shot.cjs <outDir> [...]  # screenshots
+npm run test:visual                   # 9 visual + determinism checks
+node scratch/verify-batch.cjs         # 44 browser assertions (needs the server)
+node scratch/shot.cjs <outDir> [...]  # diagnostic screenshots
 ```
+
+The visual suite renders frames at exact *simulated* timestamps via a
+determinism hook (`window.__vsim`), so screenshots are reproducible rather than
+frame-timing-dependent — see [`docs/visual-testing.md`](./docs/visual-testing.md).
 
 `shot.cjs` scenarios: `baseline`, `teaching`, `effort`, `effort-teaching`,
 `weak-csv`, `teaching-loops`, `alarm-silenced`.
@@ -186,12 +191,14 @@ waveform integrity, trigger eligibility, and clinical sanity. If these fail:
 
 > The simulator is wrong.
 
-### ⚠️ `npm test` currently exits 0 even when assertions fail
+### The suite gates CI — as of 2026-08-05
 
-`tests/test-engine.js` has no `process.exit`. Verified by mutation: multiplying
-`LungModel.timeConstant` by 1.5 yields **29 failures and exit code 0**, so the CI
-badge stays green. Until that is fixed, **read the printed tally.** A green check
-proves only that nothing threw.
+`npm test` sets `process.exitCode = 1` on any failure. Mutation-verified:
+multiplying `LungModel.timeConstant` by 1.5 gives 29 failures and exit 1.
+
+For most of this project's life it did not: the file had no exit code, so the CI
+badge stayed green through any number of failures. Worth knowing when reading
+older green runs in the history.
 
 ### Two habits that pay for themselves
 

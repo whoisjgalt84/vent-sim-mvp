@@ -13,10 +13,13 @@
  * Architecture:
  *   requestAnimationFrame loop → sim.advance(dt) → display.renderFromSim(sim)
  *
- *   The SimulationEngine reads settings from the Ventilator at each breath
- *   start. Lung mechanics (R, C) are read live every tick. This means:
- *     - Changing VT, RR, mode → takes effect on next breath (realistic)
- *     - Changing R, C, PEEP → takes effect immediately (realistic)
+ *   The SimulationEngine re-reads settings from the Ventilator EVERY TICK,
+ *   not at breath start. Nothing is snapshotted except volumeAtBreathStart.
+ *   So VT, RR, I:E, hold, mode, R, C and PEEP all take effect mid-breath.
+ *   That is deliberate — it keeps cause and effect adjacent for the learner.
+ *
+ *   A test-only determinism surface is installed on window.__vsim; see
+ *   installTestHooks() at the bottom of this file.
  *
  * ============================================================================
  */
@@ -1628,4 +1631,99 @@ function makeBadge(level, text) {
 document.addEventListener('pointerdown', armAlarmAudio, { once: true });
 document.addEventListener('keydown', armAlarmAudio, { once: true });
 document.addEventListener('DOMContentLoaded', init);
+
+
+// =============================================================================
+// TEST DETERMINISM SURFACE
+// =============================================================================
+/**
+ * `window.__vsim` — a small control surface that exists so automated tests can
+ * render a *deterministic* frame.
+ *
+ * A real-time canvas animation can never produce byte-stable screenshots. The
+ * number of ticks between two rendered frames depends on frame timing, which
+ * depends on the machine, the GPU, headless mode, even AC vs battery. So visual
+ * tests do not watch the live loop: they stop it and render one frame at an
+ * exact simulated timestamp.
+ *
+ * `seek()` steps the engine directly rather than through `advance()`, which
+ * bypasses both the 300-tick frame cap and the speed multiplier — so the result
+ * is a pure function of the seconds requested.
+ *
+ * The application never calls any of this. Do not build features on it.
+ */
+function installTestHooks() {
+    window.__vsim = {
+        /** Stop the rAF loop. Idempotent. */
+        pause() {
+            if (animFrame !== null) {
+                cancelAnimationFrame(animFrame);
+                animFrame = null;
+            }
+            return true;
+        },
+
+        /** Restart the rAF loop from the current state. Idempotent. */
+        resume() {
+            if (animFrame === null) {
+                lastFrameTs = performance.now();
+                animFrame = requestAnimationFrame(animate);
+            }
+            return true;
+        },
+
+        /**
+         * Pause, reset, advance exactly `seconds` of SIMULATED time, render once.
+         *
+         * @param {number} seconds
+         * @returns {{ticks:number, globalTime:number}}
+         */
+        seek(seconds) {
+            this.pause();
+            sim.reset();
+            const ticks = Math.round(seconds / sim.dt);
+            for (let i = 0; i < ticks; i++) sim.tick();
+            renderFrame();
+            return { ticks, globalTime: sim.globalTime };
+        },
+
+        /**
+         * Advance `seconds` from the CURRENT state without resetting, render once.
+         * Use when a test has already seeked and then changed a setting.
+         */
+        step(seconds) {
+            this.pause();
+            const ticks = Math.round(seconds / sim.dt);
+            for (let i = 0; i < ticks; i++) sim.tick();
+            renderFrame();
+            return { ticks, globalTime: sim.globalTime };
+        },
+
+        /** Re-render the current state without advancing time. */
+        redraw() {
+            renderFrame();
+            return true;
+        },
+
+        /** Compact snapshot for assertions — cheap to serialise, stable to diff. */
+        state() {
+            const s = sim.breathSummary;
+            return {
+                globalTime:      +sim.globalTime.toFixed(3),
+                phase:           sim.phaseName,
+                mode:            vent.mode,
+                teachingMode:    document.body.classList.contains('teaching-mode'),
+                breathCount:     s.breathCount,
+                machineBreaths:  s.machineBreathCount,
+                patientBreaths:  s.patientBreathCount,
+                pipLatched:      +s.pipLatched.toFixed(2),
+                vt_mL:           +s.vt_mL.toFixed(1),
+                measuredRR:      +sim.measuredRR.toFixed(1),
+                failedTriggers:  sim.getTriggerEvents().filter(e => e.type === 'failed').length,
+            };
+        },
+    };
+}
+
+installTestHooks();
 

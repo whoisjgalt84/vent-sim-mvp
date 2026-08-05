@@ -38,8 +38,8 @@ fail with *"executable doesn't exist"*.
 
 ## Before you open a PR
 
-- [ ] `npm test` — **read the printed tally.** It exits 0 even when assertions
-      fail, so the CI check alone does not tell you anything.
+- [ ] `npm test` — 300 engine assertions; exits nonzero on failure.
+- [ ] `npm run test:visual` — 9 visual + determinism checks.
 - [ ] `node scratch/verify-batch.cjs` — 44 checks, if you touched UI or alarms.
 - [ ] Screenshots — **mandatory for any UI change.** Compare before and after.
       Two shipped defects were invisible in the diff and obvious in a screenshot.

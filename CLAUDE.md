@@ -32,6 +32,9 @@ python3 -m http.server 8899        # from repo root, then open http://127.0.0.1:
 # Engine assertions (300, currently all passing)
 npm test
 
+# Visual regression + determinism (9), starts its own server
+npm run test:visual
+
 # Browser behaviour assertions (44), requires the server above + playwright
 node scratch/verify-batch.cjs
 
@@ -46,25 +49,28 @@ crop, and — only when the element is present and visible — `--rail` and
 `--effort` crops. The rail crop is absent in Teaching Mode; the effort crop is
 absent until effort is enabled. `scratch/shots-*/` is gitignored.
 
-Both browser harnesses resolve Playwright by normal Node resolution (repo
-`node_modules`, then any global install), and Chromium from `$CHROMIUM_PATH` —
-falling back to a **hard-coded** `/opt/pw-browsers/chromium-1194/…` if that is
-unset. Anywhere but this sandbox, set `CHROMIUM_PATH` explicitly:
+`npm run test:visual` uses Playwright's own managed browser and needs no setup
+beyond `npm install`. See [`docs/visual-testing.md`](docs/visual-testing.md) —
+in particular, baselines must be generated in the pinned Docker image, and the
+tolerances were mutation-checked (the first attempt failed that check).
+
+The two `scratch/*.cjs` harnesses are older and resolve Chromium from
+`$CHROMIUM_PATH`, falling back to a hard-coded `/opt/pw-browsers/chromium-1194/…`.
+Outside a sandbox that has that path, set it explicitly:
 
 ```bash
-npm i -D playwright && npx playwright install chromium
 export CHROMIUM_PATH="$(node -e "console.log(require('playwright').chromium.executablePath())")"
 ```
 
-### ⚠️ `npm test` does not gate CI
+### Read the tally anyway
 
-`tests/test-engine.js` contains **no `process.exit`**. It prints
-`Passed: N / Failed: M` and exits 0 either way. Verified by mutation:
-multiplying `LungModel.timeConstant` by 1.5 produces **29 failures and still
-exits 0**, so the GitHub Actions smoke test stays green.
+`npm test` now sets `process.exitCode = 1` when any assertion fails, so CI
+genuinely gates on it. Mutation-verified: multiplying `LungModel.timeConstant`
+by 1.5 gives 29 failures and exit 1.
 
-Until that is fixed (see the open ticket), **read the printed tally yourself
-after every `npm test` run.** A green CI check proves only that nothing threw.
+Before 2026-08-05 it had no exit code at all and CI stayed green through any
+number of failures. Keep reading the printed `Passed: N / Failed: M` — a count
+that moves unexpectedly is information even when the run is green.
 
 ### Screenshot-verify all UI work
 
@@ -122,14 +128,14 @@ Each of these encodes a bug that already shipped once.
    `machine` event — but only in CMV modes.** `_prefill()` starts no breath in
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
-7. **Every local asset in `index.html` carries the same `?v=`, including
-   `css/style.css`.** Currently `?v=9`, at 9 sites: `index.html` ×3 and
-   `js/main.js` ×6. A returning browser that pairs new markup and new JS with a
-   cached old stylesheet fails **silently** — this shipped. `verify-batch.cjs`
-   asserts it. Known gap: `js/ventilator.js` imports `./lung-model.js` with no
-   `?v=`; harmless today only because `LungModel` is unused there. (Confirmed
-   live: every page load fetches `lung-model.js` twice, once with and once
-   without the query string.)
+7. **Every local asset carries the same `?v=`, including `css/style.css`.**
+   Currently `?v=9`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
+   `js/ventilator.js` ×1. A returning browser that pairs new markup and new JS
+   with a cached old stylesheet fails **silently** — this shipped. Asserted two
+   ways: `verify-batch.cjs` reads the source, and the visual suite's
+   cache-busting test watches the **network**, which is what caught
+   `js/ventilator.js` importing `lung-model.js` un-versioned and making the
+   browser fetch it twice on every load.
 8. **Mode ID strings are `'vc-cmv'`, `'pc-cmv'`, `'PC-CSV'` — the third is
    capitalised.** Never lowercase a mode string, never compare
    case-insensitively, and prefer the exported `MODE_*` constants over literals.
@@ -262,6 +268,8 @@ When committing through the desktop bridge:
 | `CONTRIBUTING.md` | The human loop — branch, push, PR, merge, sync |
 | `docs/glossary.md` | Normative vocabulary, with citations |
 | `docs/model.md` | The published mathematical model |
+| `docs/visual-testing.md` | The screenshot suite: determinism hook, baselines, tolerances |
+| `.claude/skills/ship-batch/` | The end-of-batch recipe — invoke with `/ship-batch` |
 | `docs/sme-feedback-log.md` | SME findings ledger — the work queue |
 | `docs/case-design-schema.md` | Case authoring template; appendix snapshots engine ground truth — stale-dated, re-verify before trusting |
 | `docs/case-bank-v0.1.md` | Authored teaching cases |

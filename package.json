@@ -1,18 +1,28 @@
 {
   "name": "vent-sim-mvp",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Browser-based mechanical ventilator simulator for clinical education",
+  "main": "index.html",
   "scripts": {
-    "test": "node ./tests/test-engine.js"
+    "test": "node ./tests/test-engine.js",
+    "serve": "python3 -m http.server 8899",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
+    "test:visual:docker": "docker run --rm --network host -v \"$PWD\":/work -w /work mcr.microsoft.com/playwright:v1.62.1-noble npx playwright test",
+    "test:browser": "node scratch/verify-batch.cjs",
+    "shots": "node scratch/shot.cjs"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "mechanical-ventilation",
+    "simulation",
+    "respiratory-therapy",
+    "education",
+    "waveforms"
+  ],
+  "author": "Chris <christian.striggow@outlook.com>",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "@playwright/test": "1.62.1"
   }
 }

@@ -370,9 +370,9 @@ Physiological behaviour is asserted in `tests/test-engine.js` — 300 assertions
 covering hand-calculable pressures and volumes, time-constant decay, auto-PEEP,
 waveform integrity, trigger eligibility, and clinical sanity checks.
 
-⚠️ **The suite currently exits 0 even when assertions fail.** Verified by
-mutation: multiplying `LungModel.timeConstant` by 1.5 yields 29 failures and
-exit code 0. Read the printed tally; do not trust the CI badge alone.
+The suite gates CI as of 2026-08-05 (`process.exitCode = 1` on failure,
+mutation-verified). Green runs recorded before that date do not carry the same
+guarantee — the file had no exit code and passed regardless of the tally.
 
 No part of this model has been validated against a physical test lung or against
 recorded patient data. It is validated against the equations, and the equations

@@ -4,3 +4,12 @@ dist
 
 # screenshot output from the verification harness
 scratch/shots-*/
+
+# playwright visual-regression output (baselines under *-snapshots/ ARE committed)
+/test-results/
+/playwright-report/
+/blob-report/
+
+# local-only Claude Code state (skills/agents/settings.json ARE committed)
+.claude/settings.local.json
+.claude.json

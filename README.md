@@ -22,7 +22,8 @@ python3 -m http.server 8899
 Any static server works — VS Code's Live Server extension is fine too.
 
 ```bash
-npm test        # 300 engine assertions
+npm test              # 300 engine assertions
+npm run test:visual   # 9 visual regression + determinism checks
 ```
 
 Read the printed `Passed: N / Failed: M` tally. See
@@ -75,6 +76,7 @@ specific effort failed.
 | [`CLAUDE.md`](./CLAUDE.md) | Operating manual for AI coding agents |
 | [`docs/glossary.md`](./docs/glossary.md) | Normative vocabulary, with citations |
 | [`docs/model.md`](./docs/model.md) | The mathematical model, published in full |
+| [`docs/visual-testing.md`](./docs/visual-testing.md) | The screenshot regression suite |
 | [`docs/case-design-schema.md`](./docs/case-design-schema.md) | Case authoring template; its appendix snapshots engine ground truth (ranges, presets, alarm defaults) — stale-dated, re-verify |
 | [`docs/case-bank-v0.1.md`](./docs/case-bank-v0.1.md) | Authored teaching cases |
 | [`docs/case-scenario-roadmap.md`](./docs/case-scenario-roadmap.md) | Where case-based learning is going |

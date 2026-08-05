@@ -2794,3 +2794,13 @@ console.log(`  Passed: ${passed}`);
 console.log(`  Failed: ${failed}`);
 console.log(`  ${failed === 0 ? '🫁 All systems nominal. Engine is breathing.' : '⚠️  Some tests failed — review above.'}`);
 console.log();
+
+// Fail the process, and therefore CI, when any assertion failed.
+//
+// Until 2026-08-05 this file had no exit code at all: it printed the tally and
+// exited 0 either way, so the GitHub Actions smoke test stayed green through
+// any number of failures. Verified at the time by mutation — multiplying
+// LungModel.timeConstant by 1.5 produced 29 failures and exit code 0.
+// The whole "300 assertions make unattended work safe" premise depended on
+// this line, which did not exist.
+process.exitCode = failed === 0 ? 0 : 1;

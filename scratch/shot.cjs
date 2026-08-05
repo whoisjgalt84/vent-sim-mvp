@@ -6,7 +6,7 @@
  * Scenarios are named recipes below. Each produces <outDir>/<name>.png
  * (full page) and, where useful, cropped element shots.
  *
- * Requires: python3 -m http.server 8899 running from the repo root.
+ * Requires a static server on :8899 — `npm run serve` (node tools/serve.mjs).
  */
 // Playwright resolves from the repo's node_modules when present, else from a
 // sandbox-level install. Run `npm i -D playwright` to use this locally.

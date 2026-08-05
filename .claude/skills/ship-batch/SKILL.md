@@ -33,8 +33,8 @@ node scratch/verify-batch.cjs     # 44 browser assertions (needs the server)
 node scratch/shot.cjs scratch/shots-<batch> baseline teaching effort effort-teaching
 ```
 
-`python3 -m http.server 8899` must be running from the repo root for the last
-two. `npm run test:visual` starts its own server.
+`npm run serve` must be running for the last two. `npm run test:visual` starts
+its own. Never shell out to `python3` — it is not portable to Windows.
 
 ### Report the tally, not the exit code
 

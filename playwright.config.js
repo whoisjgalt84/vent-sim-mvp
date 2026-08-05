@@ -67,8 +67,11 @@ export default defineConfig({
     ],
 
     // Playwright starts the same static server the rest of the harnesses use.
+    // node, not `python3 -m http.server`: on Windows `python3` is usually not a
+    // real command, and the python3.exe App Execution Alias opens the Microsoft
+    // Store rather than failing, which hangs the run instead of erroring.
     webServer: {
-        command: 'python3 -m http.server 8899',
+        command: 'node tools/serve.mjs 8899',
         url: 'http://127.0.0.1:8899/index.html',
         reuseExistingServer: !process.env.CI,
         stdout: 'ignore',

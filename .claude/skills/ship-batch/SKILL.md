@@ -28,13 +28,14 @@ Run all four. Do not skip one because the change "obviously" doesn't touch it.
 
 ```bash
 npm test                          # 300 engine assertions
-npm run test:visual               # 9 visual + determinism checks
-node scratch/verify-batch.cjs     # 44 browser assertions (needs the server)
+npm run test:browser              # 44 browser assertions; self-contained
+npm run test:visual:docker        # 9 authoritative Linux visual/determinism/cache checks
 node scratch/shot.cjs scratch/shots-<batch> baseline teaching effort effort-teaching
 ```
 
-`npm run serve` must be running for the last two. `npm run test:visual` starts
-its own. Never shell out to `python3` — it is not portable to Windows.
+The two gate commands start or reuse their own server. `npm run serve` is needed
+only for the diagnostic `shot.cjs` command. Never shell out to `python3` — it
+is not portable to Windows.
 
 ### Report the tally, not the exit code
 
@@ -86,8 +87,8 @@ plausible-looking cleanup:
 - `#param-rr` guarded innerHTML rebuild, count written by `textContent` after
 - every local asset carrying the same `?v=`, including `css/style.css`
 
-If you bumped `?v=`, bump **all nine sites** — `index.html` ×3, `js/main.js` ×6
-— plus `js/ventilator.js`'s import. The visual suite's cache-busting test
+If you bumped `?v=`, bump **all ten sites** — `index.html` ×3, `js/main.js` ×6,
+plus `js/ventilator.js`'s import. The visual suite's cache-busting test
 catches misses from the network side.
 
 ---

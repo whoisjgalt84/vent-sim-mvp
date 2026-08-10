@@ -1,18 +1,25 @@
-name: Smoke Tests
+name: Complete Verification
 
 on:
+  workflow_dispatch:
+    inputs:
+      generate_baseline_candidates:
+        description: Generate six Linux snapshot candidates for human review
+        required: false
+        default: false
+        type: boolean
   push:
     branches: ["**"]
   pull_request:
     branches: ["**"]
 
 jobs:
-  smoke:
+  engine:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [22.x, 24.x]
 
     steps:
       - name: Checkout
@@ -27,5 +34,64 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run smoke tests
+      - name: Run 300 engine assertions
         run: npm test
+
+  browser-verification:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: "npm"
+
+      - name: Install pinned dependencies
+        run: npm ci
+
+      - name: Run 44 browser-behavior assertions
+        run: npm run test:browser
+
+      - name: Generate Linux baseline candidates
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_baseline_candidates }}
+        run: npm run test:visual:update
+
+      - name: Confirm generated candidates on a second consecutive run
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_baseline_candidates }}
+        run: npm run test:visual
+
+      - name: Build unapproved visual-review bundle
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_baseline_candidates }}
+        run: node tools/create-visual-review-bundle.mjs
+
+      - name: Compare six Linux baselines and run determinism checks
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.generate_baseline_candidates }}
+        run: npm run test:visual
+
+      - name: Upload Linux baseline candidates for human review
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_baseline_candidates }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-baseline-candidates-${{ github.sha }}
+          path: scratch/visual-baseline-candidates/
+          if-no-files-found: error
+
+      - name: Upload Playwright failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+            blob-report/
+            **/*-actual.png
+            **/*-diff.png
+            **/trace.zip
+          if-no-files-found: ignore

@@ -12,35 +12,39 @@ bite you.
 ```bash
 git clone https://github.com/whoisjgalt84/vent-sim-mvp.git
 cd vent-sim-mvp
-npm install
+npm ci
 
 npm run serve                      # serve; open http://127.0.0.1:8899
 npm test                           # 300 engine assertions
 ```
 
-For the browser harnesses you also need Playwright **and a Chromium binary**.
-The harnesses always pass an explicit `executablePath`, so installing the npm
-package alone is not enough:
+The browser commands use Playwright's managed Chromium and install it
+automatically if the local cache is empty:
 
 ```bash
-npm i -D playwright
-npx playwright install chromium
-export CHROMIUM_PATH="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+npm run test:browser               # 44 checks; starts/reuses its own server
+npm run test:visual                # optional current-platform visual diagnostics
+npm run test:visual:docker         # authoritative Linux visual gate
 
-node scratch/verify-batch.cjs      # 44 browser assertions (server must be running)
+# Diagnostic screenshots still use a separately started server:
+npm run serve
 node scratch/shot.cjs scratch/shots-mywork baseline teaching effort
 ```
 
-Without `CHROMIUM_PATH` the harnesses fall back to a hard-coded sandbox path and
-fail with *"executable doesn't exist"*.
+Playwright's managed installation is the default. `CHROMIUM_PATH` is available
+only as an explicit override for a custom local Chromium. Authoritative visual
+baselines are generated and compared in the pinned Linux image described in
+[`docs/visual-testing.md`](./docs/visual-testing.md), not with that override.
 
 ---
 
 ## Before you open a PR
 
 - [ ] `npm test` — 300 engine assertions; exits nonzero on failure.
-- [ ] `npm run test:visual` — 9 visual + determinism checks.
-- [ ] `node scratch/verify-batch.cjs` — 44 checks, if you touched UI or alarms.
+- [ ] `npm run test:browser` — 44 browser-behavior checks.
+- [ ] `npm run test:visual:docker` — 9 authoritative Linux visual,
+      determinism, and cache-busting checks. (`npm run test:visual` is the
+      current-platform diagnostic equivalent.)
 - [ ] Screenshots — **mandatory for any UI change.** Compare before and after.
       Two shipped defects were invisible in the diff and obvious in a screenshot.
 - [ ] New assertions mutation-checked: break the code, confirm the test goes red.

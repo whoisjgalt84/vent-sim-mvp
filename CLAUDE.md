@@ -32,11 +32,11 @@ npm run serve                      # node tools/serve.mjs — then http://127.0.
 # Engine assertions (300, currently all passing)
 npm test
 
-# Visual regression + determinism (9), starts its own server
+# Visual regression + determinism + cache-busting (9), starts its own server
 npm run test:visual
 
-# Browser behaviour assertions (44), requires the server above + playwright
-node scratch/verify-batch.cjs
+# Browser behaviour assertions (44), self-contained server lifecycle
+npm run test:browser
 
 # Screenshots — the only reliable UI verification
 node scratch/shot.cjs <outDir> [scenario...]
@@ -49,24 +49,26 @@ crop, and — only when the element is present and visible — `--rail` and
 `--effort` crops. The rail crop is absent in Teaching Mode; the effort crop is
 absent until effort is enabled. `scratch/shots-*/` is gitignored.
 
-`npm run test:visual` uses Playwright's own managed browser and needs no setup
-beyond `npm install`. See [`docs/visual-testing.md`](docs/visual-testing.md) —
-in particular, baselines must be generated in the pinned Docker image, and the
-tolerances were mutation-checked (the first attempt failed that check).
+After `npm ci`, `npm run test:browser` uses Playwright's managed Chromium and
+installs that pinned browser automatically if its cache is empty. It starts
+`tools/serve.mjs` only when needed, reuses a healthy server, and cleans up only
+the process it started. `CHROMIUM_PATH` remains an explicit override, not a
+required setup step.
 
-The two `scratch/*.cjs` harnesses are older and resolve Chromium from
-`$CHROMIUM_PATH`, falling back to a hard-coded `/opt/pw-browsers/chromium-1194/…`.
-Outside a sandbox that has that path, set it explicitly:
-
-```bash
-export CHROMIUM_PATH="$(node -e "console.log(require('playwright').chromium.executablePath())")"
-```
+`npm run test:visual` uses the current platform's snapshot tag. CI compares the
+committed Linux baselines; Windows snapshots may exist for local diagnostics but
+are not authoritative or required. Generate and compare authoritative candidates
+with `npm run test:visual:docker`, which uses
+`mcr.microsoft.com/playwright:v1.62.1-noble`, the same pinned image as CI. See
+[`docs/visual-testing.md`](docs/visual-testing.md); every changed baseline still
+requires direct human inspection and intentional approval.
 
 ### Read the tally anyway
 
-`npm test` now sets `process.exitCode = 1` when any assertion fails, so CI
-genuinely gates on it. Mutation-verified: multiplying `LungModel.timeConstant`
-by 1.5 gives 29 failures and exit 1.
+`npm test` exits nonzero on any assertion failure and also enforces the
+commissioned `300 passed / 0 failed` tally, so an accidental test-count drop is
+a failure. Mutation-verified: multiplying `LungModel.timeConstant` by 1.5 gives
+29 failures and exit 1.
 
 Before 2026-08-05 it had no exit code at all and CI stayed green through any
 number of failures. Keep reading the printed `Passed: N / Failed: M` — a count

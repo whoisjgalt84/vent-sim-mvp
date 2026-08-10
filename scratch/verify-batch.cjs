@@ -5,18 +5,8 @@
  * Requires a static server on :8899 — `npm run serve` (node tools/serve.mjs).
  *   node scratch/verify-batch.cjs
  */
-// Playwright resolves from the repo's node_modules when present, else from a
-// sandbox-level install. Run `npm i -D playwright` to use this locally.
-function loadChromium() {
-    for (const id of ['playwright', '/home/claude/node_modules/playwright']) {
-        try { return require(id).chromium; } catch { /* try next */ }
-    }
-    throw new Error('playwright not found — run: npm i -D playwright');
-}
-const chromium = loadChromium();
+const { chromium } = require('playwright');
 
-const BROWSER = process.env.CHROMIUM_PATH
-    || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const URL = 'http://127.0.0.1:8899/index.html';
 
 let pass = 0;
@@ -59,7 +49,10 @@ async function enableEffort(page, { patientRR = 30, pmus = 6 } = {}) {
 }
 
 (async () => {
-    const browser = await chromium.launch({ executablePath: BROWSER, args: ['--no-sandbox'] });
+    const launchOptions = { args: ['--no-sandbox'] };
+    if (process.env.CHROMIUM_PATH) launchOptions.executablePath = process.env.CHROMIUM_PATH;
+    const browser = await chromium.launch(launchOptions);
+    try {
 
     // ---------------------------------------------------------------- SME-018
     console.log('\n[SME-018] cancel an active alarm silence');
@@ -400,10 +393,14 @@ async function enableEffort(page, { patientRR = 30, pmus = 6 } = {}) {
             `imports=${imp.join(',')} html=${versions.join(',')}`);
     }
 
-    await browser.close();
-
     console.log(`\n${'='.repeat(60)}`);
     console.log(`  ${pass} passed, ${fail} failed`);
     if (fail) { failures.forEach((f) => console.log(`   ✗ ${f}`)); process.exitCode = 1; }
     console.log('='.repeat(60));
-})();
+    } finally {
+        await browser.close();
+    }
+})().catch((error) => {
+    console.error(`Browser assertion harness failed: ${error.stack || error.message}`);
+    process.exitCode = 1;
+});

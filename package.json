@@ -4,12 +4,12 @@
   "description": "Browser-based mechanical ventilator simulator for clinical education",
   "main": "index.html",
   "scripts": {
-    "test": "node ./tests/test-engine.js",
+    "test": "node tools/run-engine-tests.mjs",
     "serve": "node tools/serve.mjs",
-    "test:visual": "playwright test",
-    "test:visual:update": "playwright test --update-snapshots",
-    "test:visual:docker": "docker run --rm --network host -v \"$PWD\":/work -w /work mcr.microsoft.com/playwright:v1.62.1-noble npx playwright test",
-    "test:browser": "node scratch/verify-batch.cjs",
+    "test:visual": "node tools/run-browser-tests.mjs --visual",
+    "test:visual:update": "node tools/run-browser-tests.mjs --visual --update-snapshots",
+    "test:visual:docker": "node tools/run-visual-docker.mjs",
+    "test:browser": "node tools/run-browser-tests.mjs",
     "shots": "node scratch/shot.cjs"
   },
   "keywords": [

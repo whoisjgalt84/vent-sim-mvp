@@ -27,7 +27,7 @@ physiology sloppier is a regression, even if every test passes.
 
 ```bash
 # Serve. ES modules will NOT load over file:// — you need HTTP.
-python3 -m http.server 8899        # from repo root, then open http://127.0.0.1:8899
+npm run serve                      # node tools/serve.mjs — then http://127.0.0.1:8899
 
 # Engine assertions (300, currently all passing)
 npm test
@@ -270,6 +270,7 @@ When committing through the desktop bridge:
 | `docs/model.md` | The published mathematical model |
 | `docs/visual-testing.md` | The screenshot suite: determinism hook, baselines, tolerances |
 | `.claude/skills/ship-batch/` | The end-of-batch recipe — invoke with `/ship-batch` |
+| `tools/serve.mjs` | Static server for dev and the harnesses (`npm run serve`) |
 | `docs/sme-feedback-log.md` | SME findings ledger — the work queue |
 | `docs/case-design-schema.md` | Case authoring template; appendix snapshots engine ground truth — stale-dated, re-verify before trusting |
 | `docs/case-bank-v0.1.md` | Authored teaching cases |

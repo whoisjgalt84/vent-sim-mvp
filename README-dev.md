@@ -31,8 +31,10 @@ If a feature cannot be explained through this equation, it does not belong here.
 ## 🚀 Getting Started
 
 ```bash
+npm install
+
 # Serve over HTTP — ES modules will NOT load over file://
-python3 -m http.server 8899        # then open http://127.0.0.1:8899
+npm run serve                      # then open http://127.0.0.1:8899
 
 # Engine assertions (300)
 npm test
@@ -40,6 +42,12 @@ npm test
 
 VS Code's Live Server extension works too. `open index.html` does **not** — the
 `type="module"` scripts are blocked by CORS on `file://`.
+
+`npm run serve` runs `tools/serve.mjs`, a ~90-line Node static server. It
+replaced `python3 -m http.server`, which is not portable: on Windows `python3`
+is usually not a real command, and the `python3.exe` App Execution Alias opens
+the Microsoft Store instead of failing — so a harness that shelled out to it
+would hang rather than error.
 
 ---
 

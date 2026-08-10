@@ -5,7 +5,7 @@
   "main": "index.html",
   "scripts": {
     "test": "node ./tests/test-engine.js",
-    "serve": "python3 -m http.server 8899",
+    "serve": "node tools/serve.mjs",
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
     "test:visual:docker": "docker run --rm --network host -v \"$PWD\":/work -w /work mcr.microsoft.com/playwright:v1.62.1-noble npx playwright test",

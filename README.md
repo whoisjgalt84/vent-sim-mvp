@@ -15,8 +15,8 @@ It runs entirely in the browser. No install, no account, no build step.
 ES modules will not load over `file://`, so serve the folder over HTTP:
 
 ```bash
-python3 -m http.server 8899
-# then open http://127.0.0.1:8899
+npm install
+npm run serve      # then open http://127.0.0.1:8899
 ```
 
 Any static server works — VS Code's Live Server extension is fine too.

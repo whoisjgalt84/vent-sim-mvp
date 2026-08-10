@@ -2,7 +2,7 @@
  * Behavioural verification for this batch. Asserts what each item CLAIMS to do,
  * driving the real page — not just eyeballing pixels.
  *
- * Requires: python3 -m http.server 8899 from the repo root.
+ * Requires a static server on :8899 — `npm run serve` (node tools/serve.mjs).
  *   node scratch/verify-batch.cjs
  */
 // Playwright resolves from the repo's node_modules when present, else from a

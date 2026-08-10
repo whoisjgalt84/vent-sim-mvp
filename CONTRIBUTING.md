@@ -14,7 +14,7 @@ git clone https://github.com/whoisjgalt84/vent-sim-mvp.git
 cd vent-sim-mvp
 npm install
 
-python3 -m http.server 8899        # serve; open http://127.0.0.1:8899
+npm run serve                      # serve; open http://127.0.0.1:8899
 npm test                           # 300 engine assertions
 ```
 

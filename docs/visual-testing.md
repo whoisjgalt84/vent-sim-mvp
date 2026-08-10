@@ -88,6 +88,11 @@ npx playwright show-report        # eyeball all six before trusting them
 git add tests/visual/*-snapshots
 ```
 
+The suite starts its own server via `tools/serve.mjs`. Nothing here needs
+Python — `python3 -m http.server` was the original choice and is not portable to
+Windows, where `python3` is usually not a real command and its App Execution
+Alias opens the Microsoft Store instead of failing.
+
 Baselines were deliberately not committed by the agent that built this suite:
 they were generated in a cloud sandbox against a different Chromium build, so
 they would have failed on your machine for a reason that has nothing to do with

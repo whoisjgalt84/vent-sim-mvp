@@ -7,9 +7,12 @@ mid-countdown. This suite exists so that class of defect fails a test instead of
 reaching an SME.
 
 ```bash
-npm run test:visual              # compare current-platform snapshots (diagnostic on Windows)
-npm run test:visual:docker       # compare in the pinned CI image
+npm run test:visual:docker       # authoritative comparison in the pinned CI image
 npm run test:visual:docker -- --update-snapshots  # generate candidates only
+
+# Optional current-host diagnostics require host-specific snapshots first:
+npm run test:visual:update       # create non-authoritative snapshots for this host
+npm run test:visual              # compare against those host snapshots
 ```
 
 This is one of four distinct verification surfaces:
@@ -17,8 +20,10 @@ This is one of four distinct verification surfaces:
 - `npm test`: 300 engine assertions (CI on Node 22 and 24).
 - `npm run test:browser`: 44 real-browser behavior assertions; its server
   lifecycle is self-contained (CI in the pinned Playwright image).
-- `npm run test:visual`: six screenshot comparisons plus three
-  determinism/cache-busting checks (CI in the pinned Playwright image).
+- `npm run test:visual:docker`: the authoritative six screenshot comparisons
+  plus three determinism/cache-busting checks in the pinned Playwright image.
+- `npm run test:visual`: the same test code against current-host diagnostic
+  snapshots, usable only after snapshots for that host have been generated.
 - `node scratch/shot.cjs`: diagnostic screenshots for human investigation; not
   an assertion gate and not a substitute for baselines.
 
@@ -66,6 +71,13 @@ matches `package-lock.json` and the CI browser-verification job. Windows font
 rasterisation and canvas antialiasing differ, so Windows snapshots can be useful
 local diagnostics but can never substitute for the CI truth set.
 
+The repository intentionally contains no `*-chromium-win32.png` snapshots.
+Consequently, a fresh Windows checkout cannot directly run
+`npm run test:visual` as a comparison. For optional Windows diagnostics, first
+run `npm run test:visual:update` to create host-specific snapshots, then run
+`npm run test:visual` to compare against those local diagnostic bytes. Do not
+treat, approve, or commit them as authoritative baselines.
+
 The Docker wrapper is cross-platform and runs a clean `npm ci` in an isolated
 container volume before Playwright:
 
@@ -83,7 +95,7 @@ Baselines are committed. `test-results/` and `playwright-report/` are not.
 
 ### First run on a fresh clone
 
-If an expected baseline is absent, `npm run test:visual` fails in a preflight
+If an expected host baseline is absent, `npm run test:visual` fails in a preflight
 before Playwright starts. It never creates or accepts missing truth during a
 comparison run. For initial commissioning or an intentional visual change:
 

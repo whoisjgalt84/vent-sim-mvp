@@ -23,8 +23,11 @@ automatically if the local cache is empty:
 
 ```bash
 npm run test:browser               # 44 checks; starts/reuses its own server
-npm run test:visual                # optional current-platform visual diagnostics
 npm run test:visual:docker         # authoritative Linux visual gate
+
+# Optional host diagnostics (not an authoritative comparison):
+npm run test:visual:update         # first create snapshots for this host
+npm run test:visual                # then compare against those host snapshots
 
 # Diagnostic screenshots still use a separately started server:
 npm run serve
@@ -35,6 +38,9 @@ Playwright's managed installation is the default. `CHROMIUM_PATH` is available
 only as an explicit override for a custom local Chromium. Authoritative visual
 baselines are generated and compared in the pinned Linux image described in
 [`docs/visual-testing.md`](./docs/visual-testing.md), not with that override.
+The repository does not contain Windows baselines, so `npm run test:visual`
+fails closed on Windows until host-specific diagnostic snapshots have first
+been created with `npm run test:visual:update`.
 
 ---
 
@@ -43,8 +49,8 @@ baselines are generated and compared in the pinned Linux image described in
 - [ ] `npm test` — 300 engine assertions; exits nonzero on failure.
 - [ ] `npm run test:browser` — 44 browser-behavior checks.
 - [ ] `npm run test:visual:docker` — 9 authoritative Linux visual,
-      determinism, and cache-busting checks. (`npm run test:visual` is the
-      current-platform diagnostic equivalent.)
+      determinism, and cache-busting checks. A host-specific diagnostic run is
+      not a substitute for this pinned-Linux comparison.
 - [ ] Screenshots — **mandatory for any UI change.** Compare before and after.
       Two shipped defects were invisible in the diff and obvious in a screenshot.
 - [ ] New assertions mutation-checked: break the code, confirm the test goes red.

@@ -32,8 +32,8 @@ npm run serve                      # node tools/serve.mjs — then http://127.0.
 # Engine assertions (300, currently all passing)
 npm test
 
-# Visual regression + determinism + cache-busting (9), starts its own server
-npm run test:visual
+# Authoritative visual regression + determinism + cache-busting (9), pinned Linux
+npm run test:visual:docker
 
 # Browser behaviour assertions (44), self-contained server lifecycle
 npm run test:browser
@@ -55,13 +55,16 @@ installs that pinned browser automatically if its cache is empty. It starts
 the process it started. `CHROMIUM_PATH` remains an explicit override, not a
 required setup step.
 
-`npm run test:visual` uses the current platform's snapshot tag. CI compares the
-committed Linux baselines; Windows snapshots may exist for local diagnostics but
-are not authoritative or required. Generate and compare authoritative candidates
-with `npm run test:visual:docker`, which uses
+The authoritative comparison is `npm run test:visual:docker`, which uses
 `mcr.microsoft.com/playwright:v1.62.1-noble`, the same pinned image as CI. See
 [`docs/visual-testing.md`](docs/visual-testing.md); every changed baseline still
 requires direct human inspection and intentional approval.
+
+`npm run test:visual` compares only the current host's platform-tagged
+snapshots. The repository contains Linux baselines, not Windows baselines, so it
+is not directly usable for comparison on Windows. Optional Windows diagnostics
+require generating host-specific, non-authoritative snapshots first with
+`npm run test:visual:update`; only then can `npm run test:visual` compare them.
 
 ### Read the tally anyway
 

@@ -41,9 +41,18 @@ npm test
 
 # Browser gates install Playwright's managed Chromium if the cache is empty
 npm run test:browser                 # 44 checks; starts/reuses its own server
-npm run test:visual                  # current-platform visual diagnostics
 npm run test:visual:docker           # authoritative pinned-Linux visual gate
+
+# Optional current-host diagnostics require host-specific snapshots first
+npm run test:visual:update
+npm run test:visual
 ```
+
+The repository contains only the authoritative Linux baselines. In particular,
+`npm run test:visual` is not directly usable for comparison on Windows: create
+non-authoritative `chromium-win32` diagnostic snapshots with the update command
+before running the current-host comparison. Neither command replaces the
+pinned-Linux gate.
 
 VS Code's Live Server extension works too. `open index.html` does **not** — the
 `type="module"` scripts are blocked by CORS on `file://`.

@@ -23,7 +23,12 @@ export default defineConfig({
     // Fail the run if someone commits test.only.
     forbidOnly: !!process.env.CI,
 
-    reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
+    reporter: [
+        ...(process.env.CI
+            ? [['github'], ['html', { open: 'never' }]]
+            : [['list']]),
+        ['./tools/playwright-tally-reporter.mjs'],
+    ],
 
     use: {
         baseURL: 'http://127.0.0.1:8899',

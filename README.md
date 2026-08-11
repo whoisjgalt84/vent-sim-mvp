@@ -23,11 +23,12 @@ Any static server works — VS Code's Live Server extension is fine too.
 
 ```bash
 npm test              # 300 engine assertions
-npm run test:visual   # 9 visual regression + determinism checks
+npm run test:visual:docker  # 9 authoritative pinned-Linux visual checks
 ```
 
 Read the printed `Passed: N / Failed: M` tally. See
-[`README-dev.md`](./README-dev.md) for the browser and screenshot harnesses.
+[`README-dev.md`](./README-dev.md) for the browser and screenshot harnesses,
+including the host-specific snapshots required for Windows visual diagnostics.
 
 ---
 

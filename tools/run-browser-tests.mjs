@@ -54,6 +54,38 @@ function runChild(args, env = process.env) {
     });
 }
 
+function stripAnsi(value) {
+    return value.replace(/\x1B\[[0-?]*[ -\/]*[@-~]/g, '');
+}
+
+function requireCommissionedTally(output) {
+    const cleanOutput = stripAnsi(output);
+    const pattern = visualMode
+        ? /^COMMISSIONED_VISUAL_TALLY (\d+) passed, (\d+) failed$/gm
+        : /^\s*(\d+) passed, (\d+) failed\s*$/gm;
+    const matches = [...cleanOutput.matchAll(pattern)];
+    const expectedPassed = visualMode ? 9 : 44;
+    const label = visualMode ? 'visual/determinism' : 'browser';
+
+    if (matches.length !== 1) {
+        throw new Error(
+            `Commissioned ${label} tally output is missing or malformed; expected exactly one ` +
+            `"${expectedPassed} passed, 0 failed" tally but found ${matches.length}.`,
+        );
+    }
+
+    const passed = Number(matches[0][1]);
+    const failed = Number(matches[0][2]);
+    if (passed !== expectedPassed || failed !== 0) {
+        throw new Error(
+            `Commissioned ${label} tally is ${expectedPassed} passed / 0 failed; ` +
+            `received ${passed} passed / ${failed} failed.`,
+        );
+    }
+
+    console.log(`Commissioned ${label} tally verified: ${passed} passed, ${failed} failed.`);
+}
+
 async function ensureManagedChromium() {
     if (process.env.CHROMIUM_PATH) return;
     const executable = require('playwright').chromium.executablePath();
@@ -204,15 +236,23 @@ async function runHarness() {
     testProcess = spawn(process.execPath, target, {
         cwd: root,
         env: process.env,
-        stdio: 'inherit',
+        stdio: ['inherit', 'pipe', 'pipe'],
         windowsHide: true,
     });
+
+    let output = '';
+    for (const stream of [testProcess.stdout, testProcess.stderr]) {
+        stream.on('data', (chunk) => {
+            output += chunk;
+            (stream === testProcess.stdout ? process.stdout : process.stderr).write(chunk);
+        });
+    }
 
     return new Promise((resolve, reject) => {
         testProcess.once('error', reject);
         testProcess.once('close', (code, signal) => {
             if (signal) reject(new Error(`Browser assertion process ended on ${signal}.`));
-            else resolve(code ?? 1);
+            else resolve({ code: code ?? 1, output });
         });
     });
 }
@@ -221,7 +261,8 @@ try {
     await requireVisualBaselines();
     await ensureManagedChromium();
     await ensureServer();
-    const code = await runHarness();
+    const { code, output } = await runHarness();
+    requireCommissionedTally(output);
     if (code !== 0) process.exitCode = code;
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

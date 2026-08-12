@@ -25,6 +25,12 @@ test.describe('waveform display', () => {
         await h.expandRail(page);
         await h.seek(page, SEEK_SECONDS);
 
+        const s = await h.state(page);
+        expect(s.mode).toBe('vc-cmv');
+        expect(s.teachingMode).toBe(false);
+        expect(s.machineBreaths).toBeGreaterThan(0);
+        expect(s.patientBreaths).toBe(0);
+
         await expect(page.locator('.waveforms')).toHaveScreenshot('baseline.png');
         expect(errors, 'no console errors').toEqual([]);
     });
@@ -33,6 +39,11 @@ test.describe('waveform display', () => {
         await h.open(page);
         await h.teachingMode(page);
         await h.seek(page, SEEK_SECONDS);
+
+        const s = await h.state(page);
+        expect(s.mode).toBe('vc-cmv');
+        expect(s.teachingMode).toBe(true);
+        expect(s.patientBreaths).toBe(0);
 
         await expect(page).toHaveScreenshot('teaching-full.png', { fullPage: true });
     });
@@ -56,15 +67,25 @@ test.describe('waveform display', () => {
         await h.teachingMode(page);          // rail work first — rail is hidden after this
         await h.seek(page, SEEK_SECONDS);
 
+        const s = await h.state(page);
+        expect(s.teachingMode).toBe(true);
+        expect(s.failedTriggers, 'scenario must actually fail triggers').toBeGreaterThan(0);
+
         await expect(page).toHaveScreenshot('effort-teaching-full.png', { fullPage: true });
     });
 
     test('weak effort in PC-CSV — sub-threshold failure morphology (SME-021)', async ({ page }) => {
         await h.open(page);
         await h.setMode(page, 'PC-CSV');
-        await h.enableEffort(page, { patientRR: 20, pmus: 2 });
+        await h.enableEffort(page, { patientRR: 20, pmus: 0.5 });
+        await h.setRange(page, '#flow-trigger', 5);
         await h.teachingMode(page);
         await h.seek(page, SEEK_SECONDS);
+
+        const s = await h.state(page);
+        expect(s.mode).toBe('PC-CSV');
+        expect(s.teachingMode).toBe(true);
+        expect(s.failedTriggers, 'weak effort must remain sub-threshold').toBeGreaterThan(0);
 
         await expect(page.locator('.waveforms')).toHaveScreenshot('weak-csv.png');
     });
@@ -77,6 +98,11 @@ test.describe('waveform display', () => {
         await h.enableEffort(page, { patientRR: 30, pmus: 6 });
         await h.teachingMode(page);
         await h.seek(page, SEEK_SECONDS);
+
+        const s = await h.state(page);
+        expect(s.teachingMode).toBe(true);
+        expect(s.failedTriggers, 'long readouts require the effort scenario').toBeGreaterThan(0);
+        await expect(page.locator('.parameters')).toBeVisible();
 
         await expect(page.locator('.parameters')).toHaveScreenshot('params-teaching-effort.png');
     });

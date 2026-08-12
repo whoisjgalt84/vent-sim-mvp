@@ -7,10 +7,25 @@ mid-countdown. This suite exists so that class of defect fails a test instead of
 reaching an SME.
 
 ```bash
-npm run test:visual              # compare against committed baselines
-npm run test:visual:update       # accept a change as the new baseline
-npm run test:visual:docker       # run in the pinned image (what CI uses)
+npm run test:visual:docker       # authoritative comparison in the pinned CI image
+npm run test:visual:docker -- --update-snapshots  # generate candidates only
+
+# Optional current-host diagnostics require host-specific snapshots first:
+npm run test:visual:update       # create non-authoritative snapshots for this host
+npm run test:visual              # compare against those host snapshots
 ```
+
+This is one of four distinct verification surfaces:
+
+- `npm test`: 300 engine assertions (CI on Node 22 and 24).
+- `npm run test:browser`: 44 real-browser behavior assertions; its server
+  lifecycle is self-contained (CI in the pinned Playwright image).
+- `npm run test:visual:docker`: the authoritative six screenshot comparisons
+  plus three determinism/cache-busting checks in the pinned Playwright image.
+- `npm run test:visual`: the same test code against current-host diagnostic
+  snapshots, usable only after snapshots for that host have been generated.
+- `node scratch/shot.cjs`: diagnostic screenshots for human investigation; not
+  an assertion gate and not a substitute for baselines.
 
 ---
 
@@ -49,54 +64,51 @@ baseline in the suite is untrustworthy and the tolerances mean nothing.
 
 ## 2. Baselines
 
-Baselines are **platform-tagged** — `baseline-chromium-linux.png`. A baseline
-generated on Windows will not match one generated in CI, because font
-rasterisation and canvas antialiasing differ.
+Authoritative baselines are **platform-tagged Linux files** such as
+`baseline-chromium-linux.png`. Generate and compare them only in
+`mcr.microsoft.com/playwright:v1.62.1-noble`, whose Playwright version exactly
+matches `package-lock.json` and the CI browser-verification job. Windows font
+rasterisation and canvas antialiasing differ, so Windows snapshots can be useful
+local diagnostics but can never substitute for the CI truth set.
 
-Because they are platform-tagged, **the simple path is to generate them on your
-own machine** — Playwright will write `…-chromium-win32.png` on Windows and
-`…-chromium-linux.png` in CI, and the two coexist happily:
+The repository intentionally contains no `*-chromium-win32.png` snapshots.
+Consequently, a fresh Windows checkout cannot directly run
+`npm run test:visual` as a comparison. For optional Windows diagnostics, first
+run `npm run test:visual:update` to create host-specific snapshots, then run
+`npm run test:visual` to compare against those local diagnostic bytes. Do not
+treat, approve, or commit them as authoritative baselines.
 
-```bash
-npm run test:visual:update
-```
-
-If you later want your machine and CI to compare against the *same* bytes, use
-the pinned Docker image instead. Note this script assumes a POSIX shell — on
-Windows run it from Git Bash or WSL, not PowerShell:
+The Docker wrapper is cross-platform and runs a clean `npm ci` in an isolated
+container volume before Playwright:
 
 ```bash
 npm run test:visual:docker -- --update-snapshots
 ```
 
-Then **look at every changed PNG before committing it.** A baseline is an
-assertion about what correct looks like; accepting one you haven't examined
-converts the suite into a rubber stamp. `npx playwright show-report` gives
-side-by-side expected/actual/diff.
+That command creates **candidates**, not approved baselines. Run the visual suite
+a second time in the same image, build the six-image manifest/review bundle, and
+give Christian every full-resolution PNG. Only his explicit acceptance makes
+the files authoritative. Then commit exactly those reviewed bytes and verify
+their SHA-256 hashes against the approved manifest.
 
 Baselines are committed. `test-results/` and `playwright-report/` are not.
 
 ### First run on a fresh clone
 
-**There are no baselines in the repo yet, so the first `npm run test:visual`
-will fail** with "A snapshot doesn't exist" — that is the expected first run,
-not a broken suite. Generate them, look at them, commit them:
+If an expected host baseline is absent, `npm run test:visual` fails in a preflight
+before Playwright starts. It never creates or accepts missing truth during a
+comparison run. For initial commissioning or an intentional visual change:
 
 ```bash
-npm run test:visual:update        # writes six PNGs
-npx playwright show-report        # eyeball all six before trusting them
-git add tests/visual/*-snapshots
+npm run test:visual:docker -- --update-snapshots  # writes six Linux candidates
+npm run test:visual:docker                       # second consecutive comparison
+node tools/create-visual-review-bundle.mjs       # run in the pinned environment
 ```
 
-The suite starts its own server via `tools/serve.mjs`. Nothing here needs
-Python — `python3 -m http.server` was the original choice and is not portable to
-Windows, where `python3` is usually not a real command and its App Execution
-Alias opens the Microsoft Store instead of failing.
-
-Baselines were deliberately not committed by the agent that built this suite:
-they were generated in a cloud sandbox against a different Chromium build, so
-they would have failed on your machine for a reason that has nothing to do with
-the app. A baseline should be created by someone who can look at it.
+The suite starts its own server via `tools/serve.mjs`; no Python or hidden
+browser path is involved. CI `workflow_dispatch` can generate the same
+unapproved review bundle as an artifact. Normal push and pull-request runs only
+compare committed, reviewed baselines.
 
 ---
 
@@ -172,5 +184,6 @@ still look right".
 you look at while working, with a rail-overflow and clipped-readout report. It
 asserts nothing and is not a gate.
 
-This suite is the gate. Same viewport (1440×900) and the same scenario recipes,
-so the two remain visually comparable.
+The visual suite is the regression gate. `shot.cjs` is a diagnostic aid. They
+share a 1440×900 viewport and scenario recipes so the output remains visually
+comparable, but only the pinned Linux baselines participate in CI comparisons.

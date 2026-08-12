@@ -23,13 +23,18 @@ export default defineConfig({
     // Fail the run if someone commits test.only.
     forbidOnly: !!process.env.CI,
 
-    reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
+    reporter: [
+        ...(process.env.CI
+            ? [['github'], ['html', { open: 'never' }]]
+            : [['list']]),
+        ['./tools/playwright-tally-reporter.mjs'],
+    ],
 
     use: {
         baseURL: 'http://127.0.0.1:8899',
         // Normally Playwright's own managed browser is used — that is what makes
-        // baselines reproducible. CHROMIUM_PATH is an escape hatch for sandboxes
-        // that ship a pinned Chromium (same convention as scratch/*.cjs).
+        // baselines reproducible. CHROMIUM_PATH is an explicit custom-browser
+        // override only.
         // Baselines generated against an overridden browser will NOT match CI.
         launchOptions: process.env.CHROMIUM_PATH
             ? { executablePath: process.env.CHROMIUM_PATH }
@@ -66,15 +71,6 @@ export default defineConfig({
         },
     ],
 
-    // Playwright starts the same static server the rest of the harnesses use.
-    // node, not `python3 -m http.server`: on Windows `python3` is usually not a
-    // real command, and the python3.exe App Execution Alias opens the Microsoft
-    // Store rather than failing, which hangs the run instead of erroring.
-    webServer: {
-        command: 'node tools/serve.mjs 8899',
-        url: 'http://127.0.0.1:8899/index.html',
-        reuseExistingServer: !process.env.CI,
-        stdout: 'ignore',
-        stderr: 'pipe',
-    },
+    // The npm visual commands use tools/run-browser-tests.mjs for the same
+    // bounded, ownership-aware server lifecycle as the 44-check browser gate.
 });

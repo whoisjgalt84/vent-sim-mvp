@@ -4,6 +4,7 @@ dist
 
 # screenshot output from the verification harness
 scratch/shots-*/
+/scratch/visual-baseline-candidates/
 
 # playwright visual-regression output (baselines under *-snapshots/ ARE committed)
 /test-results/

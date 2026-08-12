@@ -10,7 +10,7 @@
  * anything — so the Playwright webServer would hang rather than fail cleanly.
  * Node is already required to run the tests, so this has no new dependency.
  *
- * Deliberately minimal: no caching headers, no compression, no directory
+ * Deliberately minimal: no cacheable responses, no compression, no directory
  * listing. It exists to serve this repo's static files to a browser on
  * localhost and nothing else. Do not grow it into a framework.
  */
@@ -84,7 +84,16 @@ server.listen(PORT, HOST, () => {
     console.log(`Serving ${ROOT} at http://${HOST}:${PORT}/`);
 });
 
-// Playwright's webServer sends SIGTERM; exit promptly so the run doesn't hang.
+// Playwright's webServer sends SIGTERM. server.close() can otherwise wait
+// forever on a keep-alive socket after the browser process has gone away, so
+// drain idle connections and bound shutdown without affecting normal serving.
 for (const sig of ['SIGINT', 'SIGTERM']) {
-    process.on(sig, () => server.close(() => process.exit(0)));
+    process.on(sig, () => {
+        server.close(() => process.exit(0));
+        server.closeIdleConnections();
+        setTimeout(() => {
+            server.closeAllConnections();
+            process.exit(0);
+        }, 1_000).unref();
+    });
 }

@@ -38,7 +38,21 @@ npm run serve                      # then open http://127.0.0.1:8899
 
 # Engine assertions (300)
 npm test
+
+# Browser gates install Playwright's managed Chromium if the cache is empty
+npm run test:browser                 # 44 checks; starts/reuses its own server
+npm run test:visual:docker           # authoritative pinned-Linux visual gate
+
+# Optional current-host diagnostics require host-specific snapshots first
+npm run test:visual:update
+npm run test:visual
 ```
+
+The repository contains only the authoritative Linux baselines. In particular,
+`npm run test:visual` is not directly usable for comparison on Windows: create
+non-authoritative `chromium-win32` diagnostic snapshots with the update command
+before running the current-host comparison. Neither command replaces the
+pinned-Linux gate.
 
 VS Code's Live Server extension works too. `open index.html` does **not** — the
 `type="module"` scripts are blocked by CORS on `file://`.
@@ -181,13 +195,14 @@ control variable.*
 The harness is not optional — it is the **ground truth**.
 
 ```bash
-npm test                              # 300 engine assertions
-npm run test:visual                   # 9 visual + determinism checks
-node scratch/verify-batch.cjs         # 44 browser assertions (needs the server)
+npm test                              # 300 engine assertions; exact count gated
+npm run test:browser                  # 44 browser assertions; self-contained
+npm run test:visual:docker            # 9 authoritative Linux visual/determinism/cache checks
 node scratch/shot.cjs <outDir> [...]  # diagnostic screenshots
 ```
 
-The visual suite renders frames at exact *simulated* timestamps via a
+CI runs `npm test` on Node 22 and 24. A separate Node 24 job runs both browser
+suites in `mcr.microsoft.com/playwright:v1.62.1-noble`. The visual suite renders frames at exact *simulated* timestamps via a
 determinism hook (`window.__vsim`), so screenshots are reproducible rather than
 frame-timing-dependent — see [`docs/visual-testing.md`](./docs/visual-testing.md).
 
@@ -199,10 +214,12 @@ waveform integrity, trigger eligibility, and clinical sanity. If these fail:
 
 > The simulator is wrong.
 
-### The suite gates CI — as of 2026-08-05
+### The verification layers gate CI
 
-`npm test` sets `process.exitCode = 1` on any failure. Mutation-verified:
-multiplying `LungModel.timeConstant` by 1.5 gives 29 failures and exit 1.
+`npm test` sets a nonzero exit on any failure and enforces the exact 300/0
+tally. Mutation-verified: multiplying `LungModel.timeConstant` by 1.5 gives 29
+failures and exit 1. The 44 browser checks and nine visual checks also propagate
+nonzero exits and retain Playwright diagnostics on CI failure.
 
 For most of this project's life it did not: the file had no exit code, so the CI
 badge stayed green through any number of failures. Worth knowing when reading

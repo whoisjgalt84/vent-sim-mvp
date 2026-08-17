@@ -63,7 +63,10 @@ Every later clinical ticket should:
 4. distinguish live and analytical paths;
 5. specify calculation timing, display timing, null/stale behavior, and alarm consumers;
 6. add a focused regression assertion and prove it fails against the pre-change behavior;
-7. require direct screenshot review for UI or morphology changes; and
-8. update this contract in the same downstream ticket after the behavior is approved and verified.
+7. require direct screenshot review for UI or morphology changes;
+8. identify the applicable K-row limitation when a learner-facing claim, preset, case, or waveform interpretation depends on an omitted mechanism, and obtain separate scope-expansion approval before clinical approval; and
+9. update this contract in the same downstream ticket after the behavior is approved and verified.
+
+An `OUT_OF_SCOPE_CONFIRMED` K row defines the current MVP and CLIN-001 contract, not a permanent roadmap exclusion. It does not require a standalone implementation ticket unless separately authorized.
 
 Existing files should not be retrospectively edited to make an unresolved matrix row appear settled. A disposition changes only when the evidence, implementation, test, display, and owner-decision record justify it.

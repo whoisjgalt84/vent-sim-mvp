@@ -4,7 +4,9 @@
 
 The review covers the required commit and tree, the A-K clinical domains, normative/design documents, live and analytical implementations, UI/Teaching Mode, alarms, cases, engine/browser/visual expectations, and the six approved Linux snapshots as rendering evidence only. Source review used only the approved local packet listed in `evidence-ledger.md`.
 
-The defensible validation boundary is: **an equation- and evidence-based educational single-compartment model, checked against selected closed-form mechanics and implementation expectations, not validated against a physical test lung, a commercial ventilator, recorded patient data, or clinical outcomes.**
+The defensible claim-review boundary is: **Vent-Sim is an equation- and evidence-based educational single-compartment model whose selected equations and implementation expectations were checked in CLIN-001; neither the simulator nor this documentation package has been validated against a physical test lung, a commercial ventilator, recorded patient data, or clinical outcomes.**
+
+The matrix contains 129 atomic claims. Domain counts are A 10, B 14, C 8, D 7, E 9, F 11, G 16, H 9, I 24, J 12, and K 9. Disposition counts are 17 `VERIFIED_CORRECT`, 6 `ACCEPTED_SIMPLIFICATION`, 27 `CANDIDATE_DEFECT`, 8 `INTERNAL_INCONSISTENCY`, 0 `TERMINOLOGY_CONFLICT`, 9 `TEST_COVERAGE_GAP`, 25 `EVIDENCE_GAP`, 12 `OUT_OF_SCOPE`, and 25 `OWNER_DECISION_REQUIRED`.
 
 ## Material agreements
 
@@ -40,6 +42,7 @@ The temporary condition-level characterization was intentionally not committed, 
 
 - MAP is recomputed from `generateBreathWaveforms()` rather than live pressure history.
 - Auto-PEEP and trapped volume shown in the standard parameter panel are closed-form steady-state predictions; waveform trapping is live modeled residual volume carried by the Euler integrator, not a clinical measurement. Representative COPD conditions differed materially during convergence and under a PC hold. CLIN-OD-014 requires explicit inspiratory-flow, hold, actual-expiration, and total-cycle timing; reference state; initialization/reset; convergence criterion; and tolerance before comparing paths. The recurrence must be derived from that contract under identical leak, effort, flow-limitation, and hold assumptions rather than choosing between the current comment and implementation.
+- D-003 verifies the live PC tick equation and state update: flow is solved from the prescribed pressure gradient, R, C, Pmus, and current integrated volume, then integrated into delivered VT. Existing tests exercise representative passive live integration and carried-volume behavior only indirectly; they do not directly protect every dependency. D-007 separately records that equivalence between the live starting state and analytical trapped-volume or auto-PEEP predictions remains unresolved under CLIN-OD-014 and VSM-CLIN-014.
 - In PC-CSV with no effort, the live engine has zero breaths, zero measured VT, and zero measured RR, while analytical helpers can still return nonzero predicted VT, VE, MAP, auto-PEEP, and trapped volume. The UI substitutes live VT/VE in CSV but continues to show some analytical pressure/trapping values. CLIN-OD-005 requires delivered RR and VE to remain zero, per-breath measurements to remain null, live trapped volume to remain zero, and every permitted analytical value to be visually and textually identified as a prediction. A future MAP integrated from live apneic pressure would be a separate live measurement, not the current generated-breath analytical MAP.
 - Non-CSV displayed VE uses analytical VT x set RR, whereas alarm VE prefers completed-breath VT x measured RR. In a traced VC-CMV condition with set RR 12/min, measured RR 20/min, and delivered VT 504 mL, those paths produced 6.0 versus approximately 10.1 L/min. CLIN-OD-007 requires delivered display and alarm signals to share live completed-breath provenance and a defined averaging window. Update cadence and alarm delay may differ, but neither path may silently substitute set or predicted ventilation. Threshold selection remains unresolved and outside CLIN-001.
 
@@ -59,6 +62,7 @@ The temporary condition-level characterization was intentionally not committed, 
 ### Terminology and teaching
 
 - Engine event type `failed` aligns with MC2022's failed-trigger category. Learner copy says `ineffective effort`, which MC2022 recognizes as familiar alias language while `docs/glossary.md` uses failed trigger canonically and cites unavailable MC2026 for stronger deprecation. CLIN-OD-009 resolves the teaching choice: use `Failed trigger` canonically, optionally bridge once with `Failed trigger (ineffective effort)`, and preserve cause-specific explanations and CLIN-OD-002 presentation boundaries.
+- G-005 accepts only the conceptual stacked separation of configured machine-rate, modeled effort-rate, and live completed-breath rate signals. G-016 separately retains the unresolved exact clinical labels, averaging window, and naming of the computed live rate.
 - The PC-CSV header tag says `flow-cycled`, describing a phase variable rather than the strict set-point targeting suffix. It is intelligible but not a complete TAG.
 - Some tests and case text still use legacy `Assist/Control`, pressure-support, or causal teaching language. Vendor/legacy labels must not become code types.
 - Failed-trigger tooltips are explicitly pending RT sign-off in `docs/sme-feedback-log.md`; current PNGs cannot approve the wording.
@@ -70,6 +74,22 @@ No new Red-lane simplification was accepted in CLIN-001. Existing explicit owner
 Candidate simplifications awaiting owner judgment include the half-sine perfectly periodic Pmus model, the 100 ms trigger lockout, idealized noise-free waveforms, and disease preset labels. CLIN-OD-008 deliberately defers rather than accepts perfect PC pressure morphology and requires disclosure. CLIN-OD-004 rejected treating PC-CSV backstop cycling as an undifferentiated spontaneous-breath simplification, and CLIN-OD-005 rejected unqualified analytical values before a live PC-CSV breath. Explicit omissions such as a single compartment, constant R/C, absent gas exchange, no circuit model, and set-point-only targeting are recorded as out of scope rather than hidden realism.
 
 CLIN-OD-015 also defers VC effort, weak PC-CSV, passive-flow, and incomplete-expiration morphology. In fixed-flow VC, Paw falling below PEEP is meaningful equation-of-motion behavior—patient effort contributes pressure while ventilator flow remains constrained—and can support work-shifting or possible under-assistance teaching. It is neither a unique diagnosis nor an incidental pixel artifact. Approval requires the complete trace and state, numerical data plus screenshot, and an explicit distinction between verified equation behavior and approved teaching morphology. Tail or non-return alone cannot establish a unique cause, especially because expiratory flow limitation and other omitted behavior can alter clinical interpretation.
+
+## Approved current-MVP model boundaries
+
+CLIN-OD-017 records `OUT_OF_SCOPE_CONFIRMED` for K-001 through K-006 and K-008, limited to the current MVP and CLIN-001 contract. These boundaries are not permanent roadmap exclusions and do not clinically validate an omitted mechanism or allow an ideal trace to establish that the mechanism is absent in a patient.
+
+| Claim | Full claim text | Approved rationale | Source basis |
+| --- | --- | --- | --- |
+| K-001 | The simulator uses one linear respiratory-system compartment. | This is an explicit current-MVP model boundary; not a hidden capability or permanent roadmap exclusion. | FUND, PDF pp.37-40 single-compartment limitations (`FOUNDATIONAL_TEXT`). |
+| K-002 | Resistance and compliance are constant; recruitment; derecruitment; heterogeneity; chest-wall partitioning; and transpulmonary pressure are omitted. | The implementation and current model boundary do not imply these capabilities; future scope expansion remains possible. | FUND, PDF pp.37-40 model limitations (`FOUNDATIONAL_TEXT`). |
+| K-003 | Expiratory flow limitation; active expiration; cough; and secretion effects are omitted. | The current-MVP omission is explicit; teaching must not infer clinical absence from an ideal trace and scope expansion remains separately approvable. | MC2022, PDF pp.6-10 expiratory interaction context (`NORMATIVE_PEER_REVIEWED`). |
+| K-004 | Current MVP omits circuit compliance, separately modeled ETT resistance, compressible circuit volume, humidifier/filter effects, and component-resolved or dynamic leak mechanics. The inspected runtime exposes no leak control and applies no scalar leak term to the single-compartment inspiratory or expiratory flow equations. | Runtime and UI inspection support this current-MVP boundary without claiming that all possible leak approximations are permanently excluded from the roadmap. | FUND, PDF pp.37-40 model and circuit limitations (`FOUNDATIONAL_TEXT`), plus `js/ventilator.js` settings and `js/simulation.js` inspiratory/expiratory equations. |
+| K-005 | Only set-point targeting is implemented; adaptive; servo; dual; optimal; and intelligent schemes are omitted. | The implemented TAG suffix and controls remain within the current MVP; future targeting schemes require separate scope expansion. | VOCAB2019, PDF pp.3-14 targeting definitions (`CONTROLLED_VOCABULARY`). |
+| K-006 | Only CMV and CSV breath sequences are implemented; IMV and SIMV are omitted. | The current UI and code do not imply IMV support; this is not a permanent roadmap exclusion. | C2007, PDF pp.5-6 breath sequences (`NORMATIVE_PEER_REVIEWED`). |
+| K-008 | Gas exchange; oxygenation; shunt; dead space; capnography; and metabolic physiology are omitted. | No UI or documentation claim in the reviewed surfaces implies these outputs; the boundary is limited to the current MVP and CLIN-001 contract. | `docs/model.md` explicit omissions (`PROJECT_DOCUMENTATION_ONLY`). |
+
+The approved grouped disposition preserves `downstream_ticket=NOT_APPLICABLE` for all seven rows. Future learner-facing claims, presets, cases, or waveform interpretations that depend upon an omitted mechanism must identify the applicable K-row limitation and require separate scope expansion before clinical approval. This does not require standalone implementation tickets now.
 
 ## Evidence gaps
 
@@ -106,13 +126,14 @@ CLIN-OD-013 preserves the perfectly periodic half-sine Pmus shape and qualitativ
 2. VSM-CLIN-003 and VSM-CLIN-004: preserve PC-CSV cycle agent/breath type and separate measured from predicted no-breath values under CLIN-OD-004/005.
 3. VSM-CLIN-005 and VSM-CLIN-006: implement valid same-breath hold mechanics and shared delivered-VE provenance under CLIN-OD-006/007.
 4. VSM-CLIN-008: adopt canonical failed-trigger terminology while preserving the approved visual boundaries.
-5. Obtain missing sources, especially Arnal 2018 and the exact Nguyen/Natalini works referenced during owner review; then execute VSM-CLIN-009 and VSM-CLIN-011 without inferring preset or alarm approval.
-6. VSM-CLIN-010: adjudicate cases individually after their preset, monitor, morphology, and alarm prerequisites settle.
-7. VSM-CLIN-013: disclose and independently adjudicate effort-model, lockout, and tail-metric choices.
-8. VSM-CLIN-014: derive and approve the trapped-volume recurrence separately from prediction-label repair.
-9. VSM-CLIN-007 and VSM-CLIN-015: conduct state-specific morphology reviews with complete numerical traces and direct screenshots before any baseline or interaction-label change.
-10. VSM-CLIN-012: consolidate approved analytical/live/set/predicted provenance at point of use after the value-specific tickets define their contracts.
+5. Obtain and review Arnal 2018 or an approved replacement, then execute VSM-CLIN-009 without inferring preset approval from current conformance tests.
+6. Independently obtain applicable alarm evidence, then execute VSM-CLIN-011 without inferring threshold, delay, priority, silence, or safety approval from mechanics or morphology sources.
+7. VSM-CLIN-010: adjudicate cases individually after their preset, monitor, morphology, and alarm prerequisites settle.
+8. VSM-CLIN-013: disclose and independently adjudicate effort-model, lockout, and tail-metric choices.
+9. Identify and review the exact Nguyen et al. source if VSM-CLIN-014 will rely on it for a clinical measurement claim; then derive and approve the trapped-volume recurrence separately from prediction-label repair.
+10. VSM-CLIN-007 and VSM-CLIN-015: conduct state-specific morphology reviews with complete numerical traces and direct screenshots before any baseline or interaction-label change; identify and review the exact Natalini et al. source before VSM-CLIN-015 relies on it for expiratory-flow-limitation or auto-PEEP interpretation.
 11. VSM-CLIN-016: specify pressure- and flow-trigger signal semantics before describing the modeled signals as device-equivalent trigger measurements.
+12. VSM-CLIN-012: perform dependent cross-surface provenance consolidation and acceptance only after VSM-CLIN-003 through VSM-CLIN-006 and VSM-CLIN-016 define and implement the primary contracts.
 
 ## Commissioned verification record
 
@@ -133,6 +154,6 @@ The six approved Linux PNG SHA-256 values remained:
 
 These gates establish unchanged repository expectations and rendering only. They are not clinical, device, patient, or outcome validation. Final documentation commit and tree identifiers remain external Git metadata for the independent-review and handoff records, avoiding a self-referential tracked hash.
 
-## Limits of the validation claim
+## Limits of CLIN-001 claims
 
 CLIN-001 makes the current claims auditable. It does not make the simulator clinically validated. Rows marked verified are limited to the stated equation, taxonomy, implementation, display, and test scope with an available sufficient source. Internal consistency, rendering stability, and test conformance are necessary but not equivalent to bedside validity.

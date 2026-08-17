@@ -4,24 +4,24 @@ These are downstream proposals only. CLIN-001 changes no runtime, tests, existin
 
 ## VSM-CLIN-002 - reconcile live VC tidal-volume boundary behavior
 
-- **Source claims:** B-010, C-002, C-003, C-004, G-004
-- **Clinical intent:** Make documentation and regression expectations accurately describe the commissioned 100 Hz live integrator before deciding whether its small square over-delivery and ramp under-delivery warrant runtime correction.
+- **Source claims:** B-008, B-010, B-011, C-002, C-003, C-004, G-004
+- **Clinical intent:** Make documentation and regression expectations accurately describe the commissioned 100 Hz live integrator, and limit accuracy or stability statements to an explicitly characterized domain, before deciding whether its small square over-delivery and ramp under-delivery warrant runtime correction.
 - **Likely files:** `docs/model.md`, `tests/test-engine.js`; `js/simulation.js` only in a later separately approved runtime phase.
 - **Autonomy lane:** Yellow for characterization/documentation; Yellow with clinical checkpoint for any runtime change.
-- **Required tests and mutation check:** Add an explicit 100 Hz grid or representative assertions for square/ramp, VT, Ti, startup versus steady breaths, and display/measured agreement. Mutate the inspiration boundary or sample equation to prove the assertions fail on the preselected wrong behavior.
+- **Required tests and mutation check:** Directly assert the commissioned 100 Hz default and explicit Euler update, then add a grid or representative assertions for square/ramp, VT, Ti, startup versus steady breaths, and display/measured agreement. Mutate the sample rate, integration update, or inspiration boundary to prove the assertions fail on the preselected wrong behavior.
 - **Visual review:** Expected only if runtime behavior changes enough to affect waveform/loop pixels; not required for documentation/assertion-only work.
 - **Dependencies/sequencing:** First correct the inaccurate statement; then land characterization assertions; then obtain a separate owner decision on runtime correction.
-- **Non-goals:** Do not call the current live deviation correct, accepted, or defective; do not change analytical VT; do not combine with mode, alarm, or copy work.
+- **Non-goals:** Do not call the current live deviation correct, accepted, or defective; do not change analytical VT; do not make a global numerical-accuracy, device, or patient-validation claim; do not combine with mode, alarm, or copy work.
 
 ## VSM-CLIN-003 - preserve PC-CSV cycle agent and individual-breath classification
 
-- **Source claims:** A-001, A-006, A-009, E-003, E-004, E-005
-- **Clinical intent:** Implement CLIN-OD-004: retain PC-CSV as the configured mode; preserve whether each breath ended by `flowCycle` or `maxTiReached`; and classify a patient-triggered but maximum-Ti machine-cycled breath as a mandatory exception.
+- **Source claims:** A-001, A-005, A-006, A-007, A-009, A-010, E-001, E-003, E-004, E-005, E-009
+- **Clinical intent:** Implement CLIN-OD-004: retain PC-CSV as the configured mode; preserve whether each breath ended by `flowCycle` or `maxTiReached`; and classify a patient-triggered but maximum-Ti machine-cycled breath as a mandatory exception. Protect the supported-mode inventory, exact `PC-CSV` runtime ID, pressure-support target, hold inapplicability, and adopted phase-variable distinctions without deciding unapproved learner terminology.
 - **Likely files:** `js/simulation.js`, `js/main.js`, `docs/glossary.md`, `docs/model.md`, tests.
 - **Autonomy lane:** Yellow for conformance to CLIN-OD-004; Red for any interaction-morphology label.
-- **Required tests and mutation check:** Assert configured mode, trigger agent, cycle agent, termination reason, and individual breath type at both flow-cycle and backstop-cycle exits. Mutate `maxTiReached` to report `flowCycle` and require failure; separately mutate the backstop classification to spontaneous and require failure.
+- **Required tests and mutation check:** Assert the supported-mode inventory, exact case-sensitive runtime IDs, PC-CSV pressure target above PEEP, hold inapplicability, configured mode, trigger agent, cycle agent, termination reason, and individual breath type at both flow-cycle and backstop-cycle exits. Mutate `maxTiReached` to report `flowCycle` and require failure; separately mutate the mode ID, pressure target, hold gate, or backstop classification and require failure.
 - **Visual review:** Required if waveform timing or labels change.
-- **Dependencies/sequencing:** Clinical specification is approved in CLIN-OD-004. Define exact monitor/teaching representation before UI implementation; obtain separate SME review before labeling early cycle, late cycle, or another interaction.
+- **Dependencies/sequencing:** Breath classification is approved in CLIN-OD-004. A-007 remains owner-gated for any exact learner-facing terminology beyond the adopted distinctions. Define exact monitor/teaching representation before UI implementation; obtain separate SME review before labeling early cycle, late cycle, or another interaction.
 - **Non-goals:** Do not add apnea backup ventilation or a new mode. Do not adjudicate or change the project-defined minimum inspiratory interval in E-003 until applicable evidence is reviewed and Christian records a separate decision.
 
 ## VSM-CLIN-004 - separate PC-CSV measured and predicted readouts
@@ -112,16 +112,17 @@ These are downstream proposals only. CLIN-001 changes no runtime, tests, existin
 - **Dependencies/sequencing:** Sources are required before decision under CLIN-OD-012. Preserve CLIN-OD-003 live-PIP timing, CLIN-OD-007 VE provenance, and the dual-clock invariant while evaluating—not approving—the current defaults.
 - **Non-goals:** Do not select thresholds from generic references or claim regulatory alarm compliance.
 
-## VSM-CLIN-012 - document analytical/live monitor provenance at point of use
+## VSM-CLIN-012 - cross-surface provenance consolidation and acceptance
 
-- **Source claims:** A-005, A-007, A-010, B-008, B-009, B-011, E-001, E-009, G-013, G-016, H-005, I-014
-- **Clinical intent:** Make prediction, set value, live measurement, rendering cue, and clinical measurement distinguishable to learners and maintainers.
-- **Likely files:** `js/main.js`, `index.html`, `docs/model.md`, tests.
-- **Autonomy lane:** Red for learner copy; Green for internal developer labels after approval.
-- **Required tests and mutation check:** Data-source contract for each monitor row; mutation swaps an analytical/live source and must fail.
-- **Visual review:** Required if learner-facing provenance labels are introduced.
-- **Dependencies/sequencing:** Complete CLIN-004 through CLIN-006 decisions first.
-- **Non-goals:** Do not merge the analytical and tick implementations.
+- **Primary source claims:** `NOT_APPLICABLE`; this ticket owns no individual clinical calculation, signal, validity state, or exact label.
+- **Dependent acceptance references:** G-003, G-006, G-013, G-015, G-016 and the learner-facing outputs produced by VSM-CLIN-003 through VSM-CLIN-006 and VSM-CLIN-016.
+- **Clinical intent:** After the primary value- and signal-specific tickets define their contracts, verify that prediction, set value, live modeled state, live measurement, rendering cue, and clinical measurement remain consistent across the standard monitor, Teaching Mode, hold results, alarm consumers, and model documentation.
+- **Likely files:** Cross-surface acceptance inventory and focused browser/documentation assertions; implementation files only if consolidation exposes a contradiction between already approved contracts.
+- **Autonomy lane:** Green for traceability consolidation; Yellow or Red remains inherited from the controlling primary ticket for any behavior or learner-copy correction.
+- **Required tests and mutation check:** Build one cross-surface provenance inventory that points to the controlling ticket for every value and state. Assert that the same source and validity state cannot receive contradictory labels across surfaces; mutate one surface to an analytical fallback or stale state and require the acceptance check to fail. Do not redefine any per-value calculation, averaging window, validity state, or exact term here.
+- **Visual review:** Required only when consolidation changes learner-visible presentation; approval of the underlying wording remains with the controlling primary ticket.
+- **Dependencies/sequencing:** Strictly dependent on VSM-CLIN-003 through VSM-CLIN-006 and VSM-CLIN-016. It may close only after their approved contracts are implemented and cannot substitute for their owner decisions or acceptance tests.
+- **Non-goals:** No primary claim ownership; no new calculation, signal, label, measurement method, alarm policy, or merge of analytical and tick implementations.
 
 ## VSM-CLIN-013 - adjudicate effort-model and teaching-threshold parameters
 
@@ -136,22 +137,22 @@ These are downstream proposals only. CLIN-001 changes no runtime, tests, existin
 
 ## VSM-CLIN-014 - reconcile analytical and integrated trapped-volume calculations
 
-- **Source claims:** B-012, B-013, G-015, H-007
+- **Source claims:** B-009, B-012, B-013, D-007, G-015, H-007
 - **Clinical intent:** Implement the calculation-review portion of CLIN-OD-014 without combining it with prediction-label work: derive a hold-aware analytical recurrence from explicit phase timing and compare it with live modeled trapped volume under identical assumptions.
 - **Likely files:** `js/ventilator.js`, `js/simulation.js`, focused tests, calculation documentation.
 - **Autonomy lane:** Red for the intended recurrence and tolerance; Yellow for implementation after owner approval.
-- **Required tests and mutation check:** Define inspiratory-flow time, hold, actual expiration, total cycle time, trapped-volume reference state, initialization/reset, convergence criterion, and tolerance. Compare at 100 Hz across representative R/C, timing, effort-off, leak-off, no-flow-limitation, and hold conditions. Mutate the approved phase denominator or reference state back to each prior competing expression and require failure.
+- **Required tests and mutation check:** Define inspiratory-flow time, hold, actual expiration, total cycle time, trapped-volume reference state, initialization/reset, convergence criterion, and tolerance. Directly protect the live nonnegative relative-volume floor, then compare at 100 Hz across representative R/C, timing, effort-off, leak-off, no-flow-limitation, and hold conditions. Mutate the volume floor, approved phase denominator, or reference state back to each prior competing expression and require failure.
 - **Visual review:** Not required for calculation-only reconciliation; required if changed values alter learner-visible traces or readouts.
 - **Dependencies/sequencing:** First identify and review the exact Nguyen et al. source if it will support a clinical measurement claim. Owner approves the derived recurrence and tolerance before runtime correction. VSM-CLIN-004 handles labels separately.
 - **Non-goals:** Do not call the integrated state measured; do not infer quantitative auto-PEEP from tail shape; do not add an expiratory-occlusion maneuver in this ticket.
 
 ## VSM-CLIN-015 - conduct state-specific morphology reviews
 
-- **Source claims:** C-007, E-008, H-002, H-003, H-007, I-021
+- **Source claims:** C-007, E-008, H-002, H-003, H-005, H-007, I-021
 - **Clinical intent:** Implement CLIN-OD-015 disclosure and review VC effort, weak PC-CSV, passive expiration, and trapping morphologies one state at a time without treating PNG stability as clinical approval.
 - **Likely files:** `js/simulation.js`, `js/waveforms.js`, `js/main.js`, teaching copy, focused tests, visual baselines only after approval.
 - **Autonomy lane:** Yellow for approved disclosure; Red for morphology or interaction-label changes.
-- **Required tests and mutation check:** For every state, capture the complete numerical breath trace plus screenshot and record PEEP, mode, flow target, R/C, Pmus magnitude/timing, and trigger/cycle state. Separate equation-of-motion assertions from owner morphology approval. Each later approved change must include a mutation restoring the prior state-specific trace.
+- **Required tests and mutation check:** For every state, capture the complete numerical breath trace plus screenshot and record PEEP, mode, flow target, R/C, Pmus magnitude/timing, and trigger/cycle state. Directly assert that loop and time-waveform points originate from the same live samples. Separate equation-of-motion assertions from owner morphology approval. Each later approved change must include a mutation restoring the prior state-specific trace.
 - **Visual review:** Mandatory direct SME review for every morphology before baseline approval.
 - **Dependencies/sequencing:** Identify and review the exact Natalini et al. source if it will support expiratory-flow-limitation or auto-PEEP interpretation. Acknowledge omitted controller, circuit, flow-limitation, noise, and variability effects.
 - **Non-goals:** Do not assign a unique diagnosis or interaction label from a tail, non-return, or isolated Paw depression; do not treat Paw below PEEP as a mere rendering artifact.

@@ -25,12 +25,13 @@ Only explicit decisions from Christian Striggow are recorded. Visual approval, s
 ## CLIN-OD-003 - Teaching Mode RR layout and PIP latch semantics approved
 
 - **Affected claims:** G-001, G-002, G-005, J-009
-- **Evidence summary:** Repository operating instructions record approval of the stacked Teaching Mode RR table, both existing tooltip strings, and per-breath monitor PIP latching.
+- **Evidence summary:** Repository operating instructions record approval of the stacked Teaching Mode RR table, both existing tooltip strings as presented in that layout, and per-breath monitor PIP latching. That presentation approval did not independently specify the exact clinical name of each computed rate signal.
 - **Options presented:** continuously changing PIP versus completed-breath monitor PIP while retaining live alarm pressure; compact versus stacked RR presentation.
-- **Selected disposition:** Approved stacked Teaching Mode RR table, tooltip strings, and per-breath PIP latch semantics.
-- **Rationale/teaching intent:** Maintain a stable monitor readout while preserving immediate high-pressure alarm evaluation and expose set/delivered/patient rate distinctions.
+- **Selected disposition:** Approved the stacked Teaching Mode RR presentation, its then-current tooltip strings, and per-breath PIP latch semantics; exact rate-signal terminology remains a separate specification question.
+- **Rationale/teaching intent:** Maintain a stable monitor readout while preserving immediate high-pressure alarm evaluation and conceptually separate the set, patient, and delivered or measured rate signals. G-016 remains controlling for exact labels, averaging, and clinical naming.
 - **Date:** 2026-07-29
-- **Downstream consequence:** Preserve live `breathSummary.pip` for alarms, `pipLatched` for the monitor, and the guarded RR DOM rebuild.
+- **Clarification date:** 2026-08-16 (G-005 narrowed to conceptual separation; G-016 retains the unresolved exact-label claim)
+- **Downstream consequence:** Preserve live `breathSummary.pip` for alarms, `pipLatched` for the monitor, and the guarded RR DOM rebuild. Do not infer exact-label approval beyond the conceptual rate separation; resolve G-016 through VSM-CLIN-006.
 
 ## CLIN-OD-004 - classify maximum-Ti PC-CSV breaths by their actual cycle agent
 
@@ -134,7 +135,7 @@ Only explicit decisions from Christian Striggow are recorded. Visual approval, s
 
 ## CLIN-OD-014 - defer trapped-volume reconciliation under a complete timing and state contract
 
-- **Affected claims:** B-012, B-013, B-014, G-015, H-007, I-018
+- **Affected claims:** B-012, B-013, B-014, D-007, G-015, H-007, I-018
 - **Evidence summary:** Live residual volume carried by the 100 Hz integrator and analytical steady-state trapping are different model paths. In a representative COPD/hold condition, the implemented analytical expression produced approximately 360.1 mL while applying the code comment's total-cycle-time expression produced approximately 337.8 mL. The comment and implementation use different phase timing, and neither was independently adjudicated as correct.
 - **Options presented:** defer with disclosure and derive the recurrence from a complete contract; require another source before decision; revise the formula now; or accept the implementation as an intentional simplification.
 - **Selected disposition:** `DEFER_WITH_DISCLOSURE`.
@@ -152,15 +153,25 @@ Only explicit decisions from Christian Striggow are recorded. Visual approval, s
 - **Date:** 2026-08-13
 - **Downstream consequence:** Preserve current traces with disclosure pending state-specific reviews. The exact Natalini et al. work mentioned by the owner was not supplied and remains follow-on `SOURCE_REQUIRED`, not reviewed CLIN-001 evidence.
 
-## CLIN-OD-016 - retain the explicit CLIN-001 model and validation boundaries
+## CLIN-OD-016 - retain the explicit CLIN-001 model and claim-review boundaries
 
 - **Affected claims:** E-006, J-010, K-007, K-009
-- **Evidence summary:** The owner-authored CLIN-001 ticket explicitly makes backup-ventilation inventory, omitted interaction mechanisms, and external-validation boundaries part of the contract while prohibiting new modes, runtime behavior, physical test-lung or patient-data validation, device-equivalence claims, and clinical-outcome claims.
+- **Evidence summary:** The owner-authored CLIN-001 ticket explicitly makes backup-ventilation inventory, omitted interaction mechanisms, and external-validation non-claims part of the contract while prohibiting new modes, runtime behavior, physical test-lung or patient-data validation, device-equivalence claims, and clinical-outcome claims.
 - **Options presented:** implement an omitted capability in CLIN-001; imply external validation from the commissioned gates; or retain the ticket's explicit boundary and inventory the omission.
 - **Selected disposition:** `OUT_OF_SCOPE_CONFIRMED` for CLIN-001 and the current simulator contract.
 - **Rationale/teaching intent:** The documentation batch must state what the simulator does not model and must not turn internal conformance tests into device, patient-safety, or outcome evidence. This scope decision does not clinically approve any omitted mechanism; it prevents the current product from implying that capability or validation exists.
 - **Date:** 2026-08-12
-- **Downstream consequence:** Keep the omissions and validation boundary visible. Any future backup ventilation, interaction expansion, external validation, or safety-performance claim requires a separately authorized ticket and applicable evidence.
+- **Downstream consequence:** Keep the omissions and claim-review boundary visible. Any future backup ventilation, interaction expansion, external validation, or safety-performance claim requires a separately authorized ticket and applicable evidence.
+
+## CLIN-OD-017 - confirm current-MVP model omissions with scope-expansion governance
+
+- **Affected claims:** K-001, K-002, K-003, K-004, K-005, K-006, K-008
+- **Evidence summary:** The matrix and implementation inventory identify explicit current-model boundaries for compartment count, mechanics, expiration, circuit behavior, targeting schemes, breath sequences, and gas exchange. Focused K-004 runtime and UI inspection found no leak setting, control, label, state, or equation term: `Ventilator` exposes no leak setting, and `SimulationEngine` updates one volume state directly from inspiratory or expiratory flow without a scalar leak-flow term. Circuit compliance, separately modeled ETT resistance, compressible circuit volume, humidifier/filter effects, and component-resolved or dynamic leak mechanics remain absent from the current MVP.
+- **Options presented:** confirm the grouped omissions as current scope boundaries; create implementation tickets for every omitted mechanism; treat the omissions as permanent roadmap exclusions; or hold individual rows for further inspection.
+- **Selected disposition:** `OUT_OF_SCOPE_CONFIRMED` for K-001 through K-006 and K-008, limited to the current MVP and CLIN-001 contract.
+- **Rationale/teaching intent:** These are legitimate present-scope boundaries, not hidden capabilities and not permanent roadmap exclusions. Confirmation does not clinically validate an omitted mechanism or allow an ideal trace to prove that the mechanism is absent in a patient. K-004 distinguishes the inspected absence of a current scalar leak term from the broader omitted circuit-component and dynamic leak mechanics rather than stating categorically that all leaks are omitted.
+- **Date:** 2026-08-16
+- **Downstream consequence:** Preserve `downstream_ticket=NOT_APPLICABLE` for these rows. Future learner-facing claims, presets, cases, or waveform interpretations that depend upon an omitted mechanism must identify the applicable K-row limitation and require separate scope expansion before clinical approval. This governance rule does not require standalone implementation tickets now.
 
 ## Decisions still required
 

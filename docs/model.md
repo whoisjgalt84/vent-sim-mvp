@@ -84,10 +84,31 @@ Paw = PEEP + V/C + R·V̇ − Pmus
 
 The descending ramp starts at twice the mean flow and decays linearly to zero at
 `Ti`, so the delivered volume equals `VT` — the area under the triangle — **in
-the continuous limit.** In the integrator, forward Euler plus an
-end-of-inspiration test that fires before the clock advances over-deliver by
-about `dt/Ti`: a 500 mL setting delivers 503 mL on ramp and 504 mL on square at
-Ti = 1.67 s.
+the continuous limit.** The analytical VC path therefore returns set VT.
+
+The commissioned live path samples at 100 Hz. On each tick it evaluates flow at
+the current phase time, applies the explicit forward-Euler update
+`Vnext = Vcurrent + flow × 0.01 s`, evaluates the inspiration boundary, records
+the sample, and then advances the clocks. The initial breath begins at phase
+time zero; subsequent machine breaths reach their first physics tick after the
+phase clock has advanced to 0.01 s. That ordering produces deterministic
+startup-specific and repeated post-startup boundary samples.
+
+For passive VC-CMV with no hold, I:E 1:2, set VT 500 mL, and Ti = 5/3 s
+(approximately 1.67 s), the characterized results are:
+
+| Flow | First/startup completed breath | Repeated post-startup breath | Analytical VT |
+| --- | ---: | ---: | ---: |
+| Square | 504.000 mL | 501.000 mL | 500 mL |
+| Descending ramp | 503.004 mL | 497.004 mL | 500 mL |
+
+Here, "repeated post-startup" means the selected third completed mandatory
+breath; the second and third completed breaths have the same characterized
+boundary result after the startup phase alignment has passed. It does not mean
+physiological steady state. At each tested completion boundary, the live volume
+waveform/loop sample and the engine's finalized `measuredVT_mL` agree. These
+observations characterize the current discrete implementation without deciding
+whether its deviation from set VT should be retained or corrected.
 
 `− Pmus` is where **pressure scooping** comes from: in VC, effort cannot change
 the delivered flow, so it shows up entirely in the pressure trace. That is the
@@ -311,15 +332,20 @@ R and C are also settable directly: R 5–40 cmH₂O·s/L, C 15–100 mL/cmH₂O
 ## 9. Numerical properties
 
 - **Integration:** forward Euler, `dt = 0.01 s`.
-- **Stability:** Euler on the expiratory ODE is stable while `dt < 2τ`. The
+- **Passive-expiratory stability:** Euler on the passive expiratory ODE is
+  mathematically stable while `dt < 2τ`. The
   shortest preset τ is 0.24 s (fibrosis), a 48× margin. The manual sliders reach
-  `R = 5, C = 15 mL/cmH₂O` → `τ = 0.075 s`, still 15×. Safe throughout the
-  settable range, but the bound is worth knowing before anyone adds a stiffer
-  preset or widens the sliders.
-- **Accuracy:** Euler is first-order — local error `O(dt²)`, global `O(dt)`. On a
-  0.5 s time constant at 100 Hz, per-step error is well under a percent, which is
-  far below the resolution of anything the learner reads. Not good enough for
-  research, entirely good enough for teaching.
+  `R = 5, C = 15 mL/cmH₂O` → `τ = 0.075 s`, a 15× margin. This condition
+  addresses stability of that ODE only; it is not an accuracy bound and does not
+  establish accuracy for inspiration, phase transitions, or other modes.
+- **Characterized domain:** focused regression assertions cover passive VC-CMV,
+  no hold, R = 10 cmH₂O·s/L, C = 50 mL/cmH₂O, I:E 1:2, square and
+  descending-ramp flow, set VT 300 and 500 mL, and Ti 1.0 and 5/3 s. They
+  protect the 100 Hz timestep, the explicit-Euler VC volume update, the
+  identified startup/post-startup boundary behavior, and completed-boundary
+  agreement. Euler is a first-order method, but this matrix is not a global
+  numerical-error characterization and does not validate device or patient
+  behavior.
 - **Frame budget:** at most 300 ticks (3 s of sim time) per animation frame. At
   4× speed with frame gaps beyond 0.75 s, the simulation silently falls behind
   wall-clock.
@@ -366,15 +392,22 @@ making artifact level a learner-level-linked toggle rather than a global default
 
 ## 11. Validation
 
-Physiological behaviour is asserted in `tests/test-engine.js` — 300 assertions
-covering hand-calculable pressures and volumes, time-constant decay, auto-PEEP,
-waveform integrity, trigger eligibility, and clinical sanity checks.
+`tests/test-engine.js` contains 300 regression assertions covering implemented
+equations, numerical properties, waveform integrity, trigger eligibility, and
+other commissioned behavior. Passing them establishes conformance to those
+tested implementation contracts, not clinical validation of the simulator.
+
+The VC characterization assertions establish deterministic numerical behavior
+only for the parameter domain listed in Section 9. Clinical evidence for the
+underlying mechanical-ventilation concepts is a separate matter represented by
+the cited literature; regression conformance does not strengthen that evidence.
 
 The suite gates CI as of 2026-08-05 (`process.exitCode = 1` on failure,
 mutation-verified). Green runs recorded before that date do not carry the same
 guarantee — the file had no exit code and passed regardless of the tally.
 
-No part of this model has been validated against a physical test lung or against
-recorded patient data. It is validated against the equations, and the equations
-are the ones in the cited literature. That is the correct claim to make about it,
-and the only one.
+No part of this model has been validated against a physical ventilator or test
+lung, or against recorded patient behavior. The current validation is limited
+to conformance with implemented equations and numerical characterization in
+explicitly tested domains. It does not establish device equivalence, patient
+fidelity, or global numerical accuracy.

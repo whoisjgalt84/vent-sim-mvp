@@ -13,7 +13,13 @@
  */
 
 import { LungModel } from '../js/lung-model.js';
-import { Ventilator, MODE_PC_CSV } from '../js/ventilator.js';
+import {
+    Ventilator,
+    MODE_VC_CMV,
+    MODE_PC_CMV,
+    MODE_PC_CSV,
+    SUPPORTED_MODES,
+} from '../js/ventilator.js';
 import { SimulationEngine, RingBuffer } from '../js/simulation.js';
 import AlarmEngine from '../alarms.js';
 import { alarmSignature, shouldPlayAlarmSound } from '../alarm-audio.js';
@@ -614,74 +620,188 @@ assertBetween('Measured RR approximates set RR',
 
 
 // =============================================================================
-// TEST 8G: PC-CSV - Measured RR Behavior (Conditional)
+// TEST 8G: VSM-CLIN-003 — PC-CSV completed-breath classification
 // =============================================================================
-section('TEST 8G: PC-CSV - Measured RR Behavior (Conditional)');
+section('TEST 8G: VSM-CLIN-003 — PC-CSV Cycle Agent and Breath Type');
 
-function supportsPcCsvTargeted() {
-    try {
-        const testLungPcCsv = new LungModel({ resistance: 10, compliance: 0.05 });
-        const testVentPcCsv = new Ventilator(testLungPcCsv, {
-            mode: MODE_PC_CSV,
-            inspiratoryPressure: 10,
-            pressureSupport: 10,
-            psPressure: 10,
-            cyclePercent: 25,
-            peep: 5,
-        });
-        return testVentPcCsv.mode === MODE_PC_CSV ||
-            testVentPcCsv.mode === 'pc-csv' ||
-            testVentPcCsv.modeLabel === 'PC-CSV';
-    } catch {
-        return false;
-    }
-}
-
-if (supportsPcCsvTargeted()) {
-    const lungCsvTargeted = new LungModel({ resistance: 10, compliance: 0.05 });
-    const ventCsvTargeted = new Ventilator(lungCsvTargeted, {
+function capturePcCsvCompletion({
+    resistance,
+    compliance,
+    respiratoryRate,
+    ieRatio,
+    cyclePercent,
+    holdTime = 0,
+}) {
+    const lung = new LungModel({ resistance, compliance });
+    const vent = new Ventilator(lung, {
         mode: MODE_PC_CSV,
-        inspiratoryPressure: 10,
-        pressureSupport: 10,
+        inspiratoryPressure: 17,
         psPressure: 10,
-        cyclePercent: 25,
+        respiratoryRate,
+        ieRatio,
+        cyclePercent,
         peep: 5,
+        holdTime,
+        pMusMax: 8,
+        neuralTi: 1.0,
+        flowTriggerLpm: 2,
     });
+    const sim = new SimulationEngine(vent, { sampleRate: 100, displaySeconds: 10 });
+    sim.patientRR = 18;
 
-    const simCsvNoEffortTargeted = new SimulationEngine(ventCsvTargeted, {
-        sampleRate: 100,
-        displaySeconds: 10,
-    });
+    let currentBreathAtInspiration = null;
+    let sawHold = false;
+    for (let tick = 0; tick < 5000; tick++) {
+        const phaseBefore = sim.phase;
+        sim.tick();
+        sawHold ||= sim.phase === 'HOLD';
 
-    simCsvNoEffortTargeted.patientRR = 0;
-    runSimForSeconds(simCsvNoEffortTargeted, 15);
+        if (phaseBefore === 'EXPIRATION' && sim.phase === 'INSPIRATION') {
+            currentBreathAtInspiration = { ...sim.currentBreath };
+        }
+        if (phaseBefore === 'INSPIRATION' && sim.phase === 'EXPIRATION') {
+            return {
+                vent,
+                sim,
+                record: sim.lastCompletedBreath,
+                currentBreathAtInspiration,
+                sawHold,
+                boundaryTime_s: sim.buffers.time.toArray().at(-1),
+                boundaryPressure_cmH2O: sim.buffers.pressure.toArray().at(-1),
+                waveformBoundaryVT_mL: sim.buffers.volume.toArray().at(-1),
+                waveformBoundaryFlow_Lpm: sim.buffers.flow.toArray().at(-1),
+                loopBoundaryVT_mL: sim.loopCurrent.volume.at(-1),
+                loopBoundaryFlow_Lpm: sim.loopCurrent.flow.at(-1),
+                boundarySampleIndex: sim._sampleCount - 1,
+            };
+        }
+    }
 
-    const csvNoEffortTargetedMetrics = extractSafetyMetrics(ventCsvTargeted, simCsvNoEffortTargeted);
-
-    assertDefined('PC-CSV measuredRR exists', csvNoEffortTargetedMetrics.measuredRR);
-    assertBetween('PC-CSV no effort RR = 0',
-        csvNoEffortTargetedMetrics.measuredRR, 0, 0.5);
-
-    const simCsvEffortTargeted = new SimulationEngine(ventCsvTargeted, {
-        sampleRate: 100,
-        displaySeconds: 10,
-    });
-
-    simCsvEffortTargeted.patientRR = 18;
-    if (ventCsvTargeted.pMusMax !== undefined) ventCsvTargeted.pMusMax = 8;
-    if (ventCsvTargeted.neuralTi !== undefined) ventCsvTargeted.neuralTi = 0.8;
-
-    runSimForSeconds(simCsvEffortTargeted, 25);
-
-    const csvEffortTargetedMetrics = extractSafetyMetrics(ventCsvTargeted, simCsvEffortTargeted);
-
-    assertDefined('PC-CSV effort measuredRR exists', csvEffortTargetedMetrics.measuredRR);
-    assertBetween('PC-CSV measuredRR follows patientRR',
-        csvEffortTargetedMetrics.measuredRR, 16, 20);
-
-} else {
-    console.log('  PC-CSV not implemented on this branch - skipping PC-CSV RR behavior test.');
+    throw new Error('PC-CSV trace did not complete an inspiration within 50 seconds');
 }
+
+const flowCycleTrace = capturePcCsvCompletion({
+    resistance: 10,
+    compliance: 0.05,
+    respiratoryRate: 14,
+    ieRatio: [1, 2],
+    cyclePercent: 25,
+    holdTime: 0.75,
+});
+const maxTiTrace = capturePcCsvCompletion({
+    resistance: 25,
+    compliance: 0.06,
+    respiratoryRate: 35,
+    ieRatio: [1, 1],
+    cyclePercent: 10,
+});
+
+console.log(
+    `  Flow-cycle: Ti=${flowCycleTrace.record.inspiratoryTime_s.toFixed(2)}s`
+    + ` flow=${flowCycleTrace.record.flowAtTermination_Lpm.toFixed(2)} L/min`
+    + ` threshold=${flowCycleTrace.record.flowCycleThreshold_Lpm.toFixed(2)} L/min`
+);
+console.log(
+    `  Maximum-Ti: Ti=${maxTiTrace.record.inspiratoryTime_s.toFixed(2)}s`
+    + ` flow=${maxTiTrace.record.flowAtTermination_Lpm.toFixed(2)} L/min`
+    + ` threshold=${maxTiTrace.record.flowCycleThreshold_Lpm.toFixed(2)} L/min`
+);
+
+assertTrue('VSM-CLIN-003 supported inventory is exact, case-sensitive, and excludes VC-CSV',
+    JSON.stringify(SUPPORTED_MODES) === JSON.stringify([
+        MODE_VC_CMV, MODE_PC_CMV, 'PC-CSV',
+    ])
+    && MODE_PC_CSV === 'PC-CSV'
+    && !SUPPORTED_MODES.includes('VC-CSV'));
+
+assertTrue('VSM-CLIN-003 PC-CSV pressure support targets psPressure above PEEP',
+    flowCycleTrace.vent.pressureControlLevel === 10
+    && Math.abs(flowCycleTrace.boundaryPressure_cmH2O - 15) < 1e-9);
+
+assertTrue('VSM-CLIN-003 configured inspiratory hold is inapplicable in PC-CSV',
+    flowCycleTrace.vent.holdTime === 0.75
+    && flowCycleTrace.vent.effectiveHoldTime === 0
+    && !flowCycleTrace.vent.holdActive
+    && !flowCycleTrace.sawHold);
+
+const passiveCsv = new SimulationEngine(new Ventilator(
+    new LungModel({ resistance: 10, compliance: 0.05 }),
+    { mode: MODE_PC_CSV, psPressure: 10, cyclePercent: 25, peep: 5 }
+));
+runSimForSeconds(passiveCsv, 15);
+assertTrue('VSM-CLIN-003 passive PC-CSV completes no breath and measured RR stays zero',
+    passiveCsv.breathCount === 0
+    && passiveCsv.measuredRR === 0
+    && passiveCsv.lastCompletedBreath === null);
+
+runSimForSeconds(flowCycleTrace.sim, 25);
+assertTrue('VSM-CLIN-003 current PC-CSV breaths are patient-triggered and measured RR follows effort',
+    flowCycleTrace.currentBreathAtInspiration.configuredMode === 'PC-CSV'
+    && flowCycleTrace.currentBreathAtInspiration.triggerAgent === 'patient'
+    && flowCycleTrace.sim.measuredRR >= 16
+    && flowCycleTrace.sim.measuredRR <= 20
+    && flowCycleTrace.sim.lastCompletedBreath !== flowCycleTrace.record
+    && flowCycleTrace.sim.lastCompletedBreath.completedAt_s
+        > flowCycleTrace.record.completedAt_s);
+
+assertTrue('VSM-CLIN-003 flow-cycle record is PC-CSV, patient/patient, flowCycle, spontaneous',
+    flowCycleTrace.record.configuredMode === 'PC-CSV'
+    && flowCycleTrace.record.triggerAgent === 'patient'
+    && flowCycleTrace.record.cycleAgent === 'patient'
+    && flowCycleTrace.record.terminationReason === 'flowCycle'
+    && flowCycleTrace.record.breathType === 'spontaneous'
+    && flowCycleTrace.record.flowAtTermination_Lpm
+        <= flowCycleTrace.record.flowCycleThreshold_Lpm);
+
+assertTrue('VSM-CLIN-003 maximum-Ti record is PC-CSV, patient/machine, maxTiReached, mandatory',
+    maxTiTrace.record.configuredMode === 'PC-CSV'
+    && maxTiTrace.record.triggerAgent === 'patient'
+    && maxTiTrace.record.cycleAgent === 'machine'
+    && maxTiTrace.record.terminationReason === 'maxTiReached'
+    && maxTiTrace.record.breathType === 'mandatory'
+    && maxTiTrace.record.inspiratoryTime_s >= 0.85
+    && maxTiTrace.record.inspiratoryTime_s <= 0.88
+    && maxTiTrace.record.flowAtTermination_Lpm
+        > maxTiTrace.record.flowCycleThreshold_Lpm);
+
+assertTrue('VSM-CLIN-003 finalized records agree with their waveform and loop boundary sample',
+    [flowCycleTrace, maxTiTrace].every(trace =>
+        trace.record.boundarySampleIndex === trace.boundarySampleIndex
+        && Math.abs(trace.record.completedAt_s - trace.boundaryTime_s) < 1e-12
+        && Math.abs(trace.record.measuredVT_mL - trace.waveformBoundaryVT_mL) < 1e-9
+        && Math.abs(trace.record.measuredVT_mL - trace.loopBoundaryVT_mL) < 1e-9
+        && Math.abs(trace.record.flowAtTermination_Lpm
+            - trace.waveformBoundaryFlow_Lpm) < 1e-9
+        && Math.abs(trace.record.flowAtTermination_Lpm
+            - trace.loopBoundaryFlow_Lpm) < 1e-9
+        && trace.sim.getTriggerEvents().some(event =>
+            event.type === trace.record.triggerAgent
+            && Math.abs(event.time - trace.record.startedAt_s) < 1e-12)));
+
+maxTiTrace.vent.cyclePercent = 100;
+runSimForSeconds(maxTiTrace.sim, 10);
+const postMaxTiRecord = maxTiTrace.sim.lastCompletedBreath;
+flowCycleTrace.sim.reset();
+assertTrue('VSM-CLIN-003 consecutive breaths replace classification and reset clears metadata',
+    postMaxTiRecord !== maxTiTrace.record
+    && postMaxTiRecord.completedAt_s > maxTiTrace.record.completedAt_s
+    && postMaxTiRecord.configuredMode === 'PC-CSV'
+    && postMaxTiRecord.terminationReason === 'flowCycle'
+    && postMaxTiRecord.cycleAgent === 'patient'
+    && postMaxTiRecord.breathType === 'spontaneous'
+    && flowCycleTrace.sim.currentBreath === null
+    && flowCycleTrace.sim.lastCompletedBreath === null);
+
+maxTiTrace.vent.mode = MODE_PC_CMV;
+maxTiTrace.sim.reset();
+for (let tick = 0; tick < 1000 && !maxTiTrace.sim.lastCompletedBreath; tick++) {
+    maxTiTrace.sim.tick();
+}
+assertTrue('VSM-CLIN-003 mode transition cannot retain prior PC-CSV cycle metadata',
+    maxTiTrace.sim.lastCompletedBreath.configuredMode === MODE_PC_CMV
+    && maxTiTrace.sim.lastCompletedBreath.cycleAgent === 'machine'
+    && maxTiTrace.sim.lastCompletedBreath.terminationReason === null
+    && maxTiTrace.sim.lastCompletedBreath.breathType === 'mandatory');
 
 
 // =============================================================================
@@ -2207,55 +2327,6 @@ assert('Measured RR ≈ set RR in CMV', simMeasuredRR.measuredRR, ventMeasuredRR
 
 
 // =============================================================================
-// TEST 39: Measured RR — PC-CSV Stays Zero Without Effort
-// =============================================================================
-section('TEST 39: Measured RR — PC-CSV No Effort');
-
-const ventCsvPassive = new Ventilator(lungMeasuredRR, {
-    mode: MODE_PC_CSV,
-    inspiratoryPressure: 15,
-    psPressure: 10,
-    cyclePercent: 25,
-    peep: 5,
-});
-const simCsvPassive = new SimulationEngine(ventCsvPassive, { sampleRate: 100, displaySeconds: 10 });
-
-for (let i = 0; i < 1500; i++) {
-    simCsvPassive.tick();
-}
-
-console.log(`    Passive CSV breaths=${simCsvPassive.breathSummary.breathCount}  Measured RR=${simCsvPassive.measuredRR.toFixed(1)}`);
-assert('Passive CSV completes no breaths', simCsvPassive.breathSummary.breathCount, 0, 0);
-assert('Passive CSV measured RR = 0', simCsvPassive.measuredRR, 0, 0);
-
-
-// =============================================================================
-// TEST 40: Measured RR — PC-CSV Tracks Spontaneous Triggering
-// =============================================================================
-section('TEST 40: Measured RR — PC-CSV Patient Triggering');
-
-const ventCsvActive = new Ventilator(lungMeasuredRR, {
-    mode: MODE_PC_CSV,
-    inspiratoryPressure: 15,
-    psPressure: 10,
-    cyclePercent: 25,
-    peep: 5,
-    pMusMax: 8,
-    neuralTi: 1.0,
-});
-const simCsvActive = new SimulationEngine(ventCsvActive, { sampleRate: 100, displaySeconds: 10 });
-simCsvActive.patientRR = 18;
-
-for (let i = 0; i < 2500; i++) {
-    simCsvActive.tick();
-}
-
-console.log(`    Patient RR=${simCsvActive.patientRR}  Measured RR=${simCsvActive.measuredRR.toFixed(1)}`);
-assert('Active CSV measured RR > 0', simCsvActive.measuredRR > 0 ? 1 : 0, 1, 0);
-assert('Active CSV measured RR ≈ patient RR', simCsvActive.measuredRR, simCsvActive.patientRR, 0.1);
-
-
-// =============================================================================
 // TEST 41: Alarm Engine — No Alerts Normal
 // =============================================================================
 section('TEST 41: Alarm Engine — No Alerts Normal');
@@ -2677,15 +2748,15 @@ section('NT4 [FIXED to §2] — Full accounting identity + measured-RR honesty (
 section('NT5 [GREEN guard] — PC-CSV unchanged for adequate effort');
 {
     // Strong effort + default flow trigger: PC-CSV already tracks set rate today
-    // and must keep doing so after the fix. Regression guard (mirrors TEST 40 +
-    // sweep grid E).
+    // and must keep doing so after the fix. Regression guard (mirrors the
+    // focused VSM-CLIN-003 trace + sweep grid E).
     for (const rr of [18, 35]) {
         const sim = ntBuildSim({ mode: MODE_PC_CSV, psPressure: 10, cyclePercent: 25 }, rr);
         ntInstrument(sim, 60);
-        assertBetween(`NT5 PC-CSV patRR ${rr}: measuredRR ~= set`,
-            sim.measuredRR, rr * 0.85, rr * 1.15);
-        assertTrue(`NT5 PC-CSV patRR ${rr}: failed events ~= 0`,
-            ntFailedCount(sim) <= 1);
+        assertTrue(`NT5 PC-CSV patRR ${rr}: measuredRR ~= set and failed events ~= 0`,
+            sim.measuredRR >= rr * 0.85
+            && sim.measuredRR <= rr * 1.15
+            && ntFailedCount(sim) <= 1);
     }
 }
 

@@ -205,6 +205,8 @@ export class SimulationEngine {
         this.patientBreathCount = 0;
         this.lastTriggerType = 'machine';  // 'machine' or 'patient'
         this.triggerEvents   = [];         // delivered + failed trigger markers
+        this.currentBreath = null;          // breath-start context awaiting finalization
+        this.lastCompletedBreath = null;    // canonical finalized breath record
 
         // --- Transport Controls ---
         this.running = true;
@@ -512,7 +514,7 @@ export class SimulationEngine {
         this.measuredRespiratoryRate = this.measuredRR;
     }
 
-    _startExpiration() {
+    _startExpiration(terminationReason = null) {
         this.measuredVT_mL =
             (this.volumeAboveEq - this.volumeAtBreathStart) * 1000;
         this.breathTimestamps.push(this.globalTime * 1000);
@@ -534,6 +536,36 @@ export class SimulationEngine {
         if (this.measuredPIP > 0) {
             this.lastBreathPIP = this.measuredPIP;
         }
+
+        if (this.currentBreath) {
+            const cycleAgent = terminationReason === 'flowCycle'
+                ? 'patient'
+                : 'machine';
+            const breathType =
+                this.currentBreath.triggerAgent === 'patient' && cycleAgent === 'patient'
+                    ? 'spontaneous'
+                    : 'mandatory';
+            const flowCycleThreshold_Lpm = this.vent.isSpontaneousMode()
+                ? this.peakInspiratoryFlow * 60 * (this.vent.cyclePercent / 100)
+                : null;
+
+            this.lastCompletedBreath = Object.freeze({
+                configuredMode: this.currentBreath.configuredMode,
+                triggerAgent: this.currentBreath.triggerAgent,
+                cycleAgent,
+                terminationReason,
+                breathType,
+                startedAt_s: this.currentBreath.startedAt_s,
+                completedAt_s: this.globalTime,
+                inspiratoryTime_s: this.phaseTime,
+                boundarySampleIndex: this._sampleCount,
+                measuredVT_mL: this.measuredVT_mL,
+                flowAtTermination_Lpm: this.currentFlow * 60,
+                flowCycleThreshold_Lpm,
+            });
+            this.currentBreath = null;
+        }
+
         this._setPhase(Phase.EXPIRATION);
         this.phaseTime = 0;
         this.peakInspiratoryFlow = 0;
@@ -551,6 +583,11 @@ export class SimulationEngine {
             this.machineBreathCount++;
         }
         this.lastTriggerType = triggerType;
+        this.currentBreath = {
+            configuredMode: this.vent.mode,
+            triggerAgent: triggerType,
+            startedAt_s: eventTime,
+        };
         this.machineTimer = 0;
         this.lastBreathStartSec = this.globalTime;
         this._recordTriggerEvent(triggerType, eventTime);
@@ -591,8 +628,10 @@ export class SimulationEngine {
                     const maxTiReached =
                         this.phaseTime >= Math.max(this.vent.inspiratoryTime, this.dt * 2);
 
-                    if (cycleReady || maxTiReached) {
-                        this._startExpiration();
+                    if (cycleReady) {
+                        this._startExpiration('flowCycle');
+                    } else if (maxTiReached) {
+                        this._startExpiration('maxTiReached');
                     }
                 } else if (this.phaseTime >= ti) {
                     if (holdDur > 0) {
@@ -859,6 +898,8 @@ export class SimulationEngine {
         this.patientBreathCount = 0;
         this.lastTriggerType   = 'machine';
         this.triggerEvents     = [];
+        this.currentBreath     = null;
+        this.lastCompletedBreath = null;
         this.measuredPIP       = 0;
         this.lastBreathPIP     = 0;
         this.measuredPplat     = null;

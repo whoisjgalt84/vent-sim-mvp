@@ -185,9 +185,23 @@ INSPIRATION ──► HOLD (if hold time > 0) ──► EXPIRATION ──► INS
 
 **Inspiration ends when:**
 - mandatory breaths: `phaseTime ≥ Ti`
-- spontaneous (PC-CSV): flow decays to `cyclePercent` of peak inspiratory flow —
-  i.e. **flow cycling, which is patient cycling** — with a `max(Ti, 2·dt)`
-  backstop
+- PC-CSV: either flow decays to `cyclePercent` of peak inspiratory flow, or the
+  `max(Ti, 2·dt)` maximum-inspiratory-time backstop fires first
+
+At that boundary, `SimulationEngine.lastCompletedBreath` is the canonical
+completed-breath record. Its classification fields are `configuredMode`,
+`triggerAgent`, `cycleAgent`, `terminationReason`, and `breathType`. A
+patient-triggered PC-CSV breath that reaches the flow criterion records patient
+cycling, `flowCycle`, and `spontaneous`. If the maximum-Ti backstop fires first,
+the configured mode remains `PC-CSV`, but the breath records machine cycling,
+`maxTiReached`, and `mandatory`. The maximum-Ti reason is a phase-transition
+fact, not an early-, late-, delayed-cycle, or other interaction diagnosis.
+
+The same record includes its waveform/loop boundary coordinates and numerical
+state: `startedAt_s`, `completedAt_s`, `inspiratoryTime_s`,
+`boundarySampleIndex`, `measuredVT_mL`, `flowAtTermination_Lpm`, and
+`flowCycleThreshold_Lpm`. The boundary sample is written later in the same
+100 Hz tick; no waveform or integration timing is changed by recording it.
 
 **Hold ends** at the effective hold duration. Hold is forced to zero in PC-CSV.
 

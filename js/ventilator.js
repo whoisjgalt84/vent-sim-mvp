@@ -50,6 +50,11 @@ import { LungModel } from './lung-model.js?v=9';
 export const MODE_VC_CMV = 'vc-cmv';
 export const MODE_PC_CMV = 'pc-cmv';
 export const MODE_PC_CSV = 'PC-CSV';
+export const SUPPORTED_MODES = Object.freeze([
+    MODE_VC_CMV,
+    MODE_PC_CMV,
+    MODE_PC_CSV,
+]);
 
 
 export class Ventilator {

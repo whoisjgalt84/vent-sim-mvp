@@ -48,6 +48,165 @@ async function enableEffort(page, { patientRR = 30, pmus = 6 } = {}) {
     await setRange(page, '#patient-rr', patientRR);
 }
 
+// VSM-CLIN-004 extends the existing mode-change composite check, retaining its
+// old predicate. All observations below are rendered DOM, with deterministic
+// real-engine stepping; the hook only exposes independent source evidence.
+async function readoutContract(page) {
+    return page.evaluate(() => {
+        const api = window.__vsim;
+        api.pause();
+        const errors = [], geometry = [], states = [];
+        const el = id => document.getElementById(id);
+        const text = id => el(id).textContent.trim();
+        const require = (ok, detail) => { if (!ok) errors.push(detail); };
+        const input = (id, value) => {
+            el(id).value = String(value);
+            el(id).dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        const teaching = on => {
+            if (document.body.classList.contains('teaching-mode') !== on) el('btn-teaching-mode').click();
+        };
+        const mode = value => {
+            teaching(false);
+            document.querySelector(`.mode-btn[data-mode="${value}"]`).click();
+        };
+        const effort = on => {
+            teaching(false);
+            if (el('pmus-toggle').classList.contains('hold-btn--active') !== on) el('pmus-toggle').click();
+        };
+        const take = name => {
+            const s = api.state(), p = s.predicted;
+            const csv = s.mode === 'PC-CSV', done = s.completed !== null;
+            const expected = {
+                'param-pip': done ? String(s.pipLatched) : '—',
+                'param-vt': done ? String(Math.round(s.completed.measuredVT_mL)) : '—',
+                'param-pplat': done && !csv && s.pplat !== null ? String(s.pplat) : '—',
+                'param-ve': String(csv
+                    ? (done && s.measuredRRRaw > 0
+                        ? Math.round(s.completed.measuredVT_mL / 1000 * s.measuredRRRaw * 10) / 10 : 0)
+                    : p.volumes.minuteVentilation),
+                'param-map': String(p.pressures.map_cmH2O),
+                'param-total-peep': String(p.pressures.totalPeep_cmH2O),
+                'param-live-trapped': String(Math.round(s.liveTrapped_mL)),
+            };
+            for (const [id, value] of Object.entries(expected)) {
+                require(text(id) === value, `${name} ${id}: ${text(id)} != ${value}`);
+            }
+            const labels = {
+                'param-pip': 'Measured PIP', 'param-pplat': 'Measured Pplat',
+                'param-vt': 'Measured VT', 'param-ve': csv ? 'Delivered VE' : 'Predicted VE',
+                'param-map': 'Predicted breath MAP', 'param-total-peep': 'Predicted total PEEP',
+                'param-live-trapped': 'Live modeled trapped volume',
+                'param-auto-peep': s.teachingMode ? 'Flow Baseline' : 'Predicted steady-state auto-PEEP',
+            };
+            for (const [id, label] of Object.entries(labels)) {
+                const row = el(id).closest('.param-row');
+                const visibleLabel = row.querySelector('.param-row__label');
+                require(visibleLabel.textContent.trim() === label && visibleLabel.getClientRects().length > 0,
+                    `${name} ${id}: missing visible provenance ${label}`);
+                require(row.getAttribute('role') === 'group'
+                    && el(row.getAttribute('aria-labelledby')) === visibleLabel,
+                    `${name} ${id}: accessible group must use visible provenance`);
+            }
+            if (!s.teachingMode) {
+                require(text('param-auto-peep') === String(p.pressures.autoPeep_cmH2O), `${name} predicted auto-PEEP`);
+                require(text('rr-param-label') === 'Measured RR', `${name} measured RR label`);
+                require(text('param-rr') === String(Math.round(s.measuredRRRaw)), `${name} measured RR`);
+                // The existing analytical trapped-volume readout lives in the
+                // Patient rail; expand that group to test its actual visibility.
+                document.querySelectorAll('.controls [data-collapsible][data-collapsed]').forEach(e => e.click());
+                const trap = [...document.querySelectorAll('.mechanics-chip')].at(-1);
+                const trapMl = p.volumes.trappedVolume_mL;
+                require(trap.innerText.replace(/\s+/g, ' ').trim() ===
+                    `Predicted steady-state trapped volume ${trapMl < 0.1 ? '<1' : Math.round(trapMl)} mL`,
+                    `${name} predicted trapped volume visible label/value`);
+            } else {
+                require(text('rr-param-label') === 'RR', `${name} Teaching RR term unchanged`);
+                require(el('param-rr').querySelector('.rr-triple__num--delivered').textContent ===
+                    String(Math.round(s.measuredRRRaw)), `${name} Teaching delivered RR`);
+                require(!/\d/.test(text('param-auto-peep')), `${name} no hidden auto-PEEP number in live cue`);
+            }
+            require(s.alarmPip === s.runningPip, `${name} alarm PIP must remain live`);
+            for (const badge of document.querySelectorAll('#alerts .alert-badge')) {
+                const value = badge.textContent;
+                require(!/AutoPEEP/.test(value) && (!/Pplat|auto-PEEP/.test(value) || value.startsWith('Predicted ')),
+                    `${name} analytical header badge requires visible provenance: ${value}`);
+                const b = badge.getBoundingClientRect(), header = document.querySelector('.header').getBoundingClientRect();
+                if (b.left < header.left || b.right > header.right || badge.scrollWidth > badge.clientWidth + 1) {
+                    geometry.push(`${name}: header ${value}`);
+                }
+            }
+            for (const selector of ['.parameters', '.controls']) {
+                const panel = document.querySelector(selector);
+                if (!panel.getClientRects().length) continue;
+                for (const node of panel.querySelectorAll('.param-row__label, .param-row__value, .param-row__unit, .mechanics-chip')) {
+                    if (!node.getClientRects().length) continue;
+                    const b = node.getBoundingClientRect(), pb = panel.getBoundingClientRect();
+                    if (node.scrollWidth > node.clientWidth + 1 && node.clientWidth > 0
+                        || b.right > pb.right + 0.5 || b.left < pb.left - 0.5) {
+                        geometry.push(`${name}: ${node.textContent.trim()}`);
+                    }
+                }
+            }
+            states.push({ name, time: s.globalTime, completed: done, rr: s.measuredRRRaw,
+                pip: text('param-pip'), vt: text('param-vt'), ve: text('param-ve'), liveTrapped: s.liveTrapped_mL });
+            return s;
+        };
+        mode('vc-cmv'); effort(false); api.seek(0); take('VC initialization');
+        mode('pc-cmv'); take('PC initialization / synchronous switch');
+        mode('PC-CSV'); take('CSV selection / synchronous switch');
+        api.seek(0); take('CSV reset');
+        input('resistance', 40); input('compliance', 80); api.seek(15);
+        const passive = take('CSV zero effort 15s');
+        require(passive.completed === null && passive.breathCount === 0 && passive.measuredRRRaw === 0
+            && passive.liveTrapped_mL === 0 && passive.predicted.volumes.trappedVolume_mL > 20,
+            'zero-effort live state must stay independent of nonzero prediction');
+        const oldMap = text('param-map'); input('ps-pressure', 20); api.redraw();
+        take('CSV changed predictions'); require(text('param-map') !== oldMap, 'MAP prediction changes with settings');
+        require(el('alerts').innerText.includes('Predicted steady-state auto-PEEP 4'), 'active predicted auto-PEEP header badge');
+        teaching(true); api.redraw(); take('Teaching CSV no breath');
+        require(el('alerts').innerText.includes('Predicted steady-state auto-PEEP 4'), 'Teaching predicted auto-PEEP header badge');
+        effort(true); input('pmus-max', 0.5); input('patient-rr', 20); input('flow-trigger', 5);
+        api.seek(15); const weak = take('CSV failed efforts 15s');
+        require(weak.completed === null && weak.breathCount === 0 && weak.failedTriggers > 0,
+            'weak-effort scenario must actually fail without delivering');
+        teaching(true); api.redraw(); take('Teaching CSV failed efforts');
+        teaching(false); input('resistance', 10); input('compliance', 50);
+        input('pmus-max', 8); input('flow-trigger', 2); input('ps-pressure', 10); api.seek(0);
+        for (let i = 0; i < 600 && api.state().breathCount === 0; i++) api.step(0.01);
+        api.step(0.01);
+        const running = take('CSV first inspiration');
+        require(running.completed === null && running.runningPip > 0, 'first-inspiration guard');
+        for (let i = 0; i < 600 && api.state().completed === null; i++) api.step(0.01);
+        const first = take('CSV first completion');
+        require(first.completed !== null && first.measuredRRRaw === 0 && text('param-ve') === '0', 'first-breath warm-up');
+        for (let i = 0; i < 600 && api.state().breathCount < 2; i++) api.step(0.01);
+        const next = take('CSV next inspiration');
+        require(next.completed.completedAt_s === first.completed.completedAt_s
+            && text('param-vt') === String(Math.round(first.completed.measuredVT_mL)) && next.vt_mL === 0,
+            'finalized VT must survive provisional next-breath reset');
+        api.step(20); const delivered = take('CSV established delivery');
+        require(delivered.measuredRRRaw > 0 && Number(text('param-ve')) > 0, 'established live delivery guard');
+        teaching(true); api.redraw(); take('Teaching CSV established delivery');
+        teaching(false); api.seek(0); const reset = take('CSV reset after delivery');
+        require(reset.completed === null && reset.measuredRRRaw === 0 && reset.liveTrapped_mL === 0, 'reset state');
+        // Include nonzero live residual and a live hold value before switching,
+        // so the stale-state checks cannot pass merely because inputs were zero.
+        effort(false); mode('vc-cmv'); input('resistance', 40); input('compliance', 80);
+        el('hold-toggle').click(); api.seek(20); const vc = take('VC established hold');
+        require(vc.completed !== null && vc.pplat !== null && vc.liveTrapped_mL > 0, 'VC hold/residual guard');
+        mode('PC-CSV'); take('VC to CSV synchronous reset'); api.step(15); take('VC to no-effort CSV 15s');
+        effort(true); input('pmus-max', 8); input('flow-trigger', 2); api.seek(25); take('CSV re-established');
+        mode('vc-cmv'); take('CSV to VC synchronous reset');
+        mode('PC-CSV'); api.seek(25); take('CSV re-established again');
+        mode('pc-cmv'); take('CSV to PC synchronous reset');
+        effort(false); mode('vc-cmv'); input('compliance', 10); api.seek(0); take('VC predicted Pplat before completion');
+        require(api.state().completed === null && api.state().predicted.safety.pplatAbove30
+            && el('alerts').innerText.includes('Predicted Pplat '), 'active predicted Pplat header badge before completion');
+        return { errors, geometry, states };
+    });
+}
+
 (async () => {
     const launchOptions = { args: ['--no-sandbox'] };
     if (process.env.CHROMIUM_PATH) launchOptions.executablePath = process.env.CHROMIUM_PATH;
@@ -159,7 +318,11 @@ async function enableEffort(page, { patientRR = 30, pmus = 6 } = {}) {
         await page.click('#btn-teaching-mode');
         await page.waitForTimeout(600);
         const csv = await page.$eval('#param-mode', (e) => e.textContent.trim());
-        check('panel mode tracks a mode change', csv.startsWith('PC-CSV'), csv);
+        const provenance = await readoutContract(page);
+        console.log('    VSM-CLIN-004 states:', JSON.stringify(provenance.states));
+        check('panel mode tracks a mode change and VSM-CLIN-004 readouts retain provenance/state',
+            csv.startsWith('PC-CSV') && provenance.errors.length === 0 && provenance.geometry.length === 0,
+            [csv, ...provenance.errors, ...provenance.geometry].join(' | '));
         check('no page errors', page._errs.length === 0, page._errs.join(' | '));
         await ctx.close();
     }
@@ -387,10 +550,13 @@ async function enableEffort(page, { patientRR = 30, pmus = 6 } = {}) {
 
         // js/main.js imports carry their own ?v= — they must agree too.
         const mainJs = fs.readFileSync(`${__dirname}/../js/main.js`, 'utf8');
+        const ventJs = fs.readFileSync(`${__dirname}/../js/ventilator.js`, 'utf8');
         const imp = [...new Set([...mainJs.matchAll(/from\s+'[^']*\?v=(\d+)'/g)].map((m) => m[1]))];
+        const allVersions = [...(html + mainJs + ventJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
-            imp.length === 1 && (versions.length === 0 || imp[0] === versions[0]),
-            `imports=${imp.join(',')} html=${versions.join(',')}`);
+            imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
+                && allVersions.length === 10 && allVersions.every(v => v === '10'),
+            `imports=${imp.join(',')} html=${versions.join(',')} all ten=${allVersions.join(',')}`);
     }
 
     console.log(`\n${'='.repeat(60)}`);

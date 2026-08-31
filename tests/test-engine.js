@@ -728,11 +728,32 @@ const passiveCsv = new SimulationEngine(new Ventilator(
     new LungModel({ resistance: 10, compliance: 0.05 }),
     { mode: MODE_PC_CSV, psPressure: 10, cyclePercent: 25, peep: 5 }
 ));
+// VSM-CLIN-004 strengthens the existing composite without removing its
+// no-breath/classification predicates or changing the commissioned tally.
+const passiveCsvInitialized = passiveCsv.lastCompletedBreath === null
+    && passiveCsv.breathSummary.pipLatched === 0
+    && passiveCsv.breathSummary.pplat === null
+    && passiveCsv.volumeAtBreathStart === 0;
 runSimForSeconds(passiveCsv, 15);
 assertTrue('VSM-CLIN-003 passive PC-CSV completes no breath and measured RR stays zero',
     passiveCsv.breathCount === 0
     && passiveCsv.measuredRR === 0
-    && passiveCsv.lastCompletedBreath === null);
+    && passiveCsv.lastCompletedBreath === null
+    && passiveCsvInitialized
+    && passiveCsv.breathSummary.pipLatched === 0
+    && passiveCsv.breathSummary.pplat === null
+    && passiveCsv.volumeAtBreathStart === 0
+    && passiveCsv.vent.summary().pressures.map_cmH2O > 0);
+
+const firstCsvWarmup = flowCycleTrace.sim.measuredRR === 0;
+const firstCsvBreathCount = flowCycleTrace.sim.breathCount;
+for (let tick = 0; tick < 1000 && flowCycleTrace.sim.breathCount === firstCsvBreathCount; tick++) {
+    flowCycleTrace.sim.tick();
+}
+const finalizedVtSurvivesNextStart = flowCycleTrace.sim.lastCompletedBreath === flowCycleTrace.record
+    && flowCycleTrace.sim.lastCompletedBreath.measuredVT_mL === flowCycleTrace.record.measuredVT_mL
+    && flowCycleTrace.sim.measuredVT_mL === 0
+    && flowCycleTrace.sim.breathCount === firstCsvBreathCount + 1;
 
 runSimForSeconds(flowCycleTrace.sim, 25);
 assertTrue('VSM-CLIN-003 current PC-CSV breaths are patient-triggered and measured RR follows effort',
@@ -765,7 +786,8 @@ assertTrue('VSM-CLIN-003 maximum-Ti record is PC-CSV, patient/machine, maxTiReac
         > maxTiTrace.record.flowCycleThreshold_Lpm);
 
 assertTrue('VSM-CLIN-003 finalized records agree with their waveform and loop boundary sample',
-    [flowCycleTrace, maxTiTrace].every(trace =>
+    firstCsvWarmup && finalizedVtSurvivesNextStart
+    && [flowCycleTrace, maxTiTrace].every(trace =>
         trace.record.boundarySampleIndex === trace.boundarySampleIndex
         && Math.abs(trace.record.completedAt_s - trace.boundaryTime_s) < 1e-12
         && Math.abs(trace.record.measuredVT_mL - trace.waveformBoundaryVT_mL) < 1e-9
@@ -790,10 +812,19 @@ assertTrue('VSM-CLIN-003 consecutive breaths replace classification and reset cl
     && postMaxTiRecord.cycleAgent === 'patient'
     && postMaxTiRecord.breathType === 'spontaneous'
     && flowCycleTrace.sim.currentBreath === null
-    && flowCycleTrace.sim.lastCompletedBreath === null);
+    && flowCycleTrace.sim.lastCompletedBreath === null
+    && flowCycleTrace.sim.breathSummary.pipLatched === 0
+    && flowCycleTrace.sim.breathSummary.pplat === null
+    && flowCycleTrace.sim.measuredRR === 0
+    && flowCycleTrace.sim.volumeAtBreathStart === 0);
 
 maxTiTrace.vent.mode = MODE_PC_CMV;
 maxTiTrace.sim.reset();
+const modeResetUnavailable = maxTiTrace.sim.lastCompletedBreath === null
+    && maxTiTrace.sim.breathSummary.pipLatched === 0
+    && maxTiTrace.sim.breathSummary.pplat === null
+    && maxTiTrace.sim.measuredRR === 0
+    && maxTiTrace.sim.volumeAtBreathStart === 0;
 for (let tick = 0; tick < 1000 && !maxTiTrace.sim.lastCompletedBreath; tick++) {
     maxTiTrace.sim.tick();
 }
@@ -801,7 +832,8 @@ assertTrue('VSM-CLIN-003 mode transition cannot retain prior PC-CSV cycle metada
     maxTiTrace.sim.lastCompletedBreath.configuredMode === MODE_PC_CMV
     && maxTiTrace.sim.lastCompletedBreath.cycleAgent === 'machine'
     && maxTiTrace.sim.lastCompletedBreath.terminationReason === null
-    && maxTiTrace.sim.lastCompletedBreath.breathType === 'mandatory');
+    && maxTiTrace.sim.lastCompletedBreath.breathType === 'mandatory'
+    && modeResetUnavailable);
 
 
 // =============================================================================

@@ -32,6 +32,34 @@ test.describe('waveform display', () => {
         expect(s.patientBreaths).toBe(0);
 
         await expect(page.locator('.waveforms')).toHaveScreenshot('baseline.png');
+        // Same commissioned test, additional approved-scope state/screenshot.
+        await h.setMode(page, 'PC-CSV');
+        await h.setRange(page, '#resistance', 40);
+        await h.setRange(page, '#compliance', 80);
+        await h.seek(page, 15);
+        expect((await h.state(page)).completed).toBeNull();
+        await expect(page.locator('#param-pip')).toHaveText('—');
+        await expect(page.locator('#param-vt')).toHaveText('—');
+        await expect(page.locator('#param-ve')).toHaveText('0');
+        await expect(page.getByRole('group', { name: 'Predicted breath MAP', exact: true })).toBeVisible();
+        await expect(page.getByRole('group', { name: 'Live modeled trapped volume', exact: true })).toBeVisible();
+        await expect(page).toHaveScreenshot('csv-no-breath-standard-full.png', { fullPage: true });
+        await expect(page.locator('.mechanics-chip--prediction')).toHaveScreenshot('csv-predicted-trapping.png');
+        await h.setRange(page, '#ps-pressure', 20);
+        await h.seek(page, 15);
+        await expect(page.locator('#alerts')).toContainText('Predicted steady-state auto-PEEP 4');
+        await expect(page.locator('.header')).toHaveScreenshot('csv-predicted-header-standard.png');
+        await h.teachingMode(page);
+        await page.evaluate(() => window.__vsim.redraw());
+        await expect(page.locator('#alerts')).toContainText('Predicted steady-state auto-PEEP 4');
+        await expect(page.locator('.header')).toHaveScreenshot('csv-predicted-header-teaching.png');
+        await page.click('#btn-teaching-mode');
+        await h.setMode(page, 'vc-cmv');
+        await h.setRange(page, '#compliance', 10);
+        await h.seek(page, 0);
+        await expect(page.locator('#param-pplat')).toHaveText('—');
+        await expect(page.locator('#alerts')).toContainText('Predicted Pplat ');
+        await expect(page.locator('.header')).toHaveScreenshot('predicted-pplat-before-breath.png');
         expect(errors, 'no console errors').toEqual([]);
     });
 
@@ -46,6 +74,13 @@ test.describe('waveform display', () => {
         expect(s.patientBreaths).toBe(0);
 
         await expect(page).toHaveScreenshot('teaching-full.png', { fullPage: true });
+        await page.click('#btn-teaching-mode');
+        await h.setMode(page, 'PC-CSV');
+        await h.teachingMode(page);
+        await h.seek(page, 15);
+        expect((await h.state(page)).completed).toBeNull();
+        await expect(page.locator('#param-ve')).toHaveText('0');
+        await expect(page).toHaveScreenshot('csv-no-breath-teaching-full.png', { fullPage: true });
     });
 
     test('effort — overbreathing in VC-CMV produces failed triggers', async ({ page }) => {
@@ -72,6 +107,15 @@ test.describe('waveform display', () => {
         expect(s.failedTriggers, 'scenario must actually fail triggers').toBeGreaterThan(0);
 
         await expect(page).toHaveScreenshot('effort-teaching-full.png', { fullPage: true });
+        await page.click('#btn-teaching-mode');
+        await h.setMode(page, 'PC-CSV');
+        await h.teachingMode(page);
+        await h.seek(page, 25);
+        const delivered = await h.state(page);
+        expect(delivered.completed).not.toBeNull();
+        expect(delivered.measuredRR).toBeGreaterThan(0);
+        await expect(page.getByRole('group', { name: 'Delivered VE', exact: true })).toBeVisible();
+        await expect(page).toHaveScreenshot('csv-delivered-teaching-full.png', { fullPage: true });
     });
 
     test('weak effort in PC-CSV — sub-threshold failure morphology (SME-021)', async ({ page }) => {
@@ -88,6 +132,12 @@ test.describe('waveform display', () => {
         expect(s.failedTriggers, 'weak effort must remain sub-threshold').toBeGreaterThan(0);
 
         await expect(page.locator('.waveforms')).toHaveScreenshot('weak-csv.png');
+        expect(s.completed).toBeNull();
+        await expect(page.locator('#param-vt')).toHaveText('—');
+        await expect(page.locator('#param-pip')).toHaveText('—');
+        await page.setViewportSize({ width: 1440, height: 1100 });
+        await page.evaluate(() => window.__vsim.redraw());
+        await expect(page.locator('.parameters')).toHaveScreenshot('csv-failed-teaching-column.png');
     });
 
     test('monitored-value panel does not clip at any type size', async ({ page }) => {
@@ -105,6 +155,25 @@ test.describe('waveform display', () => {
         await expect(page.locator('.parameters')).toBeVisible();
 
         await expect(page.locator('.parameters')).toHaveScreenshot('params-teaching-effort.png');
+        // Capture the COMPLETE scrollable monitor at both existing type sizes
+        // (standard 17/26 px, Teaching 20/28 px), without shrinking any text.
+        await page.setViewportSize({ width: 1440, height: 1100 });
+        for (const teaching of [true, false]) {
+            if (!teaching) await page.click('#btn-teaching-mode');
+            await page.evaluate(() => window.__vsim.redraw());
+            const clipped = await page.locator('.parameters').evaluate(panel => {
+                const p = panel.getBoundingClientRect();
+                return [...panel.querySelectorAll('*')].filter(el => {
+                    if (!el.getClientRects().length) return false;
+                    const b = el.getBoundingClientRect();
+                    return el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1
+                        || b.left < p.left || b.right > p.right;
+                }).map(el => el.textContent.trim());
+            });
+            expect(clipped, 'complete visible provenance fits both supported type sizes').toEqual([]);
+            await expect(page.locator('.parameters')).toHaveScreenshot(
+                teaching ? 'complete-teaching-column.png' : 'complete-standard-column.png');
+        }
     });
 });
 

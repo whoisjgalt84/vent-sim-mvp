@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=9';
-import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=9';
-import { SimulationEngine }  from './simulation.js?v=9';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=9';
-import AlarmEngine from '../alarms.js?v=9';
+import { LungModel }        from './lung-model.js?v=10';
+import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=10';
+import { SimulationEngine }  from './simulation.js?v=10';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=10';
+import AlarmEngine from '../alarms.js?v=10';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=9';
+} from '../alarm-audio.js?v=10';
 
 
 // =============================================================================
@@ -289,8 +289,9 @@ function bindModeToggle() {
         group.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('mode-btn--active'));
         btn.classList.add('mode-btn--active');
 
-        applyModeUI(mode);
         sim.reset();
+        applyModeUI(mode);
+        updateMonitorValues(vent.summary());
     });
 }
 
@@ -328,9 +329,7 @@ function applyModeUI(mode) {
         pinspParamLabel.innerHTML = isCsv ? 'P<sub>sup</sub>' : 'P<sub>insp</sub>';
     }
 
-    document.getElementById('vt-param-label').innerHTML = isPressureMode
-        ? 'V<sub>T</sub> <span style="font-size:9px;opacity:0.5">(del)</span>'
-        : 'V<sub>T</sub>';
+    setText('vt-param-label', 'Measured VT');
 
     updateFlowLabel();
 
@@ -401,6 +400,7 @@ function bindFlowPatternToggle() {
         updateFlowLabel();
         updateHoldResultsVisibility();
         sim.reset();
+        updateMonitorValues(vent.summary());
     });
 }
 
@@ -1003,19 +1003,13 @@ function bindIEButtons() {
 // PARAMETER PANEL
 // =============================================================================
 
-function updateRRDisplay(summary) {
+function updateRRDisplay() {
     const rrEl = document.getElementById('param-rr');
     if (!rrEl) return;
+    setText('rr-param-label', document.body.classList.contains('teaching-mode')
+        ? 'RR' : 'Measured RR');
 
-    const rrActualSource =
-        Number.isFinite(sim?.measuredRR) ? sim.measuredRR :
-        Number.isFinite(sim?.measuredRespiratoryRate) ? sim.measuredRespiratoryRate :
-        Number.isFinite(summary?.measuredRR) ? summary.measuredRR :
-        Number.isFinite(summary?.timing?.measuredRR) ? summary.timing.measuredRR :
-        Number.isFinite(summary?.timing?.rrActual) ? summary.timing.rrActual :
-        Number.isFinite(summary?.safety?.measuredRR) ? summary.safety.measuredRR :
-        Number.isFinite(vent?.respiratoryRate) ? vent.respiratoryRate :
-        0;
+    const rrActualSource = Number.isFinite(sim.measuredRR) ? sim.measuredRR : 0;
 
     const rrActual = Math.round(rrActualSource);
     const rrSet = vent.isSpontaneousMode() ? '—' : `${vent.respiratoryRate}`;
@@ -1106,22 +1100,21 @@ function countIneffectiveEfforts() {
         .filter((e) => e.type === 'failed').length;
 }
 
-function updateParams() {
-    const summary = vent.summary();
+// Display-only refresh: mode/reset handlers call this synchronously without
+// adding alarm evaluations or advancing the engine (VSM-CLIN-004).
+function updateMonitorValues(summary) {
     const s = summary;
     const m = sim.breathSummary;
     const isCsv = vent.isSpontaneousMode();
     const measuredRR = Number.isFinite(sim.measuredRR) ? sim.measuredRR : 0;
-    const rrSet = isCsv ? '—' : `${vent.respiratoryRate}`;
-    // PIP shows the LATCHED peak of the last completed breath, so the largest
-    // number on the monitor changes once per breath instead of tracking the
-    // inspiratory ramp ~4x/second (SME-014). Falls back to the running peak
-    // before the first breath completes, then to the setting.
-    const displayPip = m.pipLatched > 0
-        ? m.pipLatched
-        : (m.pip > 0 ? m.pip : s.pressures.pip_cmH2O);
+    // A breath count marks a START, not completion. Only the finalized record
+    // makes per-breath measurements available; neither live nor analytical
+    // pressure is a monitor fallback. The live PIP alarm signal is unchanged.
+    const completed = sim.lastCompletedBreath;
+    const displayPip = completed !== null ? m.pipLatched : '—';
     setText('param-pip',     `${displayPip}`);
-    setText('param-pplat',   s.holdActive ? `${s.pressures.pplat_cmH2O}` : '—');
+    setText('param-pplat', completed !== null && !isCsv && m.pplat !== null
+        ? `${m.pplat}` : '—');
     setText('param-map',     `${s.pressures.map_cmH2O}`);
     setText('param-dp',      `${s.pressures.drivingPressure}`);
     setText('param-pr',      `${s.pressures.resistivePressure}`);
@@ -1132,19 +1125,22 @@ function updateParams() {
     setText('param-auto-peep',  `${s.pressures.autoPeep_cmH2O}`);
     setText('param-total-peep', `${s.pressures.totalPeep_cmH2O}`);
 
-    const displayVt = isCsv
-        ? m.vt_mL
-        : (m.vt_mL > 0 ? m.vt_mL : s.volumes.tidalVolume_mL);
+    const displayVt = completed !== null ? completed.measuredVT_mL : null;
     const displayVe = isCsv
-        ? Math.round((displayVt / 1000) * measuredRR * 10) / 10
+        ? (displayVt !== null && measuredRR > 0
+            ? Math.round((displayVt / 1000) * measuredRR * 10) / 10 : 0)
         : s.volumes.minuteVentilation;
     const displayFlow = isCsv && m.peakFlow_Lpm > 0
         ? m.peakFlow_Lpm
         : s.timing.inspFlow_Lpm;
 
-    setText('param-vt',   `${Math.round(displayVt)}`);
-    updateRRDisplay(s);
+    setText('param-vt', displayVt !== null ? `${Math.round(displayVt)}` : '—');
+    updateRRDisplay();
     setText('param-ve',   `${displayVe}`);
+    setText('ve-param-label', isCsv ? 'Delivered VE' : 'Predicted VE');
+    // End-expiratory residual immediately BEFORE the current breath began,
+    // latched by _startNewBreath and retained throughout that breath, in mL.
+    setText('param-live-trapped', `${Math.round(sim.volumeAtBreathStart * 1000)}`);
     setText('param-flow', `${displayFlow}`);
 
     setText('param-ti',     `${s.timing.inspiratoryTime_s}s`);
@@ -1174,6 +1170,16 @@ function updateParams() {
     setText('param-tau', `${s.mechanics.timeConstant_s}s`);
     setText('param-ers', `${s.mechanics.elastance}`);
 
+    updateTeachingIndicators();
+    updateMechanicsBar(s);
+}
+
+function updateParams() {
+    const summary = vent.summary();
+    const s = summary;
+    const m = sim.breathSummary;
+    updateMonitorValues(summary);
+
     const alarmMetrics = getCurrentAlarmMetrics(summary);
     activeAlarms = AlarmEngine.evaluateAlarms(alarmMetrics, alarmLimits);
     renderAlarms(activeAlarms);
@@ -1185,8 +1191,6 @@ function updateParams() {
     updateAlarmAudio(activeAlarms, audioNowSec);
     updateAlarmAudioControls(activeAlarms, audioNowSec);
 
-    updateTeachingIndicators();
-    updateMechanicsBar(s);
     updateAlerts(s, m);
     updateHoldResults(s);
 }
@@ -1515,7 +1519,7 @@ function updateTeachingIndicators() {
         return;
     }
 
-    autoPeepLabel.textContent = 'Auto-PEEP';
+    autoPeepLabel.textContent = 'Predicted steady-state auto-PEEP';
     autoPeepEl.classList.remove('ok', 'warn', 'danger');
     autoPeepRow.style.display = '';
     expCompletionRow.style.display = '';
@@ -1570,8 +1574,8 @@ function updateMechanicsBar(summary) {
     }
 
     chips += `
-        <span class="mechanics-chip" style="color: ${trappedMl > 20 ? 'var(--color-warning)' : 'var(--text-primary)'}">
-            <span class="mechanics-chip__symbol">Trap</span>
+        <span class="mechanics-chip mechanics-chip--prediction" style="color: ${trappedMl > 20 ? 'var(--color-warning)' : 'var(--text-primary)'}">
+            <span class="mechanics-chip__symbol">Predicted steady-state trapped volume</span>
             ${trappedMl < 0.1 ? '<1' : Math.round(trappedMl)} mL
         </span>`;
 
@@ -1585,10 +1589,10 @@ function updateAlerts(summary, measured) {
     const badges = [];
     const s = summary;
 
-    if (s.safety.pplatAbove30) badges.push(makeBadge('danger', `Pplat ${s.pressures.pplat_cmH2O} > 30`));
+    if (s.safety.pplatAbove30) badges.push(makeBadge('danger', `Predicted Pplat ${s.pressures.pplat_cmH2O} > 30`));
     if (s.safety.drivingPressureAbove15) badges.push(makeBadge('warning', `ΔP ${s.pressures.drivingPressure} > 15`));
     if (s.safety.gasTrappingRisk) badges.push(makeBadge('warning', `Te/τ ${s.safety.teOverTau} < 3`));
-    if (s.pressures.autoPeep_cmH2O > 2) badges.push(makeBadge('warning', `AutoPEEP ${s.pressures.autoPeep_cmH2O}`));
+    if (s.pressures.autoPeep_cmH2O > 2) badges.push(makeBadge('warning', `Predicted steady-state auto-PEEP ${s.pressures.autoPeep_cmH2O}`));
     if (s.safety.tiTooShort) badges.push(makeBadge('warning', `Ti/τ ${s.safety.tiOverTau} < 1 — short fill`));
 
     if (sim.patientRR > 0 && measured.triggerType === 'patient') {
@@ -1719,11 +1723,18 @@ function installTestHooks() {
                 pipLatched:      +s.pipLatched.toFixed(2),
                 vt_mL:           +s.vt_mL.toFixed(1),
                 measuredRR:      +sim.measuredRR.toFixed(1),
+                measuredRRRaw:   sim.measuredRR,
                 failedTriggers:  sim.getTriggerEvents().filter(e => e.type === 'failed').length,
+                // Read-only evidence for provenance tests; no new engine state.
+                completed:       sim.lastCompletedBreath,
+                runningPip:      s.pip,
+                pplat:           s.pplat,
+                liveTrapped_mL:  sim.volumeAtBreathStart * 1000,
+                predicted:       vent.summary(),
+                alarmPip:        getCurrentAlarmMetrics(vent.summary()).pipCmH2O,
             };
         },
     };
 }
 
 installTestHooks();
-

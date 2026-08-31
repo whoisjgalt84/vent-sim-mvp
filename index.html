@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=9">
+    <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
 
@@ -417,24 +417,24 @@
         <div class="param-group param-group--teaching">
             <div class="param-group__title" data-collapsible>Pressures</div>
             <div class="param-group__body">
-                <div class="param-row param-row--large teaching-key">
-                    <span class="param-row__label">PIP</span>
+                <div class="param-row param-row--large param-row--provenance teaching-key" role="group" aria-labelledby="pip-param-label">
+                    <span class="param-row__label" id="pip-param-label">Measured PIP</span>
                     <span class="param-row__value param-row__value--pressure" id="param-pip">—</span>
                 </div>
-                <div class="param-row param-row--large teaching-key">
-                    <span class="param-row__label">Pplat</span>
+                <div class="param-row param-row--large param-row--provenance teaching-key" role="group" aria-labelledby="pplat-param-label">
+                    <span class="param-row__label" id="pplat-param-label">Measured Pplat</span>
                     <span class="param-row__value param-row__value--pressure" id="param-pplat">—</span>
                 </div>
                 <div class="param-row" id="pinsp-param-row" style="display:none;">
                     <span class="param-row__label">P<sub>insp</sub></span>
                     <span class="param-row__value param-row__value--pressure" id="param-pinsp">—</span>
                 </div>
-                <div class="param-row teaching-key">
-                    <span class="param-row__label">MAP</span>
+                <div class="param-row param-row--provenance teaching-key" role="group" aria-labelledby="map-param-label">
+                    <span class="param-row__label" id="map-param-label">Predicted breath MAP</span>
                     <span class="param-row__value param-row__value--pressure" id="param-map">—</span>
                 </div>
                 <div class="param-row param-row--large param-row--rr teaching-key teaching-only">
-                    <span class="param-row__label">RR</span>
+                    <span class="param-row__label" id="rr-param-label">Measured RR</span>
                     <span class="param-row__value param-row__value--volume" id="param-rr">—</span>
                 </div>
                 <div class="param-row">
@@ -455,17 +455,22 @@
                     <span class="param-row__label">Set PEEP</span>
                     <span class="param-row__value" id="param-peep-set">—</span>
                 </div>
-                <div class="param-row">
-                    <span class="param-row__label">Auto-PEEP</span>
+                <div class="param-row param-row--provenance" role="group" aria-labelledby="auto-peep-param-label">
+                    <span class="param-row__label" id="auto-peep-param-label">Predicted steady-state auto-PEEP</span>
                     <span class="param-row__value" id="param-auto-peep">—</span>
                 </div>
                 <div class="param-row">
                     <span class="param-row__label">Exp completion</span>
                     <span class="param-row__value" id="param-exp-completion">—</span>
                 </div>
-                <div class="param-row">
-                    <span class="param-row__label">Total PEEP</span>
+                <div class="param-row param-row--provenance teaching-key" role="group" aria-labelledby="total-peep-param-label">
+                    <span class="param-row__label" id="total-peep-param-label">Predicted total PEEP</span>
                     <span class="param-row__value" id="param-total-peep">—</span>
+                </div>
+                <div class="param-row param-row--provenance teaching-key" role="group" aria-labelledby="live-trapped-param-label">
+                    <span class="param-row__label" id="live-trapped-param-label">Live modeled trapped volume</span>
+                    <span class="param-row__value" id="param-live-trapped">0</span>
+                    <span class="param-row__unit">mL</span>
                 </div>
             </div>
         </div>
@@ -473,12 +478,12 @@
         <div class="param-group param-group--teaching" id="timing-vent-group">
             <div class="param-group__title" data-collapsible>Timing / Ventilation</div>
             <div class="param-group__body">
-                <div class="param-row param-row--large teaching-key">
-                    <span class="param-row__label" id="vt-param-label">V<sub>T</sub></span>
+                <div class="param-row param-row--large param-row--provenance teaching-key" role="group" aria-labelledby="vt-param-label">
+                    <span class="param-row__label" id="vt-param-label">Measured VT</span>
                     <span class="param-row__value param-row__value--volume" id="param-vt">—</span>
                 </div>
-                <div class="param-row param-row--large">
-                    <span class="param-row__label">V̇<sub>E</sub></span>
+                <div class="param-row param-row--large param-row--provenance" role="group" aria-labelledby="ve-param-label">
+                    <span class="param-row__label" id="ve-param-label">Predicted VE</span>
                     <span class="param-row__value param-row__value--volume" id="param-ve">—</span>
                 </div>
                 <div class="param-row">
@@ -537,8 +542,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=9"></script>
-<script type="module" src="js/main.js?v=9"></script>
+<script type="module" src="alarms.js?v=10"></script>
+<script type="module" src="js/main.js?v=10"></script>
 
 </body>
 </html>

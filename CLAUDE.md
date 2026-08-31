@@ -134,7 +134,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=9`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
+   Currently `?v=10`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
    `js/ventilator.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -145,6 +145,13 @@ Each of these encodes a bug that already shipped once.
    capitalised.** Never lowercase a mode string, never compare
    case-insensitively, and prefer the exported `MODE_*` constants over literals.
    `js/main.js` currently mixes both styles.
+9. **Monitor availability uses `lastCompletedBreath !== null`, never
+   `breathCount > 0`, running pressure, or an analytical fallback.** VSM-CLIN-004
+   prevents the shipped pre-breath predicted/running PIP and set/predicted VT
+   masquerading as measurements, and provisional VT resetting at the next
+   inspiration. Read finalized VT from that record, retain the existing PIP
+   latch, and synchronously refresh display values on reset/mode switch without
+   adding alarm evaluations. Predictions must retain visible provenance.
 
 New invariants belong in this list, with the failure they prevent.
 

@@ -45,7 +45,7 @@
  * ============================================================================
  */
 
-import { LungModel } from './lung-model.js?v=9';
+import { LungModel } from './lung-model.js?v=10';
 
 export const MODE_VC_CMV = 'vc-cmv';
 export const MODE_PC_CMV = 'pc-cmv';

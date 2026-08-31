@@ -425,3 +425,78 @@ lung, or against recorded patient behavior. The current validation is limited
 to conformance with implemented equations and numerical characterization in
 explicitly tested domains. It does not establish device equivalence, patient
 fidelity, or global numerical accuracy.
+# Readout provenance and availability (VSM-CLIN-004)
+
+These readouts are educational-model outputs, not device or patient
+measurements. Their visible labels distinguish five categories: **Set**
+(operator settings or directly derived settings), **Measured/Delivered**
+(live integrator and valid breath state), **Live modeled** (internal residual
+state), **Predicted** (analytical generated-breath or steady-state calculation),
+and **unavailable/inapplicable** (`—`). Color and tooltips are not provenance.
+The existing analytical header badges also say **Predicted Pplat** and
+**Predicted steady-state auto-PEEP** when present. Their existing values,
+conditions, thresholds, severity, and timing are unchanged; they are separate
+from the live `AlarmEngine` consumers.
+
+| Visible label | Source and availability |
+| --- | --- |
+| Set PEEP | Configured PEEP, available immediately. |
+| Measured PIP | `sim.breathSummary.pipLatched`, only when `lastCompletedBreath !== null`; otherwise `—`. |
+| Measured VT | `lastCompletedBreath.measuredVT_mL`, rounded to mL; otherwise `—`. |
+| Measured Pplat | Existing live `breathSummary.pplat`, gated on a completed record and non-PC-CSV mode; otherwise `—`. |
+| Measured RR (standard); existing RR / Delivered terminology (Teaching) | Existing live completed-timestamp rate and smoothing; zero until a completed interval exists. |
+| Delivered VE (PC-CSV) | Finalized delivered VT in L times the existing live measured RR, rounded to 0.1 L/min; zero until both inputs are available. |
+| Predicted VE (other modes) | Unchanged analytical `summary().volumes.minuteVentilation`. This display label does not describe its alarm consumer. |
+| Predicted breath MAP | Unchanged `calculateMAP()` over generated analytical breath samples; available before delivery, not live pressure-history integration. |
+| Predicted steady-state auto-PEEP | Unchanged analytical auto-PEEP, shown in standard mode; Teaching retains the existing live Flow Baseline and Exp completion cues. |
+| Predicted total PEEP | Unchanged analytical configured PEEP plus predicted auto-PEEP. |
+| Predicted steady-state trapped volume | Unchanged analytical `summary().volumes.trappedVolume_mL`, in the existing Patient mechanics strip; retains its previous rounding. |
+| Live modeled trapped volume | `sim.volumeAtBreathStart * 1000`, rounded to mL, separately displayed in the monitor. |
+
+`lastCompletedBreath` is finalized at the existing `_startExpiration` boundary
+and is the canonical completed-breath indication. `breathCount` increments at
+the **start** of inspiration and cannot prove completion. PIP continues to use
+the existing single `_startExpiration` latch; the live `breathSummary.pip`
+remains the high-pressure alarm source. VT stays at the finalized value during
+the next inspiration even though provisional `measuredVT_mL` resets to zero.
+
+Initialization, reset, and mode switches clear the completed record: PIP, VT,
+and Pplat show `—`, measured RR and PC-CSV delivered VE show zero, and live
+modeled trapped volume is zero. The mode/reset handlers refresh display values
+synchronously, without waiting for the next animation frame or adding an alarm
+evaluation. Analytical predictions can remain numeric under their labels.
+No-effort or unsuccessful-trigger PC-CSV does not create a delivered breath or
+backup ventilation. After the first completed breath, VT and PIP are available
+but RR and delivered VE remain zero until the existing interval algorithm has
+enough completed timestamps; no analytical warm-up fallback is used.
+
+`volumeAtBreathStart` is the modeled end-expiratory residual **immediately
+before the current breath began**, copied from `volumeAboveEq` by
+`_startNewBreath`. It stays latched through that breath, including expiration,
+until the next breath begins. It is not the current continuously changing
+volume, a physical measurement, or `Ventilator.trappedVolume`. Reset and
+initialization set it to zero; PC-CSV with no successful trigger leaves it zero.
+The live and steady-state analytical paths remain independent even when their
+numbers happen to agree. No timing, reference-state, convergence, or formula
+equivalence is asserted here.
+
+Deferred boundaries remain explicit: VSM-CLIN-005 controls hold validity,
+same-breath latching, and hold-derived mechanics; the separate hold-results
+panel is unchanged and its complete provenance/validity repair is still owed.
+VSM-CLIN-006 controls RR terminology and all-mode delivered-VE averaging and
+alarm/display alignment; VSM-CLIN-011 retains alarm behavior work. VSM-CLIN-014
+controls analytical/live trapped-volume reconciliation. This change selects
+sources and labels; it does not adjudicate those deferred calculations or
+clinical interpretations.
+
+Verification strengthens four existing engine composites (passive PC-CSV,
+finalized waveform/loop agreement, reset metadata, and mode-transition metadata)
+by adding initialization, first-breath RR, next-inspiration VT retention, and
+zero-reset predicates. Their prior predicates remain intact. The existing
+browser mode-tracking composite additionally exercises rendered provenance and
+state transitions; its mode predicate remains. The existing cache composite
+adds the transitive import and exact ten-site version inventory. Existing
+visual cases add screenshots and geometry assertions without removing their
+original screenshots, scenario guards, determinism, or network checks. These
+extensions preserve the commissioned 300/44/9 check counts and do not replace
+the existing alarm, tooltip, waveform, loop, or clipping coverage.

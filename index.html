@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=10">
+    <link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
 
@@ -209,32 +209,57 @@
                             <input type="range" class="control__range" id="hold-duration"
                                    min="3" max="20" step="1" value="5">
                             <span class="control__value" id="hold-duration-display">0.5s</span>
+                            <button type="button" class="measurement-help-trigger" data-measurement-help="duration"
+                                    aria-label="Hold duration criterion help" aria-expanded="false">i</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Hold Results (shown when hold is active) -->
                 <div class="hold-results" id="hold-results" style="display:none">
+                    <div class="hold-result-status" id="hold-status" role="status">Awaiting hold</div>
                     <div class="hold-result-row">
-                        <span class="hold-result-label">P<sub>plat</sub></span>
+                        <span class="hold-result-heading">
+                            <span class="hold-result-label" id="hold-pplat-label">Measured P<sub>plat</sub></span>
+                            <button type="button" class="measurement-help-trigger" data-measurement-help="pplat"
+                                    aria-label="Measured Pplat help" aria-expanded="false">i</button>
+                        </span>
                         <span class="hold-result-value" id="hold-pplat">—</span>
                         <span class="hold-result-unit">cmH₂O</span>
                     </div>
                     <div class="hold-result-row">
-                        <span class="hold-result-label">PIP − P<sub>plat</sub></span>
-                        <span class="hold-result-value" id="hold-pip-pplat">—</span>
+                        <span class="hold-result-heading">
+                            <span class="hold-result-label" id="hold-dp-label">Hold-derived driving pressure</span>
+                            <button type="button" class="measurement-help-trigger" data-measurement-help="driving-pressure"
+                                    aria-label="Hold-derived driving pressure help" aria-expanded="false">i</button>
+                        </span>
+                        <span class="hold-result-value" id="hold-dp">—</span>
                         <span class="hold-result-unit">cmH₂O</span>
                     </div>
                     <div class="hold-result-row">
-                        <span class="hold-result-label">C<sub>rs</sub> static</span>
+                        <span class="hold-result-heading">
+                            <span class="hold-result-label" id="hold-crs-label">Hold-derived static compliance</span>
+                            <button type="button" class="measurement-help-trigger" data-measurement-help="static-compliance"
+                                    aria-label="Hold-derived static compliance help" aria-expanded="false">i</button>
+                        </span>
                         <span class="hold-result-value" id="hold-crs">—</span>
                         <span class="hold-result-unit">mL/cmH₂O</span>
                     </div>
+                    <div class="hold-result-note hold-result-note--baseline" id="hold-modeled-baseline">
+                        <span>Modeled baseline</span>
+                        <button type="button" class="measurement-help-trigger" data-measurement-help="modeled-baseline"
+                                aria-label="Modeled baseline help" aria-expanded="false">i</button>
+                    </div>
                     <div class="hold-result-row" id="hold-raw-row">
-                        <span class="hold-result-label">R<sub>aw</sub></span>
+                        <span class="hold-result-heading">
+                            <span class="hold-result-label" id="hold-raw-label">Measured inspiratory resistance</span>
+                            <button type="button" class="measurement-help-trigger" data-measurement-help="inspiratory-resistance"
+                                    aria-label="Measured inspiratory resistance help" aria-expanded="false">i</button>
+                        </span>
                         <span class="hold-result-value" id="hold-raw">—</span>
                         <span class="hold-result-unit">cmH₂O·s/L</span>
                     </div>
+                    <div class="hold-result-note" id="hold-raw-status"></div>
                 </div>
             </div>
         </div>
@@ -421,9 +446,12 @@
                     <span class="param-row__label" id="pip-param-label">Measured PIP</span>
                     <span class="param-row__value param-row__value--pressure" id="param-pip">—</span>
                 </div>
-                <div class="param-row param-row--large param-row--provenance teaching-key" role="group" aria-labelledby="pplat-param-label">
+                <div class="param-row param-row--large param-row--provenance param-row--measurement teaching-key" role="group" aria-labelledby="pplat-param-label">
                     <span class="param-row__label" id="pplat-param-label">Measured Pplat</span>
+                    <button type="button" class="measurement-help-trigger" data-measurement-help="pplat"
+                            aria-label="Measured Pplat help" aria-expanded="false">i</button>
                     <span class="param-row__value param-row__value--pressure" id="param-pplat">—</span>
+                    <span class="param-row__status" id="pplat-status">No hold result</span>
                 </div>
                 <div class="param-row" id="pinsp-param-row" style="display:none;">
                     <span class="param-row__label">P<sub>insp</sub></span>
@@ -437,9 +465,16 @@
                     <span class="param-row__label" id="rr-param-label">Measured RR</span>
                     <span class="param-row__value param-row__value--volume" id="param-rr">—</span>
                 </div>
-                <div class="param-row">
-                    <span class="param-row__label">ΔP<sub>drive</sub></span>
+                <div class="param-row param-row--provenance param-row--measurement teaching-key" role="group" aria-labelledby="dp-param-label">
+                    <span class="param-row__label" id="dp-param-label">Hold-derived driving pressure</span>
+                    <button type="button" class="measurement-help-trigger" data-measurement-help="driving-pressure"
+                            aria-label="Hold-derived driving pressure help" aria-expanded="false">i</button>
                     <span class="param-row__value param-row__value--pressure" id="param-dp">—</span>
+                    <span class="param-row__status param-row__status--help" id="dp-status">
+                        <span>Modeled baseline</span>
+                        <button type="button" class="measurement-help-trigger" data-measurement-help="modeled-baseline"
+                                aria-label="Modeled baseline help" aria-expanded="false">i</button>
+                    </span>
                 </div>
                 <div class="param-row" id="resist-param-row">
                     <span class="param-row__label" id="resist-label">P<sub>resist</sub></span>
@@ -541,9 +576,13 @@
 
 </div>
 
+<div class="measurement-help" id="measurement-help" role="tooltip" hidden>
+    <div id="measurement-help-text"></div>
+</div>
+
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=10"></script>
-<script type="module" src="js/main.js?v=10"></script>
+<script type="module" src="alarms.js?v=12"></script>
+<script type="module" src="js/main.js?v=12"></script>
 
 </body>
 </html>

@@ -134,7 +134,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=10`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
+   Currently `?v=12`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
    `js/ventilator.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -152,6 +152,18 @@ Each of these encodes a bug that already shipped once.
    inspiration. Read finalized VT from that record, retain the existing PIP
    latch, and synchronously refresh display values on reset/mode switch without
    adding alarm evaluations. Predictions must retain visible provenance.
+10. **Hold-derived mechanics require a valid completed HOLD interval and their
+    own generation identity.** A nonzero hold setting is not measurement proof.
+    Pplat uses the mean of the final 20 genuine HOLD-physics samples only after
+    0.5–2.0 s, at least 50 samples, exact zero flow, passive effort, and stable
+    finite pressure are established. Driving pressure, compliance, and measured
+    resistance retain separate dependency-specific status and reasons. The
+    selector clears their availability on a new breath or incompatible setting
+    change without erasing the canonical prior VT/PIP record.
+11. **Hold-mechanics help uses one body-level popover and static triggers.**
+    Monitor refreshes may update its text or close it when its trigger becomes
+    hidden, but must not rebuild the trigger DOM. This preserves hover transfer,
+    keyboard focus, click/tap state, and the existing RR tooltip behavior.
 
 New invariants belong in this list, with the failure they prevent.
 

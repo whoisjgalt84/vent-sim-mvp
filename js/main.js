@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=10';
-import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=10';
-import { SimulationEngine }  from './simulation.js?v=10';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=10';
-import AlarmEngine from '../alarms.js?v=10';
+import { LungModel }        from './lung-model.js?v=12';
+import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=12';
+import { SimulationEngine }  from './simulation.js?v=12';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=12';
+import AlarmEngine from '../alarms.js?v=12';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=10';
+} from '../alarm-audio.js?v=12';
 
 
 // =============================================================================
@@ -174,6 +174,7 @@ function init() {
     bindLoopToggle();
     bindTeachingModeToggle();
     bindCollapsibles();
+    bindMeasurementHelp();
 
     // --- Handle window resize ---
     let resizeTimer;
@@ -292,6 +293,7 @@ function bindModeToggle() {
         sim.reset();
         applyModeUI(mode);
         updateMonitorValues(vent.summary());
+        updateHoldResults();
     });
 }
 
@@ -401,6 +403,7 @@ function bindFlowPatternToggle() {
         updateHoldResultsVisibility();
         sim.reset();
         updateMonitorValues(vent.summary());
+        updateHoldResults();
     });
 }
 
@@ -430,8 +433,11 @@ function bindHoldToggle() {
             document.getElementById('hold-duration-group').style.display = 'flex';
             document.getElementById('hold-results').style.display = '';
         }
+        sim.notifyMeasurementSettingsChanged();
         updateModeLabel();
         updateHoldResultsVisibility();
+        updateMonitorValues(vent.summary());
+        updateHoldResults();
     });
 }
 
@@ -440,13 +446,14 @@ function onHoldDurationChange(slider) {
     vent.holdTime = dur;
     document.getElementById('hold-duration-display').textContent = `${dur.toFixed(1)}s`;
     document.getElementById('hold-display').textContent = `${dur.toFixed(1)}s`;
+    updateMonitorValues(vent.summary());
+    updateHoldResults();
 }
 
 function updateHoldResultsVisibility() {
     const rawRow = document.getElementById('hold-raw-row');
     if (rawRow) {
-        const showRaw = vent.holdActive && !vent.isPressureMode() && vent.flowPattern !== 'ramp';
-        rawRow.style.display = showRaw ? '' : 'none';
+        rawRow.style.display = vent.holdActive ? '' : 'none';
     }
 }
 
@@ -757,7 +764,10 @@ function bindTriggerTypeToggle() {
         if (!btn) return;
 
         vent.triggerType = btn.dataset.triggerType;
+        sim.notifyMeasurementSettingsChanged();
         updateTriggerDisplay();
+        updateMonitorValues(vent.summary());
+        updateHoldResults();
     });
 }
 
@@ -908,7 +918,14 @@ function bindCollapsibles() {
 function bindSlider(id, callback) {
     const slider = document.getElementById(id);
     if (!slider) return;
-    slider.addEventListener('input', () => callback(slider));
+    slider.addEventListener('input', () => {
+        callback(slider);
+        if (!['pmus-max', 'neural-ti', 'patient-rr'].includes(id) && !id.startsWith('alarm-')) {
+            sim.notifyMeasurementSettingsChanged();
+            updateMonitorValues(vent.summary());
+            updateHoldResults();
+        }
+    });
 }
 
 function onVtChange(slider) {
@@ -974,6 +991,7 @@ function bindPresetSelector() {
         if (!preset) return;
         lung.resistance = preset.resistance;
         lung.compliance = preset.compliance;
+        sim.notifyMeasurementSettingsChanged();
 
         document.getElementById('compliance').value = Math.round(preset.compliance * 1000);
         document.getElementById('resistance').value = Math.round(preset.resistance);
@@ -981,6 +999,8 @@ function bindPresetSelector() {
             `${Math.round(preset.compliance * 1000)} mL/cmH₂O`;
         document.getElementById('resistance-display').textContent =
             `${Math.round(preset.resistance)} cmH₂O·s/L`;
+        updateMonitorValues(vent.summary());
+        updateHoldResults();
     });
 }
 
@@ -992,9 +1012,12 @@ function bindIEButtons() {
         const parts = btn.dataset.ie.split(',').map(Number);
         currentIE = parts;
         vent.ieRatio = parts;
+        sim.notifyMeasurementSettingsChanged();
         group.querySelectorAll('.ie-btn').forEach(b => b.classList.remove('ie-btn--active'));
         btn.classList.add('ie-btn--active');
         document.getElementById('ie-display').textContent = `1:${(parts[1] / parts[0]).toFixed(1)}`;
+        updateMonitorValues(vent.summary());
+        updateHoldResults();
     });
 }
 
@@ -1111,12 +1134,14 @@ function updateMonitorValues(summary) {
     // makes per-breath measurements available; neither live nor analytical
     // pressure is a monitor fallback. The live PIP alarm signal is unchanged.
     const completed = sim.lastCompletedBreath;
+    const hold = sim.holdMechanics;
     const displayPip = completed !== null ? m.pipLatched : '—';
     setText('param-pip',     `${displayPip}`);
-    setText('param-pplat', completed !== null && !isCsv && m.pplat !== null
-        ? `${m.pplat}` : '—');
+    setText('param-pplat', hold.pplat.value !== null ? `${formatHoldValue(hold.pplat.value)}` : '—');
+    setText('pplat-status', holdStatusCopy(hold));
     setText('param-map',     `${s.pressures.map_cmH2O}`);
-    setText('param-dp',      `${s.pressures.drivingPressure}`);
+    setText('param-dp', hold.drivingPressure.value !== null
+        ? `${formatHoldValue(hold.drivingPressure.value)}` : '—');
     setText('param-pr',      `${s.pressures.resistivePressure}`);
 
     if (s.isPC) setText('param-pinsp', `${s.pressures.inspiratoryPressure}`);
@@ -1192,7 +1217,7 @@ function updateParams() {
     updateAlarmAudioControls(activeAlarms, audioNowSec);
 
     updateAlerts(s, m);
-    updateHoldResults(s);
+    updateHoldResults();
 }
 
 
@@ -1602,25 +1627,230 @@ function updateAlerts(summary, measured) {
     container.innerHTML = badges.join('');
 }
 
-function updateHoldResults(summary) {
+function formatHoldValue(value) {
+    return Number.isFinite(value) ? Number(value.toFixed(1)) : '—';
+}
+
+function holdStatusCopy(hold) {
+    const reasons = hold?.reasons ?? [];
+    if (hold?.status === 'valid') return '';
+    if (reasons.includes('HOLD_INAPPLICABLE_MODE')) return 'Unavailable in PC-CSV';
+    if (reasons.includes('SETTINGS_CHANGED')) return 'Settings changed';
+    if (reasons.includes('HOLD_RESULT_CLEARED') || reasons.includes('AWAITING_COMPLETED_HOLD')) return 'Awaiting hold';
+    if (reasons.includes('NO_HOLD')) return 'No hold result';
+    if (reasons.includes('HOLD_INTERRUPTED')) return 'Hold interrupted';
+    if (reasons.includes('HOLD_TOO_SHORT') || reasons.includes('INSUFFICIENT_SAMPLES')) return 'Hold too short';
+    if (reasons.includes('HOLD_TOO_LONG')) return 'Unsupported duration';
+    if (reasons.includes('EFFORT_DURING_HOLD')) return 'Effort during hold';
+    if (reasons.includes('NONZERO_HOLD_FLOW')) return 'Nonzero hold flow';
+    if (reasons.includes('PRESSURE_UNSTABLE')) return 'Pressure unstable';
+    return 'Measurement unavailable';
+}
+
+function detailedHoldStatusCopy(result) {
+    const reasons = result?.reasons ?? [];
+    if (result?.status === 'valid') return 'Valid Pplat measurement.';
+    if (reasons.includes('HOLD_INAPPLICABLE_MODE')) return 'Hold measurements unavailable in PC-CSV.';
+    if (reasons.includes('SETTINGS_CHANGED')) return 'Settings changed. Awaiting a new completed hold.';
+    if (reasons.includes('HOLD_RESULT_CLEARED')) return 'Hold result cleared. Awaiting a completed hold.';
+    if (reasons.includes('NO_HOLD')) return 'No completed hold result.';
+    if (reasons.includes('AWAITING_COMPLETED_HOLD')) return 'Awaiting a completed hold.';
+    if (reasons.includes('HOLD_INTERRUPTED')) return 'Hold interrupted. No measurement.';
+    if (reasons.includes('HOLD_TOO_SHORT') || reasons.includes('INSUFFICIENT_SAMPLES')) {
+        return 'Measurement unavailable: hold shorter than 0.5 s. The 0.5–2 s range is this simulator’s measurement criterion.';
+    }
+    if (reasons.includes('HOLD_TOO_LONG')) return 'Hold duration outside the supported range.';
+    if (reasons.includes('EFFORT_DURING_HOLD')) return 'Unavailable: effort during hold.';
+    if (reasons.includes('NONZERO_HOLD_FLOW')) return 'Unavailable: nonzero flow during hold.';
+    if (reasons.includes('PRESSURE_UNSTABLE')) return 'Unavailable: pressure unstable during hold.';
+    return 'Measurement unavailable.';
+}
+
+function resistanceStatusCopy(result, pplatResult) {
+    if (pplatResult?.status !== 'valid') return '';
+    if (result.status === 'valid') return '';
+    if (result.reasons.includes('RESISTANCE_RAMP_VC')) return 'Unavailable for ramp VC';
+    if (result.reasons.includes('RESISTANCE_PRESSURE_CONTROL')) return 'Unavailable for pressure control';
+    if (result.reasons.includes('INSPIRATORY_EFFORT')) return 'Effort during inspiration';
+    if (result.reasons.includes('NONCONSTANT_INSPIRATORY_FLOW')) return 'Flow not constant';
+    return result.status === 'inapplicable' ? 'Measurement unavailable' : '';
+}
+
+const MEASUREMENT_HELP_COPY = Object.freeze({
+    pplat: 'Available after a completed hold that meets this simulator’s duration, zero-flow, pressure-stability, and effort criteria.',
+    'driving-pressure': 'Uses measured Pplat and live modeled total PEEP at breath start.',
+    'static-compliance': 'Uses same-breath delivered VT and live modeled total PEEP at breath start.',
+    'modeled-baseline': 'Live modeled total PEEP at breath start. Calculated from set PEEP, integrated residual volume, and configured compliance; not measured by an expiratory hold.',
+    'inspiratory-resistance': 'Uses same-breath PIP, measured Pplat, and end-inspiratory flow. Available only with passive constant-flow square VC inspiration and a valid completed hold.',
+    duration: 'The 0.5–2 s range is this simulator’s measurement criterion.',
+});
+
+let openMeasurementHelpTrigger = null;
+let measurementHelpClickPinned = false;
+let measurementHelpCloseTimer = null;
+
+function detailedResistanceStatusCopy(result) {
+    if (result.status === 'valid') return '';
+    if (result.reasons.includes('RESISTANCE_RAMP_VC')) return 'Resistance unavailable for ramp VC.';
+    if (result.reasons.includes('RESISTANCE_PRESSURE_CONTROL')) return 'Resistance unavailable for pressure control.';
+    if (result.reasons.includes('INSPIRATORY_EFFORT')) return 'Resistance unavailable: effort during inspiration.';
+    if (result.reasons.includes('NONCONSTANT_INSPIRATORY_FLOW')) return 'Resistance unavailable: inspiratory flow not constant.';
+    return detailedHoldStatusCopy(result);
+}
+
+function measurementHelpText(key) {
+    const base = MEASUREMENT_HELP_COPY[key] ?? 'Measurement unavailable.';
+    if (!sim || key === 'modeled-baseline' || key === 'duration') return base;
+    const hold = sim.holdMechanics;
+    const result = key === 'pplat' ? hold.pplat
+        : key === 'driving-pressure' ? hold.drivingPressure
+            : key === 'static-compliance' ? hold.compliance
+                : hold.resistance;
+    if (result.status === 'valid') {
+        return key === 'pplat' ? `${base}\n\nValid Pplat measurement.` : base;
+    }
+    const detail = key === 'inspiratory-resistance'
+        ? detailedResistanceStatusCopy(result)
+        : detailedHoldStatusCopy(result);
+    const reasons = result.reasons.length ? `\nReason codes: ${result.reasons.join(', ')}.` : '';
+    return `${base}\n\nCurrent result: ${detail}${reasons}`;
+}
+
+function positionMeasurementHelp() {
+    const popover = document.getElementById('measurement-help');
+    const trigger = openMeasurementHelpTrigger;
+    if (!popover || !trigger || popover.hidden) return;
+    const triggerBox = trigger.getBoundingClientRect();
+    const helpBox = popover.getBoundingClientRect();
+    const gap = 6;
+    let left = Math.min(triggerBox.left, window.innerWidth - helpBox.width - 8);
+    left = Math.max(8, left);
+    let top = triggerBox.bottom + gap;
+    if (top + helpBox.height > window.innerHeight - 8) top = triggerBox.top - helpBox.height - gap;
+    top = Math.max(8, Math.min(top, window.innerHeight - helpBox.height - 8));
+    popover.style.left = `${Math.round(left)}px`;
+    popover.style.top = `${Math.round(top)}px`;
+}
+
+function openMeasurementHelp(trigger, clickPinned = false) {
+    const popover = document.getElementById('measurement-help');
+    const text = document.getElementById('measurement-help-text');
+    if (!popover || !text) return;
+    if (openMeasurementHelpTrigger && openMeasurementHelpTrigger !== trigger) {
+        openMeasurementHelpTrigger.setAttribute('aria-expanded', 'false');
+        openMeasurementHelpTrigger.removeAttribute('aria-describedby');
+    }
+    clearTimeout(measurementHelpCloseTimer);
+    openMeasurementHelpTrigger = trigger;
+    measurementHelpClickPinned = clickPinned;
+    trigger.setAttribute('aria-expanded', 'true');
+    trigger.setAttribute('aria-describedby', 'measurement-help');
+    text.textContent = measurementHelpText(trigger.dataset.measurementHelp);
+    popover.hidden = false;
+    positionMeasurementHelp();
+}
+
+function closeMeasurementHelp(restoreFocus = false) {
+    const popover = document.getElementById('measurement-help');
+    const trigger = openMeasurementHelpTrigger;
+    clearTimeout(measurementHelpCloseTimer);
+    if (popover) popover.hidden = true;
+    if (trigger) {
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.removeAttribute('aria-describedby');
+        if (restoreFocus) trigger.focus();
+    }
+    openMeasurementHelpTrigger = null;
+    measurementHelpClickPinned = false;
+}
+
+function scheduleMeasurementHelpClose() {
+    clearTimeout(measurementHelpCloseTimer);
+    measurementHelpCloseTimer = setTimeout(() => {
+        const popover = document.getElementById('measurement-help');
+        if (!measurementHelpClickPinned && document.activeElement !== openMeasurementHelpTrigger
+            && !popover?.matches(':hover')) closeMeasurementHelp();
+    }, 160);
+}
+
+function refreshOpenMeasurementHelp() {
+    if (!openMeasurementHelpTrigger) return;
+    if (!openMeasurementHelpTrigger.getClientRects().length) {
+        closeMeasurementHelp();
+        return;
+    }
+    const text = document.getElementById('measurement-help-text');
+    if (text) text.textContent = measurementHelpText(openMeasurementHelpTrigger.dataset.measurementHelp);
+    positionMeasurementHelp();
+}
+
+function bindMeasurementHelp() {
+    const popover = document.getElementById('measurement-help');
+    if (!popover) return;
+    for (const trigger of document.querySelectorAll('.measurement-help-trigger')) {
+        trigger.setAttribute('aria-controls', 'measurement-help');
+        trigger.addEventListener('pointerenter', () => openMeasurementHelp(trigger));
+        trigger.addEventListener('pointerleave', scheduleMeasurementHelpClose);
+        trigger.addEventListener('focus', () => openMeasurementHelp(trigger));
+        trigger.addEventListener('blur', scheduleMeasurementHelpClose);
+        trigger.addEventListener('click', () => {
+            if (openMeasurementHelpTrigger === trigger && measurementHelpClickPinned) {
+                closeMeasurementHelp();
+            } else {
+                openMeasurementHelp(trigger, true);
+            }
+        });
+    }
+    popover.addEventListener('pointerenter', () => clearTimeout(measurementHelpCloseTimer));
+    popover.addEventListener('pointerleave', scheduleMeasurementHelpClose);
+    document.addEventListener('pointerdown', event => {
+        if (openMeasurementHelpTrigger && !popover.contains(event.target)
+            && !openMeasurementHelpTrigger.contains(event.target)) closeMeasurementHelp();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && openMeasurementHelpTrigger) {
+            event.preventDefault();
+            closeMeasurementHelp(true);
+        }
+    });
+    window.addEventListener('resize', positionMeasurementHelp);
+    document.addEventListener('scroll', positionMeasurementHelp, true);
+}
+
+function updateHoldResults() {
     const panel = document.getElementById('hold-results');
     if (!panel) return;
-    if (!summary.holdActive) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
-
-    const s = summary;
-    const pplat = s.pressures.pplat_cmH2O;
-    const pip   = s.pressures.pip_cmH2O;
-
-    setText('hold-pplat', pplat.toFixed(1));
-    setText('hold-pip-pplat', (pip - pplat).toFixed(1));
-
-    const dp = pplat - s.pressures.totalPeep_cmH2O;
-    setText('hold-crs', dp > 0.1 ? (s.volumes.tidalVolume_mL / dp).toFixed(1) : '—');
-
-    if (s.mechanics.measuredResistance !== null) {
-        setText('hold-raw', s.mechanics.measuredResistance.toFixed(1));
+    const hold = sim.holdMechanics;
+    setHoldReasonDescription('param-pplat', hold.pplat);
+    setHoldReasonDescription('param-dp', hold.drivingPressure);
+    if (!vent.holdActive) {
+        panel.style.display = 'none';
+        refreshOpenMeasurementHelp();
+        return;
     }
+    panel.style.display = '';
+    setText('hold-status', holdStatusCopy(hold));
+    setText('hold-pplat', formatHoldValue(hold.pplat.value));
+    setText('hold-dp', formatHoldValue(hold.drivingPressure.value));
+    setText('hold-crs', formatHoldValue(hold.compliance.value));
+    setText('hold-raw', formatHoldValue(hold.resistance.value));
+    setText('hold-raw-status', resistanceStatusCopy(hold.resistance, hold.pplat));
+    setHoldReasonDescription('hold-pplat', hold.pplat);
+    setHoldReasonDescription('hold-dp', hold.drivingPressure);
+    setHoldReasonDescription('hold-crs', hold.compliance);
+    setHoldReasonDescription('hold-raw', hold.resistance);
+    setHoldReasonDescription('hold-status', { status: hold.status, reasons: hold.reasons });
+    refreshOpenMeasurementHelp();
+}
+
+function setHoldReasonDescription(id, result) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    const description = result.reasons.length
+        ? `${result.status}: ${result.reasons.join(', ')}`
+        : result.status;
+    element.title = description;
+    element.setAttribute('aria-label', `${element.textContent}, ${description}`);
 }
 
 function makeBadge(level, text) {
@@ -1703,6 +1933,21 @@ function installTestHooks() {
             return { ticks, globalTime: sim.globalTime };
         },
 
+        /** Perturb one collected HOLD pressure sample for an invalid-state visual fixture. */
+        offsetCurrentHoldPressure(indexFromEnd, deltaCmH2O) {
+            this.pause();
+            const samples = sim.currentBreath?.holdCollector?.samples;
+            const offset = Number(indexFromEnd);
+            const delta = Number(deltaCmH2O);
+            if (!samples || !Number.isInteger(offset) || offset < 0 || offset >= samples.length || !Number.isFinite(delta)) {
+                return false;
+            }
+            const index = samples.length - 1 - offset;
+            const sample = samples[index];
+            samples[index] = Object.freeze({ ...sample, paw_cmH2O: sample.paw_cmH2O + delta });
+            return true;
+        },
+
         /** Re-render the current state without advancing time. */
         redraw() {
             renderFrame();
@@ -1727,6 +1972,7 @@ function installTestHooks() {
                 failedTriggers:  sim.getTriggerEvents().filter(e => e.type === 'failed').length,
                 // Read-only evidence for provenance tests; no new engine state.
                 completed:       sim.lastCompletedBreath,
+                holdMechanics:   sim.holdMechanics,
                 runningPip:      s.pip,
                 pplat:           s.pplat,
                 liveTrapped_mL:  sim.volumeAtBreathStart * 1000,

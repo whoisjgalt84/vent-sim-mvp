@@ -145,12 +145,27 @@ Both valves closed, flow zero.
 ```
 V̇ = 0
 Paw = PEEP + V/C − Pmus
-Pplat := PEEP + V/C            latched on the first hold sample, without Pmus
 ```
 
-Pplat is captured before effort distorts it, so the measured value is the static
-one. `Pmus` still moves the displayed trace during the hold — muscles pulling on
-a sealed system.
+The trace continues to show `Pmus` acting on a sealed system. A measured Pplat is
+published only after a completed 0.5–2.0 s interval containing at least 50 actual
+HOLD-physics samples. The entry-boundary INSPIRATION sample is excluded and the
+last HOLD-physics sample at the completion boundary is included. Flow must be
+finite and exactly zero throughout the interval; finite `|Pmus|` must be no more
+than `1e−9 cmH₂O`; and the unrounded Paw range over the final 20 samples must be
+no more than `0.1 cmH₂O`. Pplat is the arithmetic mean of those final 20
+unrounded Paw samples. These are simulator measurement criteria, not universal
+clinical thresholds.
+
+At breath start, the engine freezes set PEEP, integrated residual volume, and
+configured compliance. The hold baseline is
+`set PEEP + residual volume / configured compliance`, with provenance
+`live-modeled-total-peep-at-breath-start`. Hold-derived driving pressure is
+valid Pplat minus that baseline, and hold-derived static compliance is the
+same-breath delivered VT divided by that driving pressure. Measured resistance
+additionally requires passive constant-flow square VC and uses same-breath
+unrounded `(PIP − Pplat) / final INSPIRATION flow`; the zero HOLD flow is never
+used. Ramp VC and pressure-control resistance are inapplicable.
 
 ### 3.4 Expiration
 
@@ -200,8 +215,13 @@ fact, not an early-, late-, delayed-cycle, or other interaction diagnosis.
 The same record includes its waveform/loop boundary coordinates and numerical
 state: `startedAt_s`, `completedAt_s`, `inspiratoryTime_s`,
 `boundarySampleIndex`, `measuredVT_mL`, `flowAtTermination_Lpm`, and
-`flowCycleThreshold_Lpm`. The boundary sample is written later in the same
-100 Hz tick; no waveform or integration timing is changed by recording it.
+`flowCycleThreshold_Lpm`. It also owns the frozen `holdMechanics` record with
+separate Pplat, driving-pressure, compliance, and resistance status, value, and
+reasons. A provisional collector exists only for the current breath. A pure
+selector rejects pending, released, reset, mode-inapplicable, or stale-generation
+results without erasing finalized VT or PIP. The boundary sample is written
+later in the same 100 Hz tick; no waveform or integration timing is changed by
+recording it.
 
 **Hold ends** at the effective hold duration. Hold is forced to zero in PC-CSV.
 
@@ -443,7 +463,10 @@ from the live `AlarmEngine` consumers.
 | Set PEEP | Configured PEEP, available immediately. |
 | Measured PIP | `sim.breathSummary.pipLatched`, only when `lastCompletedBreath !== null`; otherwise `—`. |
 | Measured VT | `lastCompletedBreath.measuredVT_mL`, rounded to mL; otherwise `—`. |
-| Measured Pplat | Existing live `breathSummary.pplat`, gated on a completed record and non-PC-CSV mode; otherwise `—`. |
+| Measured Pplat | Final-20 sample mean from a valid completed hold interval in `lastCompletedBreath.holdMechanics.pplat`; otherwise `—` with visible status. |
+| Hold-derived driving pressure | Valid measured Pplat minus live modeled total PEEP frozen at breath start; otherwise `—`. |
+| Hold-derived static compliance | Same-breath delivered VT divided by valid hold-derived driving pressure; otherwise `—`. |
+| Measured inspiratory resistance | Same-breath unrounded `(PIP − Pplat) / final inspiratory flow`, only for passive constant-flow square VC; otherwise `—` with an applicability explanation. |
 | Measured RR (standard); existing RR / Delivered terminology (Teaching) | Existing live completed-timestamp rate and smoothing; zero until a completed interval exists. |
 | Delivered VE (PC-CSV) | Finalized delivered VT in L times the existing live measured RR, rounded to 0.1 L/min; zero until both inputs are available. |
 | Predicted VE (other modes) | Unchanged analytical `summary().volumes.minuteVentilation`. This display label does not describe its alarm consumer. |
@@ -452,6 +475,14 @@ from the live `AlarmEngine` consumers.
 | Predicted total PEEP | Unchanged analytical configured PEEP plus predicted auto-PEEP. |
 | Predicted steady-state trapped volume | Unchanged analytical `summary().volumes.trappedVolume_mL`, in the existing Patient mechanics strip; retains its previous rounding. |
 | Live modeled trapped volume | `sim.volumeAtBreathStart * 1000`, rounded to mL, separately displayed in the monitor. |
+
+Hold-mechanics rows keep only the current value, units, a compact unavailable
+state when needed, and a readable **Modeled baseline** cue beside driving
+pressure/compliance. The valid Pplat success sentence and repeated baseline
+paragraphs are omitted from the default view. Static information buttons open
+one viewport-constrained help surface on hover, focus, click, or tap; it contains
+the full measurement criteria, source provenance, applicability, and current
+machine-readable reasons. Escape dismisses it and restores focus.
 
 `lastCompletedBreath` is finalized at the existing `_startExpiration` boundary
 and is the canonical completed-breath indication. `breathCount` increments at
@@ -480,11 +511,10 @@ The live and steady-state analytical paths remain independent even when their
 numbers happen to agree. No timing, reference-state, convergence, or formula
 equivalence is asserted here.
 
-Deferred boundaries remain explicit: VSM-CLIN-005 controls hold validity,
-same-breath latching, and hold-derived mechanics; the separate hold-results
-panel is unchanged and its complete provenance/validity repair is still owed.
-VSM-CLIN-006 controls RR terminology and all-mode delivered-VE averaging and
-alarm/display alignment; VSM-CLIN-011 retains alarm behavior work. VSM-CLIN-014
+VSM-CLIN-005 defines hold validity, same-breath latching, dependency-specific
+hold-derived mechanics, and visible unavailability. VSM-CLIN-006 controls RR
+terminology and all-mode delivered-VE averaging and alarm/display alignment;
+VSM-CLIN-011 retains alarm behavior work. VSM-CLIN-014
 controls analytical/live trapped-volume reconciliation. This change selects
 sources and labels; it does not adjudicate those deferred calculations or
 clinical interpretations.

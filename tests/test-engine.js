@@ -2064,11 +2064,73 @@ for (let i = 0; i < ticksRamp; i++) {
 }
 
 const bsRamp = simRamp.breathSummary;
+const holdRamp = simRamp.lastCompletedBreath.holdMechanics;
 console.log(`    Ramp PIP=${bsRamp.pip}  VT=${bsRamp.vt_mL} mL`);
 console.log(`    Pplat=${bsRamp.pplat ?? 'N/A'} (hold active → should measure)`);
 
+const lungHoldContract = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventHoldContract = new Ventilator(lungHoldContract, {
+    mode: 'vc-cmv', flowPattern: 'square', tidalVolume: 0.500,
+    respiratoryRate: 20, ieRatio: [1, 2], peep: 5, holdTime: 0.5,
+});
+const simHoldContract = new SimulationEngine(ventHoldContract, { sampleRate: 100, displaySeconds: 10 });
+for (let i = 0; i < 1000 && simHoldContract.lastCompletedBreath === null; i++) simHoldContract.tick();
+const completedHoldContract = simHoldContract.lastCompletedBreath;
+const holdContract = completedHoldContract.holdMechanics;
+const expectedHoldDp = holdContract.pplat.value - holdContract.baseline.value_cmH2O;
+const holdContractValid = holdContract.status === 'valid'
+    && holdContract.sampleCount === 50 && holdContract.actualDuration_s === 0.5
+    && holdContract.window.sampleCount === 20
+    && holdContract.firstPhysicsSampleIndex === holdContract.entryBoundarySampleIndex + 1
+    && holdContract.completionBoundarySampleIndex === completedHoldContract.boundarySampleIndex
+    && holdContract.pplat.value !== ventHoldContract.pplat
+    && holdContract.baseline.provenance === 'live-modeled-total-peep-at-breath-start'
+    && holdContract.identity.breathId === completedHoldContract.breathId
+    && holdContract.baseline.identity.breathId === completedHoldContract.breathId
+    && holdContract.sources.identity.breathId === completedHoldContract.breathId
+    && Math.abs(holdContract.drivingPressure.value - expectedHoldDp) < 1e-12
+    && Math.abs(holdContract.compliance.value - completedHoldContract.measuredVT_mL / expectedHoldDp) < 1e-12
+    && Math.abs(holdContract.resistance.value - 10) < 1e-9
+    && holdContract.sources.endInspiratoryFlow_Lps > 0 && completedHoldContract.flowAtTermination_Lpm === 0
+    && Object.isFrozen(completedHoldContract) && Object.isFrozen(holdContract.pplat.reasons)
+    && holdRamp.pplat.status === 'valid' && holdRamp.compliance.status === 'valid'
+    && holdRamp.resistance.status === 'inapplicable'
+    && holdRamp.resistance.reasons.includes('RESISTANCE_RAMP_VC');
+
+const lungShortHold = new LungModel({ resistance: 10, compliance: 0.05 });
+const ventShortHold = new Ventilator(lungShortHold, {
+    mode: 'vc-cmv', flowPattern: 'square', tidalVolume: 0.500,
+    respiratoryRate: 20, ieRatio: [1, 2], peep: 5, holdTime: 0.4,
+});
+const simShortHold = new SimulationEngine(ventShortHold, { sampleRate: 100, displaySeconds: 10 });
+for (let i = 0; i < 1000 && simShortHold.lastCompletedBreath === null; i++) simShortHold.tick();
+const shortHoldRejected = simShortHold.lastCompletedBreath.holdMechanics.pplat.value === null
+    && simShortHold.lastCompletedBreath.holdMechanics.reasons.includes('HOLD_TOO_SHORT')
+    && simShortHold.lastCompletedBreath.holdMechanics.reasons.includes('INSUFFICIENT_SAMPLES');
+
+simHoldContract.lastCompletedBreath = {
+    ...completedHoldContract,
+    holdMechanics: {
+        ...holdContract,
+        sources: { ...holdContract.sources, identity: { ...holdContract.sources.identity, breathId: 999 } },
+    },
+};
+const sourceMismatchRejected = simHoldContract.holdMechanics.pplat.status === 'valid'
+    && simHoldContract.holdMechanics.drivingPressure.status === 'valid'
+    && simHoldContract.holdMechanics.compliance.reasons.includes('SOURCE_MISMATCH')
+    && simHoldContract.holdMechanics.resistance.reasons.includes('SOURCE_MISMATCH');
+simHoldContract.lastCompletedBreath = completedHoldContract;
+
+ventHoldContract.peep = 6;
+simHoldContract.notifyMeasurementSettingsChanged();
+const staleAfterChange = simHoldContract.holdMechanics.reasons.includes('SETTINGS_CHANGED');
+ventHoldContract.peep = 5;
+simHoldContract.notifyMeasurementSettingsChanged();
+const staleAfterRevert = simHoldContract.holdMechanics.reasons.includes('SETTINGS_CHANGED');
+
 assert('Ramp sim VT ≈ 500', bsRamp.vt_mL, 500, 10);
-assert('Hold measures Pplat', bsRamp.pplat !== null ? 1 : 0, 1, 0);
+assert('VSM-CLIN-005 completed-hold measurement contract',
+    holdContractValid && shortHoldRejected && sourceMismatchRejected && staleAfterChange && staleAfterRevert ? 1 : 0, 1, 0);
 
 
 // =============================================================================

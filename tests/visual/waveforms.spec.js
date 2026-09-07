@@ -2,6 +2,10 @@
 import { test, expect } from '@playwright/test';
 import * as h from './helpers.js';
 
+// The Desktop Chrome device preset supplies a 1280x720 viewport at the project
+// layer, which otherwise overrides the documented 1440x900 suite viewport.
+test.use({ viewport: { width: 1440, height: 900 } });
+
 /**
  * Visual regression for the waveform display.
  *
@@ -22,6 +26,7 @@ test.describe('waveform display', () => {
 
     test('baseline — VC-CMV, passive patient', async ({ page }) => {
         const errors = await h.open(page);
+        expect(page.viewportSize()).toEqual({ width: 1440, height: 900 });
         await h.expandRail(page);
         await h.seek(page, SEEK_SECONDS);
 
@@ -32,6 +37,48 @@ test.describe('waveform display', () => {
         expect(s.patientBreaths).toBe(0);
 
         await expect(page.locator('.waveforms')).toHaveScreenshot('baseline.png');
+        await page.click('#hold-toggle');
+        await h.setRange(page, '#hold-duration', 5);
+        await h.seek(page, 20);
+        expect((await h.state(page)).holdMechanics.status).toBe('valid');
+        await expect(page.locator('#hold-status')).toHaveText('');
+        await expect(page.locator('#pplat-status')).toHaveText('');
+        await expect(page.locator('#hold-modeled-baseline > span')).toHaveText('Modeled baseline');
+        await expect(page.locator('#dp-status > span')).toHaveText('Modeled baseline');
+        await expect(page).toHaveScreenshot('hold-valid-square-standard-full.png', { fullPage: true });
+        await expect(page.locator('#hold-results')).toHaveScreenshot('hold-valid-square-panel.png');
+        await page.click('#hold-results [data-measurement-help="pplat"]');
+        await expect(page.locator('#measurement-help')).toContainText('Available after a completed hold that meets this simulator’s duration, zero-flow, pressure-stability, and effort criteria.');
+        await expect(page).toHaveScreenshot('hold-valid-pplat-help-standard-full.png', { fullPage: true });
+        await page.keyboard.press('Escape');
+        await page.click('#hold-modeled-baseline [data-measurement-help="modeled-baseline"]');
+        await expect(page.locator('#measurement-help')).toContainText('Live modeled total PEEP at breath start. Calculated from set PEEP, integrated residual volume, and configured compliance; not measured by an expiratory hold.');
+        await expect(page).toHaveScreenshot('hold-valid-baseline-help-standard-full.png', { fullPage: true });
+        await page.keyboard.press('Escape');
+        await h.setRange(page, '#hold-duration', 4);
+        await h.seek(page, 20);
+        expect((await h.state(page)).holdMechanics.reasons).toContain('HOLD_TOO_SHORT');
+        await expect(page.locator('#hold-status')).toHaveText('Hold too short');
+        await expect(page.locator('#hold-results')).toHaveScreenshot('hold-short-panel.png');
+        await page.click('[data-measurement-help="duration"]');
+        await expect(page.locator('#measurement-help')).toHaveText('The 0.5–2 s range is this simulator’s measurement criterion.');
+        await expect(page).toHaveScreenshot('hold-short-duration-help-standard-full.png', { fullPage: true });
+        await page.keyboard.press('Escape');
+        await page.click('#flow-pattern-group [data-pattern="ramp"]');
+        await h.setRange(page, '#hold-duration', 5);
+        await h.seek(page, 20);
+        expect((await h.state(page)).holdMechanics.resistance.status).toBe('inapplicable');
+        await expect(page.locator('#hold-raw-status')).toHaveText('Unavailable for ramp VC');
+        await expect(page.locator('#hold-results')).toHaveScreenshot('hold-ramp-panel.png');
+        await page.click('#hold-results [data-measurement-help="inspiratory-resistance"]');
+        await expect(page.locator('#measurement-help')).toContainText('Resistance unavailable for ramp VC.');
+        await expect(page).toHaveScreenshot('hold-ramp-resistance-help-standard-full.png', { fullPage: true });
+        await page.keyboard.press('Escape');
+        await h.setMode(page, 'pc-cmv');
+        await h.seek(page, 20);
+        expect((await h.state(page)).holdMechanics.resistance.reasons).toContain('RESISTANCE_PRESSURE_CONTROL');
+        await expect(page.locator('#hold-raw-status')).toHaveText('Unavailable for pressure control');
+        await expect(page.locator('#hold-results')).toHaveScreenshot('hold-pc-panel.png');
         // Same commissioned test, additional approved-scope state/screenshot.
         await h.setMode(page, 'PC-CSV');
         await h.setRange(page, '#resistance', 40);
@@ -74,6 +121,21 @@ test.describe('waveform display', () => {
         expect(s.patientBreaths).toBe(0);
 
         await expect(page).toHaveScreenshot('teaching-full.png', { fullPage: true });
+        await page.click('#btn-teaching-mode');
+        await h.expandRail(page);
+        await page.click('#hold-toggle');
+        await page.click('#btn-teaching-mode');
+        await h.seek(page, 20);
+        expect((await h.state(page)).holdMechanics.status).toBe('valid');
+        await expect(page.locator('.parameters')).toHaveScreenshot('hold-valid-square-teaching-column.png');
+        await page.click('#pplat-param-label + [data-measurement-help="pplat"]');
+        await expect(page.locator('#measurement-help')).toContainText('Valid Pplat measurement.');
+        await expect(page).toHaveScreenshot('hold-valid-pplat-help-teaching-full.png', { fullPage: true });
+        await page.keyboard.press('Escape');
+        await page.click('#dp-status [data-measurement-help="modeled-baseline"]');
+        await expect(page.locator('#measurement-help')).toContainText('Live modeled total PEEP at breath start.');
+        await expect(page).toHaveScreenshot('hold-valid-baseline-help-teaching-full.png', { fullPage: true });
+        await page.keyboard.press('Escape');
         await page.click('#btn-teaching-mode');
         await h.setMode(page, 'PC-CSV');
         await h.teachingMode(page);
@@ -192,7 +254,13 @@ test.describe('determinism', () => {
         const second = await page.locator('.waveforms').screenshot();
         const secondState = await h.state(page);
 
-        expect(secondState).toEqual(firstState);
+        expect(secondState.completed.simulationGeneration)
+            .toBe(firstState.completed.simulationGeneration + 1);
+        const comparableFirst = structuredClone(firstState);
+        const comparableSecond = structuredClone(secondState);
+        delete comparableFirst.completed.simulationGeneration;
+        delete comparableSecond.completed.simulationGeneration;
+        expect(comparableSecond).toEqual(comparableFirst);
         expect(Buffer.compare(first, second), 'frames must be byte-identical').toBe(0);
     });
 

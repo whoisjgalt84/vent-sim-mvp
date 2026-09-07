@@ -105,6 +105,37 @@ const Phase = Object.freeze({
     EXPIRATION:  'EXPIRATION',
 });
 
+const HOLD_LIMITS = Object.freeze({
+    minDuration_s: 0.5,
+    maxDuration_s: 2,
+    minSamples: 50,
+    terminalSamples: 20,
+    maxPressureRange_cmH2O: 0.1,
+    maxAbsPmus_cmH2O: 1e-9,
+});
+
+function frozenValue(status, value = null, reasons = []) {
+    return Object.freeze({ status, value, reasons: Object.freeze([...reasons]) });
+}
+
+function freezeRecord(value) {
+    if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+    Object.values(value).forEach(freezeRecord);
+    return Object.freeze(value);
+}
+
+function sameMeasurementIdentity(left, right) {
+    return Boolean(left && right &&
+        left.simulationGeneration === right.simulationGeneration &&
+        left.modeGeneration === right.modeGeneration &&
+        left.settingsGeneration === right.settingsGeneration &&
+        left.breathId === right.breathId);
+}
+
+function addReason(reasons, reason) {
+    if (!reasons.includes(reason)) reasons.push(reason);
+}
+
 
 // =============================================================================
 // SIMULATION ENGINE
@@ -207,6 +238,11 @@ export class SimulationEngine {
         this.triggerEvents   = [];         // delivered + failed trigger markers
         this.currentBreath = null;          // breath-start context awaiting finalization
         this.lastCompletedBreath = null;    // canonical finalized breath record
+        this.simulationGeneration = 0;
+        this.modeGeneration = 0;
+        this.settingsGeneration = 0;
+        this._lastMode = null;
+        this._settingsFingerprint = null;
 
         // --- Transport Controls ---
         this.running = true;
@@ -486,6 +522,249 @@ export class SimulationEngine {
         this.currentPhase = phase === Phase.EXPIRATION ? 'expiration' : 'inspiration';
     }
 
+    _measurementFingerprint() {
+        return JSON.stringify([
+            this.vent.mode, this.vent.flowPattern, this.vent.tidalVolume,
+            this.vent.inspiratoryPressure, this.vent.psPressure,
+            this.vent.respiratoryRate, this.vent.ieRatio,
+            this.vent.peep, this.vent.fio2, this.vent.triggerType,
+            this.vent.flowTriggerLpm, this.vent.pressureTriggerCmH2O,
+            this.vent.cyclePercent, this.vent.holdTime,
+            this.lung.resistance, this.lung.compliance,
+        ]);
+    }
+
+    _syncMeasurementSettings() {
+        const fingerprint = this._measurementFingerprint();
+        if (this._lastMode === null) {
+            this._lastMode = this.vent.mode;
+        } else if (this.vent.mode !== this._lastMode) {
+            this.modeGeneration++;
+            this._lastMode = this.vent.mode;
+        }
+        if (this._settingsFingerprint === null) {
+            this._settingsFingerprint = fingerprint;
+        } else if (fingerprint !== this._settingsFingerprint) {
+            this.settingsGeneration++;
+            this._settingsFingerprint = fingerprint;
+            if (this.currentBreath) {
+                this.currentBreath.settingsChanged = true;
+                if (this.currentBreath.holdCollector) {
+                    const hold = this.currentBreath.holdCollector;
+                    if (this.vent.holdTime !== hold.configuredDuration_s ||
+                        this.vent.effectiveHoldTime !== hold.effectiveDurationAtStart_s) {
+                        hold.interrupted = true;
+                    }
+                }
+            }
+        }
+    }
+
+    notifyMeasurementSettingsChanged() {
+        this._syncMeasurementSettings();
+    }
+
+    _observeMechanicsSample(phase, pmus) {
+        const breath = this.currentBreath;
+        if (!breath) return;
+        if (phase === Phase.INSPIRATION) {
+            breath.inspirationSampleCount++;
+            breath.inspirationMaxAbsPmus = Math.max(breath.inspirationMaxAbsPmus, Math.abs(pmus));
+            breath.inspirationFlowMin_Lps = Math.min(breath.inspirationFlowMin_Lps, this.currentFlow);
+            breath.inspirationFlowMax_Lps = Math.max(breath.inspirationFlowMax_Lps, this.currentFlow);
+            breath.endInspiratoryFlow_Lps = this.currentFlow;
+            breath.endInspiratoryFlowSampleIndex = this._sampleCount;
+        } else if (phase === Phase.HOLD && breath.holdCollector) {
+            breath.holdCollector.samples.push(Object.freeze({
+                sampleIndex: this._sampleCount,
+                time_s: this.globalTime,
+                paw_cmH2O: this.currentPressure,
+                flow_Lps: this.currentFlow,
+                pmus_cmH2O: pmus,
+            }));
+        }
+    }
+
+    _beginHold() {
+        if (!this.currentBreath) return;
+        this.currentBreath.holdCollector = {
+            entryBoundarySampleIndex: this._sampleCount,
+            entryBoundaryTime_s: this.globalTime,
+            configuredDuration_s: this.vent.holdTime,
+            effectiveDurationAtStart_s: this.vent.effectiveHoldTime,
+            modeGeneration: this.modeGeneration,
+            settingsGeneration: this.settingsGeneration,
+            identity: freezeRecord({ ...this.currentBreath.identity }),
+            fingerprint: this._settingsFingerprint,
+            interrupted: false,
+            samples: [],
+        };
+    }
+
+    _finalizeHoldMechanics(measuredVT_mL) {
+        const breath = this.currentBreath;
+        if (!breath) return null;
+        if (this.vent.isSpontaneousMode()) {
+            return freezeRecord({
+                status: 'inapplicable', reasons: ['HOLD_INAPPLICABLE_MODE'],
+                pplat: frozenValue('inapplicable', null, ['HOLD_INAPPLICABLE_MODE']),
+                drivingPressure: frozenValue('inapplicable', null, ['HOLD_INAPPLICABLE_MODE']),
+                compliance: frozenValue('inapplicable', null, ['HOLD_INAPPLICABLE_MODE']),
+                resistance: frozenValue('inapplicable', null, ['HOLD_INAPPLICABLE_MODE']),
+            });
+        }
+        const hold = breath.holdCollector;
+        if (!hold) {
+            return freezeRecord({
+                status: 'unavailable', reasons: ['NO_HOLD'],
+                pplat: frozenValue('unavailable', null, ['NO_HOLD']),
+                drivingPressure: frozenValue('unavailable', null, ['NO_HOLD']),
+                compliance: frozenValue('unavailable', null, ['NO_HOLD']),
+                resistance: frozenValue('unavailable', null, ['NO_HOLD']),
+            });
+        }
+
+        const samples = hold.samples;
+        const completionBoundarySampleIndex = samples.at(-1)?.sampleIndex ?? hold.entryBoundarySampleIndex;
+        const boundaryTickCount = completionBoundarySampleIndex - hold.entryBoundarySampleIndex;
+        const duration_s = boundaryTickCount * this.dt;
+        const timestampDuration_s = samples.length
+            ? samples.at(-1).time_s - hold.entryBoundaryTime_s : 0;
+        const membershipValid = samples.length === boundaryTickCount
+            && samples.every((sample, index) => sample.sampleIndex === hold.entryBoundarySampleIndex + index + 1);
+        const pplatReasons = [];
+        if (!sameMeasurementIdentity(hold.identity, breath.identity)) pplatReasons.push('SOURCE_MISMATCH');
+        if (hold.interrupted) pplatReasons.push('HOLD_INTERRUPTED');
+        if (breath.settingsChanged || hold.modeGeneration !== this.modeGeneration ||
+            hold.settingsGeneration !== this.settingsGeneration ||
+            hold.fingerprint !== this._settingsFingerprint) pplatReasons.push('SETTINGS_CHANGED');
+        if (duration_s < HOLD_LIMITS.minDuration_s) pplatReasons.push('HOLD_TOO_SHORT');
+        if (duration_s > HOLD_LIMITS.maxDuration_s) pplatReasons.push('HOLD_TOO_LONG');
+        if (samples.length < HOLD_LIMITS.minSamples) pplatReasons.push('INSUFFICIENT_SAMPLES');
+        if (!membershipValid || !Number.isFinite(timestampDuration_s)
+            || Math.abs(timestampDuration_s - duration_s) > this.dt * 1e-6) {
+            pplatReasons.push('HOLD_BOUNDARY_MISMATCH');
+        }
+        const allFlowFinite = samples.every(s => Number.isFinite(s.flow_Lps));
+        const allPressureFinite = samples.every(s => Number.isFinite(s.paw_cmH2O));
+        const allEffortFinite = samples.every(s => Number.isFinite(s.pmus_cmH2O));
+        if (!allFlowFinite || !allPressureFinite || !allEffortFinite) pplatReasons.push('NONFINITE_SOURCE');
+        if (allFlowFinite && samples.some(s => s.flow_Lps !== 0)) pplatReasons.push('NONZERO_HOLD_FLOW');
+        if (allEffortFinite && samples.some(s => Math.abs(s.pmus_cmH2O) > HOLD_LIMITS.maxAbsPmus_cmH2O)) {
+            pplatReasons.push('EFFORT_DURING_HOLD');
+        }
+        const terminal = samples.slice(-HOLD_LIMITS.terminalSamples);
+        const pressureValues = terminal.map(s => s.paw_cmH2O);
+        const allPressureValues = samples.map(s => s.paw_cmH2O);
+        const pressureRange = allPressureFinite && terminal.length > 0
+            ? Math.max(...pressureValues) - Math.min(...pressureValues) : null;
+        if (pressureRange !== null && pressureRange > HOLD_LIMITS.maxPressureRange_cmH2O) {
+            pplatReasons.push('PRESSURE_UNSTABLE');
+        }
+        const pplat = pplatReasons.length === 0
+            ? pressureValues.reduce((sum, value) => sum + value, 0) / pressureValues.length : null;
+        const pressureMean = allPressureFinite && terminal.length > 0
+            ? pressureValues.reduce((sum, value) => sum + value, 0) / terminal.length : null;
+        const pressureSD = pressureMean === null ? null : Math.sqrt(pressureValues.reduce(
+            (sum, value) => sum + (value - pressureMean) ** 2, 0) / terminal.length);
+        const wholePressureRange = allPressureFinite && samples.length > 0
+            ? Math.max(...allPressureValues) - Math.min(...allPressureValues) : null;
+        const pplatResult = frozenValue(pplatReasons.length ? 'invalid' : 'valid', pplat, pplatReasons);
+
+        const baselineReasons = [];
+        const baseline = breath.baseline;
+        if (!sameMeasurementIdentity(baseline.identity, breath.identity)) baselineReasons.push('SOURCE_MISMATCH');
+        if (![baseline.setPeep_cmH2O, baseline.residualVolume_L, baseline.compliance_L_per_cmH2O]
+            .every(Number.isFinite) || baseline.compliance_L_per_cmH2O <= 0) baselineReasons.push('INVALID_BASELINE');
+        const baselineValue = baselineReasons.length === 0
+            ? baseline.setPeep_cmH2O + baseline.residualVolume_L / baseline.compliance_L_per_cmH2O : null;
+        const drivingReasons = [...pplatReasons, ...baselineReasons];
+        const drivingPressure = pplat !== null && baselineValue !== null ? pplat - baselineValue : null;
+        if (drivingPressure !== null && (!Number.isFinite(drivingPressure) || drivingPressure <= 0)) {
+            drivingReasons.push('NONPOSITIVE_DRIVING_PRESSURE');
+        }
+        const drivingValid = drivingReasons.length === 0;
+        const drivingResult = frozenValue(drivingValid ? 'valid' : 'invalid', drivingValid ? drivingPressure : null, drivingReasons);
+
+        const complianceReasons = [...drivingReasons];
+        if (!sameMeasurementIdentity(breath.sourceIdentity, breath.identity)) addReason(complianceReasons, 'SOURCE_MISMATCH');
+        if (!Number.isFinite(measuredVT_mL) || measuredVT_mL <= 0) complianceReasons.push('NONPOSITIVE_VT');
+        const complianceValid = complianceReasons.length === 0;
+        const complianceResult = frozenValue(complianceValid ? 'valid' : 'invalid',
+            complianceValid ? measuredVT_mL / drivingPressure : null, complianceReasons);
+
+        let resistanceReasons = [...pplatReasons];
+        let resistanceStatus = 'invalid';
+        if (breath.configuredMode !== 'vc-cmv') {
+            resistanceReasons = ['RESISTANCE_PRESSURE_CONTROL'];
+            resistanceStatus = 'inapplicable';
+        } else if (breath.flowPattern !== 'square') {
+            resistanceReasons = ['RESISTANCE_RAMP_VC'];
+            resistanceStatus = 'inapplicable';
+        } else {
+            if (!sameMeasurementIdentity(breath.sourceIdentity, breath.identity)) resistanceReasons.push('SOURCE_MISMATCH');
+            if (!Number.isFinite(breath.inspirationMaxAbsPmus) ||
+                breath.inspirationMaxAbsPmus > HOLD_LIMITS.maxAbsPmus_cmH2O) resistanceReasons.push('INSPIRATORY_EFFORT');
+            if (![breath.inspirationFlowMin_Lps, breath.inspirationFlowMax_Lps, breath.endInspiratoryFlow_Lps]
+                .every(Number.isFinite) || breath.endInspiratoryFlow_Lps <= 0 ||
+                breath.inspirationFlowMax_Lps - breath.inspirationFlowMin_Lps > 1e-9) {
+                resistanceReasons.push('NONCONSTANT_INSPIRATORY_FLOW');
+            }
+            if (!Number.isFinite(this.measuredPIP) || this.measuredPIP < 0) resistanceReasons.push('INVALID_RESISTANCE_INPUT');
+        }
+        const resistanceValue = resistanceStatus !== 'inapplicable' && resistanceReasons.length === 0
+            ? (this.measuredPIP - pplat) / breath.endInspiratoryFlow_Lps : null;
+        if (resistanceValue !== null && (!Number.isFinite(resistanceValue) || resistanceValue < 0)) {
+            resistanceReasons.push('INVALID_RESISTANCE_INPUT');
+        }
+        const resistanceValid = resistanceStatus !== 'inapplicable' && resistanceReasons.length === 0;
+        const resistanceResult = frozenValue(resistanceStatus === 'inapplicable' ? 'inapplicable' : resistanceValid ? 'valid' : 'invalid',
+            resistanceValid ? resistanceValue : null, resistanceReasons);
+
+        return freezeRecord({
+            status: pplatResult.status,
+            reasons: pplatResult.reasons,
+            enteredAt_s: hold.entryBoundaryTime_s,
+            startedAt_s: samples[0]?.time_s ?? null,
+            completedAt_s: samples.at(-1)?.time_s ?? null,
+            entryBoundarySampleIndex: hold.entryBoundarySampleIndex,
+            firstPhysicsSampleIndex: samples[0]?.sampleIndex ?? null,
+            completionBoundarySampleIndex: samples.at(-1)?.sampleIndex ?? null,
+            configuredDuration_s: hold.configuredDuration_s,
+            effectiveDurationAtStart_s: hold.effectiveDurationAtStart_s,
+            actualDuration_s: duration_s,
+            durationFromBoundaryIndices_s: duration_s,
+            durationFromTimestamps_s: timestampDuration_s,
+            sampleCount: samples.length,
+            window: freezeRecord({ kind: 'terminal-20-hold-physics-samples', sampleCount: terminal.length,
+                duration_s: terminal.length * this.dt,
+                firstSampleIndex: terminal[0]?.sampleIndex ?? null, lastSampleIndex: terminal.at(-1)?.sampleIndex ?? null,
+                bounds: '(completedAt_s - 0.20, completedAt_s]' }),
+            estimator: 'arithmetic-mean-unrounded-live-paw',
+            identity: freezeRecord({ ...hold.identity }),
+            pplat: pplatResult,
+            baseline: freezeRecord({ value_cmH2O: baselineValue,
+                provenance: 'live-modeled-total-peep-at-breath-start', ...baseline,
+                identity: freezeRecord({ ...baseline.identity }) }),
+            drivingPressure: drivingResult,
+            compliance: complianceResult,
+            resistance: resistanceResult,
+            sources: freezeRecord({ measuredVT_mL, measuredPIP_cmH2O: this.measuredPIP,
+                endInspiratoryFlow_Lps: breath.endInspiratoryFlow_Lps,
+                endInspiratoryFlowSampleIndex: breath.endInspiratoryFlowSampleIndex,
+                identity: freezeRecord({ ...breath.sourceIdentity }) }),
+            metrics: freezeRecord({ wholeHoldMaxAbsFlow_Lps: allFlowFinite && samples.length ? Math.max(...samples.map(s => Math.abs(s.flow_Lps))) : null,
+                wholeHoldMaxAbsPmus_cmH2O: allEffortFinite && samples.length ? Math.max(...samples.map(s => Math.abs(s.pmus_cmH2O))) : null,
+                wholeHoldPressureRange_cmH2O: wholePressureRange,
+                windowPressureRange_cmH2O: pressureRange,
+                windowPressureSD_cmH2O: pressureSD,
+                inspirationMaxAbsPmus_cmH2O: breath.inspirationMaxAbsPmus,
+                inspirationFlowMin_Lps: breath.inspirationFlowMin_Lps,
+                inspirationFlowMax_Lps: breath.inspirationFlowMax_Lps,
+                allSourcesFinite: allFlowFinite && allPressureFinite && allEffortFinite }),
+        });
+    }
+
     _updateMeasuredRR() {
         const times = this.breathTimestamps;
 
@@ -517,6 +796,8 @@ export class SimulationEngine {
     _startExpiration(terminationReason = null) {
         this.measuredVT_mL =
             (this.volumeAboveEq - this.volumeAtBreathStart) * 1000;
+        const holdMechanics = this._finalizeHoldMechanics(this.measuredVT_mL);
+        this.measuredPplat = holdMechanics?.pplat?.value ?? null;
         this.breathTimestamps.push(this.globalTime * 1000);
         if (this.breathTimestamps.length > 10) {
             this.breathTimestamps.shift();
@@ -549,8 +830,10 @@ export class SimulationEngine {
                 ? this.peakInspiratoryFlow * 60 * (this.vent.cyclePercent / 100)
                 : null;
 
-            this.lastCompletedBreath = Object.freeze({
+            this.lastCompletedBreath = freezeRecord({
+                ...this.currentBreath.identity,
                 configuredMode: this.currentBreath.configuredMode,
+                flowPattern: this.currentBreath.flowPattern,
                 triggerAgent: this.currentBreath.triggerAgent,
                 cycleAgent,
                 terminationReason,
@@ -560,8 +843,11 @@ export class SimulationEngine {
                 inspiratoryTime_s: this.phaseTime,
                 boundarySampleIndex: this._sampleCount,
                 measuredVT_mL: this.measuredVT_mL,
+                measuredPIP_cmH2O: this.measuredPIP,
                 flowAtTermination_Lpm: this.currentFlow * 60,
                 flowCycleThreshold_Lpm,
+                settingsFingerprint: this.currentBreath.settingsFingerprint,
+                holdMechanics,
             });
             this.currentBreath = null;
         }
@@ -583,10 +869,36 @@ export class SimulationEngine {
             this.machineBreathCount++;
         }
         this.lastTriggerType = triggerType;
+        this._syncMeasurementSettings();
+        const identity = freezeRecord({
+            simulationGeneration: this.simulationGeneration,
+            modeGeneration: this.modeGeneration,
+            settingsGeneration: this.settingsGeneration,
+            breathId: this.breathCount,
+        });
         this.currentBreath = {
             configuredMode: this.vent.mode,
+            flowPattern: this.vent.isPressureMode() ? null : this.vent.flowPattern,
             triggerAgent: triggerType,
             startedAt_s: eventTime,
+            ...identity,
+            identity,
+            sourceIdentity: freezeRecord({ ...identity }),
+            settingsFingerprint: this._settingsFingerprint,
+            settingsChanged: false,
+            baseline: {
+                setPeep_cmH2O: this.vent.peep,
+                residualVolume_L: this.volumeAtBreathStart,
+                compliance_L_per_cmH2O: this.lung.compliance,
+                identity: freezeRecord({ ...identity }),
+            },
+            inspirationSampleCount: 0,
+            inspirationMaxAbsPmus: 0,
+            inspirationFlowMin_Lps: Infinity,
+            inspirationFlowMax_Lps: -Infinity,
+            endInspiratoryFlow_Lps: null,
+            endInspiratoryFlowSampleIndex: null,
+            holdCollector: null,
         };
         this.machineTimer = 0;
         this.lastBreathStartSec = this.globalTime;
@@ -637,6 +949,7 @@ export class SimulationEngine {
                     if (holdDur > 0) {
                         this._setPhase(Phase.HOLD);
                         this.phaseTime = 0;
+                        this._beginHold();
                         this.measuredVT_mL =
                             (this.volumeAboveEq - this.volumeAtBreathStart) * 1000;
                     } else {
@@ -759,11 +1072,6 @@ export class SimulationEngine {
     _computeHold(C, peep, pmus) {
         this.currentFlow = 0;
         this.currentPressure = peep + this.volumeAboveEq / C - pmus;
-
-        // Capture Pplat on first hold sample (before Pmus distorts it)
-        if (this.measuredPplat === null) {
-            this.measuredPplat = peep + this.volumeAboveEq / C;
-        }
     }
 
     /**
@@ -808,7 +1116,11 @@ export class SimulationEngine {
      */
     tick() {
         this._advanceNeural();
+        this._syncMeasurementSettings();
+        const physicsPhase = this.phase;
+        const physicsPmus = this.currentPmus;
         this._computePhysics();
+        this._observeMechanicsSample(physicsPhase, physicsPmus);
         this._evaluatePatientTrigger();
         this._checkTransitions();
 
@@ -878,6 +1190,11 @@ export class SimulationEngine {
 
     /** Reset simulation to initial state. */
     reset() {
+        this.simulationGeneration = (this.simulationGeneration ?? 0) + 1;
+        this.modeGeneration = 0;
+        this.settingsGeneration = 0;
+        this._lastMode = null;
+        this._settingsFingerprint = null;
         this.globalTime        = 0;
         this.phase             = Phase.EXPIRATION;
         this.currentPhase      = 'expiration';
@@ -936,6 +1253,84 @@ export class SimulationEngine {
     /** Is patient actively triggering breaths? */
     get isPatientTriggering() { return this.patientRR > 0; }
 
+    /** Pure availability selector for the approved live hold-mechanics contract. */
+    get holdMechanics() {
+        if (this.vent.isSpontaneousMode()) {
+            return freezeRecord({
+                status: 'inapplicable', reasons: ['HOLD_INAPPLICABLE_MODE'],
+                pplat: frozenValue('inapplicable', null, ['HOLD_INAPPLICABLE_MODE']),
+                drivingPressure: frozenValue('inapplicable', null, ['HOLD_INAPPLICABLE_MODE']),
+                compliance: frozenValue('inapplicable', null, ['HOLD_INAPPLICABLE_MODE']),
+                resistance: frozenValue('inapplicable', null, ['HOLD_INAPPLICABLE_MODE']),
+            });
+        }
+        if (!this.vent.holdActive) return freezeRecord({
+            status: 'unavailable', reasons: ['NO_HOLD'],
+            pplat: frozenValue('unavailable', null, ['NO_HOLD']),
+            drivingPressure: frozenValue('unavailable', null, ['NO_HOLD']),
+            compliance: frozenValue('unavailable', null, ['NO_HOLD']),
+            resistance: frozenValue('unavailable', null, ['NO_HOLD']),
+        });
+        if (this.currentBreath) {
+            const reason = this.currentBreath.settingsChanged
+                ? 'SETTINGS_CHANGED'
+                : this.lastCompletedBreath || this.simulationGeneration > 0
+                    ? 'HOLD_RESULT_CLEARED'
+                    : 'AWAITING_COMPLETED_HOLD';
+            return freezeRecord({
+                status: 'pending', reasons: [reason],
+                pplat: frozenValue('unavailable', null, [reason]),
+                drivingPressure: frozenValue('unavailable', null, [reason]),
+                compliance: frozenValue('unavailable', null, [reason]),
+                resistance: frozenValue('unavailable', null, [reason]),
+            });
+        }
+        const record = this.lastCompletedBreath;
+        if (!record?.holdMechanics || record.simulationGeneration !== this.simulationGeneration ||
+            record.modeGeneration !== this.modeGeneration ||
+            record.settingsGeneration !== this.settingsGeneration ||
+            record.settingsFingerprint !== this._measurementFingerprint()) {
+            return freezeRecord({
+                status: 'unavailable', reasons: ['SETTINGS_CHANGED'],
+                pplat: frozenValue('unavailable', null, ['SETTINGS_CHANGED']),
+                drivingPressure: frozenValue('unavailable', null, ['SETTINGS_CHANGED']),
+                compliance: frozenValue('unavailable', null, ['SETTINGS_CHANGED']),
+                resistance: frozenValue('unavailable', null, ['SETTINGS_CHANGED']),
+            });
+        }
+        const identity = {
+            simulationGeneration: record.simulationGeneration,
+            modeGeneration: record.modeGeneration,
+            settingsGeneration: record.settingsGeneration,
+            breathId: record.breathId,
+        };
+        const mechanics = record.holdMechanics;
+        const holdMismatch = !sameMeasurementIdentity(mechanics.identity, identity);
+        const baselineMismatch = !sameMeasurementIdentity(mechanics.baseline?.identity, identity);
+        const sourceMismatch = !sameMeasurementIdentity(mechanics.sources?.identity, identity);
+        if (!holdMismatch && !baselineMismatch && !sourceMismatch) return mechanics;
+
+        const invalidated = (result, mismatch) => {
+            if (!mismatch || result.status === 'inapplicable') return result;
+            const reasons = [...result.reasons];
+            addReason(reasons, 'SOURCE_MISMATCH');
+            return frozenValue('invalid', null, reasons);
+        };
+        const pplat = invalidated(mechanics.pplat, holdMismatch);
+        const drivingPressure = invalidated(mechanics.drivingPressure, holdMismatch || baselineMismatch);
+        const compliance = invalidated(mechanics.compliance, holdMismatch || baselineMismatch || sourceMismatch);
+        const resistance = invalidated(mechanics.resistance, holdMismatch || sourceMismatch);
+        return freezeRecord({
+            ...mechanics,
+            status: pplat.status,
+            reasons: pplat.reasons,
+            pplat,
+            drivingPressure,
+            compliance,
+            resistance,
+        });
+    }
+
     /** Trigger events visible on the scrolling waveform panels. */
     getTriggerEvents(tMin = -Infinity, tMax = Infinity) {
         return this.triggerEvents.filter(event => event.time >= tMin && event.time <= tMax);
@@ -948,9 +1343,8 @@ export class SimulationEngine {
             // Latched peak of the last completed breath — what the monitor shows
             // (SME-014). `pip` above stays live for alarm evaluation.
             pipLatched:   Math.round(this.lastBreathPIP * 10) / 10,
-            pplat:        this.measuredPplat !== null
-                              ? Math.round(this.measuredPplat * 10) / 10
-                              : null,
+            pplat:        this.holdMechanics.pplat.value !== null
+                              ? Math.round(this.holdMechanics.pplat.value * 10) / 10 : null,
             vt_mL:        Math.round(this.measuredVT_mL),
             peakFlow_Lpm: Math.round(this.peakInspFlow_Lpm),
             triggerType:  this.lastTriggerType,

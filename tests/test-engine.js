@@ -2425,6 +2425,184 @@ assert('Measured RR ≈ set RR in CMV', simMeasuredRR.measuredRR, ventMeasuredRR
 // =============================================================================
 section('TEST 41: Alarm Engine — No Alerts Normal');
 
+// Synthetic complete-window inputs for comparator tests. Integration below
+// independently checks the producer against actual published breath records.
+function veAlarmFixture(value, nowSec = 30) {
+    const tick = Math.round(nowSec * 100);
+    const eventIds = value === 0 ? [] : [{ simulationGeneration: 0, modeGeneration: 0, settingsGeneration: 0, breathId: 1 }];
+    return { simulationTick: tick, simulationStep_s: 0.01, simulationGeneration: 0, modeGeneration: 0, deliveryHistoryRevision: 1,
+        deliveredVentilation: { schemaVersion: 1, source: 'live-completed-breath-volume',
+            volumeDefinition: 'inspiratory-volume-above-breath-start-residual', estimator: 'rolling-volume-sum',
+            status: 'available', reason: null, valueLpm: value, asOfTick: tick, asOfSimTime_s: nowSec,
+            simulationGeneration: 0, modeGeneration: 0, historyRevision: 1, windowSeconds: 30,
+            windowStartTickExclusive: tick - 3000, windowEndTickInclusive: tick, observedSeconds: 30,
+            sumVolumeL: value / 2, completedCount: eventIds.length, lastCompletionAt_s: value === 0 ? null : nowSec, eventIds } };
+}
+
+// VSM-CLIN-006 focused contract, aggregated into the existing Low VE composite
+// to preserve all 300 commissioned assertions. Failures retain their own labels.
+function verifyDeliveredVEContract() {
+    const failures = []; let count = 0;
+    const check = (label, ok) => { count++; if (!ok) failures.push(label); };
+    const near = (a, b) => Number.isFinite(a) && Math.abs(a - b) < 1e-10;
+    const make = (mode = MODE_PC_CSV, settings = {}) => new SimulationEngine(new Ventilator(
+        new LungModel({ resistance: 10, compliance: 0.06 }), { mode, pMusMax: 0, ...settings }));
+    const step = (s, n) => { for (let i = 0; i < n; i++) s.tick(); };
+    const record = (s, id, volume, seconds = s.globalTime) => ({ simulationGeneration: s.simulationGeneration,
+        modeGeneration: s.modeGeneration, settingsGeneration: s.settingsGeneration, breathId: id,
+        configuredMode: s.vent.mode, triggerAgent: 'patient', cycleAgent: 'patient', breathType: 'spontaneous',
+        terminationReason: 'flowCycle', startedAt_s: seconds - 1, completedAt_s: seconds, measuredVT_mL: volume });
+    for (const mode of SUPPORTED_MODES) {
+        const s = make(mode);
+        for (const tick of [0, 499, 500, 501, 2999, 3000, 3001]) {
+            step(s, tick - Math.round(s.globalTime / s.dt));
+            const v = s.deliveredVentilation;
+            check(`${mode} history at ${tick}`, tick < 3000
+                ? v.status === 'warming' && v.valueLpm === null
+                : v.status === 'available' && Number.isFinite(v.valueLpm));
+            check(`${mode} immutable ${tick}`, Object.isFrozen(v) && Object.isFrozen(v.eventIds));
+        }
+    }
+    for (const mode of SUPPORTED_MODES) {
+        const s = make(mode, { respiratoryRate: 12, pMusMax: 6 }); s.patientRR = 20;
+        const events = []; let previous = null;
+        for (let i = 0; i < 10000; i++) {
+            s.tick();
+            if (s.lastCompletedBreath && s.lastCompletedBreath !== previous) {
+                previous = s.lastCompletedBreath; events.push(previous);
+            }
+            if (i % 100 === 99) {
+                const now = Math.round(s.globalTime / s.dt);
+                const included = events.filter(e => Math.round(e.completedAt_s / s.dt) > now - 3000);
+                const expected = included.reduce((a, e) => a + e.measuredVT_mL / 1000, 0) * 2;
+                const v = s.deliveredVentilation;
+                check(`${mode} independent sum ${now}`, v.completedCount === included.length &&
+                    (now < 3000 ? v.valueLpm === null : near(v.valueLpm, expected)));
+            }
+            if (i === 4500) { s.vent.psPressure = 4; s.vent.tidalVolume = 0.3; s.patientRR = 11; }
+            if (i === 6000) { s.vent.psPressure = 18; s.patientRR = 29; }
+            if (i === 7000 && mode === MODE_PC_CSV) { s.patientRR = 0; s.vent.pMusMax = 0; }
+        }
+        check(`${mode} patient mandatory/backstop eligible`, events.some(e => e.triggerAgent === 'patient'));
+        const old = s.deliveredVentilation; s.reset();
+        check(`${mode} reset identity`, s.deliveredVentilation.status === 'warming'
+            && s.deliveredVentilation.completedCount === 0 && !s.isCurrentDeliveredVentilation(old));
+    }
+    const s = make();
+    step(s, 1000); s._recordDeliveredBreath(record(s, 1, 400));
+    step(s, 1500); s._recordDeliveredBreath(record(s, 2, 800));
+    step(s, 1500); const right = record(s, 3, 300); s._recordDeliveredBreath(right);
+    check('left excluded right published included', near(s.deliveredVentilation.valueLpm, 2.2));
+    const revision = s.deliveredVentilation.historyRevision;
+    s._recordDeliveredBreath(right); s.deliveredVentilation; s.deliveredVentilation;
+    check('same publication/read deduplicated', s.deliveredVentilation.historyRevision === revision && s.deliveredVentilation.completedCount === 2);
+    const held = s.deliveredVentilation;
+    step(s, 1499); check('one tick before left expiration', near(s.deliveredVentilation.valueLpm, 2.2));
+    step(s, 1); check('exact left expiration without publication', near(s.deliveredVentilation.valueLpm, 0.6) && !s.isCurrentDeliveredVentilation(held));
+    step(s, 1500); check('cessation fully expires to available zero', s.deliveredVentilation.status === 'available' && s.deliveredVentilation.valueLpm === 0);
+    const dense = make(); step(dense, 3000);
+    for (let id = 1; id <= 20; id++) dense._recordDeliveredBreath(record(dense, id, id * 10));
+    check('no ten-record cap or latestVT substitution', dense.deliveredVentilation.completedCount === 20 && near(dense.deliveredVentilation.valueLpm, 4.2));
+    const beforeSettings = dense.deliveredVentilation.valueLpm;
+    dense.vent.peep = 8; dense.lung.compliance = 0.04; dense.vent.holdTime = 0.5; dense.notifyMeasurementSettingsChanged();
+    check('settings preserve actual old delivery', dense.deliveredVentilation.valueLpm === beforeSettings);
+    dense.pause(); const paused = JSON.stringify(dense.deliveredVentilation); dense.advance(60);
+    check('pause cannot age on wall time', JSON.stringify(dense.deliveredVentilation) === paused);
+    dense.resume(); dense.setSpeed(4); dense.advance(0.1);
+    check('speed advances actual ticks', dense.deliveredVentilation.asOfTick === 3040);
+    const oldMode = dense.deliveredVentilation; dense.vent.mode = MODE_VC_CMV;
+    check('direct mode drift rejected before tick', dense.deliveredVentilation.reason === 'MODE_MISMATCH' && !dense.isCurrentDeliveredVentilation(oldMode));
+    dense.reset(); check('mode reset is warmup', dense.deliveredVentilation.status === 'warming');
+    for (const fault of ['negative', 'nan', 'missing-time', 'duplicate', 'future', 'gap', 'reversal', 'nonfinite-clock']) {
+        const f = make(); step(f, 4000);
+        const r = record(f, 1, 500); f._recordDeliveredBreath(r);
+        if (fault === 'negative') f._recordDeliveredBreath(record(f, 2, -1));
+        if (fault === 'nan') f._recordDeliveredBreath(record(f, 2, NaN));
+        if (fault === 'missing-time') f._recordDeliveredBreath({ ...record(f, 2, 500), completedAt_s: undefined });
+        if (fault === 'future') f._recordDeliveredBreath(record(f, 2, 500, f.globalTime + 10));
+        if (fault === 'duplicate') f._recordDeliveredBreath({ ...r, measuredVT_mL: 600 });
+        if (fault === 'gap' || fault === 'reversal') { f.globalTime += fault === 'gap' ? 10 : -10; f.tick(); }
+        if (fault === 'nonfinite-clock') { f.globalTime = NaN; f.tick(); }
+        check(`${fault} null unavailable`, f.deliveredVentilation.status === 'unavailable' && f.deliveredVentilation.valueLpm === null);
+        check(`${fault} finite metadata`, ['asOfTick', 'asOfSimTime_s', 'observedSeconds', 'windowStartTickExclusive', 'windowEndTickInclusive']
+            .every(key => Number.isFinite(f.deliveredVentilation[key])));
+        if (fault === 'nonfinite-clock') f.globalTime = 40;
+        step(f, 3000);
+        check(`${fault} full clean recovery`, f.deliveredVentilation.status === 'available' && f.deliveredVentilation.valueLpm === 0);
+    }
+    const zero = make(); step(zero, 3000); zero._recordDeliveredBreath(record(zero, 1, 0));
+    check('zero-volume completed event valid', zero.deliveredVentilation.status === 'available' && zero.deliveredVentilation.valueLpm === 0 && zero.deliveredVentilation.completedCount === 1);
+    const epoch = make(); step(epoch, 3000); const priorEpoch = epoch.deliveredVentilation;
+    epoch.reset(); step(epoch, 3000);
+    check('same-time prior-generation snapshot rejected', !epoch.isCurrentDeliveredVentilation(priorEpoch));
+    const retained = make(MODE_PC_CSV, { pMusMax: 6 }); retained.patientRR = 20; step(retained, 3600);
+    check('reset retention fixture contains delivery', retained.deliveredVentilation.valueLpm > 0);
+    retained.vent.pMusMax = 0; retained.patientRR = 0; retained.reset();
+    check('reset history revision zero', retained.deliveredVentilation.historyRevision === 0);
+    step(retained, 3000);
+    check('prior epoch cannot return after warm-up', retained.deliveredVentilation.valueLpm === 0
+        && retained.deliveredVentilation.completedCount === 0);
+    for (const kind of ['hold-vc', 'hold-pc', 'csv-backstop']) {
+        const mode = kind === 'hold-vc' ? MODE_VC_CMV : kind === 'hold-pc' ? MODE_PC_CMV : MODE_PC_CSV;
+        const f = make(mode, kind === 'csv-backstop'
+            ? { pMusMax: 8, respiratoryRate: 35, ieRatio: [1, 1], cyclePercent: 10 }
+            : { holdTime: 0.5 });
+        if (kind === 'csv-backstop') { f.lung.resistance = 25; f.patientRR = 18; }
+        let last = null; const published = [];
+        for (let i = 0; i < 3500; i++) {
+            const phase = f.phase; f.tick();
+            if (f.lastCompletedBreath && f.lastCompletedBreath !== last) { last = f.lastCompletedBreath; published.push(last); }
+            if (phase !== f.phase || i % 100 === 99) {
+                const tick = Math.round(f.globalTime / f.dt), v = f.deliveredVentilation;
+                const events = published.filter(e => Math.round(e.completedAt_s / f.dt) > tick - 3000);
+                check(`${kind} actual publication ledger ${i}`, v.completedCount === events.length
+                    && (tick < 3000 ? v.valueLpm === null : near(v.valueLpm, events.reduce((sum, e) => sum + e.measuredVT_mL / 1000, 0) * 2)));
+            }
+        }
+        check(`${kind} required boundary exercised`, kind === 'csv-backstop'
+            ? published.some(e => e.terminationReason === 'maxTiReached')
+            : published.some(e => e.holdMechanics.status === 'valid'));
+    }
+    for (const seconds of [-0.001, 0.001]) {
+        const edge = make(); edge._recordDeliveredBreath(record(edge, 1, 500, seconds));
+        check('raw sub-tick timestamp rejected', edge.deliveredVentilation.status === 'unavailable'
+            && edge.deliveredVentilation.lastCompletionAt_s === null);
+    }
+    const nanBoundary = make(MODE_VC_CMV); step(nanBoundary, 140); nanBoundary.globalTime = NaN; step(nanBoundary, 4);
+    check('NaN clock during real publication metadata finite', Number.isFinite(nanBoundary.deliveredVentilation.observedSeconds)
+        && nanBoundary.deliveredVentilation.status === 'unavailable');
+    for (const rate of [50, 60, 100, 200]) {
+        const rateSim = new SimulationEngine(make().vent, { sampleRate: rate }); step(rateSim, 30 * rate);
+        const v = rateSim.deliveredVentilation;
+        const a = AlarmEngine.evaluateAlarms({ nowSec: rateSim.globalTime, elapsedSec: rateSim.globalTime,
+            minuteVentilationLpm: v.valueLpm, deliveredVentilation: v,
+            simulationTick: v.asOfTick, simulationStep_s: rateSim.dt, simulationGeneration: v.simulationGeneration,
+            modeGeneration: v.modeGeneration, deliveryHistoryRevision: v.historyRevision });
+        check(`no second warm-up gate at sample rate ${rate}`, v.status === 'available' && a.some(a => a.id === 'LOW_VE'));
+    }
+    const incomplete = veAlarmFixture(0).deliveredVentilation;
+    for (const key of ['asOfTick', 'simulationGeneration', 'modeGeneration', 'historyRevision']) delete incomplete[key];
+    check('undefined identity equality cannot arm', !AlarmEngine.evaluateAlarms({ nowSec: 30, elapsedSec: 30,
+        minuteVentilationLpm: 0, deliveredVentilation: incomplete }).some(a => a.id.endsWith('_VE')));
+    for (const value of [0, 2.96, 3, 3.04, 19.96, 20, 20.04]) {
+        for (const elapsedSec of [4.99, 5, 5.01, 30]) {
+            const m = { nowSec: 30, elapsedSec, minuteVentilationLpm: value, ...veAlarmFixture(value) };
+            const a = AlarmEngine.evaluateAlarms(m);
+            check(`raw low ${value}/${elapsedSec}`, a.some(a => a.id === 'LOW_VE') === (elapsedSec >= 5 && value < 3));
+            check(`raw high ${value}/${elapsedSec}`, a.some(a => a.id === 'HIGH_VE') === (elapsedSec >= 5 && value > 20));
+            for (const bad of [null, { ...m.deliveredVentilation, status: 'warming', reason: 'INSUFFICIENT_HISTORY', valueLpm: null },
+                { ...m.deliveredVentilation, asOfTick: 2999 }, { ...m.deliveredVentilation, simulationGeneration: 1 },
+                { ...m.deliveredVentilation, source: 'analytical' }]) {
+                check('reject absent/warming/stale/wrong source', !AlarmEngine.evaluateAlarms({ ...m, deliveredVentilation: bad }).some(a => a.id.endsWith('_VE')));
+            }
+        }
+    }
+    console.log(`VSM-CLIN-006 focused engine: ${count - failures.length} passed / ${failures.length} failed`);
+    failures.forEach(label => console.error(`VSM-CLIN-006 FAIL: ${label}`));
+    return failures.length === 0;
+}
+const deliveredVEContractPass = verifyDeliveredVEContract();
+
 let alarms = AlarmEngine.evaluateAlarms({
     nowSec: 30,
     elapsedSec: 30,
@@ -2433,6 +2611,7 @@ let alarms = AlarmEngine.evaluateAlarms({
     pawCmH2O: 12,
     measuredRR: 14,
     minuteVentilationLpm: 7,
+    ...veAlarmFixture(7, 30),
 });
 
 assert('No alarms in normal state', alarms.length, 0, 0);
@@ -2451,6 +2630,7 @@ alarms = AlarmEngine.evaluateAlarms({
     pawCmH2O: 45,
     measuredRR: 14,
     minuteVentilationLpm: 7,
+    ...veAlarmFixture(7, 30),
 });
 
 assert('High pressure alarm active',
@@ -2470,6 +2650,7 @@ alarms = AlarmEngine.evaluateAlarms({
     pawCmH2O: 12,
     measuredRR: 40,
     minuteVentilationLpm: 10,
+    ...veAlarmFixture(10, 30),
 });
 
 assert('High RR alarm active',
@@ -2489,6 +2670,7 @@ alarms = AlarmEngine.evaluateAlarms({
     pawCmH2O: 5,
     measuredRR: 0,
     minuteVentilationLpm: 0,
+    ...veAlarmFixture(0, 45),
 });
 
 assert('Apnea alarm active',
@@ -2508,10 +2690,11 @@ alarms = AlarmEngine.evaluateAlarms({
     pawCmH2O: 12,
     measuredRR: 8,
     minuteVentilationLpm: 2,
+    ...veAlarmFixture(2, 30),
 });
 
 assert('Low VE alarm active',
-    alarms.some(alarm => alarm.id === 'LOW_VE') ? 1 : 0, 1, 0);
+    alarms.some(alarm => alarm.id === 'LOW_VE') && deliveredVEContractPass ? 1 : 0, 1, 0);
 
 
 // =============================================================================
@@ -2527,6 +2710,7 @@ alarms = AlarmEngine.evaluateAlarms({
     pawCmH2O: 12,
     measuredRR: 35,
     minuteVentilationLpm: 22,
+    ...veAlarmFixture(22, 30),
 });
 
 assert('High VE alarm active',
@@ -2546,6 +2730,7 @@ const alarmed = AlarmEngine.evaluateAlarms({
     pawCmH2O: 45,
     measuredRR: 14,
     minuteVentilationLpm: 7,
+    ...veAlarmFixture(7, 30),
 });
 
 const reset = AlarmEngine.evaluateAlarms({
@@ -2556,6 +2741,7 @@ const reset = AlarmEngine.evaluateAlarms({
     pawCmH2O: 12,
     measuredRR: 14,
     minuteVentilationLpm: 7,
+    ...veAlarmFixture(7, 31),
 });
 
 assert('Alarm activates initially',

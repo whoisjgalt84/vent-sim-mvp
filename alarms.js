@@ -35,7 +35,39 @@ function evaluateAlarms(metrics = {}, limits = DEFAULT_ALARM_LIMITS) {
     );
 
     const measuredRR = metrics.measuredRR;
-    const minuteVentilation = metrics.minuteVentilationLpm;
+    // VE is eligible only with the same current completed-volume snapshot used
+    // by the monitor. A legacy numeric field alone is not provenance.
+    const delivery = metrics.deliveredVentilation;
+    const nonnegativeInteger = value => Number.isInteger(value) && value >= 0;
+    const identityValid = delivery && ['asOfTick', 'simulationGeneration', 'modeGeneration',
+        'historyRevision', 'completedCount'].every(key => nonnegativeInteger(delivery[key]));
+    const validDelivery = delivery?.schemaVersion === 1
+        && identityValid
+        && delivery.source === 'live-completed-breath-volume'
+        && delivery.volumeDefinition === 'inspiratory-volume-above-breath-start-residual'
+        && delivery.estimator === 'rolling-volume-sum'
+        && delivery.status === 'available' && delivery.reason === null
+        && delivery.windowSeconds === 30 && delivery.observedSeconds === 30
+        && isFiniteNumber(metrics.simulationStep_s) && metrics.simulationStep_s > 0
+        && delivery.asOfTick >= Math.round(30 / metrics.simulationStep_s)
+        && delivery.asOfTick === Math.round(nowSec / metrics.simulationStep_s)
+        && delivery.windowEndTickInclusive === delivery.asOfTick
+        && delivery.windowStartTickExclusive === delivery.asOfTick - Math.round(30 / metrics.simulationStep_s)
+        && Array.isArray(delivery.eventIds) && delivery.eventIds.length === delivery.completedCount
+        && delivery.eventIds.every(id => id && id.simulationGeneration === delivery.simulationGeneration
+            && id.modeGeneration === delivery.modeGeneration && nonnegativeInteger(id.settingsGeneration)
+            && Number.isInteger(id.breathId) && id.breathId > 0)
+        && new Set(delivery.eventIds.map(id => JSON.stringify(id))).size === delivery.completedCount
+        && delivery.asOfSimTime_s === nowSec
+        && delivery.asOfTick === metrics.simulationTick
+        && delivery.simulationGeneration === metrics.simulationGeneration
+        && delivery.modeGeneration === metrics.modeGeneration
+        && delivery.historyRevision === metrics.deliveryHistoryRevision
+        && isFiniteNumber(delivery.sumVolumeL) && delivery.sumVolumeL >= 0
+        && (delivery.completedCount > 0 || delivery.sumVolumeL === 0)
+        && isFiniteNumber(delivery.valueLpm) && delivery.valueLpm === delivery.sumVolumeL * 2
+        && delivery.valueLpm === metrics.minuteVentilationLpm;
+    const minuteVentilation = validDelivery ? delivery.valueLpm : null;
 
     const lastBreathStartSec = isFiniteNumber(metrics.lastBreathStartSec)
         ? metrics.lastBreathStartSec
@@ -95,7 +127,7 @@ function evaluateAlarms(metrics = {}, limits = DEFAULT_ALARM_LIMITS) {
             value: minuteVentilation,
             limit: configuredLimits.lowMinuteVentilationLpm,
             unit: 'L/min',
-            message: 'Measured minute ventilation below low VE limit',
+            message: 'Delivered VE over 30 s is below the low VE limit.',
         });
     }
 
@@ -111,7 +143,7 @@ function evaluateAlarms(metrics = {}, limits = DEFAULT_ALARM_LIMITS) {
             value: minuteVentilation,
             limit: configuredLimits.highMinuteVentilationLpm,
             unit: 'L/min',
-            message: 'Measured minute ventilation exceeds high VE limit',
+            message: 'Delivered VE over 30 s is above the high VE limit.',
         });
     }
 

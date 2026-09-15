@@ -134,7 +134,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=12`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
+   Currently `?v=14`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
    `js/ventilator.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -145,7 +145,7 @@ Each of these encodes a bug that already shipped once.
    capitalised.** Never lowercase a mode string, never compare
    case-insensitively, and prefer the exported `MODE_*` constants over literals.
    `js/main.js` currently mixes both styles.
-9. **Monitor availability uses `lastCompletedBreath !== null`, never
+9. **Per-breath monitor availability uses `lastCompletedBreath !== null`, never
    `breathCount > 0`, running pressure, or an analytical fallback.** VSM-CLIN-004
    prevents the shipped pre-breath predicted/running PIP and set/predicted VT
    masquerading as measurements, and provisional VT resetting at the next
@@ -164,6 +164,22 @@ Each of these encodes a bug that already shipped once.
     Monitor refreshes may update its text or close it when its trigger becomes
     hidden, but must not rebuild the trigger DOM. This preserves hover transfer,
     keyboard focus, click/tap state, and the existing RR tooltip behavior.
+12. **Delivered VE uses one shared `sim.deliveredVentilation` snapshot.**
+    VSM-CLIN-006 counts actual canonical publications in `(now - 30 s, now]`,
+    using unrounded modeled inspiratory volume and simulation tick boundaries.
+    Both VE alarms remain ineligible and the readout remains unavailable until
+    30 s of valid observed history exists; a full empty window is available zero.
+    Preserve the existing 5 s grace, with no additional delay after availability.
+    Age prior delivery without new completions. Reset clears its generation;
+    ordinary settings changes retain history. Never substitute predicted/set
+    ventilation, provisional VT, or interval RR. Display rounds to one decimal;
+    alarms compare raw values. RR's existing calculation and the live PIP/audio
+    clock invariants remain separate. Static help triggers must survive refresh,
+    and Escape focus restoration must not reopen the dismissed popover.
+    The owner refined D7 to **Measured RR** (Standard) and **Measured**
+    (Teaching), retaining precise completed-breath interval/smoothing/retention
+    help and independence from delivered VE. Preserve the existing RR tooltip
+    nodes and capitalization styling when updating this wording.
 
 New invariants belong in this list, with the failure they prevent.
 

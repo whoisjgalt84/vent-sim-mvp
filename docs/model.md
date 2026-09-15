@@ -129,14 +129,17 @@ Paw = PEEP + Pinsp
 pressure-support level in PC-CSV. Both are **referenced to PEEP**, which is why
 raising PEEP does not change VT in PC-CSV.
 
-Effort here raises flow and volume rather than lowering pressure — the same
-physics, read on the other waveform.
+In this simulator, PC-CMV and PC-CSV use idealized set-point pressure control during pressure-targeted inspiration. The live engine prescribes Paw exactly as PEEP plus the inspiratory pressure setting in PC-CMV, or PEEP plus Pressure Support in PC-CSV. Patient effort can change inspiratory flow and delivered volume while that modeled pressure target remains unchanged. In PC-CSV this describes a delivered inspiration; no successful trigger means no supported breath.
 
-**Known simplification:** the displayed `Paw` is the set pressure exactly. A real
-ventilator's pressure controller is imperfect, and effort produces a visible dip.
-The literature notes ventilators are "mediocre at controlling pressure compared
-to controlling flow," so some effort signal *should* appear in the pressure
-trace. Ours shows none.
+
+
+This statement is limited to pressure-targeted inspiration. Triggering, flow or maximum-Ti cycling, inspiratory holds, and expiration follow separate state rules. Holds are inapplicable in PC-CSV. In PC-CMV HOLD, Paw is calculated from the closed-system equation below; expiration uses its own equation.
+
+
+
+In real pressure control, flow and volume are important for interpreting patient effort, and pressure may also change (Mireles-Cabodevila et al., 2022, PDF p.4 / journal p.132). The source does not require a particular pressure dip or validate this simulator's active morphology. Under CLIN-OD-008, the current trace remains deferred pending a state-specific target and direct SME review; disclosure does not constitute clinical approval or acceptance as an intentional simplification.
+
+Source: [MC2022](https://doi.org/10.4187/respcare.09316), PDF p.4 / journal p.132.
 
 ### 3.3 Inspiratory hold
 
@@ -284,12 +287,7 @@ gate c   threshold:
 
 The two failure modes are physiologically different and teach different things:
 
-- **`ventilator_unavailable`** — the effort landed while the ventilator was
-  still inspiring or holding. The machine was busy. The effort still bends the
-  trace — measurably: ~3 cmH₂O of pressure scooping in VC, ~5 L/min of extra
-  flow in PC — but it produces **no expiratory-flow deflection**, so it gets no
-  amber highlight and no label. The `Ineffective N /60s` counter is the only
-  place this failure is *named*.
+- **`ventilator_unavailable`** — the effort occurred while the ventilator was inspiring or holding, so it could not start another breath. During the simulator's pressure-targeted inspiration, effort can change flow and delivered volume while Paw remains at the target (see §3.2). During a HOLD, flow is zero and effort enters the HOLD pressure equation (§3.3). This event receives no expiratory-flow highlight; the `Ineffective N /60s` counter names it.
 - **`threshold`** — the ventilator was listening and the effort was too weak, or
   the sensitivity setting too low. This bends **expiratory** flow, and gets the
   amber highlight.
@@ -424,6 +422,8 @@ simulator waveforms often look "too perfect" and that this makes transfer to the
 bedside harder. The counter-argument, also from the literature, is that the
 idealised waveform should be taught *first*. Both are true, which argues for
 making artifact level a learner-level-linked toggle rather than a global default.
+
+For PC-CMV and PC-CSV, the current inspiratory pressure idealization is disclosed in §3.2. Its clinical morphology remains deferred under CLIN-OD-008; general discussion of idealized teaching waveforms does not approve this particular trace.
 
 ---
 

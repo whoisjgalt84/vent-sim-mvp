@@ -996,9 +996,10 @@ export class WaveformDisplay {
      * PRODUCER (the only one wired now): turn 'failed' trigger events into flow
      * highlight segments. An ineffective effort recorded DURING EXPIRATION (a
      * gate-c 'threshold' miss) leaves a visible flow deflection — the expiratory
-     * trace bends toward baseline without reaching it. VU failures during a
-     * mandatory inspiration have no expiratory flow deflection (they scallop
-     * pressure instead) and so are not highlighted on the flow trace.
+     * trace bends toward baseline without reaching it.
+     * VU failures during mandatory inspiration have no expiratory-flow deflection and are not
+     * highlighted here. Their pressure and flow response depends on the configured mode and
+     * phase; see the pressure-targeted inspiration disclosure in docs/model.md §3.2.
      */
     _deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi, trigger = null) {
         // Muted amber-gold "interpretation" finding color (NOT an alarm) — single

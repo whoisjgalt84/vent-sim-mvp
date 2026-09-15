@@ -426,7 +426,193 @@ async function presentationHelpContract(page) {
     return { errors, checks };
 }
 
-(async () => {
+// VSM-CLIN-007: real DOM interactions; numbered checks also identify mutation kills.
+async function pcDisclosureContract(page, { stopOnFailure = false } = {}) {
+    const checks = [], geometry = [], caveats = [];
+    const check = (id, ok, detail = '') => {
+        checks.push({ id, ok, detail });
+        if (!ok && stopOnFailure) {
+            const error = new Error(id + ': ' + detail);
+            error.pcContractCheck = { id, ok, detail };
+            throw error;
+        }
+    };
+    const cue = page.locator('#pc-disclosure-trigger'), help = page.locator('#measurement-help');
+    const common = 'Patient effort can change flow and delivered volume in this model. Triggering, cycling, inspiratory holds, and expiration follow their own rules.\n\nThe flat inspiratory trace here is a model idealization. On real ventilators, patient effort may also affect pressure; assess flow and volume as well.';
+    const cmv = 'In PC-CMV, this simulator uses idealized set-point pressure control. During pressure-targeted inspiration, Paw stays at PEEP plus the set inspiratory pressure, even with patient effort.';
+    const csv = 'In PC-CSV, this simulator uses idealized set-point pressure control. When a breath is delivered, Paw stays at PEEP plus Pressure Support during pressure-targeted inspiration, even with patient effort.';
+    const state = () => page.evaluate(() => window.__vsim.state());
+    const redraw = () => page.evaluate(() => window.__vsim.redraw());
+    const mode = m => page.evaluate(m => document.querySelector(`.mode-btn[data-mode="${m}"]`).click(), m);
+    const seek = s => page.evaluate(s => window.__vsim.seek(s), s);
+    const input = (id, value) => page.evaluate(({ id, value }) => {
+        const e = document.getElementById(id); e.value = String(value); e.dispatchEvent(new Event('input', { bubbles: true }));
+    }, { id, value });
+    const teaching = on => page.evaluate(on => {
+        if (document.body.classList.contains('teaching-mode') !== on) document.getElementById('btn-teaching-mode').click();
+    }, on);
+    const focusElsewhere = () => page.locator('#btn-pause').focus();
+    const dismiss = async () => { await page.keyboard.press('Escape'); await focusElsewhere(); await page.mouse.move(1, 1); };
+    const open = async () => { await dismiss(); await cue.focus(); };
+    const exists = await cue.count() === 1;
+    check('PC.markup', exists && await page.locator('.waveforms > .pc-disclosure').count() === 1);
+    if (!exists) return { checks, geometry, caveats, errors: ['PC.markup: missing trigger'] };
+    await cue.evaluate(e => { window.__pcInitialCue = e; });
+    await page.evaluate(() => window.__vsim.pause());
+    await teaching(false);
+    await mode('vc-cmv');
+    check('PC.VC-hidden', !(await cue.isVisible()));
+    await page.locator('.controls [data-collapsible][data-collapsed]').evaluateAll(es => es.forEach(e => e.click()));
+    await input('compliance', 50); await input('resistance', 10); await input('rr', 14);
+    await page.locator('#pmus-toggle').evaluate(e => { if (e.classList.contains('hold-btn--active')) e.click(); });
+    // Passive means the toggle is off; the magnitude slider has a positive minimum.
+    for (const m of ['pc-cmv', 'PC-CSV']) {
+        await mode(m); await seek(0);
+        check('PC.static-node-identity', await cue.evaluate(e => e === window.__pcInitialCue));
+        check(`PC.${m}.reset-presence`, await cue.isVisible());
+        if (!(await cue.isVisible())) continue;
+        check('PC.accessible-name', await cue.getAttribute('aria-label') === 'Idealized pressure control help');
+        check('PC.visible-copy', (await cue.locator('span').first().textContent()) === 'Idealized pressure control');
+        await open();
+        check(`PC.${m}.exact-help`, (await help.textContent()).trim() === (m === 'PC-CSV' ? csv : cmv) + '\n\n' + common);
+        check('PC.no-hold-fallback', !(await help.textContent()).includes('Reason codes:'));
+        await seek(15);
+        check(`PC.${m}.passive-presence`, await cue.isVisible());
+        if (m === 'PC-CSV') check('PC.csv-idle-conditional', (await state()).completed === null && (await help.textContent()).includes('When a breath is delivered'));
+        await teaching(true);
+        check(`PC.${m}.teaching-presence`, await cue.isVisible());
+        await teaching(false);
+    }
+    await mode('pc-cmv');
+    if (!(await cue.isVisible())) return { checks, geometry, caveats, errors: checks.filter(c => !c.ok).map(c => c.id) };
+    await open();
+    check('PC.focus-opens', await help.isVisible());
+    check('PC.aria-open', await cue.getAttribute('aria-controls') === 'measurement-help' && await cue.getAttribute('aria-expanded') === 'true' && await cue.getAttribute('aria-describedby') === 'measurement-help');
+    await cue.press('Enter');
+    await focusElsewhere(); await page.waitForTimeout(200);
+    check('PC.enter-pins', await help.isVisible());
+    await cue.focus(); await cue.press('Space');
+    check('PC.space-toggles', !(await help.isVisible()));
+    await dismiss();
+    await cue.hover();
+    check('PC.hover-opens', await help.isVisible());
+    const box = await cue.boundingBox();
+    await page.mouse.move(box.x + 10, box.y + box.height + 3);
+    await page.waitForTimeout(75);
+    check('PC.hover-gap-delay', await help.isVisible());
+    if (await help.isVisible()) await help.hover();
+    await page.waitForTimeout(200);
+    check('PC.hover-transfer', await help.isVisible());
+    await page.mouse.move(1, 1); await page.waitForTimeout(200);
+    check('PC.hover-leave-closes', !(await help.isVisible()));
+    await cue.click(); await focusElsewhere(); await page.mouse.move(1, 1); await page.waitForTimeout(200);
+    check('PC.click-pins', await help.isVisible());
+    await cue.hover(); await cue.click();
+    check('PC.reentry-toggle', !(await help.isVisible()));
+    await cue.click(); await focusElsewhere(); await page.keyboard.press('Escape');
+    check('PC.escape-close-focus', !(await help.isVisible()) && await cue.evaluate(e => e === document.activeElement));
+    await redraw();
+    check('PC.escape-no-reopen', !(await help.isVisible()));
+    await open(); await cue.press('Tab'); await page.waitForTimeout(200);
+    check('PC.tab-order', !(await cue.evaluate(e => e === document.activeElement)) && await cue.getAttribute('aria-expanded') === 'false');
+    await open(); await focusElsewhere(); await page.waitForTimeout(200);
+    check('PC.blur-unpinned', !(await help.isVisible()));
+    await open(); await cue.press('Enter');
+    await cue.evaluate(e => { window.__pcOriginalCue = e; });
+    await page.evaluate(() => { for (let i = 0; i < 120; i++) window.__vsim.redraw(); window.__vsim.step(1); });
+    check('PC.redraw-identity-focus-pin', await cue.evaluate(e => e === window.__pcOriginalCue && document.activeElement === e) && await help.isVisible());
+    await seek(0); await input('peep', 7); await mode('PC-CSV');
+    check('PC.state-transition-text', (await help.textContent()).trim() === csv + '\n\n' + common && await help.isVisible());
+    await teaching(true); await teaching(false);
+    await page.evaluate(() => { document.querySelector('#speed-group [data-speed="2"]').click(); document.getElementById('btn-pause').click(); document.getElementById('btn-pause').click(); window.__vsim.redraw(); });
+    check('PC.state-persistence', await cue.evaluate(e => e === window.__pcOriginalCue && e === document.activeElement) && await help.isVisible());
+    await focusElsewhere(); await page.waitForTimeout(200);
+    check('PC.pin-survives-state-updates', await help.isVisible());
+    await cue.focus(); await mode('vc-cmv');
+    check('PC.VC-transition-closes', !(await help.isVisible()) && !(await cue.isVisible()) && await cue.getAttribute('aria-expanded') === 'false' && await cue.getAttribute('aria-describedby') === null);
+    check('PC.VC-focus-visible', await page.evaluate(() => document.activeElement.matches('.mode-btn[data-mode="vc-cmv"]') && document.activeElement.getClientRects().length > 0));
+    await mode('pc-cmv'); await open(); await cue.press('Enter');
+    await page.locator('.mode-btn[data-mode="PC-CSV"]').click();
+    check('PC.user-mode-dismissal', !(await help.isVisible()) && !(await cue.evaluate(e => e === document.activeElement)));
+    await open(); await cue.press('Enter'); await page.locator('#btn-teaching-mode').click();
+    check('PC.user-teach-dismissal', !(await help.isVisible()) && await page.locator('#btn-teaching-mode').evaluate(e => e === document.activeElement));
+    await teaching(false); await mode('pc-cmv');
+    // Actual HOLD and expiration, active CSV flow cycle, max Ti, weak effort and cessation.
+    await input('peep', 5); await input('rr', 14);
+    await page.locator('#hold-toggle').evaluate(e => { if (!e.classList.contains('hold-btn--active')) e.click(); });
+    await input('hold-duration', 5); await seek(1.5);
+    check('PC.hold-presence', (await state()).phase === 'HOLD' && await cue.isVisible());
+    await seek(2.1); check('PC.expiration-presence', (await state()).phase === 'EXPIRATION' && await cue.isVisible());
+    await page.locator('#pmus-toggle').evaluate(e => { if (!e.classList.contains('hold-btn--active')) e.click(); });
+    await input('pmus-max', 6); await input('patient-rr', 20); await input('neural-ti', 10);
+    await mode('PC-CSV'); await input('cycle-percent', 25); await seek(15);
+    check('PC.csv-active-flow', (await state()).completed?.terminationReason === 'flowCycle' && await cue.isVisible());
+    await input('cycle-percent', 10); await input('rr', 35); await seek(15);
+    check('PC.csv-max-ti', (await state()).completed?.terminationReason === 'maxTiReached' && await cue.isVisible());
+    await input('pmus-max', 0.5); await input('flow-trigger', 5); await seek(15);
+    check('PC.csv-weak', (await state()).completed === null && (await state()).failedTriggers > 0 && await cue.isVisible());
+    await input('flow-trigger', 2); await input('pmus-max', 6); await input('rr', 14); await input('cycle-percent', 25); await seek(15);
+    await page.locator('#pmus-toggle').evaluate(e => { if (e.classList.contains('hold-btn--active')) e.click(); });
+    await page.evaluate(() => window.__vsim.step(35));
+    check('PC.csv-cessation', (await state()).deliveredVentilation.valueLpm === 0 && await cue.isVisible());
+    // Shared HOLD / VE pin fixes must work on their static triggers too.
+    await mode('pc-cmv');
+    for (const key of ['pplat', 'delivered-ve']) {
+        const triggers = page.locator(`[data-measurement-help="${key}"]`);
+        let trigger;
+        for (let i = 0; i < await triggers.count(); i++) if (await triggers.nth(i).isVisible()) { trigger = triggers.nth(i); break; }
+        await dismiss(); await trigger.click(); await focusElsewhere(); await page.mouse.move(1, 1); await page.waitForTimeout(200); await trigger.hover(); await trigger.click();
+        check(`PC.shared-${key}-reentry-toggle`, !(await help.isVisible()));
+        await trigger.click(); await focusElsewhere(); await page.keyboard.press('Escape'); await redraw();
+        check(`PC.shared-${key}-escape`, !(await help.isVisible()) && await trigger.evaluate(e => e === document.activeElement));
+    }
+    await open(); await page.locator('[data-measurement-help="delivered-ve"]').click();
+    check('PC.one-shared-popover', await page.locator('#measurement-help').count() === 1 && await cue.getAttribute('aria-expanded') === 'false' && await cue.getAttribute('aria-describedby') === null);
+    for (const width of [320, 390, 768, 1024, 1440]) for (const height of [844, 900]) for (const teach of [false, true]) {
+        await dismiss(); await teaching(teach); await page.setViewportSize({ width, height }); await redraw();
+        const g = await cue.evaluate(e => {
+            const r = e.getBoundingClientRect(), row = e.parentElement.getBoundingClientRect(), plot = document.getElementById('canvas-pressure').getBoundingClientRect();
+            const text = e.querySelector('span'), style = getComputedStyle(e);
+            return { cue: r.toJSON(), row: row.toJSON(), plot: plot.toJSON(), visible: e.getClientRects().length > 0, scrollWidth: e.scrollWidth, clientWidth: e.clientWidth, textScroll: text.scrollWidth, textClient: text.clientWidth, font: style.fontSize, nowrap: style.whiteSpace, documentWidth: document.documentElement.scrollWidth };
+        });
+        geometry.push({ width, height, teaching: teach, ...g });
+        if (!teach && width < 600) { caveats.push(`Pre-existing Standard grid at ${width}px reserves 480px for sidebars; plot/cue unavailable.`); continue; }
+        check(`PC.geometry-${width}-${height}-${teach}`, g.visible && g.cue.height >= 24 && g.cue.bottom <= g.plot.top && g.cue.right <= width && g.scrollWidth <= g.clientWidth + 1 && g.textScroll <= g.textClient + 1 && g.nowrap !== 'nowrap' && g.font === '12px', JSON.stringify(g));
+        await open();
+        const b = await help.boundingBox();
+        check(`PC.help-viewport-${width}-${height}-${teach}`, b && b.x >= 7.5 && b.y >= 7.5 && b.x + b.width <= width - 7.5 && b.y + b.height <= height - 7.5);
+    }
+    // Short viewport forces overflow without synthetic CSS; focus stays on cue.
+    await teaching(true); await page.setViewportSize({ width: 390, height: 240 }); await redraw(); await open();
+    const overflow = await help.evaluate(e => e.scrollHeight > e.clientHeight);
+    check('PC.overflow-fixture', overflow);
+    for (const key of ['End', 'Home', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp']) {
+        await cue.press(key);
+        const s = await help.evaluate(e => ({ top: e.scrollTop, max: e.scrollHeight - e.clientHeight }));
+        check(`PC.overflow-${key}`, overflow && (key === 'End' ? Math.abs(s.top - s.max) <= 1 : ['Home', 'ArrowUp', 'PageUp'].includes(key) ? s.top === 0 : s.top > 0) && await cue.evaluate(e => e === document.activeElement));
+    }
+    await page.setViewportSize({ width: 1440, height: 900 }); await teaching(false);
+    const storage = await page.evaluate(() => ({ local: Object.keys(localStorage), session: Object.keys(sessionStorage) }));
+    await page.reload(); await page.waitForFunction(() => !!window.__vsim); await page.evaluate(() => window.__vsim.pause());
+    check('PC.reload-default', (await state()).mode === 'vc-cmv' && !(await state()).teachingMode && !(await cue.isVisible()) && !(await help.isVisible()));
+    check('PC.no-persistence-storage', ![...storage.local, ...storage.session].some(k => /ideal|disclosure|measurement-help/i.test(k)));
+    // A real touch-only browser context must activate the same click handler.
+    const touchContext = await page.context().browser().newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+    try {
+        const touch = await touchContext.newPage(); await touch.goto(page.url()); await touch.waitForFunction(() => !!window.__vsim);
+        await touch.evaluate(() => { window.__vsim.pause(); document.querySelector('.mode-btn[data-mode="PC-CSV"]').click(); document.getElementById('btn-teaching-mode').click(); });
+        const t = touch.locator('#pc-disclosure-trigger'), p = touch.locator('#measurement-help');
+        await t.tap(); await touch.locator('#btn-pause').focus(); await touch.waitForTimeout(200);
+        check('PC.touch-pins', await p.isVisible());
+        await t.tap(); check('PC.touch-toggle', !(await p.isVisible()));
+        await t.tap(); await touch.locator('#btn-pause').tap(); check('PC.touch-outside-dismiss', !(await p.isVisible()));
+    } finally { await touchContext.close(); }
+    return { checks, geometry, caveats, errors: checks.filter(c => !c.ok).map(c => c.id + ': ' + c.detail) };
+}
+
+module.exports = { pcDisclosureContract };
+
+if (require.main === module) (async () => {
     const launchOptions = { args: ['--no-sandbox'] };
     if (process.env.CHROMIUM_PATH) launchOptions.executablePath = process.env.CHROMIUM_PATH;
     const browser = await chromium.launch(launchOptions);
@@ -539,12 +725,14 @@ async function presentationHelpContract(page) {
         const csv = await page.$eval('#param-mode', (e) => e.textContent.trim());
         const provenance = await readoutContract(page);
         const presentation = await presentationHelpContract(page);
+        const disclosure = await pcDisclosureContract(page);
+        console.log(`    VSM-CLIN-007 disclosure checks: ${disclosure.checks.filter(c => c.ok).length}/${disclosure.checks.length}`);
         console.log(`    VSM-CLIN-005 presentation checks: ${presentation.checks - presentation.errors.length}/${presentation.checks}`);
         console.log('    VSM-CLIN-004 states:', JSON.stringify(provenance.states));
         check('panel mode tracks a mode change and VSM-CLIN-004 readouts retain provenance/state',
             csv.startsWith('PC-CSV') && provenance.errors.length === 0 && provenance.geometry.length === 0
-                && presentation.errors.length === 0,
-            [csv, ...provenance.errors, ...provenance.geometry, ...presentation.errors].join(' | '));
+                && presentation.errors.length === 0 && disclosure.errors.length === 0,
+            [csv, ...provenance.errors, ...provenance.geometry, ...presentation.errors, ...disclosure.errors].join(' | '));
         check('no page errors', page._errs.length === 0, page._errs.join(' | '));
         await ctx.close();
     }
@@ -777,7 +965,7 @@ async function presentationHelpContract(page) {
         const allVersions = [...(html + mainJs + ventJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 10 && allVersions.every(v => v === '14'),
+                && allVersions.length === 10 && allVersions.every(v => v === '15'),
             `imports=${imp.join(',')} html=${versions.join(',')} all ten=${allVersions.join(',')}`);
     }
 

@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=14';
-import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=14';
-import { SimulationEngine }  from './simulation.js?v=14';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=14';
-import AlarmEngine from '../alarms.js?v=14';
+import { LungModel }        from './lung-model.js?v=15';
+import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=15';
+import { SimulationEngine }  from './simulation.js?v=15';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=15';
+import AlarmEngine from '../alarms.js?v=15';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=14';
+} from '../alarm-audio.js?v=15';
 
 
 // =============================================================================
@@ -304,6 +304,7 @@ function applyModeUI(mode) {
     const isPressureMode = mode !== 'vc-cmv';
     const isCsv = mode === MODE_PC_CSV;
     updateModeLabel();
+    updatePcDisclosure();
 
     const vtControl      = document.getElementById('vt-control');
     const pinspControl   = document.getElementById('pinsp-control');
@@ -1692,6 +1693,23 @@ let measurementHelpClickPinned = false;
 let measurementHelpCloseTimer = null;
 let measurementHelpRestoringFocus = false;
 
+function updatePcDisclosure() {
+    const row = document.getElementById('pc-disclosure');
+    const trigger = document.getElementById('pc-disclosure-trigger');
+    if (!row || !trigger) return;
+    const applicable = vent.mode === 'pc-cmv' || vent.mode === MODE_PC_CSV;
+    const hadFocus = document.activeElement === trigger;
+    if (!applicable && openMeasurementHelpTrigger === trigger) closeMeasurementHelp();
+    row.hidden = !applicable;
+    if (!applicable && hadFocus) {
+        const modeButton = document.querySelector(`.mode-btn[data-mode="${vent.mode}"]`);
+        const destination = modeButton?.getClientRects().length
+            ? modeButton : document.getElementById('btn-teaching-mode');
+        destination?.focus();
+    }
+    refreshOpenMeasurementHelp();
+}
+
 function detailedResistanceStatusCopy(result) {
     if (result.status === 'valid') return '';
     if (result.reasons.includes('RESISTANCE_RAMP_VC')) return 'Resistance unavailable for ramp VC.';
@@ -1702,6 +1720,15 @@ function detailedResistanceStatusCopy(result) {
 }
 
 function measurementHelpText(key) {
+    if (key === 'pc-idealization') {
+        const opening = vent.mode === MODE_PC_CSV
+            ? 'In PC-CSV, this simulator uses idealized set-point pressure control. When a breath is delivered, Paw stays at PEEP plus Pressure Support during pressure-targeted inspiration, even with patient effort.'
+            : 'In PC-CMV, this simulator uses idealized set-point pressure control. During pressure-targeted inspiration, Paw stays at PEEP plus the set inspiratory pressure, even with patient effort.';
+        return [opening,
+            'Patient effort can change flow and delivered volume in this model. Triggering, cycling, inspiratory holds, and expiration follow their own rules.',
+            'The flat inspiratory trace here is a model idealization. On real ventilators, patient effort may also affect pressure; assess flow and volume as well.',
+        ].join('\n\n');
+    }
     if (key === 'delivered-ve') {
         const delivery = displayedDelivery && sim.isCurrentDeliveredVentilation(displayedDelivery)
             ? displayedDelivery : sim.deliveredVentilation;
@@ -1745,8 +1772,11 @@ function positionMeasurementHelp() {
     const trigger = openMeasurementHelpTrigger;
     if (!popover || !trigger || popover.hidden) return;
     const triggerBox = trigger.getBoundingClientRect();
-    const helpBox = popover.getBoundingClientRect();
     const gap = 6;
+    const below = window.innerHeight - triggerBox.bottom - gap - 8;
+    const above = triggerBox.top - gap - 8;
+    popover.style.maxHeight = `${Math.max(0, Math.min(window.innerHeight - 16, Math.max(below, above)))}px`;
+    const helpBox = popover.getBoundingClientRect();
     let left = Math.min(triggerBox.left, window.innerWidth - helpBox.width - 8);
     left = Math.max(8, left);
     let top = triggerBox.bottom + gap;
@@ -1765,8 +1795,10 @@ function openMeasurementHelp(trigger, clickPinned = false) {
         openMeasurementHelpTrigger.removeAttribute('aria-describedby');
     }
     clearTimeout(measurementHelpCloseTimer);
+    const keepPin = openMeasurementHelpTrigger === trigger && measurementHelpClickPinned;
+    if (openMeasurementHelpTrigger !== trigger) popover.scrollTop = 0;
     openMeasurementHelpTrigger = trigger;
-    measurementHelpClickPinned = clickPinned;
+    measurementHelpClickPinned = clickPinned || keepPin;
     trigger.setAttribute('aria-expanded', 'true');
     trigger.setAttribute('aria-describedby', 'measurement-help');
     text.textContent = measurementHelpText(trigger.dataset.measurementHelp);
@@ -1840,6 +1872,20 @@ function bindMeasurementHelp() {
         if (event.key === 'Escape' && openMeasurementHelpTrigger) {
             event.preventDefault();
             closeMeasurementHelp(true);
+            return;
+        }
+        if (openMeasurementHelpTrigger === document.activeElement && !popover.hidden
+            && popover.scrollHeight > popover.clientHeight) {
+            const scroll = {
+                ArrowDown: popover.scrollTop + 40, ArrowUp: popover.scrollTop - 40,
+                PageDown: popover.scrollTop + popover.clientHeight,
+                PageUp: popover.scrollTop - popover.clientHeight,
+                Home: 0, End: popover.scrollHeight,
+            };
+            if (Object.hasOwn(scroll, event.key)) {
+                event.preventDefault();
+                popover.scrollTop = scroll[event.key];
+            }
         }
     });
     window.addEventListener('resize', positionMeasurementHelp);

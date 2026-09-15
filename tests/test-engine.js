@@ -1511,14 +1511,14 @@ const midFlow_pm = wavesPC_pm.flow[Math.round(tiSamplesPC/2)];
 console.log(`    Mid-insp flow: no-Pmus=${midFlow_no.toFixed(1)}, Pmus=${midFlow_pm.toFixed(1)} L/min`);
 assert('PC+Pmus: mid-insp flow higher', midFlow_pm > midFlow_no ? 1 : 0, 1, 0);
 
-// Pressure should still be constant (ventilator controls it)
+// This batch fixture prescribes constant Paw during pressure-targeted inspiration.
 const pPC_start = wavesPC_pm.pressure[0];
 const pPC_mid   = wavesPC_pm.pressure[Math.round(tiSamplesPC/2)];
-assert('PC+Pmus: pressure still constant', Math.abs(pPC_start - pPC_mid) < 0.5 ? 1 : 0, 1, 0);
+assert('PC+Pmus: idealized inspiratory pressure stays constant', Math.abs(pPC_start - pPC_mid) < 0.5 ? 1 : 0, 1, 0);
 
-console.log('\n  ⚕️ In PC mode, patient effort is invisible on pressure waveform —');
-console.log('     but look at flow and volume! VT increases because Pmus adds');
-console.log('     to the driving pressure. This is why PC mode can over-deliver.');
+console.log('\n  In this PC-CMV batch fixture, effort increases delivered volume.');
+console.log('     Inspiratory Paw stays at the set target: idealized set-point pressure control.');
+console.log('     This result does not establish the pressure-waveform shape on a real ventilator.');
 
 
 // =============================================================================

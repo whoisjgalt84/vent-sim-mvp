@@ -134,7 +134,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=14`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
+   Currently `?v=15`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
    `js/ventilator.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's

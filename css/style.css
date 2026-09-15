@@ -1301,10 +1301,41 @@ body.teaching-mode .parameters .param-row.param-row--measurement.teaching-key {
     font-size: 11px;
     line-height: 1.45;
     white-space: pre-line;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
 }
 
 .measurement-help[hidden] {
     display: none;
+}
+
+/* One model disclosure shared by Standard and Teaching layouts. */
+.pc-disclosure {
+    flex: 0 0 auto;
+    min-height: 24px;
+    padding-left: 44px;
+}
+
+.pc-disclosure[hidden] {
+    display: none;
+}
+
+.pc-disclosure-trigger {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    min-height: 24px;
+    padding: 2px 5px;
+    gap: 5px;
+    border-radius: 3px;
+    font: 400 12px/1.35 system-ui, sans-serif;
+    text-transform: none;
+    text-align: left;
+    white-space: normal;
+}
+
+@media (max-width: 768px) {
+    .pc-disclosure { padding-left: 0; }
 }
 
 

@@ -45,7 +45,7 @@
  * ============================================================================
  */
 
-import { LungModel } from './lung-model.js?v=14';
+import { LungModel } from './lung-model.js?v=15';
 
 export const MODE_VC_CMV = 'vc-cmv';
 export const MODE_PC_CMV = 'pc-cmv';
@@ -176,8 +176,10 @@ export class Ventilator {
         //     Pmus ADDS to the driving pressure, increasing flow & volume:
         //       V̇(t) = [Pinsp + Pmus(t) - V(t)×E] / R
         //     Requires numerical integration (no closed-form with Pmus).
-        //     Teaching point: "In PC mode, patient effort increases VT —
-        //     the vent can't prevent it since it only controls pressure."
+        //     In this model's pressure-targeted inspiration, patient effort can change flow and
+        //     delivered volume while Paw remains at the prescribed target. This is idealized
+        //     set-point pressure control, not a claim that effort is invisible on real
+        //     pressure-control waveforms.
         //
         //   — Chatburn, Fundamentals, Ch. 2 & 4
         //   — Mireles-Cabodevila et al. (2022), Equation 1
@@ -972,17 +974,12 @@ export class Ventilator {
      *   V̇(t) = [Pinsp + Pmus(t) - V_above(t)×E] / R
      *   V(n+1) = V(n) + V̇(n) × dt
      *
-     *   Pmus INCREASES the effective driving pressure, so:
-     *     - Flow is HIGHER → more volume delivered
-     *     - VT INCREASES with patient effort
-     *
-     *   Paw remains at PEEP + Pinsp (ventilator controls pressure).
-     *   The extra work from muscles shows up as increased flow/volume,
-     *   NOT as a pressure change. This is the opposite of VC mode.
-     *
-     *   Teaching point: "In PC, the patient's effort is invisible on
-     *   the pressure waveform — you have to look at flow and volume
-     *   to see if the patient is working."
+     *   In this PC-CMV batch waveform generator, Pmus contributes to the driving pressure used
+     *   to calculate inspiratory flow and volume. During pressure-targeted inspiration, Paw is
+     *   prescribed exactly as PEEP + Pinsp. This is idealized set-point pressure control. It
+     *   does not describe triggering, cycling, holds, or expiration, and it does not establish
+     *   the pressure-waveform shape on a real ventilator. Clinical adjudication of the
+     *   simulator's current PC effort morphology remains deferred under CLIN-OD-008.
      *
      * @private
      */

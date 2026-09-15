@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=14">
+    <link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
 
@@ -404,6 +404,13 @@
     <!-- CENTER — Waveform Displays                                       -->
     <!-- ================================================================ -->
     <main class="waveforms">
+        <div class="pc-disclosure" id="pc-disclosure" hidden>
+            <button type="button" class="measurement-help-trigger pc-disclosure-trigger"
+                    id="pc-disclosure-trigger" data-measurement-help="pc-idealization"
+                    aria-label="Idealized pressure control help" aria-expanded="false">
+                <span>Idealized pressure control</span><span aria-hidden="true">ⓘ</span>
+            </button>
+        </div>
         <div class="waveform-panel">
             <canvas id="canvas-pressure"></canvas>
         </div>
@@ -584,8 +591,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=14"></script>
-<script type="module" src="js/main.js?v=14"></script>
+<script type="module" src="alarms.js?v=15"></script>
+<script type="module" src="js/main.js?v=15"></script>
 
 </body>
 </html>

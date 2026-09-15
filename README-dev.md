@@ -183,10 +183,11 @@ no such assumption — trapping there is emergent residual volume.
 ### 5. Modes reveal different truths
 
 * **VC** → flow is controlled → **pressure** reveals mechanics and effort
-* **PC** → pressure is controlled → **flow and volume** reveal mechanics and effort
+* **PC** → during pressure-targeted inspiration, flow and volume reflect mechanics and effort. This simulator prescribes Paw exactly at its target in PC-CMV and PC-CSV: idealized set-point pressure control.
 
-This is the reading rule from the literature: *look at the waveform opposite the
-control variable.*
+
+
+The clinical reading rule emphasizes the waveform opposite the control variable. Patient effort may also affect pressure on real ventilators (MC2022, PDF p.4 / journal p.132). See `docs/model.md` §3.2 for the phase boundaries and deferred morphology review.
 
 ---
 

@@ -22,6 +22,71 @@ test.use({ viewport: { width: 1440, height: 900 } });
 // so a regression in the erase bar or the pen-lift shows up.
 const SEEK_SECONDS = 14;
 
+// VSM-CLIN-007: characterize existing traces with the approved disclosure.
+// These images require separate owner acceptance; they do not approve morphology.
+async function pcDisclosureSnapshots(page) {
+    const common = 'Patient effort can change flow and delivered volume in this model. Triggering, cycling, inspiratory holds, and expiration follow their own rules.\n\nThe flat inspiratory trace here is a model idealization. On real ventilators, patient effort may also affect pressure; assess flow and volume as well.';
+    for (const mode of ['pc-cmv', 'PC-CSV']) for (const active of [false, true]) for (const teaching of [false, true]) {
+        const errors = await h.open(page);
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await h.setMode(page, mode);
+        await h.expandRail(page);
+        await h.setRange(page, '#compliance', 50);
+        await h.setRange(page, '#resistance', 10);
+        await h.setRange(page, '#rr', 14);
+        if (active) await h.enableEffort(page, { patientRR: mode === 'pc-cmv' ? 14 : 20, pmus: mode === 'pc-cmv' ? 10 : 6 });
+        if (teaching) await h.teachingMode(page);
+        await h.seek(page, 14);
+        const s = await h.state(page);
+        expect(s.mode).toBe(mode);
+        expect(s.teachingMode).toBe(teaching);
+        if (mode === 'PC-CSV' && !active) expect(s.completed).toBeNull();
+        else expect(s.completed).not.toBeNull();
+        if (mode === 'PC-CSV' && active) expect(s.completed.terminationReason).toBe('flowCycle');
+        const cue = page.getByRole('button', { name: 'Idealized pressure control help', exact: true });
+        await expect(cue).toBeVisible();
+        await expect(cue.locator('span').first()).toHaveText('Idealized pressure control');
+        const name = `pc-disclosure-${mode}-${active ? 'active' : 'passive'}-${teaching ? 'teaching' : 'standard'}`;
+        await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: true });
+        if (!active) {
+            await cue.click();
+            const opening = mode === 'PC-CSV'
+                ? 'In PC-CSV, this simulator uses idealized set-point pressure control. When a breath is delivered, Paw stays at PEEP plus Pressure Support during pressure-targeted inspiration, even with patient effort.'
+                : 'In PC-CMV, this simulator uses idealized set-point pressure control. During pressure-targeted inspiration, Paw stays at PEEP plus the set inspiratory pressure, even with patient effort.';
+            expect((await page.locator('#measurement-help').textContent()).trim()).toBe(opening + '\n\n' + common);
+            await expect(page).toHaveScreenshot(`${name}-help.png`, { fullPage: true });
+        }
+        if (active && teaching) {
+            for (const width of [390, 320]) {
+                await page.setViewportSize({ width, height: 844 });
+                await page.evaluate(() => window.__vsim.redraw());
+                await expect(cue).toBeVisible();
+                await expect(page).toHaveScreenshot(`${name}-${width}.png`, { fullPage: true });
+            }
+            await page.setViewportSize({ width: 390, height: 240 });
+            await cue.focus();
+            await expect(page.locator('#measurement-help')).toBeVisible();
+            expect(await page.locator('#measurement-help').evaluate(e => e.scrollHeight > e.clientHeight)).toBe(true);
+            await cue.press('End');
+            await expect(page).toHaveScreenshot(`${name}-overflow-end.png`, { fullPage: true });
+        }
+        expect(errors).toEqual([]);
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await h.open(page);
+    await h.expandRail(page); await h.setMode(page, 'pc-cmv');
+    await page.click('#hold-toggle'); await h.setRange(page, '#hold-duration', 5);
+    await h.seek(page, 1.5);
+    expect((await h.state(page)).phase).toBe('HOLD');
+    await expect(page.locator('#pc-disclosure-trigger')).toBeVisible();
+    await expect(page).toHaveScreenshot('pc-disclosure-cmv-hold.png', { fullPage: true });
+    await h.open(page); await h.setMode(page, 'PC-CSV'); await h.enableEffort(page, { patientRR: 20, pmus: 6 });
+    await h.setRange(page, '#rr', 35); await h.setRange(page, '#cycle-percent', 10); await h.teachingMode(page); await h.seek(page, 15);
+    expect((await h.state(page)).completed.terminationReason).toBe('maxTiReached');
+    await expect(page.locator('#pc-disclosure-trigger')).toBeVisible();
+    await expect(page).toHaveScreenshot('pc-disclosure-csv-max-ti.png', { fullPage: true });
+}
+
 async function expectAvailableDelivery(page, zero = false) {
     const s = await h.state(page);
     const delivery = s.deliveredVentilation;
@@ -240,6 +305,7 @@ test.describe('waveform display', () => {
     });
 
     test('weak effort in PC-CSV — sub-threshold failure morphology (SME-021)', async ({ page }) => {
+        test.setTimeout(90_000);
         await h.open(page);
         await h.setMode(page, 'PC-CSV');
         await h.enableEffort(page, { patientRR: 20, pmus: 0.5 });
@@ -259,6 +325,7 @@ test.describe('waveform display', () => {
         await page.setViewportSize({ width: 1440, height: 1100 });
         await page.evaluate(() => window.__vsim.redraw());
         await expect(page.locator('.parameters')).toHaveScreenshot('csv-failed-teaching-column.png');
+        await pcDisclosureSnapshots(page);
     });
 
     test('monitored-value panel does not clip at any type size', async ({ page }) => {
@@ -357,6 +424,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
+        expect(versions, 'VSM-CLIN-007 asset release').toEqual(['15']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);

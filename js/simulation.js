@@ -243,6 +243,7 @@ export class SimulationEngine {
         this.settingsGeneration = 0;
         this._lastMode = null;
         this._settingsFingerprint = null;
+        this._resetDeliveredVentilation();
 
         // --- Transport Controls ---
         this.running = true;
@@ -765,6 +766,123 @@ export class SimulationEngine {
         });
     }
 
+    // VSM-CLIN-006: observe canonical publications without changing breath physics.
+    _resetDeliveredVentilation() {
+        this._veEvents = [];
+        this._veRevision = 0;
+        this._veMode = this.vent.mode;
+        this._veExpectedTick = 0;
+        this._veObservedSinceTick = 0;
+        this._veInvalidUntilTick = 0;
+        this._veFault = null;
+        this._veLastCompletion = null;
+    }
+
+    _observeDeliveredClock() {
+        const tick = Math.round(this.globalTime / this.dt);
+        if (!Number.isFinite(this.globalTime) || tick < 0 || tick !== this._veExpectedTick) {
+            // A gap/reversal cannot represent continuously observed delivery.
+            // Start a fresh observation interval, leaving the physics untouched.
+            this._veEvents = [];
+            this._veRevision++;
+            this._veObservedSinceTick = Number.isFinite(tick) && tick >= 0 ? tick : this._veExpectedTick;
+            this._veInvalidUntilTick = this._veObservedSinceTick + Math.round(30 / this.dt);
+            this._veFault = 'CLOCK_DISCONTINUITY';
+            this._veLastCompletion = null;
+        }
+        const cutoff = tick - Math.round(30 / this.dt);
+        this._veEvents = this._veEvents.filter(event => event.tick > cutoff);
+    }
+
+    _recordDeliveredBreath(record) {
+        const rawNow = Math.round(this.globalTime / this.dt);
+        const now = Number.isFinite(rawNow) && rawNow >= 0 ? rawNow : this._veExpectedTick;
+        const tick = Math.round(record?.completedAt_s / this.dt);
+        const identity = record && {
+            simulationGeneration: record.simulationGeneration,
+            modeGeneration: record.modeGeneration,
+            settingsGeneration: record.settingsGeneration,
+            breathId: record.breathId,
+        };
+        const validIdentity = identity && Object.values(identity).every(Number.isInteger)
+            && identity.simulationGeneration === this.simulationGeneration
+            && identity.modeGeneration === this.modeGeneration
+            && identity.settingsGeneration >= 0 && identity.breathId > 0;
+        const knownTick = Number.isFinite(record?.completedAt_s)
+            && record.completedAt_s >= 0 && record.completedAt_s <= this.globalTime
+            && tick >= 0 && tick <= now;
+        const duplicate = validIdentity && this._veEvents.find(event =>
+            event.identity.simulationGeneration === identity.simulationGeneration
+            && event.identity.breathId === identity.breathId);
+        const signature = JSON.stringify(record);
+        if (duplicate?.signature === signature) return;
+        if (!knownTick || !validIdentity || duplicate
+            || !Number.isFinite(record.measuredVT_mL) || record.measuredVT_mL < 0
+            || !Number.isFinite(record.startedAt_s) || record.startedAt_s < 0
+            || record.startedAt_s > record.completedAt_s
+            || record.configuredMode !== this._veMode
+            || (this._veLastCompletion !== null && record.completedAt_s < this._veLastCompletion)) {
+            this._veFault = 'INVALID_HISTORY';
+            this._veInvalidUntilTick = Math.max(this._veInvalidUntilTick,
+                (knownTick ? tick : now) + Math.round(30 / this.dt));
+            if (!knownTick) this._veObservedSinceTick = now;
+            this._veRevision++;
+            return;
+        }
+        this._veEvents.push({ tick, volumeL: record.measuredVT_mL / 1000,
+            identity: freezeRecord(identity), signature,
+            configuredMode: record.configuredMode, triggerAgent: record.triggerAgent,
+            cycleAgent: record.cycleAgent, terminationReason: record.terminationReason,
+            breathType: record.breathType, startedAt_s: record.startedAt_s,
+            completedAt_s: record.completedAt_s });
+        this._veLastCompletion = record.completedAt_s;
+        this._veRevision++;
+    }
+
+    /** Immutable, time-aged completed-volume window; never uses RR or prediction. */
+    get deliveredVentilation() {
+        const rawTick = Math.round(this.globalTime / this.dt);
+        const clockValid = Number.isFinite(this.globalTime) && rawTick >= 0
+            && rawTick === this._veExpectedTick;
+        const tick = Number.isFinite(rawTick) && rawTick >= 0 ? rawTick : this._veExpectedTick;
+        const windowTicks = Math.round(30 / this.dt);
+        const events = this._veEvents.filter(event => event.tick > tick - windowTicks && event.tick <= tick);
+        const observedSeconds = Math.min(30, Math.max(0, (tick - this._veObservedSinceTick) * this.dt));
+        const reason = this.vent.mode !== this._veMode || this.modeGeneration !== 0 ? 'MODE_MISMATCH'
+            : !clockValid ? 'CLOCK_DISCONTINUITY'
+            : tick < this._veInvalidUntilTick ? this._veFault
+            : observedSeconds < 30 ? 'INSUFFICIENT_HISTORY' : null;
+        const status = reason === null ? 'available' : reason === 'INSUFFICIENT_HISTORY' ? 'warming' : 'unavailable';
+        const sumVolumeL = status === 'unavailable' ? null : events.reduce((sum, event) => sum + event.volumeL, 0);
+        return freezeRecord({
+            schemaVersion: 1, source: 'live-completed-breath-volume',
+            volumeDefinition: 'inspiratory-volume-above-breath-start-residual',
+            estimator: 'rolling-volume-sum', status, reason,
+            valueLpm: status === 'available' ? sumVolumeL * 2 : null,
+            asOfTick: tick, asOfSimTime_s: Number.isFinite(this.globalTime) && this.globalTime >= 0
+                ? this.globalTime : tick * this.dt,
+            simulationGeneration: this.simulationGeneration, modeGeneration: this.modeGeneration,
+            windowSeconds: 30, windowStartTickExclusive: tick - windowTicks,
+            windowEndTickInclusive: tick, observedSeconds, sumVolumeL,
+            completedCount: events.length, lastCompletionAt_s: this._veLastCompletion,
+            historyRevision: this._veRevision, eventIds: events.map(event => event.identity),
+        });
+    }
+
+    /** Reject a snapshot held over a clock, generation, mode, or publication change. */
+    isCurrentDeliveredVentilation(signal) {
+        return signal?.schemaVersion === 1 && signal.source === 'live-completed-breath-volume'
+            && this.vent.mode === this._veMode && this.modeGeneration === 0
+            && Math.round(this.globalTime / this.dt) === this._veExpectedTick
+            && signal.volumeDefinition === 'inspiratory-volume-above-breath-start-residual'
+            && signal.estimator === 'rolling-volume-sum' && signal.windowSeconds === 30
+            && signal.simulationGeneration === this.simulationGeneration
+            && signal.modeGeneration === this.modeGeneration
+            && signal.historyRevision === this._veRevision
+            && signal.asOfTick === Math.round(this.globalTime / this.dt)
+            && signal.asOfSimTime_s === this.globalTime;
+    }
+
     _updateMeasuredRR() {
         const times = this.breathTimestamps;
 
@@ -849,6 +967,7 @@ export class SimulationEngine {
                 settingsFingerprint: this.currentBreath.settingsFingerprint,
                 holdMechanics,
             });
+            this._recordDeliveredBreath(this.lastCompletedBreath);
             this.currentBreath = null;
         }
 
@@ -1115,6 +1234,7 @@ export class SimulationEngine {
      *   6. Advance clocks
      */
     tick() {
+        this._observeDeliveredClock();
         this._advanceNeural();
         this._syncMeasurementSettings();
         const physicsPhase = this.phase;
@@ -1147,6 +1267,9 @@ export class SimulationEngine {
 
         // Advance all clocks
         this.globalTime   += this.dt;
+        if (Number.isFinite(this.globalTime) && this.globalTime >= 0) {
+            this._veExpectedTick = Math.round(this.globalTime / this.dt);
+        }
         this.phaseTime    += this.dt;
         this.machineTimer += this.dt;
 
@@ -1196,6 +1319,7 @@ export class SimulationEngine {
         this._lastMode = null;
         this._settingsFingerprint = null;
         this.globalTime        = 0;
+        this._resetDeliveredVentilation();
         this.phase             = Phase.EXPIRATION;
         this.currentPhase      = 'expiration';
         this.phaseTime         = 0;

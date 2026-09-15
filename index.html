@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=12">
+    <link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
 
@@ -461,7 +461,7 @@
                     <span class="param-row__label" id="map-param-label">Predicted breath MAP</span>
                     <span class="param-row__value param-row__value--pressure" id="param-map">—</span>
                 </div>
-                <div class="param-row param-row--large param-row--rr teaching-key teaching-only">
+                <div class="param-row param-row--large param-row--rr teaching-key teaching-only" role="group" aria-labelledby="rr-param-label">
                     <span class="param-row__label" id="rr-param-label">Measured RR</span>
                     <span class="param-row__value param-row__value--volume" id="param-rr">—</span>
                 </div>
@@ -517,9 +517,12 @@
                     <span class="param-row__label" id="vt-param-label">Measured VT</span>
                     <span class="param-row__value param-row__value--volume" id="param-vt">—</span>
                 </div>
-                <div class="param-row param-row--large param-row--provenance" role="group" aria-labelledby="ve-param-label">
-                    <span class="param-row__label" id="ve-param-label">Predicted VE</span>
+                <div class="param-row param-row--large param-row--provenance param-row--measurement" role="group" aria-labelledby="ve-param-label">
+                    <span class="param-row__label" id="ve-param-label">Delivered VE</span>
+                    <button type="button" class="measurement-help-trigger" data-measurement-help="delivered-ve"
+                        aria-label="Delivered VE information" aria-expanded="false">i</button>
                     <span class="param-row__value param-row__value--volume" id="param-ve">—</span>
+                    <span class="param-row__status"><span id="ve-status">Collecting 30 s</span> · L/min</span>
                 </div>
                 <div class="param-row">
                     <span class="param-row__label" id="flow-param-label">V̇<sub>insp</sub></span>
@@ -581,8 +584,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=12"></script>
-<script type="module" src="js/main.js?v=12"></script>
+<script type="module" src="alarms.js?v=14"></script>
+<script type="module" src="js/main.js?v=14"></script>
 
 </body>
 </html>

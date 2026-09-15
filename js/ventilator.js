@@ -45,7 +45,7 @@
  * ============================================================================
  */
 
-import { LungModel } from './lung-model.js?v=12';
+import { LungModel } from './lung-model.js?v=14';
 
 export const MODE_VC_CMV = 'vc-cmv';
 export const MODE_PC_CMV = 'pc-cmv';
@@ -1174,7 +1174,7 @@ export class Ventilator {
     // MINUTE VENTILATION
     // =========================================================================
 
-    /** Exhaled minute ventilation: V̇E = VT × RR (L/min) */
+    /** Predicted ventilation: set/analytical VT × configured RR (L/min). */
     get minuteVentilation() {
         const vt = this.isPressureMode() ? this._pcSteadyStateVt() : this.tidalVolume;
         return vt * this.respiratoryRate;

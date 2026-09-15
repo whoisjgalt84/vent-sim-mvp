@@ -22,6 +22,29 @@ test.use({ viewport: { width: 1440, height: 900 } });
 // so a regression in the erase bar or the pen-lift shows up.
 const SEEK_SECONDS = 14;
 
+async function expectAvailableDelivery(page, zero = false) {
+    const s = await h.state(page);
+    const delivery = s.deliveredVentilation;
+    expect(delivery.status).toBe('available');
+    expect(delivery.observedSeconds).toBe(30);
+    expect(s.monitorDelivery).toEqual(delivery);
+    expect(s.evaluatedDelivery).toEqual(delivery);
+    expect(s.alarmMetrics.minuteVentilationLpm).toBe(delivery.valueLpm);
+    if (zero) expect(delivery.valueLpm).toBe(0);
+    else expect(delivery.valueLpm).toBeGreaterThan(0);
+    await expect(page.locator('#param-ve')).toHaveText(delivery.valueLpm.toFixed(1));
+    await expect(page.locator('#ve-status')).toHaveText('30 s');
+    await expect(page.getByRole('group', { name: 'Measured RR', exact: true })).toBeVisible();
+    if (s.teachingMode) {
+        const measuredCell = page.locator('.rr-triple__num--delivered').locator('..');
+        await expect(measuredCell.locator('.rr-triple__lbl')).toHaveText('Measured');
+        await expect(measuredCell).toHaveAttribute('title', /Completed-breath interval rate: zero until two completions/);
+    } else {
+        await expect(page.locator('#rr-param-label')).toHaveText('Measured RR');
+        await expect(page.locator('#param-rr')).toHaveAttribute('title', /Completed-breath interval rate: zero until two completions/);
+    }
+}
+
 test.describe('waveform display', () => {
 
     test('baseline — VC-CMV, passive patient', async ({ page }) => {
@@ -87,7 +110,8 @@ test.describe('waveform display', () => {
         expect((await h.state(page)).completed).toBeNull();
         await expect(page.locator('#param-pip')).toHaveText('—');
         await expect(page.locator('#param-vt')).toHaveText('—');
-        await expect(page.locator('#param-ve')).toHaveText('0');
+        await expect(page.locator('#param-ve')).toHaveText('—');
+        await expect(page.locator('#ve-status')).toHaveText('Collecting 30 s');
         await expect(page.getByRole('group', { name: 'Predicted breath MAP', exact: true })).toBeVisible();
         await expect(page.getByRole('group', { name: 'Live modeled trapped volume', exact: true })).toBeVisible();
         await expect(page).toHaveScreenshot('csv-no-breath-standard-full.png', { fullPage: true });
@@ -107,6 +131,13 @@ test.describe('waveform display', () => {
         await expect(page.locator('#param-pplat')).toHaveText('—');
         await expect(page.locator('#alerts')).toContainText('Predicted Pplat ');
         await expect(page.locator('.header')).toHaveScreenshot('predicted-pplat-before-breath.png');
+        await h.setMode(page, 'PC-CSV');
+        await h.seek(page, 30);
+        await expectAvailableDelivery(page, true);
+        await page.click('[data-measurement-help="delivered-ve"]');
+        await expect(page.locator('#measurement-help')).toContainText('Zero is an available value; VE alarms can evaluate it.');
+        await expect(page.locator('#measurement-help')).not.toContainText('Predicted VE:');
+        await expect(page).toHaveScreenshot('ve-zero-help-standard-full.png', { fullPage: true });
         expect(errors, 'no console errors').toEqual([]);
     });
 
@@ -141,8 +172,16 @@ test.describe('waveform display', () => {
         await h.teachingMode(page);
         await h.seek(page, 15);
         expect((await h.state(page)).completed).toBeNull();
-        await expect(page.locator('#param-ve')).toHaveText('0');
+        await expect(page.locator('#param-ve')).toHaveText('—');
+        await expect(page.locator('#ve-status')).toHaveText('Collecting 30 s');
         await expect(page).toHaveScreenshot('csv-no-breath-teaching-full.png', { fullPage: true });
+        await page.click('[data-measurement-help="delivered-ve"]');
+        await expect(page.locator('#measurement-help')).toContainText('Collecting a full 30 s window: 15.0 of 30.0 s. VE alarms are unavailable during collection.');
+        await expect(page).toHaveScreenshot('ve-warming-help-teaching-full.png', { fullPage: true });
+        await h.seek(page, 30);
+        await expectAvailableDelivery(page, true);
+        await expect(page.locator('#measurement-help')).toContainText('Zero is an available value; VE alarms can evaluate it.');
+        await expect(page).toHaveScreenshot('ve-zero-help-teaching-full.png', { fullPage: true });
     });
 
     test('effort — overbreathing in VC-CMV produces failed triggers', async ({ page }) => {
@@ -156,6 +195,13 @@ test.describe('waveform display', () => {
         expect(s.failedTriggers, 'scenario must actually fail triggers').toBeGreaterThan(0);
 
         await expect(page.locator('.waveforms')).toHaveScreenshot('effort.png');
+        await h.seek(page, 45);
+        await expectAvailableDelivery(page);
+        await expect(page).toHaveScreenshot('ve-established-vc-standard-full.png', { fullPage: true });
+        await page.click('[data-measurement-help="delivered-ve"]');
+        await expect(page.locator('#measurement-help')).toContainText('Predicted VE:');
+        await expect(page.locator('#measurement-help')).toContainText('This prediction does not drive VE alarms.');
+        await expect(page).toHaveScreenshot('ve-established-vc-help-standard-full.png', { fullPage: true });
     });
 
     test('effort + teaching — the ineffective counter and amber highlight', async ({ page }) => {
@@ -169,6 +215,13 @@ test.describe('waveform display', () => {
         expect(s.failedTriggers, 'scenario must actually fail triggers').toBeGreaterThan(0);
 
         await expect(page).toHaveScreenshot('effort-teaching-full.png', { fullPage: true });
+        await h.seek(page, 45);
+        await expectAvailableDelivery(page);
+        await expect(page).toHaveScreenshot('ve-established-vc-teaching-full.png', { fullPage: true });
+        await page.click('[data-measurement-help="delivered-ve"]');
+        await expect(page.locator('#measurement-help')).toContainText('Predicted VE:');
+        await expect(page).toHaveScreenshot('ve-established-vc-help-teaching-full.png', { fullPage: true });
+        await page.keyboard.press('Escape');
         await page.click('#btn-teaching-mode');
         await h.setMode(page, 'PC-CSV');
         await h.teachingMode(page);
@@ -178,6 +231,12 @@ test.describe('waveform display', () => {
         expect(delivered.measuredRR).toBeGreaterThan(0);
         await expect(page.getByRole('group', { name: 'Delivered VE', exact: true })).toBeVisible();
         await expect(page).toHaveScreenshot('csv-delivered-teaching-full.png', { fullPage: true });
+        await h.seek(page, 45);
+        await expectAvailableDelivery(page);
+        await expect(page).toHaveScreenshot('ve-established-csv-teaching-full.png', { fullPage: true });
+        await page.click('[data-measurement-help="delivered-ve"]');
+        await expect(page.locator('#measurement-help')).not.toContainText('Predicted VE:');
+        await expect(page).toHaveScreenshot('ve-established-csv-help-teaching-full.png', { fullPage: true });
     });
 
     test('weak effort in PC-CSV — sub-threshold failure morphology (SME-021)', async ({ page }) => {
@@ -256,10 +315,21 @@ test.describe('determinism', () => {
 
         expect(secondState.completed.simulationGeneration)
             .toBe(firstState.completed.simulationGeneration + 1);
-        const comparableFirst = structuredClone(firstState);
-        const comparableSecond = structuredClone(secondState);
-        delete comparableFirst.completed.simulationGeneration;
-        delete comparableSecond.completed.simulationGeneration;
+        // All newly exposed VE identities must belong to the current reset,
+        // while every other sampled value remains deterministic.
+        const normalizeGeneration = (value, generation) => {
+            if (Array.isArray(value)) return value.map(v => normalizeGeneration(v, generation));
+            if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).flatMap(([key, v]) => {
+                if (key === 'simulationGeneration') {
+                    expect(v).toBe(generation);
+                    return [];
+                }
+                return [[key, normalizeGeneration(v, generation)]];
+            }));
+            return value;
+        };
+        const comparableFirst = normalizeGeneration(firstState, firstState.completed.simulationGeneration);
+        const comparableSecond = normalizeGeneration(secondState, secondState.completed.simulationGeneration);
         expect(comparableSecond).toEqual(comparableFirst);
         expect(Buffer.compare(first, second), 'frames must be byte-identical').toBe(0);
     });

@@ -92,10 +92,8 @@ async function readoutContract(page) {
                 'param-pplat': done && !csv && s.pplat !== null ? String(s.pplat) : '—',
                 'param-dp': s.holdMechanics.drivingPressure.value === null ? '—'
                     : String(Number(s.holdMechanics.drivingPressure.value.toFixed(1))),
-                'param-ve': String(csv
-                    ? (done && s.measuredRRRaw > 0
-                        ? Math.round(s.completed.measuredVT_mL / 1000 * s.measuredRRRaw * 10) / 10 : 0)
-                    : p.volumes.minuteVentilation),
+                'param-ve': s.deliveredVentilation.status === 'available'
+                    ? s.deliveredVentilation.valueLpm.toFixed(1) : '—',
                 'param-map': String(p.pressures.map_cmH2O),
                 'param-total-peep': String(p.pressures.totalPeep_cmH2O),
                 'param-live-trapped': String(Math.round(s.liveTrapped_mL)),
@@ -106,7 +104,7 @@ async function readoutContract(page) {
             const labels = {
                 'param-pip': 'Measured PIP', 'param-pplat': 'Measured Pplat',
                 'param-dp': 'Hold-derived driving pressure',
-                'param-vt': 'Measured VT', 'param-ve': csv ? 'Delivered VE' : 'Predicted VE',
+                'param-vt': 'Measured VT', 'param-ve': 'Delivered VE',
                 'param-map': 'Predicted breath MAP', 'param-total-peep': 'Predicted total PEEP',
                 'param-live-trapped': 'Live modeled trapped volume',
                 'param-auto-peep': s.teachingMode ? 'Flow Baseline' : 'Predicted steady-state auto-PEEP',
@@ -123,6 +121,9 @@ async function readoutContract(page) {
             if (!s.teachingMode) {
                 require(text('param-auto-peep') === String(p.pressures.autoPeep_cmH2O), `${name} predicted auto-PEEP`);
                 require(text('rr-param-label') === 'Measured RR', `${name} measured RR label`);
+                require(el('param-rr').title.includes('zero until two completions'), `${name} measured RR help`);
+                require(el('param-rr').closest('.param-row').getAttribute('aria-labelledby') === 'rr-param-label',
+                    `${name} measured RR accessible label`);
                 require(text('param-rr') === String(Math.round(s.measuredRRRaw)), `${name} measured RR`);
                 // The existing analytical trapped-volume readout lives in the
                 // Patient rail; expand that group to test its actual visibility.
@@ -134,11 +135,25 @@ async function readoutContract(page) {
                     `${name} predicted trapped volume visible label/value`);
             } else {
                 require(text('rr-param-label') === 'RR', `${name} Teaching RR term unchanged`);
+                const measuredCell = el('param-rr').querySelector('.rr-triple__num--delivered').closest('.rr-triple__cell');
+                require(measuredCell.querySelector('.rr-triple__lbl').textContent === 'Measured'
+                    && measuredCell.getAttribute('aria-label') === 'Measured RR'
+                    && measuredCell.title.includes('zero until two completions'), `${name} Teaching measured RR label/help`);
                 require(el('param-rr').querySelector('.rr-triple__num--delivered').textContent ===
-                    String(Math.round(s.measuredRRRaw)), `${name} Teaching delivered RR`);
+                    String(Math.round(s.measuredRRRaw)), `${name} Teaching measured RR`);
                 require(!/\d/.test(text('param-auto-peep')), `${name} no hidden auto-PEEP number in live cue`);
             }
             require(s.alarmPip === s.runningPip, `${name} alarm PIP must remain live`);
+            const ve = s.deliveredVentilation;
+            require(ve.source === 'live-completed-breath-volume' && ve.windowSeconds === 30,
+                `${name} delivered VE source/window`);
+            require(text('ve-status') === (ve.status === 'available' ? '30 s' : 'Collecting 30 s'), `${name} VE status`);
+            require(s.alarmMetrics.minuteVentilationLpm === ve.valueLpm, `${name} raw shared alarm VE`);
+            // Reset handlers intentionally refresh display without evaluating alarms.
+            if (s.monitorDelivery?.simulationGeneration === s.evaluatedDelivery?.simulationGeneration
+                && s.monitorDelivery?.asOfTick === s.evaluatedDelivery?.asOfTick) {
+                require(s.monitorDelivery === s.evaluatedDelivery, `${name} same object delivered to both consumers`);
+            }
             for (const badge of document.querySelectorAll('#alerts .alert-badge')) {
                 const value = badge.textContent;
                 require(!/AutoPEEP/.test(value) && (!/Pplat|auto-PEEP/.test(value) || value.startsWith('Predicted ')),
@@ -191,15 +206,19 @@ async function readoutContract(page) {
         require(running.completed === null && running.runningPip > 0, 'first-inspiration guard');
         for (let i = 0; i < 600 && api.state().completed === null; i++) api.step(0.01);
         const first = take('CSV first completion');
-        require(first.completed !== null && first.measuredRRRaw === 0 && text('param-ve') === '0', 'first-breath warm-up');
+        require(first.completed !== null && first.measuredRRRaw === 0 && text('param-ve') === '—', 'first-breath warm-up');
         for (let i = 0; i < 600 && api.state().breathCount < 2; i++) api.step(0.01);
         const next = take('CSV next inspiration');
         require(next.completed.completedAt_s === first.completed.completedAt_s
             && text('param-vt') === String(Math.round(first.completed.measuredVT_mL)) && next.vt_mL === 0,
             'finalized VT must survive provisional next-breath reset');
-        api.step(20); const delivered = take('CSV established delivery');
+        api.step(30); const delivered = take('CSV established delivery');
         require(delivered.measuredRRRaw > 0 && Number(text('param-ve')) > 0, 'established live delivery guard');
         teaching(true); api.redraw(); take('Teaching CSV established delivery');
+        teaching(false); effort(false); api.step(31);
+        const ceased = take('CSV full-window cessation');
+        require(ceased.deliveredVentilation.valueLpm === 0 && text('param-ve') === '0.0'
+            && ceased.measuredRRRaw > 0, 'VE expires independently of stale interval RR');
         teaching(false); api.seek(0); const reset = take('CSV reset after delivery');
         require(reset.completed === null && reset.measuredRRRaw === 0 && reset.liveTrapped_mL === 0, 'reset state');
         // Include nonzero live residual and a live hold value before switching,
@@ -348,6 +367,18 @@ async function presentationHelpContract(page) {
     await page.mouse.move(700, 500);
     await page.waitForTimeout(220);
     require(!await tooltip.isVisible(), 'unpinned hover help did not close after pointer left');
+
+    // Escape after pointer transfer must stay closed when focus returns to VE.
+    const deliveredVE = await firstVisible('[data-measurement-help="delivered-ve"]');
+    await page.evaluate(() => document.activeElement?.blur());
+    await deliveredVE.hover();
+    await tooltip.hover();
+    await page.waitForTimeout(220);
+    require(await tooltip.isVisible(), 'VE hover transfer did not preserve help');
+    await page.keyboard.press('Escape');
+    require(!await tooltip.isVisible()
+        && await deliveredVE.evaluate(node => document.activeElement === node),
+        'VE help reopened while restoring focus after Escape');
 
     const driving = await firstVisible('[data-measurement-help="driving-pressure"]');
     await pplat.click();
@@ -746,7 +777,7 @@ async function presentationHelpContract(page) {
         const allVersions = [...(html + mainJs + ventJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 10 && allVersions.every(v => v === '12'),
+                && allVersions.length === 10 && allVersions.every(v => v === '14'),
             `imports=${imp.join(',')} html=${versions.join(',')} all ten=${allVersions.join(',')}`);
     }
 

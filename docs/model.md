@@ -401,8 +401,11 @@ so no transpulmonary pressure. No expiratory flow limitation.
 
 **Circuit.** No tubing compliance, no leak, no ETT resistance modelled
 separately from airway resistance, no humidifier or filter, no circuit
-compressible volume. Inspired and expired volumes therefore match exactly, so
-the "square root sign" of a leak cannot be shown.
+compressible volume, so the "square root sign" of a leak cannot be shown.
+This does not establish a separately measured expired-volume record: during
+transitions, changing retained volume and pretrigger flow can separate the
+integrals over the inspiratory and expiratory phases. The completed VT record
+is the modeled inspiratory increase above breath-start residual volume.
 
 **Ventilator.** Set-point targeting only — no adaptive, servo, dual, optimal or
 intelligent schemes, so PRVC, Volume Support, NAVA, PAV and ASV are all out of
@@ -467,9 +470,9 @@ from the live `AlarmEngine` consumers.
 | Hold-derived driving pressure | Valid measured Pplat minus live modeled total PEEP frozen at breath start; otherwise `—`. |
 | Hold-derived static compliance | Same-breath delivered VT divided by valid hold-derived driving pressure; otherwise `—`. |
 | Measured inspiratory resistance | Same-breath unrounded `(PIP − Pplat) / final inspiratory flow`, only for passive constant-flow square VC; otherwise `—` with an applicability explanation. |
-| Measured RR (standard); existing RR / Delivered terminology (Teaching) | Existing live completed-timestamp rate and smoothing; zero until a completed interval exists. |
-| Delivered VE (PC-CSV) | Finalized delivered VT in L times the existing live measured RR, rounded to 0.1 L/min; zero until both inputs are available. |
-| Predicted VE (other modes) | Unchanged analytical `summary().volumes.minuteVentilation`. This display label does not describe its alarm consumer. |
+| Measured RR (standard); RR / Measured (Teaching) | Existing completion-timestamp interval rate; zero until two completions, then the first interval initializes it. Later updates blend 70% prior rate and 30% rate from up to ten timestamps. It retains its last value without new completions and is not used to compute VE. |
+| Delivered VE (all modes) | Sum of canonical delivered inspiratory volumes in the last 30 simulated seconds, multiplied by 2 to L/min. Unavailable until a full valid window; a full empty window is zero. Display rounds to one decimal; VE alarms use the identical raw snapshot. |
+| Predicted VE (VE help, mandatory modes only) | Unchanged analytical `summary().volumes.minuteVentilation`, explicitly separate from delivery and VE alarms. Omitted in CSV because configured RR does not schedule breaths there. |
 | Predicted breath MAP | Unchanged `calculateMAP()` over generated analytical breath samples; available before delivery, not live pressure-history integration. |
 | Predicted steady-state auto-PEEP | Unchanged analytical auto-PEEP, shown in standard mode; Teaching retains the existing live Flow Baseline and Exp completion cues. |
 | Predicted total PEEP | Unchanged analytical configured PEEP plus predicted auto-PEEP. |
@@ -492,14 +495,15 @@ remains the high-pressure alarm source. VT stays at the finalized value during
 the next inspiration even though provisional `measuredVT_mL` resets to zero.
 
 Initialization, reset, and mode switches clear the completed record: PIP, VT,
-and Pplat show `—`, measured RR and PC-CSV delivered VE show zero, and live
+and Pplat show `—`, measured RR shows zero, delivered VE shows `—` with
+`Collecting 30 s`, and live
 modeled trapped volume is zero. The mode/reset handlers refresh display values
 synchronously, without waiting for the next animation frame or adding an alarm
 evaluation. Analytical predictions can remain numeric under their labels.
 No-effort or unsuccessful-trigger PC-CSV does not create a delivered breath or
 backup ventilation. After the first completed breath, VT and PIP are available
-but RR and delivered VE remain zero until the existing interval algorithm has
-enough completed timestamps; no analytical warm-up fallback is used.
+but RR remains zero until two completions and delivered VE remains unavailable
+until the full 30 s window is observed; no analytical warm-up fallback is used.
 
 `volumeAtBreathStart` is the modeled end-expiratory residual **immediately
 before the current breath began**, copied from `volumeAboveEq` by
@@ -512,14 +516,77 @@ numbers happen to agree. No timing, reference-state, convergence, or formula
 equivalence is asserted here.
 
 VSM-CLIN-005 defines hold validity, same-breath latching, dependency-specific
-hold-derived mechanics, and visible unavailability. VSM-CLIN-006 controls RR
-terminology and all-mode delivered-VE averaging and alarm/display alignment;
-VSM-CLIN-011 retains alarm behavior work. VSM-CLIN-014
+hold-derived mechanics, and visible unavailability. VSM-CLIN-006 implements
+the owner-approved delivered-VE contract below. VSM-CLIN-011 retains broader
+alarm policy and threshold adjudication. VSM-CLIN-014
 controls analytical/live trapped-volume reconciliation. This change selects
 sources and labels; it does not adjudicate those deferred calculations or
 clinical interpretations.
 
-Verification strengthens four existing engine composites (passive PC-CSV,
+### Delivered VE: owner-approved VSM-CLIN-006 contract
+
+Approved D1–D7 on 2026-09-07 as a project-specific educational-model contract.
+The owner subsequently refined D7 to **Measured RR** in Standard Mode and
+**Measured** in Teaching Mode, superseding the earlier Interval labels.
+The exact completed-breath timing/smoothing/retention help, RR calculation and
+high-RR alarm behavior remain unchanged; D1–D6 remain in force.
+This is not a device-equivalence or clinical alarm-safety claim. Both low- and
+high-VE alarms are deliberately ineligible throughout a full 30-simulation-second
+warm-up, even if delivery is absent or excessive. The existing five-second grace
+also remains required; it does not add a second delay after window availability.
+Apnea, high pressure, high RR, priorities, limits and audio policy remain separate.
+
+`sim.deliveredVentilation` is an immutable version-1 snapshot with source
+`live-completed-breath-volume`, volume definition
+`inspiratory-volume-above-breath-start-residual`, and estimator
+`rolling-volume-sum`. Its identity contains simulation/mode generation, as-of tick
+and history revision; its metadata includes original simulation seconds, window
+endpoints, observed seconds, event identities, count, last completion time,
+summed volume and unrounded L/min. Both consumers receive the same object once
+per existing render/evaluation. A stale or missing snapshot is never a numeric
+fallback. The alarm engine checks source, validity and current context independently.
+
+Count only actual canonical publications at expiration start, after any HOLD,
+using unrounded `measuredVT_mL / 1000`. Include all trigger/cycle classifications
+and all three modes; neither failed efforts nor incomplete breaths count. HOLD
+validity is independent of delivered VT. Exclude positive pretrigger flow while
+still in expiration. This signal is not a separate measurement of exhaled volume.
+
+Membership is `(now - 30 s, now]`, using `round(seconds / dt)` for both endpoints
+and completion times while retaining original timestamps as provenance. Tick
+publication ordering remains unchanged: a stored boundary timestamp alone never
+creates an event that the engine has not yet published. No ten-breath cap or
+additional smoothing applies. Sum L × 2 gives L/min; prior contributions expire
+even when no new breath completes. This differs from latest VT × smoothed RR
+during irregular or changing ventilation.
+
+Before 30 s of continuous valid observation, status is `warming`, reason
+`INSUFFICIENT_HISTORY`, numeric value null. Afterwards, a full empty window is
+`available` zero; no first-breath gate suppresses low-VE evaluation. Reset, mode
+selection, and the existing flow-pattern reset clear history and restart warm-up.
+Ordinary setting, patient effort and mechanics changes retain actual prior
+delivery with its original identity. Pausing freezes simulation time/history;
+speed changes affect its wall-time rate only. The existing frame cap is unchanged.
+
+Malformed delivery produces `unavailable/INVALID_HISTORY`; known contamination
+lasts until its event leaves the window, and unknown-time gaps require a fresh
+30 s of continuous observation. Mode drift requires reset (`MODE_MISMATCH`).
+Clock gaps or reversal yield `CLOCK_DISCONTINUITY`. Unavailable means null, not
+zero, and removes VE alarms at the next existing evaluation; the UI discloses
+that loss of availability rather than implying restored delivery. Reset handlers
+refresh display synchronously without introducing extra alarm evaluations, so
+old alert presentation can persist until the next normal frame.
+
+The compact row reads **Delivered VE**, one decimal and L/min, with **30 s**,
+**Collecting 30 s**, or **Unavailable**. One static information trigger shares
+the existing popover and explains source, warm-up, rounding, and retained prior
+delivery. Mandatory-mode predictions appear only there. Alarms compare raw
+values using unchanged strict low/high thresholds; equality clears on the next
+evaluation. VE chips say **Low VE · below {limit} L/min** or
+**High VE · above {limit} L/min**, avoiding false rounded comparisons such as
+`3 < 3`. No new persistence, hysteresis, or wall-time evaluation is introduced.
+
+Existing VSM-CLIN-004 verification strengthens four engine composites (passive PC-CSV,
 finalized waveform/loop agreement, reset metadata, and mode-transition metadata)
 by adding initialization, first-breath RR, next-inspiration VT retention, and
 zero-reset predicates. Their prior predicates remain intact. The existing
@@ -530,3 +597,12 @@ visual cases add screenshots and geometry assertions without removing their
 original screenshots, scenario guards, determinism, or network checks. These
 extensions preserve the commissioned 300/44/9 check counts and do not replace
 the existing alarm, tooltip, waveform, loop, or clipping coverage.
+
+VSM-CLIN-006 adds focused publication/window/lifecycle/invalid-history and raw
+alarm-boundary predicates to the existing low-VE engine composite, retaining
+its original predicate and all other commissioned assertions. Existing VE alarm
+fixtures now supply valid shared-snapshot provenance. Browser composites cover
+the revised readout lifecycle and hover-transfer/Escape behavior. Independent
+canonical-ledger, exact checkpoint numerical, and isolated mutation checks
+supplement these gates; they do not replace pinned-Linux visual comparison or
+owner acceptance of changed baseline bytes.

@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=12';
-import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=12';
-import { SimulationEngine }  from './simulation.js?v=12';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=12';
-import AlarmEngine from '../alarms.js?v=12';
+import { LungModel }        from './lung-model.js?v=14';
+import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=14';
+import { SimulationEngine }  from './simulation.js?v=14';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=14';
+import AlarmEngine from '../alarms.js?v=14';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=12';
+} from '../alarm-audio.js?v=14';
 
 
 // =============================================================================
@@ -58,8 +58,11 @@ const INEFFECTIVE_WINDOW_SEC = 60;
 const INEFFECTIVE_COUNTER_TOOLTIP =
     'Ineffective efforts — patient attempts in the last 60 s that did not '
     + 'produce a breath, either because the ventilator was mid-breath or '
-    + 'because the effort never reached the trigger threshold. This is the gap '
-    + 'between Patient and Delivered.';
+    + 'because the effort never reached the trigger threshold. Compare patient effort rate '
+    + 'with the completed-breath interval rate.';
+const MEASURED_RR_HELP = 'Completed-breath interval rate: zero until two completions; the first interval initializes the rate. Later updates use up to 10 expiration-start timestamps and blend 70% previous rate with 30% new interval rate. Retains its last value when no new breath completes. This rate is separate from the 30 s delivered-VE calculation.';
+let displayedDelivery = null;
+let evaluatedDelivery = null;
 let lastFrameTs = null;
 let animFrame   = null;
 const alarmLimits = {
@@ -1031,6 +1034,7 @@ function updateRRDisplay() {
     if (!rrEl) return;
     setText('rr-param-label', document.body.classList.contains('teaching-mode')
         ? 'RR' : 'Measured RR');
+    rrEl.title = document.body.classList.contains('teaching-mode') ? '' : MEASURED_RR_HELP;
 
     const rrActualSource = Number.isFinite(sim.measuredRR) ? sim.measuredRR : 0;
 
@@ -1039,13 +1043,13 @@ function updateRRDisplay() {
 
     if (document.body.classList.contains('teaching-mode')) {
         // PR4b — dual-rate readout (display only; reads values the engine already
-        // computes). Set = backup machine rate; Delivered = sim.measuredRR;
+        // computes). Set = configured machine rate; Measured = sim.measuredRR;
         // Patient = sim.patientRR (— when effort is off, so it reads "no effort").
         const effortOn = Number.isFinite(sim?.patientRR) && sim.patientRR > 0
             && Number.isFinite(vent?.pMusMax) && vent.pMusMax > 0;
         const rrPatient = effortOn ? Math.round(sim.patientRR) : '—';
         const patientClass = effortOn ? 'rr-triple__num--patient' : 'rr-triple__num--off';
-        // Ineffective-effort counter (PR4). The Patient-vs-Delivered gap is only
+        // Ineffective-effort counter (PR4). The Patient-vs-Measured gap is only
         // half the story — this is the count of efforts that failed to trigger,
         // which is what closes it. Shown whenever effort is on, including at 0,
         // because "0 ineffective" is itself the informative reading.
@@ -1062,13 +1066,13 @@ function updateRRDisplay() {
             : '';
         const html =
             '<span class="rr-triple">' +
-              '<span class="rr-triple__line rr-triple__set" title="Set backup rate — mandatory (machine-triggered) breaths/min">' +
+              '<span class="rr-triple__line rr-triple__set" title="Configured machine rate. Patient triggers may increase the total breath rate. No backup ventilation is provided in PC-CSV.">' +
                 '<span class="rr-triple__lbl">Set</span>' +
                 `<span class="rr-triple__num">${rrSet}</span>` +
               '</span>' +
               '<span class="rr-triple__line rr-triple__outputs">' +
-                '<span class="rr-triple__cell" title="Delivered rate — breaths actually completed (f = 60/TCT)">' +
-                  '<span class="rr-triple__lbl">Delivered</span>' +
+                `<span class="rr-triple__cell" role="group" aria-label="Measured RR" title="${MEASURED_RR_HELP}">` +
+                  '<span class="rr-triple__lbl">Measured</span>' +
                   `<span class="rr-triple__num rr-triple__num--delivered">${rrActual}</span>` +
                 '</span>' +
                 '<span class="rr-triple__cell" title="Patient effort rate (Pmus) — what the patient is asking for; may exceed delivered if efforts fail to trigger">' +
@@ -1082,7 +1086,7 @@ function updateRRDisplay() {
         // every animation frame; reassigning innerHTML each frame was destroying
         // the title-bearing cells ~60×/s, so the native tooltip's hover-dwell
         // timer never completed (the title attrs were present, the nodes weren't
-        // stable). Guarding keeps the DOM stable so the Set/Delivered/Patient
+        // stable). Guarding keeps the DOM stable so the Set/Measured/Patient
         // tooltips surface on hover. `haveTriple` also forces a rebuild after a
         // standard-mode (textContent) render replaced the structure.
         const haveTriple = rrEl.firstElementChild
@@ -1125,11 +1129,12 @@ function countIneffectiveEfforts() {
 
 // Display-only refresh: mode/reset handlers call this synchronously without
 // adding alarm evaluations or advancing the engine (VSM-CLIN-004).
-function updateMonitorValues(summary) {
+function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentilation) {
     const s = summary;
     const m = sim.breathSummary;
     const isCsv = vent.isSpontaneousMode();
-    const measuredRR = Number.isFinite(sim.measuredRR) ? sim.measuredRR : 0;
+    const currentDelivery = sim.isCurrentDeliveredVentilation(deliveredVentilation);
+    displayedDelivery = currentDelivery ? deliveredVentilation : null;
     // A breath count marks a START, not completion. Only the finalized record
     // makes per-breath measurements available; neither live nor analytical
     // pressure is a monitor fallback. The live PIP alarm signal is unchanged.
@@ -1151,10 +1156,9 @@ function updateMonitorValues(summary) {
     setText('param-total-peep', `${s.pressures.totalPeep_cmH2O}`);
 
     const displayVt = completed !== null ? completed.measuredVT_mL : null;
-    const displayVe = isCsv
-        ? (displayVt !== null && measuredRR > 0
-            ? Math.round((displayVt / 1000) * measuredRR * 10) / 10 : 0)
-        : s.volumes.minuteVentilation;
+    const displayVe = currentDelivery && deliveredVentilation.status === 'available'
+        && Number.isFinite(deliveredVentilation.valueLpm)
+        ? deliveredVentilation.valueLpm.toFixed(1) : '—';
     const displayFlow = isCsv && m.peakFlow_Lpm > 0
         ? m.peakFlow_Lpm
         : s.timing.inspFlow_Lpm;
@@ -1162,7 +1166,9 @@ function updateMonitorValues(summary) {
     setText('param-vt', displayVt !== null ? `${Math.round(displayVt)}` : '—');
     updateRRDisplay();
     setText('param-ve',   `${displayVe}`);
-    setText('ve-param-label', isCsv ? 'Delivered VE' : 'Predicted VE');
+    setText('ve-param-label', 'Delivered VE');
+    setText('ve-status', !currentDelivery || deliveredVentilation.status === 'unavailable'
+        ? 'Unavailable' : deliveredVentilation.status === 'warming' ? 'Collecting 30 s' : '30 s');
     // End-expiratory residual immediately BEFORE the current breath began,
     // latched by _startNewBreath and retained throughout that breath, in mL.
     setText('param-live-trapped', `${Math.round(sim.volumeAtBreathStart * 1000)}`);
@@ -1203,9 +1209,11 @@ function updateParams() {
     const summary = vent.summary();
     const s = summary;
     const m = sim.breathSummary;
-    updateMonitorValues(summary);
+    const deliveredVentilation = sim.deliveredVentilation;
+    updateMonitorValues(summary, deliveredVentilation);
 
-    const alarmMetrics = getCurrentAlarmMetrics(summary);
+    const alarmMetrics = getCurrentAlarmMetrics(summary, deliveredVentilation);
+    evaluatedDelivery = alarmMetrics.deliveredVentilation;
     activeAlarms = AlarmEngine.evaluateAlarms(alarmMetrics, alarmLimits);
     renderAlarms(activeAlarms);
     // AUDIO policy runs on wall-clock (getAlarmNowSec), NOT the sim-time used for
@@ -1246,9 +1254,8 @@ function getAlarmNowSec() {
     return performance.now() / 1000;
 }
 
-function getCurrentAlarmMetrics(summary) {
+function getCurrentAlarmMetrics(summary, deliveredVentilation = sim.deliveredVentilation) {
     const pressures = summary?.pressures ?? {};
-    const volumes = summary?.volumes ?? {};
     const timing = summary?.timing ?? {};
     const safety = summary?.safety ?? {};
     const measured = sim?.breathSummary ?? {};
@@ -1288,23 +1295,8 @@ function getCurrentAlarmMetrics(summary) {
         timing?.rrActual ??
         safety?.measuredRR;
 
-    const deliveredVtL =
-        Number.isFinite(measured.vt_mL) && measured.vt_mL > 0
-            ? measured.vt_mL / 1000
-            : Number.isFinite(volumes.tidalVolume_mL) && volumes.tidalVolume_mL > 0
-                ? volumes.tidalVolume_mL / 1000
-                : null;
-
-    const minuteVentilationLpm =
-        Number.isFinite(measuredRR) && Number.isFinite(deliveredVtL) && deliveredVtL > 0
-            ? Math.round(deliveredVtL * measuredRR * 10) / 10
-            : volumes.minuteVentilation ??
-              volumes.minuteVentilationLpm ??
-              volumes.ve ??
-              volumes.VE ??
-              summary?.minuteVentilation ??
-              summary?.ve ??
-              summary?.VE;
+    const delivery = sim.isCurrentDeliveredVentilation(deliveredVentilation) ? deliveredVentilation : null;
+    const minuteVentilationLpm = delivery?.status === 'available' ? delivery.valueLpm : null;
 
     return {
         nowSec,
@@ -1314,6 +1306,12 @@ function getCurrentAlarmMetrics(summary) {
         pawCmH2O,
         measuredRR,
         minuteVentilationLpm,
+        deliveredVentilation: delivery,
+        simulationTick: Math.round(sim.globalTime / sim.dt),
+        simulationStep_s: sim.dt,
+        simulationGeneration: sim.simulationGeneration,
+        modeGeneration: sim.modeGeneration,
+        deliveryHistoryRevision: sim._veRevision,
     };
 }
 
@@ -1340,6 +1338,10 @@ function formatAlarmChipText(alarm) {
     const value = Number.isFinite(alarm?.value) ? Number(alarm.value) : null;
     const limit = Number.isFinite(alarm?.limit) ? Number(alarm.limit) : null;
     const comparator = alarm?.comparator ?? inferredComparator(alarm);
+
+    if ((alarm?.id === 'LOW_VE' || alarm?.id === 'HIGH_VE') && limit !== null) {
+        return `${alarm.label} · ${alarm.id === 'LOW_VE' ? 'below' : 'above'} ${formatAlarmNumber(limit)} L/min`;
+    }
 
     if (alarm?.id === 'HIGH_PRESSURE' || alarm?.id === 'APNEA') {
         return alarm.label;
@@ -1688,6 +1690,7 @@ const MEASUREMENT_HELP_COPY = Object.freeze({
 let openMeasurementHelpTrigger = null;
 let measurementHelpClickPinned = false;
 let measurementHelpCloseTimer = null;
+let measurementHelpRestoringFocus = false;
 
 function detailedResistanceStatusCopy(result) {
     if (result.status === 'valid') return '';
@@ -1699,6 +1702,27 @@ function detailedResistanceStatusCopy(result) {
 }
 
 function measurementHelpText(key) {
+    if (key === 'delivered-ve') {
+        const delivery = displayedDelivery && sim.isCurrentDeliveredVentilation(displayedDelivery)
+            ? displayedDelivery : sim.deliveredVentilation;
+        const parts = ['Delivered VE: modeled inspiratory volume from completed breaths in the last 30 simulated seconds, expressed per minute. A breath counts when expiration starts, after any hold. This is not a separate measurement of exhaled volume. Display and VE alarms use the same window; alarms compare the unrounded value. Earlier delivery remains in the window after settings change.'];
+        if (delivery.status === 'warming') {
+            parts.push(`Collecting a full 30 s window: ${delivery.observedSeconds.toFixed(1)} of 30.0 s. VE alarms are unavailable during collection.`);
+        } else if (delivery.reason === 'MODE_MISMATCH' || delivery.reason === 'CLOCK_DISCONTINUITY') {
+            parts.push('Delivered VE is unavailable because its simulation identity or time is inconsistent. Reset the simulation to start a new window.');
+        } else if (delivery.status === 'unavailable') {
+            parts.push('Delivered VE is unavailable because its history is incomplete or invalid. VE alarms are unavailable until a valid window is established.');
+        } else if (delivery.valueLpm === 0) {
+            parts.push('No delivered volume from completed breaths in this 30 s window. Zero is an available value; VE alarms can evaluate it.');
+        }
+        if (!vent.isSpontaneousMode()) {
+            const prediction = vent.summary().volumes.minuteVentilation;
+            parts.push(Number.isFinite(prediction)
+                ? `Predicted VE: ${prediction.toFixed(1)} L/min — configured machine rate × set VT (VC) or analytical steady-state VT (PC). This prediction does not drive VE alarms.`
+                : 'Predicted VE: unavailable.');
+        }
+        return parts.join('\n\n');
+    }
     const base = MEASUREMENT_HELP_COPY[key] ?? 'Measurement unavailable.';
     if (!sim || key === 'modeled-baseline' || key === 'duration') return base;
     const hold = sim.holdMechanics;
@@ -1758,7 +1782,10 @@ function closeMeasurementHelp(restoreFocus = false) {
     if (trigger) {
         trigger.setAttribute('aria-expanded', 'false');
         trigger.removeAttribute('aria-describedby');
-        if (restoreFocus) trigger.focus();
+        if (restoreFocus) {
+            measurementHelpRestoringFocus = true;
+            try { trigger.focus(); } finally { measurementHelpRestoringFocus = false; }
+        }
     }
     openMeasurementHelpTrigger = null;
     measurementHelpClickPinned = false;
@@ -1791,7 +1818,9 @@ function bindMeasurementHelp() {
         trigger.setAttribute('aria-controls', 'measurement-help');
         trigger.addEventListener('pointerenter', () => openMeasurementHelp(trigger));
         trigger.addEventListener('pointerleave', scheduleMeasurementHelpClose);
-        trigger.addEventListener('focus', () => openMeasurementHelp(trigger));
+        trigger.addEventListener('focus', () => {
+            if (!measurementHelpRestoringFocus) openMeasurementHelp(trigger);
+        });
         trigger.addEventListener('blur', scheduleMeasurementHelpClose);
         trigger.addEventListener('click', () => {
             if (openMeasurementHelpTrigger === trigger && measurementHelpClickPinned) {
@@ -1957,6 +1986,7 @@ function installTestHooks() {
         /** Compact snapshot for assertions — cheap to serialise, stable to diff. */
         state() {
             const s = sim.breathSummary;
+            const delivery = sim.deliveredVentilation;
             return {
                 globalTime:      +sim.globalTime.toFixed(3),
                 phase:           sim.phaseName,
@@ -1977,7 +2007,11 @@ function installTestHooks() {
                 pplat:           s.pplat,
                 liveTrapped_mL:  sim.volumeAtBreathStart * 1000,
                 predicted:       vent.summary(),
-                alarmPip:        getCurrentAlarmMetrics(vent.summary()).pipCmH2O,
+                deliveredVentilation: delivery,
+                monitorDelivery: displayedDelivery,
+                evaluatedDelivery,
+                alarmMetrics: getCurrentAlarmMetrics(vent.summary(), delivery),
+                alarmPip:        getCurrentAlarmMetrics(vent.summary(), delivery).pipCmH2O,
             };
         },
     };

@@ -110,6 +110,15 @@ async function expectAvailableDelivery(page, zero = false) {
     }
 }
 
+async function expectFailedTriggerCopy(page) {
+    const counter = page.getByRole('group', { name: 'Failed triggers in the last 60 seconds', exact: true });
+    await expect(counter.locator('.rr-triple__lbl')).toHaveText('Failed triggers');
+    const help = 'Failed trigger (ineffective effort): a patient effort that did not start a breath. This counter shows failed triggers in the last 60 s, including efforts below the trigger threshold and efforts during inspiration or a hold.';
+    await expect(counter).toHaveAttribute('title', help);
+    await expect(counter).toHaveAttribute('aria-description', help);
+    expect(await counter.evaluate(e => e.querySelector('.rr-triple__lbl').getBoundingClientRect().right <= e.querySelector('.rr-triple__val').getBoundingClientRect().left)).toBe(true);
+}
+
 test.describe('waveform display', () => {
 
     test('baseline — VC-CMV, passive patient', async ({ page }) => {
@@ -269,7 +278,7 @@ test.describe('waveform display', () => {
         await expect(page).toHaveScreenshot('ve-established-vc-help-standard-full.png', { fullPage: true });
     });
 
-    test('effort + teaching — the ineffective counter and amber highlight', async ({ page }) => {
+    test('effort + teaching — the failed-trigger counter and amber highlight', async ({ page }) => {
         await h.open(page);
         await h.enableEffort(page, { patientRR: 30, pmus: 6 });
         await h.teachingMode(page);          // rail work first — rail is hidden after this
@@ -278,6 +287,7 @@ test.describe('waveform display', () => {
         const s = await h.state(page);
         expect(s.teachingMode).toBe(true);
         expect(s.failedTriggers, 'scenario must actually fail triggers').toBeGreaterThan(0);
+        await expectFailedTriggerCopy(page);
 
         await expect(page).toHaveScreenshot('effort-teaching-full.png', { fullPage: true });
         await h.seek(page, 45);
@@ -317,6 +327,7 @@ test.describe('waveform display', () => {
         expect(s.mode).toBe('PC-CSV');
         expect(s.teachingMode).toBe(true);
         expect(s.failedTriggers, 'weak effort must remain sub-threshold').toBeGreaterThan(0);
+        await expectFailedTriggerCopy(page);
 
         await expect(page.locator('.waveforms')).toHaveScreenshot('weak-csv.png');
         expect(s.completed).toBeNull();
@@ -424,7 +435,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'VSM-CLIN-007 asset release').toEqual(['15']);
+        expect(versions, 'VSM-CLIN-008 asset release').toEqual(['16']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);

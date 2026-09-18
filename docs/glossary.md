@@ -226,12 +226,19 @@ umbrella noun**; reserve "asynchrony" for the literature-facing Asynchrony Index
 
 ### Trigger-phase discordances (MC2026, Table 3)
 
-| Canonical term | Definition | Deprecated aliases |
+| Canonical term | Definition | Other names / aliases (source-specific status) |
 | --- | --- | --- |
 | **Early trigger** | Machine-triggered breath where Pvent begins early relative to Pmus | reverse trigger, premature trigger |
 | **Late trigger** | Patient-triggered breath where Pvent lags the onset of Pmus | trigger delay |
-| **Failed trigger** | **Pmus present, no Pvent.** Phase difference undefined. | ineffective trigger/effort, missed trigger, wasted effort |
+| **Failed trigger** | Patient effort does not trigger a new inspiration. MC2022, Table 3; CLIN-OD-009. | ineffective triggering, ineffective effort, missed trigger, wasted efforts (familiar aliases in MC2022) |
 | **False trigger** | **Pvent present, no Pmus.** Phase difference undefined. | auto-trigger, auto-cycling |
+
+For failed trigger, MC2022 lists familiar aliases; this project does not claim
+that ineffective effort is universally deprecated. CLIN-OD-009 selects Failed
+trigger for learner-facing labels and allows Failed trigger (ineffective effort)
+as a first-use teaching bridge. The MC2026 source cited for other terminology
+here was not reviewed in CLIN-001; its stronger terminology claims are not
+needed for this owner-approved choice.
 
 Causes of a **failed trigger**, all worth teaching: auto-PEEP (Pmus must exceed
 it before flow can be positive), **over-assistance**, high trigger threshold,
@@ -382,7 +389,7 @@ Guardrails to encode:
 | Phase variables | **trigger, limit, cycle, baseline** | "limit" for a terminating alarm |
 | Terminating alarm | **backup cycling mechanism** | "pressure limit" |
 | Effort/support mismatch | **work shifting**, **over-/under-assistance** | flow starvation, flow asynchrony, air hunger |
-| Effort not sensed | **failed trigger** | ineffective effort, missed trigger, wasted effort |
+| Effort does not trigger a breath | **failed trigger**; optional first-use bridge: **Failed trigger (ineffective effort)** | a familiar alias as the standalone canonical label |
 | Breath with no effort | **false trigger** | auto-trigger, auto-cycling |
 | Repeated breaths, one effort | **multiple triggering** | double triggering |
 | Summed VT | **breath-stacking** (a consequence) | as a synonym for multiple triggering |
@@ -400,23 +407,24 @@ Guardrails to encode:
 
 Preferred compound form: *"early trigger due to reverse trigger."*
 
-### ⚠️ One open exception: "ineffective effort" in the UI
+### Approved failed-trigger terminology
 
-The engine is compliant — `type: 'failed'`, `gateFailed`, `_recordFailedTrigger`.
-**The learner-facing copy is not.** `INEFFECTIVE_WINDOW_SEC`,
-`countIneffectiveEfforts()`, the `Ineffective N /60s` counter, and both
-failed-effort tooltips all say "ineffective effort", which this table lists in
-the **Not** column.
+CLIN-OD-009 (2026-08-12) selects **Failed trigger** as the canonical learner-facing
+term. Use **Failed triggers** for the fixed counter category and **Failed trigger**
+for an individual waveform label or explanation. The counter reads
+**Failed triggers N /60s** and counts recorded failed events in the last 60
+simulation seconds.
 
-This is unresolved, not an oversight, and it is a Red-lane call: "ineffective
-effort" is the phrase working RTs recognise, and the dissent recorded above is
-about exactly this word. Two defensible outcomes:
+The counter's existing hover help introduces **Failed trigger (ineffective effort)**.
+First teaching exposure means the learner's first reading of that help. The help
+remains available on later hovers; no first-view state is stored. Other runtime
+labels and event explanations use the canonical term without repeating the alias.
 
-1. **Rename the UI** to "failed trigger" and teach the taxonomy term.
-2. **Keep "ineffective effort"** as a deliberate, documented exception — the
-   learner meets the familiar phrase first, with the canonical term alongside it.
-
-Until the owner decides, do not silently change either the copy or this table.
+Preserve the recorded cause: threshold failure or ventilator unavailability. Keep
+the amber waveform highlight and counter, with no added failed-trigger marker or
+pre-apnea banner (CLIN-OD-002). Detection, classification, counting, timing and
+numerical behavior are unchanged. Legacy internal identifiers remain
+implementation details.
 
 ---
 

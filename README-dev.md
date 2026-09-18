@@ -81,7 +81,7 @@ patient (Pmus = 0).
 * Patient effort (Pmus), with independent neural rate and neural Ti
 * Flow and pressure triggering, with a three-gate eligibility rule
 * Alarms (5) with priority tiers, audio, and silence
-* Teaching Mode — set/delivered/patient rates, ineffective-effort counter,
+* Teaching Mode — Set/Measured/Patient rates, failed-trigger counter,
   failed-trigger highlighting with per-gate tooltips
 * Sweep rendering with a selectable 5/10/20/30 s window; P-V and F-V loops
 
@@ -271,8 +271,9 @@ Short version:
   patient-triggered **and** patient-cycled.
 * Name discordances by signal, not cause: **failed trigger**, not "ineffective
   effort"; **early trigger**, not "reverse trigger". Causes belong in the
-  teaching copy, where they can be plural. ⚠️ The shipped UI currently says
-  "ineffective effort" — a known, open conflict, see glossary §9.
+  teaching copy, where they can be plural. CLIN-OD-009 selects Failed trigger
+  as the canonical learner-facing term. The familiar alias ineffective effort
+  is permitted only as the first-use bridge described in glossary §9.
 
 ---
 

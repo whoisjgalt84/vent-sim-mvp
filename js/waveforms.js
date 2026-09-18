@@ -1021,7 +1021,7 @@ export class WaveformDisplay {
                 tEnd: span.tEnd,
                 color: HIGHLIGHT_COLOR,
                 lineWidthDelta: 1.4,                  // ~1.8 base → ~3.2 px, clearly thicker
-                label: 'ineffective effort',
+                label: 'Failed trigger',
                 tooltip: this._failedEffortTooltip(ev, trigger),
             });
         }
@@ -1040,8 +1040,8 @@ export class WaveformDisplay {
      */
     _failedEffortTooltip(ev, trigger) {
         if (ev.gateFailed === 'ventilator_unavailable') {
-            const phase = ev.phase === 'HOLD' ? 'an inspiratory hold' : 'a mandatory breath';
-            return `Ineffective effort — the patient pulled during ${phase}, `
+            const phase = ev.phase === 'HOLD' ? 'an inspiratory hold' : 'inspiration';
+            return `Failed trigger — the patient pulled during ${phase}, `
                  + 'so the ventilator was not available to be triggered.';
         }
         const kind = trigger?.type === 'pressure' ? 'pressure' : 'flow';
@@ -1051,7 +1051,7 @@ export class WaveformDisplay {
         const signal = kind === 'pressure'
             ? `drop airway pressure by ${limit} below PEEP`
             : `generate ${limit} of inspiratory flow`;
-        return 'Ineffective effort — the effort bent expiratory flow toward '
+        return 'Failed trigger — the effort bent expiratory flow toward '
              + `baseline but did not ${signal}, so it never reached the trigger `
              + 'threshold. The large swing on this trace is mostly passive '
              + 'exhalation, not trigger signal.';

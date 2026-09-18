@@ -119,7 +119,7 @@ Each of these encodes a bug that already shipped once.
    `getAlarmNowSec()`.** Decoupled deliberately (SME-008 / SME-017).
    Re-coupling reproduces a shipped blocker.
 4. **`#param-rr`'s innerHTML rebuilds only on content change** so native `title`
-   tooltips survive hover-dwell. The ineffective **count** is written by
+   tooltips survive hover-dwell. The failed-trigger **count** is written by
    `textContent` *after* the guarded rebuild, deliberately outside the guarded
    string. Removing the guard kills tooltips silently, with no error.
 5. **`assert(label, actual, expected, tol)` takes a RELATIVE tolerance *or* an
@@ -134,7 +134,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=15`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
+   Currently `?v=16`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
    `js/ventilator.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -235,9 +235,10 @@ The three rules that matter most in code review:
   `ineffectiveEffort`; `earlyTrigger`, not `reverseTrigger`. Causes go in the
   tooltip and the teaching copy, where they can be plural.
 
-⚠️ The shipped UI says "ineffective effort" where the taxonomy says "failed
-trigger". That conflict is **open and owner-assigned** — see the exception note
-in `docs/glossary.md` §9. Do not resolve it in either direction unattended.
+CLIN-OD-009 approves Failed trigger as the canonical learner-facing term. The
+approved first-use bridge and presentation rules are documented in
+`docs/glossary.md` §9. Preserve cause-specific explanations and CLIN-OD-002
+boundaries.
 
 If a new term is needed, add it to the glossary with a citation in the same PR.
 
@@ -249,7 +250,7 @@ If a new term is needed, add it to the glossary with a citation in the same PR.
 finish. These decisions supersede it:
 
 - **No failed-trigger marker above the trace.** The amber waveform highlight and
-  the `Ineffective N /60s` counter carry it.
+  the `Failed triggers N /60s` counter carry it.
 - **No pre-apnea banner.**
 - Approved 2026-07-29: the stacked Teaching-Mode RR table, both tooltip strings,
   and the PIP per-breath latch semantics.

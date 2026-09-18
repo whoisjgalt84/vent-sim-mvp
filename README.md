@@ -60,11 +60,10 @@ ventilation, mean airway pressure, auto-PEEP. Five alarms (high pressure,
 high rate, apnea, low and high minute ventilation) with priority tiers, audio,
 and a silence toggle.
 
-**Teaching Mode** — makes invisible physiology visible: a set / delivered /
-patient rate table, an `Ineffective N /60s` counter for efforts the ventilator
-never answered, amber highlighting of the expiratory-flow deflection a failed
-trigger produces, air-trapping annotation, and tooltips that name *why* a
-specific effort failed.
+**Teaching Mode** — shows Set, Measured, and Patient rates; a
+`Failed triggers N /60s` counter for recorded efforts that did not start a breath;
+existing amber flow highlights and cause-specific hover explanations; and the
+existing air-trapping annotation.
 
 ---
 

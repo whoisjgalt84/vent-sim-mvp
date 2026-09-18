@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=15';
-import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=15';
-import { SimulationEngine }  from './simulation.js?v=15';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=15';
-import AlarmEngine from '../alarms.js?v=15';
+import { LungModel }        from './lung-model.js?v=16';
+import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=16';
+import { SimulationEngine }  from './simulation.js?v=16';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=16';
+import AlarmEngine from '../alarms.js?v=16';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=15';
+} from '../alarm-audio.js?v=16';
 
 
 // =============================================================================
@@ -50,16 +50,15 @@ let fvLoop;
 let loopsVisible = true;
 let currentIE   = [1, 2];
 
-// Trailing window for the Teaching-Mode ineffective-effort counter, in seconds.
+// Trailing window for the Teaching-Mode failed-trigger counter, in seconds.
 // Fixed (not tied to the display window) so the number means the same thing at
 // every zoom level; matches the engine's triggerEventRetentionSeconds.
 const INEFFECTIVE_WINDOW_SEC = 60;
-// COPY — pending SME sign-off (see docs/sme-feedback-log.md, SME-016).
+// COPY — approved under CLIN-OD-009 and VSM-CLIN-008 Phase A.
 const INEFFECTIVE_COUNTER_TOOLTIP =
-    'Ineffective efforts — patient attempts in the last 60 s that did not '
-    + 'produce a breath, either because the ventilator was mid-breath or '
-    + 'because the effort never reached the trigger threshold. Compare patient effort rate '
-    + 'with the completed-breath interval rate.';
+    'Failed trigger (ineffective effort): a patient effort that did not start a breath. '
+    + 'This counter shows failed triggers in the last 60 s, including efforts below '
+    + 'the trigger threshold and efforts during inspiration or a hold.';
 const MEASURED_RR_HELP = 'Completed-breath interval rate: zero until two completions; the first interval initializes the rate. Later updates use up to 10 expiration-start timestamps and blend 70% previous rate with 30% new interval rate. Retains its last value when no new breath completes. This rate is separate from the 30 s delivered-VE calculation.';
 let displayedDelivery = null;
 let evaluatedDelivery = null;
@@ -1050,14 +1049,16 @@ function updateRRDisplay() {
             && Number.isFinite(vent?.pMusMax) && vent.pMusMax > 0;
         const rrPatient = effortOn ? Math.round(sim.patientRR) : '—';
         const patientClass = effortOn ? 'rr-triple__num--patient' : 'rr-triple__num--off';
-        // Ineffective-effort counter (PR4). The Patient-vs-Measured gap is only
+        // Failed-trigger counter (PR4). The Patient-vs-Measured gap is only
         // half the story — this is the count of efforts that failed to trigger,
         // which is what closes it. Shown whenever effort is on, including at 0,
-        // because "0 ineffective" is itself the informative reading.
+        // because "0 failed triggers" is itself the informative reading.
         const ineffectiveRow = effortOn
-            ? '<span class="rr-triple__line rr-triple__ineffective" ' +
+            ? '<span class="rr-triple__line rr-triple__ineffective" role="group" ' +
+                  'aria-label="Failed triggers in the last 60 seconds" ' +
+                  `aria-description="${INEFFECTIVE_COUNTER_TOOLTIP}" ` +
                   `title="${INEFFECTIVE_COUNTER_TOOLTIP}">` +
-                '<span class="rr-triple__lbl">Ineffective</span>' +
+                '<span class="rr-triple__lbl">Failed triggers</span>' +
                 '<span class="rr-triple__val">' +
                   '<span class="rr-triple__num rr-triple__num--ineffective" ' +
                       'id="rr-ineffective-count">0</span>' +
@@ -1108,7 +1109,7 @@ function updateRRDisplay() {
 }
 
 /**
- * Ineffective (failed) patient efforts in the trailing INEFFECTIVE_WINDOW_SEC.
+ * Failed patient triggers in the trailing INEFFECTIVE_WINDOW_SEC.
  *
  * Counts BOTH failure modes the engine records — efforts blocked because the
  * ventilator was mid-breath (`ventilator_unavailable`) and efforts that never

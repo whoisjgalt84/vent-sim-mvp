@@ -287,7 +287,7 @@ gate c   threshold:
 
 The two failure modes are physiologically different and teach different things:
 
-- **`ventilator_unavailable`** — the effort occurred while the ventilator was inspiring or holding, so it could not start another breath. During the simulator's pressure-targeted inspiration, effort can change flow and delivered volume while Paw remains at the target (see §3.2). During a HOLD, flow is zero and effort enters the HOLD pressure equation (§3.3). This event receives no expiratory-flow highlight; the `Ineffective N /60s` counter names it.
+- **`ventilator_unavailable`** — the effort occurred while the ventilator was inspiring or holding, so it could not start another breath. During the simulator's pressure-targeted inspiration, effort can change flow and delivered volume while Paw remains at the target (see §3.2). During a HOLD, flow is zero and effort enters the HOLD pressure equation (§3.3). This event receives no expiratory-flow highlight; the `Failed triggers N /60s` counter includes it.
 - **`threshold`** — the ventilator was listening and the effort was too weak, or
   the sensitivity setting too low. This bends **expiratory** flow, and gets the
   amber highlight.

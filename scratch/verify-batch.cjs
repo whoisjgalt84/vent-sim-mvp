@@ -48,6 +48,64 @@ async function enableEffort(page, { patientRR = 30, pmus = 6 } = {}) {
     await setRange(page, '#patient-rr', patientRR);
 }
 
+// VSM-CLIN-008: additional assertions, separate from the commissioned 44 checks.
+async function failedTriggerTerminologyContract(page) {
+    const result = await page.evaluate(() => {
+        const api = window.__vsim;
+        api.pause();
+        let passed = 0;
+        const require = (ok, name) => {
+            if (!ok) throw new Error(`CLIN008 ${name}`);
+            passed++;
+        };
+        const input = (id, value) => {
+            const el = document.getElementById(id);
+            el.value = String(value);
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        const teaching = on => {
+            if (document.body.classList.contains('teaching-mode') !== on) document.getElementById('btn-teaching-mode').click();
+        };
+        const help = 'Failed trigger (ineffective effort): a patient effort that did not start a breath. This counter shows failed triggers in the last 60 s, including efforts below the trigger threshold and efforts during inspiration or a hold.';
+        const name = 'Failed triggers in the last 60 seconds';
+        for (const mode of ['vc-cmv', 'pc-cmv', 'PC-CSV']) {
+            teaching(false);
+            document.querySelector(`.mode-btn[data-mode="${mode}"]`).click();
+            document.querySelectorAll('.controls [data-collapsible][data-collapsed]').forEach(e => e.click());
+            if (!api.state().predicted.pMusActive) document.getElementById('pmus-toggle').click();
+            input('pmus-max', 0.5); input('patient-rr', 20);
+            document.querySelector('[data-trigger-type="flow"]').click(); input('flow-trigger', 5);
+            teaching(true); api.seek(14);
+            const row = document.querySelector('.rr-triple__ineffective');
+            require(row.querySelector('.rr-triple__lbl').textContent === 'Failed triggers', `${mode} canonical-counter`);
+            require(Number(document.getElementById('rr-ineffective-count').textContent) === api.state().failedTriggers, `${mode} actual-count`);
+            require(row.title === help && row.getAttribute('aria-description') === help, `${mode} exact-help`);
+            require(row.getAttribute('role') === 'group' && row.getAttribute('aria-label') === name, `${mode} accessible-name`);
+            require(!row.hasAttribute('aria-live') && !row.hasAttribute('tabindex'), `${mode} static-group`);
+            const label = row.querySelector('.rr-triple__lbl').getBoundingClientRect();
+            const value = row.querySelector('.rr-triple__val').getBoundingClientRect();
+            require(label.right <= value.left, `${mode} compact-fit`);
+            const canvas = document.getElementById('canvas-flow'), rect = canvas.getBoundingClientRect(), titles = new Set();
+            for (let x = 0; x < rect.width; x += 2) {
+                canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: rect.left + x, clientY: rect.top + rect.height / 2 }));
+                if (canvas.title) titles.add(canvas.title);
+            }
+            require(titles.size > 0 && [...titles].every(t => t.startsWith('Failed trigger —') && t.includes('5.0 L/min') && !t.includes('ineffective effort')), `${mode} canonical-flow-title`);
+            canvas.dispatchEvent(new MouseEvent('mouseleave'));
+            require(canvas.title === '', `${mode} hover-leave`);
+        }
+        api.seek(0);
+        const refs = [...document.querySelectorAll('#param-rr .rr-triple__line, #param-rr .rr-triple__cell')];
+        require(document.getElementById('rr-ineffective-count').textContent === '0', 'zero-count');
+        while (Number(document.getElementById('rr-ineffective-count').textContent) === 0 && api.state().globalTime < 8) api.step(0.01);
+        require(document.getElementById('rr-ineffective-count').textContent === '1', 'one-count');
+        require(refs.every((e, i) => e === document.querySelectorAll('#param-rr .rr-triple__line, #param-rr .rr-triple__cell')[i]), 'count-changing-hover-persistence');
+        require(document.querySelector('.rr-triple__ineffective').title === help, 'persistent-title');
+        return passed;
+    });
+    console.log(`CLIN008_FOCUSED_BROWSER ${result} passed, 0 failed`);
+}
+
 // VSM-CLIN-004 extends the existing mode-change composite check, retaining its
 // old predicate. All observations below are rendered DOM, with deterministic
 // real-engine stepping; the hook only exposes independent source evidence.
@@ -797,7 +855,7 @@ if (require.main === module) (async () => {
     }
 
     // ------------------------------------------------- counter + SME-022
-    console.log('\n[counter + SME-022] ineffective efforts');
+    console.log('\n[counter + SME-022] failed triggers');
     {
         const { ctx, page } = await fresh(browser, 'a22');
         await page.click('#btn-teaching-mode');
@@ -867,6 +925,8 @@ if (require.main === module) (async () => {
             ptitles.length === 0 || /cmH₂O|not available/.test(pj), pj.slice(0, 200));
         console.log('    pressure-trigger tooltip(s):');
         ptitles.forEach((t) => console.log(`      - ${t}`));
+
+        await failedTriggerTerminologyContract(page);
 
         check('no page errors', page._errs.length === 0, page._errs.join(' | '));
         await ctx.close();
@@ -965,7 +1025,7 @@ if (require.main === module) (async () => {
         const allVersions = [...(html + mainJs + ventJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 10 && allVersions.every(v => v === '15'),
+                && allVersions.length === 10 && allVersions.every(v => v === '16'),
             `imports=${imp.join(',')} html=${versions.join(',')} all ten=${allVersions.join(',')}`);
     }
 

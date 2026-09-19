@@ -8,11 +8,13 @@ immediate reinforcement, and debrief value.
 
 ## Manual viability summary
 
+Preset labels describe mechanics examples. The legacy keys are retained for compatibility. Clinical case narratives, interventions and expected clinical interpretations remain draft and require separate VSM-CLIN-010 review.
+
 | Case | Manual today in current MVP | Best early phase | Notes |
 | --- | --- | --- | --- |
 | 1. Normal VC-CMV baseline | Yes | Phase 0 | Strong orientation case |
 | 2. COPD air trapping | Yes | Phase 0 | Teaching Mode helps reveal mechanism |
-| 3. ARDS lung protection | Yes | Phase 0 | Uses inspiratory hold well; loads "ARDS (Severe)" preset |
+| 3. ARDS lung protection | Yes | Phase 0 | Uses inspiratory hold well; loads "Low compliance (25)" preset |
 | 4. PC-CMV compliance change | Partial | Phase 1 | Best with manual or automated change in mechanics |
 | 5. Patient effort in VC-CMV | Yes | Phase 0 | Good for synchrony reasoning |
 | 6. PC-CSV apnea / no effort | Yes | Phase 0 | Current alarms already support it |
@@ -34,7 +36,7 @@ monitored values before abnormal cases are introduced.
 Setup:
 - Mode VC-CMV, square flow
 - VT 500 mL, RR 14, I:E 1:2, PEEP 5, FiO2 40%
-- Normal lung preset
+- Normal example
 - Passive patient, no inspiratory hold at first
 
 Primary signals:
@@ -100,7 +102,7 @@ generic disease label alone.
 Setup:
 - Mode VC-CMV, square flow
 - VT 450 mL, RR 20, I:E 1:2, PEEP 5, FiO2 40%
-- COPD preset
+- COPD example (HME)
 - Passive patient
 
 Primary signals:
@@ -166,9 +168,10 @@ not just look at peak pressure.
 Setup:
 - Mode VC-CMV, square flow
 - VT 500 mL, RR 24, I:E 1:2, PEEP 12, FiO2 60%
-- "ARDS (Severe)" preset (loads R=12, C=0.025 — stiffer than the ~0.035
+- "Low compliance (25)" preset (loads R=12, C=0.025 — stiffer than the ~0.035
   ARDSnet planning figure for compliance, chosen intentionally so plateau and
-  driving-pressure reasoning are vivid; driving pressure ≈ 20 cmH2O at VT 500)
+  driving-pressure reasoning are vivid; driving pressure ≈ 20 cmH2O at VT 500).
+  This ARDSnet planning comparison and clinical rationale are unverified draft claims pending VSM-CLIN-010 review.
 - Passive patient
 - Inspiratory hold available for plateau check
 
@@ -237,15 +240,17 @@ and VE fall.
 Setup:
 - Mode PC-CMV
 - Pinsp 10 above PEEP, RR 14, I:E 1:2, PEEP 5, FiO2 40%
-- Start with Normal lung preset (delivered VT ≈ 545 mL, VE ≈ 7.6 L/min at these
+- Start with Normal example (delivered VT ≈ 545 mL, VE ≈ 7.6 L/min at these
   settings)
-- Then manually change to the "ARDS (Severe)" preset while keeping vent settings
+- Then manually change to the "Low compliance (25)" preset while keeping vent settings
   the same (delivered VT falls to ≈ 250 mL, VE drops to ≈ 3.5 L/min — just
   above the 3.0 L/min low-VE alarm threshold)
 
+This example switch changes R from 10 to 12 cmH₂O·s/L as well as C from 60 to 25 mL/cmH₂O; it is not an isolated compliance change.
+
 Primary signals:
 - pressure waveform remains pressure-targeted and visually similar
-- delivered VT falls from ≈ 545 mL on Normal to ≈ 250 mL on "ARDS (Severe)" as
+- delivered VT falls from ≈ 545 mL on Normal to ≈ 250 mL on "Low compliance (25)" as
   compliance worsens — the pressure waveform shape gives no warning
 - VE falls from ≈ 7.6 L/min to ≈ 3.5 L/min, sitting just above the 3.0 L/min
   low-VE alarm threshold unless compensated
@@ -308,7 +313,7 @@ can exceed the set RR when the patient triggers breaths.
 Setup:
 - Mode VC-CMV, square flow
 - VT 500 mL, RR 12, I:E 1:2, PEEP 5, FiO2 40%
-- Normal lung preset
+- Normal example
 - Patient effort On: effort 6 to 8 cmH2O, neural Ti about 1.0 s, patient RR 20
 - Trigger set easy enough to allow patient-triggered breaths
 
@@ -376,7 +381,7 @@ Setup:
 - Mode PC-CSV
 - Pressure support 10 above PEEP, cycle threshold 25%
 - PEEP 5, FiO2 40%
-- Normal lung preset
+- Normal example
 - No patient effort, patient RR 0 / passive
 - Default alarm thresholds
 
@@ -451,7 +456,7 @@ breaths" from "no patient effort."
 Setup:
 - Mode VC-CMV, square flow
 - VT 500 mL, RR 6, I:E 1:2, PEEP 5, FiO2 40%
-- Normal lung preset
+- Normal example
 - Weak patient effort On: effort about 0.5 to 1 cmH2O, neural Ti about 1.0 s,
   patient RR 20
 - Trigger set intentionally insensitive, for example flow trigger 5.0 L/min or
@@ -523,10 +528,10 @@ high plateau.
 Setup:
 - Best taught as two linked scenes under one case
 - Scene A resistance pattern:
-  VC-CMV, VT 500 mL, RR 14, I:E 1:2, PEEP 5, "COPD" preset (R=25, C=0.060) —
-  alternative: "Asthma (Acute)" preset (R=20, C=0.060)
+  VC-CMV, VT 500 mL, RR 14, I:E 1:2, PEEP 5, "COPD example (HME)" (R=25, C=0.060) —
+  alternative: "High resistance (20)" (R=20, C=0.060)
 - Scene B compliance pattern:
-  VC-CMV, VT 500 mL, RR 14, I:E 1:2, PEEP 5, "ARDS (Severe)" preset
+  VC-CMV, VT 500 mL, RR 14, I:E 1:2, PEEP 5, "Low compliance (25)" preset
   (R=12, C=0.025)
 - Lower the high pressure alarm threshold if needed so both scenes trip it
 - Inspiratory hold available in both scenes

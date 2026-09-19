@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=16';
-import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=16';
-import { SimulationEngine }  from './simulation.js?v=16';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=16';
-import AlarmEngine from '../alarms.js?v=16';
+import { LungModel }        from './lung-model.js?v=17';
+import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=17';
+import { SimulationEngine }  from './simulation.js?v=17';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=17';
+import AlarmEngine from '../alarms.js?v=17';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=16';
+} from '../alarm-audio.js?v=17';
 
 
 // =============================================================================
@@ -49,6 +49,12 @@ let pvLoop;
 let fvLoop;
 let loopsVisible = true;
 let currentIE   = [1, 2];
+// Presentation only: resets retain custom R/C, so they also retain this state.
+let customMechanics = false;
+const CUSTOM_MECHANICS_HELP = 'R or C has been edited. The controls show the current mechanics; the selected example identifies the last starting values loaded.';
+const MECHANICS_EXAMPLES_HELP = 'An example loads starting resistance (R) and compliance (C). R combines airway and tube resistance in one value. C describes the total respiratory system; this model does not separate lung and chest-wall compliance. The displayed time constant is calculated as τ = R × C. It is not a measured expiratory time constant. These examples do not define a diagnosis or its severity. Manual control limits are for exploring the model, not clinical reference ranges.';
+const MECHANICS_UNITS_HELP = 'R is in cmH₂O·s/L. C is displayed in mL/cmH₂O and converted to L/cmH₂O for calculations. With C in L/cmH₂O, R × C gives seconds.';
+const CALCULATED_TAU_HELP = 'Calculated from the current configured R and C. This is the time constant of the linear single-compartment model.';
 
 // Trailing window for the Teaching-Mode failed-trigger counter, in seconds.
 // Fixed (not tied to the display window) so the number means the same thing at
@@ -165,6 +171,8 @@ function init() {
     bindSlider('alarm-low-ve',        onAlarmLowVeChange);
     bindSlider('alarm-high-ve',       onAlarmHighVeChange);
 
+    syncMechanicsControls();
+    updateMechanicsExamplePresentation();
     bindPresetSelector();
     bindIEButtons();
     bindModeToggle();
@@ -976,18 +984,37 @@ function onFio2Change(slider) {
 function onComplianceChange(slider) {
     const cMl = parseInt(slider.value);
     lung.compliance = cMl / 1000;
+    customMechanics = true;
+    updateMechanicsExamplePresentation();
     document.getElementById('compliance-display').textContent = `${cMl} mL/cmH₂O`;
 }
 
 function onResistanceChange(slider) {
     const r = parseInt(slider.value);
     lung.resistance = r;
+    customMechanics = true;
+    updateMechanicsExamplePresentation();
     document.getElementById('resistance-display').textContent = `${r} cmH₂O·s/L`;
+}
+
+function syncMechanicsControls() {
+    const cMl = Math.round(lung.compliance * 1000);
+    document.getElementById('compliance').value = cMl;
+    document.getElementById('resistance').value = lung.resistance;
+    document.getElementById('compliance-display').textContent = cMl + ' mL/cmH₂O';
+    document.getElementById('resistance-display').textContent = lung.resistance + ' cmH₂O·s/L';
+}
+
+function updateMechanicsExamplePresentation() {
+    const preset = LungModel.presets()[document.getElementById('preset').value];
+    document.getElementById('mechanics-example-state').textContent = customMechanics
+        ? 'Custom mechanics' : preset.label;
+    refreshOpenMeasurementHelp();
 }
 
 function bindPresetSelector() {
     const select = document.getElementById('preset');
-    select.addEventListener('change', () => {
+    const loadExample = () => {
         const presetName = select.value;
         const presets = LungModel.presets();
         const preset = presets[presetName];
@@ -996,15 +1023,15 @@ function bindPresetSelector() {
         lung.compliance = preset.compliance;
         sim.notifyMeasurementSettingsChanged();
 
-        document.getElementById('compliance').value = Math.round(preset.compliance * 1000);
-        document.getElementById('resistance').value = Math.round(preset.resistance);
-        document.getElementById('compliance-display').textContent =
-            `${Math.round(preset.compliance * 1000)} mL/cmH₂O`;
-        document.getElementById('resistance-display').textContent =
-            `${Math.round(preset.resistance)} cmH₂O·s/L`;
+        customMechanics = false;
+        syncMechanicsControls();
+        updateMechanicsExamplePresentation();
         updateMonitorValues(vent.summary());
         updateHoldResults();
-    });
+    };
+    select.addEventListener('change', loadExample);
+    // A native select emits no change when the same option is chosen again.
+    document.getElementById('load-mechanics-example').addEventListener('click', loadExample);
 }
 
 function bindIEButtons() {
@@ -1561,8 +1588,8 @@ function updateMechanicsBar(summary) {
     const teOverTau = s.safety.teOverTau;
 
     let chips = `
-        <span class="mechanics-chip">
-            <span class="mechanics-chip__symbol">τ</span>
+        <span class="mechanics-chip" title="${CALCULATED_TAU_HELP}" aria-description="${CALCULATED_TAU_HELP}">
+            <span class="mechanics-chip__symbol">Calculated τ</span>
             ${s.mechanics.timeConstant_s}s
         </span>
         <span class="mechanics-chip" style="color: ${teOverTau < 3 ? 'var(--color-warning)' : 'var(--text-primary)'}">
@@ -1721,6 +1748,11 @@ function detailedResistanceStatusCopy(result) {
 }
 
 function measurementHelpText(key) {
+    if (key === 'mechanics-examples') {
+        const preset = LungModel.presets()[document.getElementById('preset').value];
+        return [customMechanics ? CUSTOM_MECHANICS_HELP : preset.note,
+            MECHANICS_EXAMPLES_HELP, MECHANICS_UNITS_HELP, CALCULATED_TAU_HELP].join('\n\n');
+    }
     if (key === 'pc-idealization') {
         const opening = vent.mode === MODE_PC_CSV
             ? 'In PC-CSV, this simulator uses idealized set-point pressure control. When a breath is delivered, Paw stays at PEEP plus Pressure Support during pressure-targeted inspiration, even with patient effort.'
@@ -1787,6 +1819,21 @@ function positionMeasurementHelp() {
     popover.style.top = `${Math.round(top)}px`;
 }
 
+function updateMechanicsHelpDetails(key) {
+    const examples = key === 'mechanics-examples';
+    const source = examples && !customMechanics && document.getElementById('preset').value === 'copd';
+    const heading = document.getElementById('mechanics-example-help-heading');
+    const link = document.getElementById('mechanics-example-source');
+    heading.hidden = !examples;
+    heading.textContent = examples ? 'Mechanics examples' : '';
+    link.hidden = !source;
+    link.textContent = source ? 'Arnal et al. (2018), Table 9' : '';
+    const popover = document.getElementById('measurement-help');
+    popover.setAttribute('role', examples ? 'dialog' : 'tooltip');
+    if (examples) popover.setAttribute('aria-label', 'Mechanics examples');
+    else popover.removeAttribute('aria-label');
+}
+
 function openMeasurementHelp(trigger, clickPinned = false) {
     const popover = document.getElementById('measurement-help');
     const text = document.getElementById('measurement-help-text');
@@ -1803,6 +1850,7 @@ function openMeasurementHelp(trigger, clickPinned = false) {
     trigger.setAttribute('aria-expanded', 'true');
     trigger.setAttribute('aria-describedby', 'measurement-help');
     text.textContent = measurementHelpText(trigger.dataset.measurementHelp);
+    updateMechanicsHelpDetails(trigger.dataset.measurementHelp);
     popover.hidden = false;
     positionMeasurementHelp();
 }
@@ -1829,6 +1877,8 @@ function scheduleMeasurementHelpClose() {
     measurementHelpCloseTimer = setTimeout(() => {
         const popover = document.getElementById('measurement-help');
         if (!measurementHelpClickPinned && document.activeElement !== openMeasurementHelpTrigger
+            && !(openMeasurementHelpTrigger?.dataset.measurementHelp === 'mechanics-examples'
+                && popover?.contains(document.activeElement))
             && !popover?.matches(':hover')) closeMeasurementHelp();
     }, 160);
 }
@@ -1841,6 +1891,7 @@ function refreshOpenMeasurementHelp() {
     }
     const text = document.getElementById('measurement-help-text');
     if (text) text.textContent = measurementHelpText(openMeasurementHelpTrigger.dataset.measurementHelp);
+    updateMechanicsHelpDetails(openMeasurementHelpTrigger.dataset.measurementHelp);
     positionMeasurementHelp();
 }
 
@@ -1865,11 +1916,35 @@ function bindMeasurementHelp() {
     }
     popover.addEventListener('pointerenter', () => clearTimeout(measurementHelpCloseTimer));
     popover.addEventListener('pointerleave', scheduleMeasurementHelpClose);
+    popover.addEventListener('focusout', () => {
+        if (openMeasurementHelpTrigger?.dataset.measurementHelp === 'mechanics-examples') {
+            scheduleMeasurementHelpClose();
+        }
+    });
     document.addEventListener('pointerdown', event => {
         if (openMeasurementHelpTrigger && !popover.contains(event.target)
             && !openMeasurementHelpTrigger.contains(event.target)) closeMeasurementHelp();
     });
     document.addEventListener('keydown', event => {
+        // The scoped example dialog lives at body level. Put its optional source
+        // link next in the keyboard sequence without changing other help triggers.
+        if (event.key === 'Tab' && openMeasurementHelpTrigger?.dataset.measurementHelp === 'mechanics-examples') {
+            const source = document.getElementById('mechanics-example-source');
+            if (!source.hidden && document.activeElement === openMeasurementHelpTrigger && !event.shiftKey) {
+                event.preventDefault();
+                source.focus();
+                return;
+            }
+            if (document.activeElement === source) {
+                event.preventDefault();
+                if (event.shiftKey) openMeasurementHelpTrigger.focus();
+                else {
+                    closeMeasurementHelp();
+                    document.getElementById('preset').focus();
+                }
+                return;
+            }
+        }
         if (event.key === 'Escape' && openMeasurementHelpTrigger) {
             event.preventDefault();
             closeMeasurementHelp(true);

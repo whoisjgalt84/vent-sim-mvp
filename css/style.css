@@ -1477,3 +1477,24 @@ body.teaching-mode .parameters .param-row.param-row--measurement.teaching-key {
     font-size: 10px;
     opacity: 0.7;
 }
+
+/* VSM-CLIN-009: scoped mechanics-example provenance. */
+.mechanics-example-disclosure,
+.mechanics-example-state {
+    margin: 5px 0 8px;
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1.4;
+}
+.mechanics-example-state { color: var(--text-primary); }
+#mechanics-example-source { color: var(--color-accent); }
+.mechanics-example-load {
+    padding: 2px 5px;
+    border: 1px solid var(--text-dim);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}

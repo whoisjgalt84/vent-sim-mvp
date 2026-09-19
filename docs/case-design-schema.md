@@ -196,7 +196,7 @@ and lengthening Te, expiratory flow should return closer to baseline."
     }
   },
   "initialPatientMechanics": {
-    "preset": "COPD",
+    "preset": "COPD example (HME)",
     "resistance_cmH2O_s_per_L": 25,
     "compliance_L_per_cmH2O": 0.06
   },
@@ -288,15 +288,15 @@ change rather than silently inventing parameters.
 
 ### Lung presets (js/lung-model.js, LungModel.presets())
 
-| Key | Label | R (cmH₂O·s/L) | C (L/cmH₂O) | τ from preset note |
+| Key | Label | R (cmH₂O·s/L) | C (L/cmH₂O) | Calculated τ (R × C) |
 | --- | --- | --- | --- | --- |
-| normal | Normal Lung | 10 | 0.060 | 0.6 s |
-| ards_moderate | ARDS (Moderate) | 10 | 0.035 | 0.35 s |
-| ards_severe | ARDS (Severe) | 12 | 0.025 | 0.3 s |
-| copd | COPD | 25 | 0.060 | 1.5 s |
-| asthma | Asthma (Acute) | 20 | 0.060 | 1.2 s |
-| obesity | Morbid Obesity | 8 | 0.040 | 0.32 s |
-| fibrosis | Pulmonary Fibrosis | 8 | 0.030 | 0.24 s |
+| normal | Normal example | 10 | 0.060 | 0.6 s |
+| ards_moderate | Low compliance (35) | 10 | 0.035 | 0.35 s |
+| ards_severe | Low compliance (25) | 12 | 0.025 | 0.3 s |
+| copd | COPD example (HME) | 25 | 0.060 | 1.5 s |
+| asthma | High resistance (20) | 20 | 0.060 | 1.2 s |
+| obesity | Reduced compliance (40) | 8 | 0.040 | 0.32 s |
+| fibrosis | Low compliance (30) | 8 | 0.030 | 0.24 s |
 
 ### Alarm defaults (alarms.js, DEFAULT_ALARM_LIMITS)
 

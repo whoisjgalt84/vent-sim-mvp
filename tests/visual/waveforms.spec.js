@@ -119,6 +119,31 @@ async function expectFailedTriggerCopy(page) {
     expect(await counter.evaluate(e => e.querySelector('.rr-triple__lbl').getBoundingClientRect().right <= e.querySelector('.rr-triple__val').getBoundingClientRect().left)).toBe(true);
 }
 
+// VSM-CLIN-009: point-of-selection presentation; retain the commissioned nine tests.
+async function mechanicsExampleSnapshots(page) {
+    await h.open(page); await h.expandRail(page); await h.seek(page, 0);
+    await expect(page.locator('#compliance')).toHaveValue('60');
+    await expect(page.locator('#compliance-display')).toHaveText('60 mL/cmH₂O');
+    await page.locator('#mechanics-bar').scrollIntoViewIfNeeded();
+    await expect(page).toHaveScreenshot('examples-startup-C60.png', { fullPage: true });
+    for (const key of ['normal', 'ards_moderate', 'ards_severe', 'copd', 'asthma', 'obesity', 'fibrosis']) {
+        await page.selectOption('#preset', key); await page.evaluate(() => window.__vsim.redraw());
+        await expect(page).toHaveScreenshot(`examples-${key}-selected.png`, { fullPage: true });
+        await page.click('#mechanics-example-help');
+        await expect(page.locator('#measurement-help')).toBeVisible();
+        await expect(page).toHaveScreenshot(`examples-${key}-help.png`, { fullPage: true });
+        await page.keyboard.press('Escape');
+    }
+    await h.setRange(page, '#compliance', 41); await h.setRange(page, '#resistance', 17);
+    await expect(page.locator('#mechanics-example-state')).toHaveText('Custom mechanics');
+    await page.click('#mechanics-example-help');
+    await expect(page).toHaveScreenshot('examples-custom-help.png', { fullPage: true });
+    await page.keyboard.press('Escape'); await h.setMode(page, 'pc-cmv'); await h.seek(page, 0);
+    await expect(page.locator('#mechanics-example-state')).toHaveText('Custom mechanics');
+    await page.locator('#mechanics-bar').scrollIntoViewIfNeeded();
+    await expect(page).toHaveScreenshot('examples-custom-after-reset.png', { fullPage: true });
+}
+
 test.describe('waveform display', () => {
 
     test('baseline — VC-CMV, passive patient', async ({ page }) => {
@@ -213,6 +238,7 @@ test.describe('waveform display', () => {
         await expect(page.locator('#measurement-help')).not.toContainText('Predicted VE:');
         await expect(page).toHaveScreenshot('ve-zero-help-standard-full.png', { fullPage: true });
         expect(errors, 'no console errors').toEqual([]);
+        await mechanicsExampleSnapshots(page);
     });
 
     test('teaching mode — passive', async ({ page }) => {
@@ -435,7 +461,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'VSM-CLIN-008 asset release').toEqual(['16']);
+        expect(versions, 'VSM-CLIN-009 asset release').toEqual(['17']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);

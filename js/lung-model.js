@@ -87,10 +87,9 @@ export class LungModel {
      *   3τ → 95% change (minimum acceptable Te)
      *   5τ → 99.3% change (considered complete)
      *
-     * Typical values (Arnal et al., 2018):
-     *   Normal lung: τ ≈ 0.5–0.6 s
-     *   ARDS:        τ ≈ 0.3–0.4 s (low C drives it down)
-     *   COPD:        τ ≈ 1.0–1.5 s (high R drives it up)
+     * The time constant returned here is calculated from this model's configured R and C.
+     * Clinical expiratory time constants and published simulation recommendations are
+     * different evidence types; do not substitute either for this calculation.
      */
     get timeConstant() {
         return this.resistance * this.compliance;
@@ -286,22 +285,20 @@ export class LungModel {
     // PATIENT PRESETS
     // =========================================================================
     //
-    // Based on Arnal J-M, Garnero A, Saoli M, Chatburn RL.
-    // "Parameters for simulation of adult subjects during mechanical ventilation."
-    // Respir Care 2018;63(2):158–168.
-    //
-    // And Mireles-Cabodevila et al. (2022), Table 1.
-    //
-    // Each preset represents a typical intubated adult with a heated humidifier.
-    // Resistance includes the endotracheal tube contribution (~5–8 cmH2O·s/L
-    // for a 7.0–8.0 mm ETT at typical flows).
+    // Mechanics examples for the linear single-compartment model.
+    // R combines airway and tube resistance; C is total respiratory-system compliance.
+    // The model does not partition chest wall from lung or simulate a humidifier separately.
+    // The COPD example uses the R/C pair in Arnal et al., Respir Care 2018;63(2):158-168,
+    // doi:10.4187/respcare.05775, Table 9, COPD with HME.
+    // The other pairs are retained project examples, not source-prescribed disease values.
+    // All preset time constants are calculated as R*C with C in L/cmH2O.
+    // See docs/clinical/CLIN-009/preset-provenance.md for the approved per-preset decisions.
     //
     // =========================================================================
 
     /**
-     * Returns a dictionary of clinically representative patient presets.
-     * Each entry provides resistance, compliance, a label, and a brief
-     * clinical note explaining what drives the mechanics.
+     * Returns a dictionary of mechanics examples with configured resistance,
+     * compliance, a label, and an explanatory note.
      *
      * @returns {Object} Preset dictionary
      */
@@ -310,44 +307,44 @@ export class LungModel {
             normal: {
                 resistance:  10,
                 compliance:  0.060,
-                label:       'Normal Lung',
-                note:        'τ = 0.6 s. Typical intubated adult, no lung disease.',
+                label:       "Normal example",
+                note:        "Illustrative starting values: R = 10 cmH₂O·s/L; C = 60 mL/cmH₂O. Calculated τ = 0.60 s. This pair is a project example, not Arnal's recommended Normal pair.",
             },
             ards_moderate: {
                 resistance:  10,
                 compliance:  0.035,
-                label:       'ARDS (Moderate)',
-                note:        'τ = 0.35 s. Low compliance (stiff "baby lung"). Short τ.',
+                label:       "Low compliance (35)",
+                note:        "Illustrative starting values: R = 10 cmH₂O·s/L; C = 35 mL/cmH₂O. Calculated τ = 0.35 s. The name describes the configured compliance, not ARDS severity.",
             },
             ards_severe: {
                 resistance:  12,
                 compliance:  0.025,
-                label:       'ARDS (Severe)',
-                note:        'τ = 0.3 s. Very low compliance. Watch driving pressure.',
+                label:       "Low compliance (25)",
+                note:        "Illustrative starting values: R = 12 cmH₂O·s/L; C = 25 mL/cmH₂O. Calculated τ = 0.30 s. The name describes the configured compliance, not ARDS severity.",
             },
             copd: {
                 resistance:  25,
                 compliance:  0.060,
-                label:       'COPD',
-                note:        'τ = 1.5 s. High resistance → long τ → gas trapping risk.',
+                label:       "COPD example (HME)",
+                note:        "Starting values: R = 25 cmH₂O·s/L; C = 60 mL/cmH₂O. Calculated τ = 1.50 s. This pair follows Arnal et al. (2018), Table 9, for a COPD simulation with a heat-and-moisture exchanger (HME). The study measured passive, intubated adults in one ICU and excluded BMI above 30 and mixed lung conditions. The model uses combined resistance; it does not simulate the HME separately.",
             },
             asthma: {
                 resistance:  20,
                 compliance:  0.060,
-                label:       'Asthma (Acute)',
-                note:        'τ = 1.2 s. Very high resistance, normal compliance.',
+                label:       "High resistance (20)",
+                note:        "Illustrative starting values: R = 20 cmH₂O·s/L; C = 60 mL/cmH₂O. Calculated τ = 1.20 s. This example explores increased resistance; it is not a validated acute-asthma preset.",
             },
             obesity: {
                 resistance:  8,
                 compliance:  0.040,
-                label:       'Morbid Obesity',
-                note:        'τ = 0.32 s. Reduced CW compliance, near-normal airways.',
+                label:       "Reduced compliance (40)",
+                note:        "Illustrative starting values: R = 8 cmH₂O·s/L; C = 40 mL/cmH₂O. Calculated τ = 0.32 s. This example changes total respiratory-system compliance. It does not identify a chest-wall cause or represent validated obesity mechanics.",
             },
             fibrosis: {
                 resistance:  8,
                 compliance:  0.030,
-                label:       'Pulmonary Fibrosis',
-                note:        'τ = 0.24 s. Very low compliance, low resistance.',
+                label:       "Low compliance (30)",
+                note:        "Illustrative starting values: R = 8 cmH₂O·s/L; C = 30 mL/cmH₂O. Calculated τ = 0.24 s. This example explores reduced compliance; it is not a validated pulmonary-fibrosis preset.",
             },
         };
     }

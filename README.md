@@ -42,8 +42,8 @@ including the host-specific snapshots required for Windows visual diagnostics.
 | `PC-CMV` | Pressure control, continuous mandatory | Pressure A/C, PCV |
 | `PC-CSV` | Pressure control, continuous spontaneous | Pressure Support, PSV |
 
-**Patient** — a single-compartment lung (resistance + compliance) with seven
-presets: normal, moderate and severe ARDS, COPD, asthma, obesity, fibrosis.
+**Patient** — a single-compartment lung (resistance + compliance).
+Seven mechanics examples are available, with per-example provenance and manual resistance/compliance controls. Disease names and severity are not inferred from R and C.
 Effort is modelled as `Pmus`, with settable strength, neural inspiratory time,
 and neural respiratory rate independent of the ventilator's set rate.
 

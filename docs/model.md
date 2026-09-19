@@ -189,8 +189,7 @@ Teaching Mode highlights in amber when the effort fails to trigger a breath.
 
 **Known simplification:** expiration is a passive resistor. There is no
 expiratory flow limitation, no airway collapse, no separate expiratory
-resistance. COPD is modelled as high R and high C, which produces trapping
-through a long τ but not through dynamic collapse.
+resistance. The COPD example uses higher resistance than the Normal example and the same configured compliance. Gas retention in this model depends on the configured mechanics and available expiratory time; expiratory flow limitation is not modeled.
 
 ---
 
@@ -340,24 +339,23 @@ inspiratory hold is set.
 
 ## 8. Reference parameters
 
-Presets, following Arnal et al., *Respir Care* 2018;63(2):158–168:
+These seven pairs are starting mechanics for the simulator. They are not disease-wide reference values. The COPD pair matches the HME simulation recommendation in Arnal et al. (2018), Table 9; the other pairs are retained illustrative project examples. R is combined airway-plus-tube resistance, C is total respiratory-system compliance, and every τ in this table is calculated as R × C. The model does not separate lung and chest-wall mechanics or simulate humidification hardware.
 
-| Preset | R (cmH₂O·s/L) | C (mL/cmH₂O) | τ (s) |
+| Example | R (cmH₂O·s/L) | C (mL/cmH₂O) | Calculated τ (s) |
 | --- | --- | --- | --- |
-| Normal lung | 10 | 60 | 0.60 |
-| ARDS, moderate | 10 | 35 | 0.35 |
-| ARDS, severe | 12 | 25 | 0.30 |
-| COPD | 25 | 60 | 1.50 |
-| Asthma, acute | 20 | 60 | 1.20 |
-| Morbid obesity | 8 | 40 | 0.32 |
-| Pulmonary fibrosis | 8 | 30 | 0.24 |
+| Normal example | 10 | 60 | 0.60 |
+| Low compliance (35) | 10 | 35 | 0.35 |
+| Low compliance (25) | 12 | 25 | 0.30 |
+| COPD example (HME) | 25 | 60 | 1.50 |
+| High resistance (20) | 20 | 60 | 1.20 |
+| Reduced compliance (40) | 8 | 40 | 0.32 |
+| Low compliance (30) | 8 | 30 | 0.24 |
 
-Resistance includes the ETT contribution (~5–8 cmH₂O·s/L for a 7.0–8.0 mm tube
-at typical flows). `LungModel.presets()` is authoritative; this table is a copy
-and can drift. Literature reference time constants: normal ≈ 0.6 s, ARDS ≈
-0.4 s, COPD ≈ 1.3 s.
+Arnal's population measurements, recommended simulation settings and measured expiratory time constants have different provenance. A reported population time constant must not be substituted for this model's R × C. The source does not establish a separate 5–8 cmH₂O·s/L tube contribution for these examples. The constructor defaults to C = 50 mL/cmH₂O; app initialization loads the Normal example at C = 60 mL/cmH₂O. These are distinct defaults.
 
-R and C are also settable directly: R 5–40 cmH₂O·s/L, C 15–100 mL/cmH₂O.
+Manual exploration limits are R = 5–40 cmH₂O·s/L and C = 15–100 mL/cmH₂O. These are project input limits, not validated disease-reference ranges.
+
+See [the owner-approved provenance record](clinical/CLIN-009/preset-provenance.md) for source-access limits and deferred claims.
 
 ---
 
@@ -366,7 +364,7 @@ R and C are also settable directly: R 5–40 cmH₂O·s/L, C 15–100 mL/cmH₂O
 - **Integration:** forward Euler, `dt = 0.01 s`.
 - **Passive-expiratory stability:** Euler on the passive expiratory ODE is
   mathematically stable while `dt < 2τ`. The
-  shortest preset τ is 0.24 s (fibrosis), a 48× margin. The manual sliders reach
+  shortest preset τ is 0.24 s (Low compliance (30)), a 48× margin. The manual sliders reach
   `R = 5, C = 15 mL/cmH₂O` → `τ = 0.075 s`, a 15× margin. This condition
   addresses stability of that ODE only; it is not an accuracy bound and does not
   establish accuracy for inspiration, phase transitions, or other modes.

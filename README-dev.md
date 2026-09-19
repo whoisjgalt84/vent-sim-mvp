@@ -310,8 +310,8 @@ was — the SME feedback log is largely usability findings.
 
 The simulator should always pass a clinical sniff test:
 
-* ARDS → ↓C → ↑Pplat
-* COPD → ↑R → ↑τ → air trapping
+At fixed volume in the passive linear model, reducing C increases elastic pressure. Increasing R at fixed C increases calculated τ; the amount of retained volume also depends on expiratory time.
+
 * Short Te → auto-PEEP
 * Ramp flow → ↓PIP, same Pplat
 * Pmus in VC → scalloped (scooped) pressure — work shifting
@@ -319,7 +319,7 @@ The simulator should always pass a clinical sniff test:
 * Failed trigger → deflection in expiratory flow, no breath delivered
 * Raising PEEP in PC-CSV → **no** change in VT (support is referenced to PEEP)
 
-Reference time constants: normal ≈ 0.6 s, ARDS ≈ 0.4 s, COPD ≈ 1.3 s.
+The simulator calculates τ from configured R × C. Literature examples and measured expiratory time constants are separate reference quantities; see the [preset provenance record](docs/clinical/CLIN-009/preset-provenance.md).
 95% of a passive exhalation completes in 3τ.
 
 If behaviour violates these:
@@ -352,8 +352,7 @@ Full citations in [`README.md`](./README.md#references). The load-bearing four:
 * Chatburn RL. *Respir Care* 2007;52(3):301–323 — mode classification.
 * Mireles-Cabodevila E et al. *Respir Care* 2022;67(1):129–148 — PVI taxonomy
   and the method for reading waveforms.
-* Arnal J-M et al. *Respir Care* 2018;63(2):158–168 — standardised simulation
-  parameters.
+* Arnal J-M et al. Respir Care 2018;63(2):158–168 — passive adult mechanics measurements and simulation recommendations; COPD-HME pair provenance is documented separately from the other project examples.
 
 ---
 

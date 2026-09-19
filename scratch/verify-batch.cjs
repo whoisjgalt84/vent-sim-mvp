@@ -1025,7 +1025,7 @@ if (require.main === module) (async () => {
         const allVersions = [...(html + mainJs + ventJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 10 && allVersions.every(v => v === '16'),
+                && allVersions.length === 10 && allVersions.every(v => v === '17'),
             `imports=${imp.join(',')} html=${versions.join(',')} all ten=${allVersions.join(',')}`);
     }
 

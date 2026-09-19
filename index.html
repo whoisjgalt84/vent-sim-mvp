@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=16">
+    <link rel="stylesheet" href="css/style.css?v=17">
 </head>
 <body>
 
@@ -321,24 +321,34 @@
             <div class="control-group__body" style="display:none">
 
                 <!-- Preset -->
-                <select class="preset-select" id="preset">
-                    <option value="normal">Normal Lung</option>
-                    <option value="ards_moderate">ARDS (Moderate)</option>
-                    <option value="ards_severe">ARDS (Severe)</option>
-                    <option value="copd">COPD</option>
-                    <option value="asthma">Asthma (Acute)</option>
-                    <option value="obesity">Morbid Obesity</option>
-                    <option value="fibrosis">Pulmonary Fibrosis</option>
+                <div class="control__header">
+                    <button type="button" class="mechanics-example-load" id="load-mechanics-example">Load example</button>
+                    <button type="button" class="measurement-help-trigger" id="mechanics-example-help"
+                            data-measurement-help="mechanics-examples" aria-label="About mechanics examples"
+                            aria-expanded="false" aria-controls="measurement-help" aria-haspopup="dialog">i</button>
+                </div>
+                <p class="mechanics-example-disclosure" id="mechanics-example-disclosure">Simulation examples; not disease reference values.</p>
+                <select class="preset-select" id="preset" aria-labelledby="load-mechanics-example" aria-describedby="mechanics-example-disclosure mechanics-example-description">
+                    <option value="normal">Normal example</option>
+                    <option value="ards_moderate">Low compliance (35)</option>
+                    <option value="ards_severe">Low compliance (25)</option>
+                    <option value="copd">COPD example (HME)</option>
+                    <option value="asthma">High resistance (20)</option>
+                    <option value="obesity">Reduced compliance (40)</option>
+                    <option value="fibrosis">Low compliance (30)</option>
                 </select>
+
+                <span id="mechanics-example-description" hidden>Selecting an example changes R and C and keeps the other settings and simulation history. Editing R or C creates custom mechanics. The selector retains the last loaded example.</span>
+                <p class="mechanics-example-state" id="mechanics-example-state" aria-live="polite">Normal example</p>
 
                 <!-- Compliance -->
                 <div class="control">
                     <div class="control__header">
                         <span class="control__label">Compliance</span>
-                        <span class="control__value" id="compliance-display">50 mL/cmH₂O</span>
+                        <span class="control__value" id="compliance-display">60 mL/cmH₂O</span>
                     </div>
                     <input type="range" class="control__range" id="compliance"
-                           min="15" max="100" step="1" value="50">
+                           min="15" max="100" step="1" value="60">
                 </div>
 
                 <!-- Resistance -->
@@ -572,7 +582,7 @@
                     <span class="param-row__value" id="param-raw">—</span>
                 </div>
                 <div class="param-row">
-                    <span class="param-row__label">τ</span>
+                    <span class="param-row__label" title="Calculated from the current configured R and C. This is the time constant of the linear single-compartment model." aria-description="Calculated from the current configured R and C. This is the time constant of the linear single-compartment model.">Calculated τ</span>
                     <span class="param-row__value" id="param-tau">—</span>
                 </div>
                 <div class="param-row">
@@ -587,12 +597,12 @@
 </div>
 
 <div class="measurement-help" id="measurement-help" role="tooltip" hidden>
-    <div id="measurement-help-text"></div>
+    <strong id="mechanics-example-help-heading" hidden></strong><div id="measurement-help-text"></div><a id="mechanics-example-source" href="https://doi.org/10.4187/respcare.05775" target="_blank" rel="noopener noreferrer" hidden></a>
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=16"></script>
-<script type="module" src="js/main.js?v=16"></script>
+<script type="module" src="alarms.js?v=17"></script>
+<script type="module" src="js/main.js?v=17"></script>
 
 </body>
 </html>

@@ -1,6 +1,10 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 import * as h from './helpers.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
 // The Desktop Chrome device preset supplies a 1280x720 viewport at the project
 // layer, which otherwise overrides the documented 1440x900 suite viewport.
@@ -461,9 +465,243 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'VSM-CLIN-009 asset release').toEqual(['17']);
+        expect(versions, 'VSM-ADAPT-001 asset release').toEqual(['18']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);
+    });
+});
+
+// VSM-ADAPT-001: new mode only. These 22 full-page candidates are separate from
+// the 74 accepted legacy PNGs. Snapshot generation requires the existing pinned
+// Linux candidate workflow and owner acceptance; the checks below never accept it.
+async function openAdaptive(page, options = {}) {
+    const errors = await h.open(page);
+    await page.evaluate(value => window.__vsim.setupAdaptive(value), options);
+    await h.expandRail(page);
+    expect((await h.state(page)).mode).toBe('pc-cmva');
+    expect((await h.state(page)).completed).toBeNull();
+    return errors;
+}
+async function adaptiveCompletions(page, count) {
+    return page.evaluate(value => window.__vsim.stepToCompleted(value), count);
+}
+async function adaptiveNextStart(page) {
+    return page.evaluate(() => {
+        const api = window.__vsim, previous = api.state().breathCount;
+        for (let tick = 0; tick < 2000; tick++) {
+            const state = api.stepTicks(1);
+            if (state.breathCount > previous) return state;
+        }
+        throw new Error('Adaptive fixture did not reach a next breath');
+    });
+}
+async function adaptiveShot(page, name) {
+    await page.evaluate(() => window.__vsim.redraw());
+    const root = fileURLToPath(new URL('../..', import.meta.url));
+    const output = process.env.ADAPTIVE_VISUAL_EVIDENCE
+        || path.join(root, 'scratch/shots-vsm-adapt-001-phase-b/visual-scenarios.json');
+    const sources = ['index.html', 'css/style.css', 'js/main.js', 'js/simulation.js', 'js/ventilator.js',
+        'js/adaptive-controller.js', 'js/lung-model.js', 'js/waveforms.js', 'alarms.js', 'alarm-audio.js',
+        'tests/visual/waveforms.spec.js', 'tests/visual/helpers.js', 'playwright.config.js'];
+    const sourceSha256 = Object.fromEntries(sources.map(file => [file,
+        crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex')]));
+    const recipes = {
+        'adaptive-startup-standard.png': 'Default setupAdaptive: R10/C.05, RR12,I:E1:4,target500,PEEP5,effort0,initial10,bounds5-25; zero ticks; Standard; all rail groups expanded.',
+        'adaptive-startup-teaching.png': 'Same startup fixture; toggle Teaching; no ticks.',
+        'adaptive-settled-standard.png': 'Default fixture; 10 new canonical publications; Standard.',
+        'adaptive-settled-teaching.png': 'Same 10-publication fixture; toggle Teaching; no ticks.',
+        'adaptive-pending-target-peep-standard.png': 'Default fixture after10publications; advance to next breath start and30ticks; actual VT input650 then PEEP input9; Standard; retain old source target500 and appliedPEEP5.',
+        'adaptive-pending-target-peep-teaching.png': 'Same mid-inspiration queued target650/PEEP9 fixture; toggle Teaching; no ticks.',
+        'adaptive-mixed-feedback-teaching.png': 'Same queued fixture; advance1new publication; old-context inspiration rejected for adaptation but actual volume retained.',
+        'adaptive-paused-context-teaching.png': 'Same rejected publication; click actual Pause; retain mixed-feedback status and show secondary paused text.',
+        'adaptive-mechanics-first-change-teaching.png': 'Default fixture;10publications; actual compliance input25mL/cmH2O;1new publication; Teaching.',
+        'adaptive-mechanics-settled-teaching.png': 'Same compliance-step fixture;15further publications (16after change,26total); Teaching.',
+        'adaptive-effort-first-change-teaching.png': 'Default fixture with prescribed patientRR12 but amplitude0;10publications; actual Pmus input8;1new publication; Teaching.',
+        'adaptive-effort-settled-teaching.png': 'Same effort-step fixture;15further publications (16after change,26total); Teaching.',
+        'adaptive-next-maximum-standard.png': 'Setup C.015 and maximum20;5publications; applied18,pending20; Standard.',
+        'adaptive-upper-bound-teaching.png': 'Same upper-bound fixture;10further publications (15total); applied20; Teaching.',
+        'adaptive-bound-release-teaching.png': 'Same upper-bound fixture after15publications; Standard actual compliance input50;1new publication; Teaching; source pressure20,next18.',
+        'adaptive-lower-bound-teaching.png': 'Fresh setup C.1,prescribed effort12,patientRR12;18publications; applied minimum5 with excess inspiredVT; Teaching.',
+        'adaptive-pending-transition-help-standard.png': 'Default fixture;10publications; actual Pause; VT650 and PEEP9 inputs; focus pending target help; Standard.',
+        'adaptive-reset-retained-standard.png': 'Dismiss pending help; actual Reset demonstration; retain target650/PEEP9 and paused transport; achievedVT unavailable; Standard.',
+        'adaptive-achieved-help-teaching.png': 'Same retained-reset fixture;2new publications; Teaching; focus Achieved VT help.',
+        'adaptive-destination-vc-retained-standard.png': 'Same fixture; dismiss help and select Standard; queue VT640/PEEP12; actual VC-CMV mode button; preserve manual pressure settings and pause.',
+        'adaptive-reentry-startup-teaching.png': 'Same VC destination fixture; actual PC-CMVa button then Teaching; target640/PEEP12 retained,initialpressure10,no eligible feedback.',
+        'adaptive-prescribed-effort-help-teaching.png': 'Same adaptive reentry fixture; focus Prescribed effort help; Teaching.',
+    };
+    expect(recipes[name], 'Every candidate requires an exact replay recipe').toBeTruthy();
+    const manifest = fs.existsSync(output) ? JSON.parse(fs.readFileSync(output, 'utf8')) : { schemaVersion: 1, candidates: {} };
+    manifest.candidates[name] = { name, snapshotPath: test.info().snapshotPath(name),
+        testTitle: test.info().title, recipe: recipes[name], viewport: page.viewportSize(),
+        platform: process.platform, sourceSha256, state: await h.state(page) };
+    fs.mkdirSync(path.dirname(output), { recursive: true });
+    fs.writeFileSync(output, JSON.stringify(manifest, null, 2) + '\n');
+    await expect(page).toHaveScreenshot(name, { fullPage: true });
+}
+
+test.describe('PC-CMVa adaptive visual contract', () => {
+    test('adaptive startup, settled measurements, pending context and pause', async ({ page }) => {
+        const errors = await openAdaptive(page);
+        await expect(page.locator('#adaptive-achieved')).toHaveText('—');
+        await expect(page.locator('#adaptive-pressure')).toHaveText('10');
+        await expect(page.locator('#adaptive-status')).toHaveText('Awaiting completed inspiration');
+        await adaptiveShot(page, 'adaptive-startup-standard.png');
+        await h.teachingMode(page);
+        await adaptiveShot(page, 'adaptive-startup-teaching.png');
+        await h.teachingMode(page);
+        let state = await adaptiveCompletions(page, 10);
+        expect(state.completed.measuredVT_mL).toBeGreaterThan(492);
+        expect(state.completed.measuredVT_mL).toBeLessThan(494);
+        await expect(page.locator('#adaptive-status')).toHaveText('Within target band');
+        await adaptiveShot(page, 'adaptive-settled-standard.png');
+        await h.teachingMode(page);
+        await adaptiveShot(page, 'adaptive-settled-teaching.png');
+        await h.teachingMode(page);
+        await adaptiveNextStart(page);
+        await page.evaluate(() => window.__vsim.stepTicks(30));
+        await h.setRange(page, '#vt', 650); await h.setRange(page, '#peep', 9);
+        state = await h.state(page);
+        expect(state.operatorSettings.targetVT_mL).toBe(500);
+        expect(state.operatorSettings.peep_cmH2O).toBe(5);
+        expect(state.adaptiveState.requested).toEqual({ targetVT_mL: 650, peep_cmH2O: 9 });
+        await expect(page.locator('#adaptive-source-target')).toHaveText('Source target: 500 mL');
+        await expect(page.locator('#adaptive-status')).toHaveText('Awaiting feedback for new settings');
+        await adaptiveShot(page, 'adaptive-pending-target-peep-standard.png');
+        await h.teachingMode(page);
+        await adaptiveShot(page, 'adaptive-pending-target-peep-teaching.png');
+        state = await adaptiveCompletions(page, 1);
+        expect(state.adaptiveState.latestDecision.eligible).toBe(false);
+        expect(state.completed.adaptive.targetVT_mL).toBe(500);
+        await expect(page.locator('#adaptive-status')).toHaveText('Feedback unavailable — inputs changed');
+        await adaptiveShot(page, 'adaptive-mixed-feedback-teaching.png');
+        await page.locator('#btn-pause').click();
+        expect((await h.state(page)).running).toBe(false);
+        await expect(page.locator('#adaptive-paused')).toBeVisible();
+        await adaptiveShot(page, 'adaptive-paused-context-teaching.png');
+        expect(errors).toEqual([]);
+    });
+
+    test('adaptive compliance and prescribed-effort demonstrations', async ({ page }) => {
+        let errors = await openAdaptive(page);
+        const beforeMechanics = await adaptiveCompletions(page, 10);
+        await h.setRange(page, '#compliance', 25);
+        let state = await adaptiveCompletions(page, 1);
+        expect(state.completed.measuredVT_mL).toBeGreaterThan(278);
+        expect(state.completed.measuredVT_mL).toBeLessThan(281);
+        expect(state.adaptiveState.applied_cmH2O).toBe(beforeMechanics.adaptiveState.applied_cmH2O);
+        expect(state.adaptiveState.pending.pressure_cmH2O).toBe(state.adaptiveState.applied_cmH2O + 2);
+        await h.teachingMode(page);
+        await adaptiveShot(page, 'adaptive-mechanics-first-change-teaching.png');
+        state = await adaptiveCompletions(page, 15);
+        expect(state.completed.measuredVT_mL).toBeGreaterThan(491);
+        expect(state.completed.measuredVT_mL).toBeLessThan(494);
+        expect(state.adaptiveState.applied_cmH2O).toBeGreaterThan(20);
+        await adaptiveShot(page, 'adaptive-mechanics-settled-teaching.png');
+        expect(errors).toEqual([]);
+
+        errors = await openAdaptive(page, { patientRR: 12 });
+        const beforeEffort = await adaptiveCompletions(page, 10);
+        await h.setRange(page, '#pmus-max', 8);
+        state = await adaptiveCompletions(page, 1);
+        expect(state.completed.measuredVT_mL).toBeGreaterThan(708);
+        expect(state.completed.measuredVT_mL).toBeLessThan(711);
+        expect(state.completed.triggerAgent).toBe('patient');
+        expect(state.completed.breathType).toBe('mandatory');
+        expect(state.adaptiveState.applied_cmH2O).toBe(beforeEffort.adaptiveState.applied_cmH2O);
+        expect(state.adaptiveState.pending.pressure_cmH2O).toBe(state.adaptiveState.applied_cmH2O - 2);
+        await h.teachingMode(page);
+        await adaptiveShot(page, 'adaptive-effort-first-change-teaching.png');
+        state = await adaptiveCompletions(page, 15);
+        expect(state.completed.measuredVT_mL).toBeGreaterThan(508);
+        expect(state.completed.measuredVT_mL).toBeLessThan(511);
+        expect(state.adaptiveState.applied_cmH2O).toBeGreaterThan(6.45);
+        expect(state.adaptiveState.applied_cmH2O).toBeLessThan(6.49);
+        await expect(page.locator('#adaptive-effort')).toContainText('Prescribed effort · Pmus max 8');
+        await adaptiveShot(page, 'adaptive-effort-settled-teaching.png');
+        expect(errors).toEqual([]);
+    });
+
+    test('adaptive pending maximum, both active bounds and saturation release', async ({ page }) => {
+        let errors = await openAdaptive(page, { compliance: 0.015, maximumPressure_cmH2O: 20 });
+        let state = await adaptiveCompletions(page, 5);
+        expect(state.adaptiveState.applied_cmH2O).toBe(18);
+        expect(state.adaptiveState.pending.pressure_cmH2O).toBe(20);
+        await expect(page.locator('#adaptive-bound')).toHaveText('');
+        await expect(page.locator('#adaptive-next-bound')).toHaveText('Next pressure: maximum');
+        await expect(page.locator('#adaptive-status')).toHaveText('Adjusting next breath');
+        await adaptiveShot(page, 'adaptive-next-maximum-standard.png');
+        state = await adaptiveCompletions(page, 10);
+        expect(state.adaptiveState.applied_cmH2O).toBe(20);
+        expect(state.completed.measuredVT_mL).toBeGreaterThan(299);
+        expect(state.completed.measuredVT_mL).toBeLessThan(301);
+        await h.teachingMode(page);
+        await expect(page.locator('#adaptive-status')).toHaveText('Maximum pressure — VT below target');
+        await adaptiveShot(page, 'adaptive-upper-bound-teaching.png');
+        await h.teachingMode(page);
+        await h.setRange(page, '#compliance', 50);
+        state = await adaptiveCompletions(page, 1);
+        expect(state.completed.measuredVT_mL).toBeGreaterThan(866);
+        expect(state.completed.measuredVT_mL).toBeLessThan(869);
+        expect(state.adaptiveState.pending.pressure_cmH2O).toBe(18);
+        await h.teachingMode(page);
+        await expect(page.locator('#adaptive-status')).toHaveText('Adjusting next breath');
+        await adaptiveShot(page, 'adaptive-bound-release-teaching.png');
+        expect(errors).toEqual([]);
+
+        errors = await openAdaptive(page, { compliance: 0.1, pMusMax: 12, patientRR: 12 });
+        state = await adaptiveCompletions(page, 18);
+        expect(state.adaptiveState.applied_cmH2O).toBe(5);
+        expect(state.completed.measuredVT_mL).toBeGreaterThan(788);
+        expect(state.completed.measuredVT_mL).toBeLessThan(792);
+        await h.teachingMode(page);
+        await expect(page.locator('#adaptive-status')).toHaveText('Minimum pressure — VT above target');
+        await adaptiveShot(page, 'adaptive-lower-bound-teaching.png');
+        expect(errors).toEqual([]);
+    });
+
+    test('adaptive transition help, retained settings and contextual help', async ({ page }) => {
+        const errors = await openAdaptive(page);
+        await adaptiveCompletions(page, 10);
+        await page.locator('#btn-pause').click();
+        await h.setRange(page, '#vt', 650); await h.setRange(page, '#peep', 9);
+        await page.locator('#adaptive-requested-target-help').focus();
+        await expect(page.locator('#measurement-help-text')).toContainText('Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath.');
+        await expect(page.locator('#measurement-help-text')).toContainText('Destination modes use settings only where applicable.');
+        await adaptiveShot(page, 'adaptive-pending-transition-help-standard.png');
+        await page.keyboard.press('Escape');
+        await page.locator('#adaptive-reset').click();
+        let state = await h.state(page);
+        expect(state.operatorSettings.targetVT_mL).toBe(650);
+        expect(state.operatorSettings.peep_cmH2O).toBe(9);
+        expect(state.running).toBe(false);
+        expect(state.completed).toBeNull();
+        expect(state.adaptiveState.pendingSettings).toBeNull();
+        await adaptiveShot(page, 'adaptive-reset-retained-standard.png');
+        await adaptiveCompletions(page, 2);
+        await h.teachingMode(page);
+        await page.locator('#adaptive-panel [data-measurement-help="adaptive-achieved"]').focus();
+        await expect(page.locator('#measurement-help-text')).toContainText('it is not a separate exhaled-volume measurement.');
+        await adaptiveShot(page, 'adaptive-achieved-help-teaching.png');
+        await page.keyboard.press('Escape');
+        await h.teachingMode(page);
+        await h.setRange(page, '#vt', 640); await h.setRange(page, '#peep', 12);
+        const manual = (await h.state(page)).operatorSettings;
+        await h.setMode(page, 'vc-cmv'); state = await h.state(page);
+        expect(state.operatorSettings.targetVT_mL).toBe(640); expect(state.operatorSettings.peep_cmH2O).toBe(12);
+        expect(state.operatorSettings.inspiratoryPressure_cmH2O).toBe(manual.inspiratoryPressure_cmH2O);
+        expect(state.adaptiveState).toBeNull(); expect(state.running).toBe(false);
+        await expect(page.locator('#adaptive-panel')).toBeHidden();
+        await adaptiveShot(page, 'adaptive-destination-vc-retained-standard.png');
+        await h.setMode(page, 'pc-cmva'); state = await h.state(page);
+        expect(state.adaptiveState.applied_cmH2O).toBe(10); expect(state.adaptiveState.appliedPeep_cmH2O).toBe(12);
+        expect(state.adaptiveState.pendingSettings).toBeNull(); expect(state.completed).toBeNull();
+        await h.teachingMode(page);
+        await adaptiveShot(page, 'adaptive-reentry-startup-teaching.png');
+        await page.locator('#adaptive-panel [data-measurement-help="adaptive-effort"]').focus();
+        await expect(page.locator('#measurement-help-text')).toContainText('Effort does not respond physiologically to changing assistance.');
+        await expect(page.locator('#measurement-help-text')).toContainText('This amplitude is not measured work of breathing.');
+        await adaptiveShot(page, 'adaptive-prescribed-effort-help-teaching.png');
+        expect(errors).toEqual([]);
     });
 });

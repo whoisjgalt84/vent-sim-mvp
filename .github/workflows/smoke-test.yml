@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       generate_baseline_candidates:
-        description: Generate six Linux snapshot candidates for human review
+        description: Generate Linux snapshot candidates for human review
         required: false
         default: false
         type: boolean
@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -34,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run 300 engine assertions
+      - name: Run original and adaptive engine gates plus exact legacy preservation
         run: npm test
 
   browser-verification:
@@ -45,6 +47,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node 24
         uses: actions/setup-node@v4
@@ -55,7 +59,7 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci
 
-      - name: Run 44 browser-behavior assertions
+      - name: Run 44 original and 12 adaptive browser groups
         run: npm run test:browser
 
       - name: Generate Linux baseline candidates
@@ -70,7 +74,7 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_baseline_candidates }}
         run: node tools/create-visual-review-bundle.mjs
 
-      - name: Compare six Linux baselines and run determinism checks
+      - name: Compare Linux baselines and run 13 visual and determinism groups
         if: ${{ github.event_name != 'workflow_dispatch' || !inputs.generate_baseline_candidates }}
         run: npm run test:visual
 

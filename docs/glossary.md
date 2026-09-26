@@ -489,3 +489,23 @@ Recorded so contributors don't propagate them.
 
 Real ventilators do not alarm on discordance, and their displays actively hide
 summed volume. A teaching simulator can do both.
+
+## 13. PC-CMVa educational implementation
+
+`pc-cmva` is the case-sensitive runtime ID; **PC-CMVa** is the learner-facing
+mode label: pressure-controlled continuous mandatory ventilation with adaptive
+targeting. This uses the existing Chatburn taxonomy above, including its `a`
+targeting designation. The implemented feedback law and numerical constants are
+owner-approved engineering choices, not assertions that the cited taxonomy
+prescribes an algorithm. See [the approved controller contract](adaptive-mode-contract.md)
+and its source-to-claim ledger reference for claim boundaries and locators.
+
+**Target VT** is operator configuration. **Achieved VT** is unrounded modeled
+inspired volume at canonical expiration-start publication (rounded only for
+display), not separately measured expired volume. **Adaptive pressure** and
+**Next pressure** are commands above set PEEP; neither is measured PIP, pressure
+above total PEEP, nor a clinical safety limit. **Prescribed effort** is an
+instructor-selected Pmus waveform amplitude, not measured work of breathing or
+a physiological response to assistance. This conventional feedback controller
+does not learn, reason clinically or reproduce a particular commercial ventilator.
+Target-band/miss text is teaching status and adds no alarm or automatic cycling.

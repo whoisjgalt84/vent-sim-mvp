@@ -42,6 +42,8 @@
  */
 
 
+import { AdaptiveController } from './adaptive-controller.js?v=18';
+
 // =============================================================================
 // RING BUFFER
 // =============================================================================
@@ -248,6 +250,13 @@ export class SimulationEngine {
         // --- Transport Controls ---
         this.running = true;
         this.speed   = 1;                  // 0.5×, 1×, 2×, 4×
+
+        // Adaptive output never writes the operator's manual Pinsp/PS settings.
+        this._pendingAdaptiveSettings = null;
+        this._adaptive = null;
+        this._adaptiveContext = null;
+        this._activeAdaptiveMode = false;
+        this._initializeAdaptive();
 
         // --- Initialize ---
         this._prefill();
@@ -523,6 +532,90 @@ export class SimulationEngine {
         this.currentPhase = phase === Phase.EXPIRATION ? 'expiration' : 'inspiration';
     }
 
+    _initializeAdaptive() {
+        this._activeAdaptiveMode = this.vent.isAdaptiveMode();
+        this._adaptiveContext = null;
+        this._adaptive = this._activeAdaptiveMode
+            ? new AdaptiveController(this.vent.adaptiveConfig) : null;
+        if (this._adaptive) {
+            this.vent.holdTime = 0;
+            this._adaptive.reset({ simulationGeneration: this.simulationGeneration,
+                modeGeneration: this.modeGeneration, targetVT_mL: this.vent.tidalVolume * 1000 });
+        }
+        this.vent.adaptivePressure_cmH2O = null;
+        this._adaptiveInputFingerprint = this._adaptiveFingerprint();
+    }
+
+    _adaptiveFingerprint() {
+        // Change detection only. None of these model values enter the controller.
+        return JSON.stringify([this._measurementFingerprint(), this.vent.pMusMax,
+            this.vent.neuralTi, this.patientRR]);
+    }
+
+    _syncAdaptiveInputs() {
+        if (!this._adaptive) return;
+        const fingerprint = this._adaptiveFingerprint();
+        if (fingerprint !== this._adaptiveInputFingerprint) {
+            this._adaptive.invalidate('SETTINGS_CHANGED');
+            this._adaptiveInputFingerprint = fingerprint;
+        }
+    }
+
+    /** Atomic operator request; applied target/PEEP remain unchanged until a boundary. */
+    requestAdaptiveSettings(request) {
+        if (!this.vent.isAdaptiveMode() || !this._adaptive) throw new Error('Adaptive mode is not active');
+        if (!request || typeof request !== 'object' || Array.isArray(request)) throw new TypeError('Adaptive setting request must be an object');
+        const keys = Object.keys(request);
+        if (!keys.length || keys.some(key => !['targetVT_mL', 'peep_cmH2O'].includes(key))) {
+            throw new RangeError('Unknown or empty adaptive setting request');
+        }
+        const next = { ...this._pendingAdaptiveSettings, ...request };
+        if ('targetVT_mL' in next && (!Number.isFinite(next.targetVT_mL)
+            || next.targetVT_mL < 200 || next.targetVT_mL > 800)) throw new RangeError('Target VT must be 200–800 mL');
+        if ('peep_cmH2O' in next && (!Number.isFinite(next.peep_cmH2O)
+            || next.peep_cmH2O < 0 || next.peep_cmH2O > 24)) throw new RangeError('PEEP must be 0–24 cmH2O');
+        this._pendingAdaptiveSettings = Object.freeze(next);
+        this._adaptive.invalidate('SETTINGS_CHANGED');
+    }
+
+    _resolveAdaptiveSettings() {
+        const request = this._pendingAdaptiveSettings;
+        if (!request) return;
+        // Requests were validated as a whole before storage. Commit both retained owners.
+        if (request.targetVT_mL !== undefined) this.vent.tidalVolume = request.targetVT_mL / 1000;
+        if (request.peep_cmH2O !== undefined) this.vent.peep = request.peep_cmH2O;
+        this._pendingAdaptiveSettings = null;
+        this._adaptiveInputFingerprint = this._adaptiveFingerprint();
+    }
+
+    /** Explicit transition resolves operator intent before destination-mode prefill. */
+    setMode(mode) {
+        if (!this.vent.isSupportedMode(mode)) throw new RangeError('Unsupported ventilation mode');
+        if (this._activeAdaptiveMode || this.vent.isAdaptiveMode()) this._resolveAdaptiveSettings();
+        this.vent.mode = mode;
+        this.reset();
+    }
+
+    /** Setup changes take effect only through a validated reset, without resuming transport. */
+    configureAdaptive(config) {
+        const validated = new AdaptiveController(config).snapshot.config;
+        this.vent.adaptiveConfig = validated;
+        this.reset();
+    }
+
+    get adaptiveState() {
+        if (!this._adaptive || !this.vent.isAdaptiveMode()) return null;
+        const state = this._adaptive.snapshot;
+        const decision = state.latestDecision;
+        const contextMatches = Boolean(decision?.eligible && decision.source.epoch === state.epoch
+            && decision.source.targetVT_mL === this.vent.tidalVolume * 1000);
+        return freezeRecord({ ...state, appliedPeep_cmH2O: this._adaptiveContext?.appliedPeep_cmH2O ?? this.vent.peep,
+            requested: { targetVT_mL: this._pendingAdaptiveSettings?.targetVT_mL ?? this.vent.tidalVolume * 1000,
+                peep_cmH2O: this._pendingAdaptiveSettings?.peep_cmH2O ?? this.vent.peep },
+            pendingSettings: this._pendingAdaptiveSettings, contextMatches,
+            paused: !this.running, source: this.lastCompletedBreath?.adaptive ?? null });
+    }
+
     _measurementFingerprint() {
         return JSON.stringify([
             this.vent.mode, this.vent.flowPattern, this.vent.tidalVolume,
@@ -559,9 +652,15 @@ export class SimulationEngine {
                 }
             }
         }
+        this._syncAdaptiveInputs();
     }
 
     notifyMeasurementSettingsChanged() {
+        if (this._adaptive) {
+            // Explicit events also invalidate edit-then-revert and equal-value requests.
+            this._adaptive.invalidate('SETTINGS_CHANGED');
+            this._adaptiveInputFingerprint = this._adaptiveFingerprint();
+        }
         this._syncMeasurementSettings();
     }
 
@@ -966,8 +1065,24 @@ export class SimulationEngine {
                 flowCycleThreshold_Lpm,
                 settingsFingerprint: this.currentBreath.settingsFingerprint,
                 holdMechanics,
+                ...(this._adaptive ? { adaptive: freezeRecord({
+                    ...this.currentBreath.adaptive,
+                    valid: !this.currentBreath.settingsChanged && this.vent.holdTime === 0
+                        && this.currentBreath.adaptive.epoch === this._adaptive.snapshot.epoch
+                        && this.currentBreath.inspirationSampleCount > 0,
+                }) } : {}),
             });
             this._recordDeliveredBreath(this.lastCompletedBreath);
+            if (this._adaptive) {
+                const record = this.lastCompletedBreath;
+                this._adaptive.consume({ ...record.adaptive, mode: record.configuredMode,
+                    simulationGeneration: record.simulationGeneration, modeGeneration: record.modeGeneration,
+                    settingsGeneration: record.settingsGeneration, breathId: record.breathId,
+                    startedAt_s: record.startedAt_s, completedAt_s: record.completedAt_s,
+                    boundarySampleIndex: record.boundarySampleIndex, vt_mL: record.measuredVT_mL,
+                    reasons: record.adaptive.valid ? [] : ['MIXED_INPUT_OR_HOLD'],
+                }, this.globalTime);
+            }
             this.currentBreath = null;
         }
 
@@ -978,6 +1093,15 @@ export class SimulationEngine {
 
     /** Start a new breath (machine-triggered or patient-triggered). */
     _startNewBreath(triggerType, eventTime = this.globalTime) {
+        if (this._adaptive) {
+            this._resolveAdaptiveSettings();
+            const command = this._adaptive.beginBreath({ targetVT_mL: this.vent.tidalVolume * 1000 });
+            this.vent.adaptivePressure_cmH2O = command.applied_cmH2O;
+            this._adaptiveContext = freezeRecord({ epoch: command.epoch,
+                targetVT_mL: command.targetVT_mL, appliedPeep_cmH2O: this.vent.peep,
+                applied_cmH2O: command.applied_cmH2O, commandVersion: command.commandVersion,
+            });
+        }
         this._setPhase(Phase.INSPIRATION);
         this.phaseTime = 0;
         this.volumeAtBreathStart = this.volumeAboveEq;
@@ -1018,6 +1142,7 @@ export class SimulationEngine {
             endInspiratoryFlow_Lps: null,
             endInspiratoryFlowSampleIndex: null,
             holdCollector: null,
+            ...(this._adaptive ? { adaptive: this._adaptiveContext } : {}),
         };
         this.machineTimer = 0;
         this.lastBreathStartSec = this.globalTime;
@@ -1104,7 +1229,7 @@ export class SimulationEngine {
     _computePhysics() {
         const R    = this.lung.resistance;
         const C    = this.lung.compliance;
-        const peep = this.vent.peep;
+        const peep = this._adaptiveContext?.appliedPeep_cmH2O ?? this.vent.peep;
         const pmus = this.currentPmus;
         const dt   = this.dt;
 
@@ -1234,6 +1359,9 @@ export class SimulationEngine {
      *   6. Advance clocks
      */
     tick() {
+        if (this.vent.isAdaptiveMode() !== this._activeAdaptiveMode) {
+            throw new Error('Transitions involving PC-CMVa require setMode() or reset() before ticking');
+        }
         this._observeDeliveredClock();
         this._advanceNeural();
         this._syncMeasurementSettings();
@@ -1313,6 +1441,7 @@ export class SimulationEngine {
 
     /** Reset simulation to initial state. */
     reset() {
+        this._resolveAdaptiveSettings();
         this.simulationGeneration = (this.simulationGeneration ?? 0) + 1;
         this.modeGeneration = 0;
         this.settingsGeneration = 0;
@@ -1363,6 +1492,7 @@ export class SimulationEngine {
         this.loopCompleted = { pressure: [], volume: [], flow: [] };
 
         Object.values(this.buffers).forEach(b => b.clear());
+        this._initializeAdaptive();
         this._prefill();
     }
 
@@ -1379,7 +1509,7 @@ export class SimulationEngine {
 
     /** Pure availability selector for the approved live hold-mechanics contract. */
     get holdMechanics() {
-        if (this.vent.isSpontaneousMode()) {
+        if (this.vent.isSpontaneousMode() || this.vent.isAdaptiveMode()) {
             return freezeRecord({
                 status: 'inapplicable', reasons: ['HOLD_INAPPLICABLE_MODE'],
                 pplat: frozenValue('inapplicable', null, ['HOLD_INAPPLICABLE_MODE']),

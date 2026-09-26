@@ -14,9 +14,9 @@
  *   requestAnimationFrame loop → sim.advance(dt) → display.renderFromSim(sim)
  *
  *   The SimulationEngine re-reads settings from the Ventilator EVERY TICK,
- *   not at breath start. Nothing is snapshotted except volumeAtBreathStart.
- *   So VT, RR, I:E, hold, mode, R, C and PEEP all take effect mid-breath.
- *   That is deliberate — it keeps cause and effect adjacent for the learner.
+ *   not at breath start for legacy settings. PC-CMVa separately latches its
+ *   pressure command and applied PEEP at each breath start; operator target
+ *   and PEEP requests follow the approved adaptive transition contract.
  *
  *   A test-only determinism surface is installed on window.__vsim; see
  *   installTestHooks() at the bottom of this file.
@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=17';
-import { Ventilator, MODE_PC_CSV }        from './ventilator.js?v=17';
-import { SimulationEngine }  from './simulation.js?v=17';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=17';
-import AlarmEngine from '../alarms.js?v=17';
+import { LungModel }        from './lung-model.js?v=18';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=18';
+import { SimulationEngine }  from './simulation.js?v=18';
+import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=18';
+import AlarmEngine from '../alarms.js?v=18';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=17';
+} from '../alarm-audio.js?v=18';
 
 
 // =============================================================================
@@ -55,6 +55,32 @@ const CUSTOM_MECHANICS_HELP = 'R or C has been edited. The controls show the cur
 const MECHANICS_EXAMPLES_HELP = 'An example loads starting resistance (R) and compliance (C). R combines airway and tube resistance in one value. C describes the total respiratory system; this model does not separate lung and chest-wall compliance. The displayed time constant is calculated as τ = R × C. It is not a measured expiratory time constant. These examples do not define a diagnosis or its severity. Manual control limits are for exploring the model, not clinical reference ranges.';
 const MECHANICS_UNITS_HELP = 'R is in cmH₂O·s/L. C is displayed in mL/cmH₂O and converted to L/cmH₂O for calculations. With C in L/cmH₂O, R × C gives seconds.';
 const CALCULATED_TAU_HELP = 'Calculated from the current configured R and C. This is the time constant of the linear single-compartment model.';
+
+
+// A5 approved copy, including the explicit queued-transition clarification.
+const ADAPTIVE_HELP = Object.freeze({
+    "adaptive-mode": "Pressure-controlled continuous mandatory ventilation with adaptive targeting. The model holds an inspiratory pressure command during each breath and adjusts the next command from completed inspired volume. This is a generic educational controller.",
+    "adaptive-tag": "Conventional feedback control. This controller does not learn, reason clinically, or reproduce a particular commercial ventilator.",
+    "adaptive-target": "Operator-selected volume target for eligible completed inspirations. A target is not a guarantee of delivered volume.",
+    "adaptive-target-pending": "The new target applies at the next breath. The current inspiration will not be used to adjust pressure after this edit. Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath. Destination modes use settings only where applicable.",
+    "adaptive-context": "The retained achieved VT belongs to the identified earlier breath and its settings. Target-band and target-miss status will resume after an eligible completed inspiration under the new settings.",
+    "adaptive-achieved": "Unrounded modeled inspired volume from the last completed inspiration drives adaptation. This display rounds to whole milliliters. The record is finalized when expiration starts; it is not a separate exhaled-volume measurement.",
+    "adaptive-pressure": "Pressure command applied to the current or most recently started breath, above set PEEP. It is separate from measured peak airway pressure and from total PEEP. Patient contribution and mechanics can change achieved volume.",
+    "adaptive-next": "Command calculated from the identified completed inspiration. It applies only when the next breath starts and may be canceled by an input change.",
+    "adaptive-bounds": "Educational controller bounds above set PEEP. These are not alarm thresholds, clinical safety limits, or pressure above total PEEP. Configure bounds before resetting a demonstration.",
+    "adaptive-normal": "Achieved VT is within 10 mL of target on the last eligible inspiration. No pressure adjustment is requested. This is a teaching tolerance, not a clinical assessment.",
+    "adaptive-adjusting": "Achieved VT differs from target. The next pressure command changes by at most 2 cmH2O for this eligible inspiration.",
+    "adaptive-upper": "The current command is at the configured maximum and achieved VT is more than 10 mL below target. This controller cannot add pressure beyond that bound. Volume is not guaranteed.",
+    "adaptive-lower": "The current command is at the configured minimum and achieved VT is more than 10 mL above target. Prescribed patient contribution can still increase volume. The model does not reduce effort or clamp volume to the target.",
+    "adaptive-startup": "No eligible completed inspiration is available for pressure adaptation. Initial pressure is used until valid feedback arrives. Unavailable volume is not measured zero.",
+    "adaptive-invalid": "Settings or prescribed effort changed during this inspiration. Its delivered volume remains available to the monitor and ventilation history, but is excluded from pressure adaptation. The next complete unchanged inspiration can provide feedback.",
+    "adaptive-paused": "Simulation advancement is paused. The displayed achieved volume retains its source breath; pressure does not advance with wall-clock time.",
+    "adaptive-peep-pending": "The new set PEEP applies at the next breath. The current inspiratory pressure target remains unchanged until then. Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath. Destination modes use settings only where applicable.",
+    "adaptive-hold": "Inspiratory hold is excluded from this initial adaptive demonstration. Hold-derived measurements remain unavailable in this mode.",
+    "adaptive-predictions": "Fixed-pressure steady-state predictions are unavailable while pressure adapts between breaths.",
+    "adaptive-effort": "Instructor-selected peak amplitude of this model's periodic inspiratory muscle-pressure waveform. Effort does not respond physiologically to changing assistance. This amplitude is not measured work of breathing.",
+    "adaptive-idealization": "In PC-CMVa, Paw stays at the latched set PEEP plus adaptive pressure during each pressure-targeted inspiration. The next pressure command may change between breaths. Patient effort can change flow and delivered volume. Real ventilators may also show pressure deformation; this trace is a model idealization."
+});
 
 // Trailing window for the Teaching-Mode failed-trigger counter, in seconds.
 // Fixed (not tied to the display window) so the number means the same thing at
@@ -147,6 +173,7 @@ function init() {
 
     ensurePcCsvModeOption();
     ensurePcCsvControls();
+    ensureAdaptiveModeOption();
     syncMonitorLayout();
 
     // --- Bind all controls ---
@@ -184,6 +211,7 @@ function init() {
     bindLoopToggle();
     bindTeachingModeToggle();
     bindCollapsibles();
+    bindAdaptiveSetup();
     bindMeasurementHelp();
 
     // --- Handle window resize ---
@@ -262,6 +290,136 @@ function ensurePcCsvModeOption() {
     group.appendChild(btn);
 }
 
+function ensureAdaptiveModeOption() {
+    const group = document.getElementById('mode-toggle');
+    if (group.querySelector(`[data-mode="${MODE_PC_CMVA}"]`)) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mode-btn';
+    button.dataset.mode = MODE_PC_CMVA;
+    button.textContent = 'PC-CMVa';
+    button.title = ADAPTIVE_HELP['adaptive-mode'];
+    group.appendChild(button);
+}
+
+function syncOperatorControls() {
+    const adaptive = sim.adaptiveState;
+    const target = adaptive?.requested.targetVT_mL ?? vent.tidalVolume * 1000;
+    const peep = adaptive?.requested.peep_cmH2O ?? vent.peep;
+    document.getElementById('vt').value = target;
+    document.getElementById('peep').value = peep;
+    setText('vt-display', `${target} mL`);
+    setText('peep-display', `${peep} cmH₂O`);
+    if (adaptive) {
+        document.getElementById('adaptive-maximum').value = adaptive.config.maximumPressure_cmH2O;
+        setText('adaptive-minimum', `${adaptive.config.minimumPressure_cmH2O}`);
+    }
+}
+
+function bindAdaptiveSetup() {
+    document.getElementById('adaptive-reset').addEventListener('click', () => {
+        if (!vent.isAdaptiveMode()) return;
+        const maximum = Number(document.getElementById('adaptive-maximum').value);
+        // This is an explicit validated setup/reset, never an in-breath adjustment.
+        sim.configureAdaptive({ ...sim.adaptiveState.config, maximumPressure_cmH2O: maximum });
+        syncOperatorControls();
+        applyModeUI(vent.mode);
+        updateMonitorValues(vent.summary());
+        updateHoldResults();
+        updateBreathInfo();
+    });
+}
+
+function adaptivePresentation(state) {
+    const decision = state?.latestDecision;
+    if (decision?.eligible === false) {
+        return { text: 'Feedback unavailable — inputs changed', help: 'adaptive-invalid' };
+    }
+    if (state && !state.contextMatches && (state.epoch > 0 || state.lastFeedback)) {
+        return { text: 'Awaiting feedback for new settings', help: 'adaptive-context' };
+    }
+    if (!decision?.eligible) {
+        return { text: 'Awaiting completed inspiration', help: 'adaptive-startup' };
+    }
+    // The decision's bound describes its NEXT command. A target-miss status
+    // requires the source breath to have actually received the limiting command.
+    if (decision.pressureBefore_cmH2O === state.config.maximumPressure_cmH2O
+        && decision.error_mL > state.config.deadband_mL) {
+        return { text: 'Maximum pressure — VT below target', help: 'adaptive-upper' };
+    }
+    if (decision.pressureBefore_cmH2O === state.config.minimumPressure_cmH2O
+        && decision.error_mL < -state.config.deadband_mL) {
+        return { text: 'Minimum pressure — VT above target', help: 'adaptive-lower' };
+    }
+    return Math.abs(decision.error_mL) <= state.config.deadband_mL
+        ? { text: 'Within target band', help: 'adaptive-normal' }
+        : { text: 'Adjusting next breath', help: 'adaptive-adjusting' };
+}
+
+function updateAdaptiveView() {
+    const panel = document.getElementById('adaptive-panel');
+    if (!panel) return;
+    const state = sim.adaptiveState;
+    const active = state !== null;
+    if (!active && panel.contains(document.activeElement)) {
+        const destination = document.querySelector(`.mode-btn[data-mode="${vent.mode}"]`);
+        (destination?.getClientRects().length ? destination : document.getElementById('btn-teaching-mode')).focus();
+    }
+    panel.hidden = !active;
+    for (const id of ['adaptive-target-pending', 'adaptive-peep-pending']) {
+        document.getElementById(id).hidden = true;
+    }
+    const predictionIds = ['param-map', 'param-pr', 'param-auto-peep', 'param-total-peep', 'param-flow'];
+    for (const id of predictionIds) {
+        const element = document.getElementById(id);
+        // Teaching mode reuses this row for the observed flow-baseline indicator.
+        const observedBaseline = id === 'param-auto-peep' && document.body.classList.contains('teaching-mode');
+        if (active && !observedBaseline) {
+            element.title = ADAPTIVE_HELP['adaptive-predictions'];
+            element.setAttribute('aria-description', ADAPTIVE_HELP['adaptive-predictions']);
+        } else {
+            element.removeAttribute('title');
+            element.removeAttribute('aria-description');
+        }
+    }
+    if (!active) return;
+    const format = value => Number.isFinite(value) ? `${Number(value.toFixed(2))}` : '—';
+    const completed = sim.lastCompletedBreath;
+    const source = completed?.adaptive;
+    const pending = state.pendingSettings;
+    const targetPending = pending?.targetVT_mL !== undefined;
+    const peepPending = pending?.peep_cmH2O !== undefined;
+    const status = adaptivePresentation(state);
+    setText('adaptive-status', status.text);
+    setText('adaptive-target', `${state.targetVT_mL}`);
+    setText('adaptive-achieved', source ? `${Math.round(completed.measuredVT_mL)}` : '—');
+    setText('adaptive-pressure', format(state.applied_cmH2O));
+    setText('adaptive-next', format(state.pending?.pressure_cmH2O));
+    setText('adaptive-source', source ? `Source: #${completed.breathId} · ${completed.completedAt_s.toFixed(2)} s` : 'Source: —');
+    setText('adaptive-source-target', source ? `Source target: ${source.targetVT_mL} mL` : 'Source target: —');
+    setText('adaptive-applied-peep', `Applied PEEP: ${format(state.appliedPeep_cmH2O)} cmH₂O`);
+    setText('adaptive-limits', `Minimum pressure ${format(state.config.minimumPressure_cmH2O)} · Maximum pressure ${format(state.config.maximumPressure_cmH2O)} cmH₂O above PEEP`);
+    setText('adaptive-bound', state.applied_cmH2O === state.config.maximumPressure_cmH2O ? 'Applied: maximum'
+        : state.applied_cmH2O === state.config.minimumPressure_cmH2O ? 'Applied: minimum' : '');
+    setText('adaptive-next-bound', state.pending?.pressure_cmH2O === state.config.maximumPressure_cmH2O ? 'Next pressure: maximum'
+        : state.pending?.pressure_cmH2O === state.config.minimumPressure_cmH2O ? 'Next pressure: minimum' : '');
+    setText('adaptive-effort', `Prescribed effort · Pmus max ${format(vent.pMusMax)} cmH₂O · ${sim.patientRR}/min`);
+    document.getElementById('adaptive-paused').hidden = sim.running !== false;
+    document.getElementById('adaptive-paused').title = ADAPTIVE_HELP['adaptive-paused'];
+    document.getElementById('adaptive-target-pending').hidden = !targetPending;
+    document.getElementById('adaptive-peep-pending').hidden = !peepPending;
+    document.getElementById('adaptive-requests').hidden = !(targetPending || peepPending);
+    for (const id of ['adaptive-requested-target', 'adaptive-requested-target-help']) document.getElementById(id).hidden = !targetPending;
+    for (const id of ['adaptive-requested-peep', 'adaptive-requested-peep-help']) document.getElementById(id).hidden = !peepPending;
+    setText('adaptive-requested-target', targetPending ? `Target change pending: ${state.requested.targetVT_mL} mL` : '');
+    setText('adaptive-requested-peep', peepPending ? `PEEP change pending: ${state.requested.peep_cmH2O} cmH₂O` : '');
+    panel.dataset.sourceBreathId = completed?.breathId ?? '';
+    panel.dataset.sourceEpoch = source?.epoch ?? '';
+    panel.dataset.appliedEpoch = state.epoch;
+    panel.dataset.commandVersion = state.commandVersion;
+    refreshOpenMeasurementHelp();
+}
+
 function ensurePcCsvControls() {
     const pinspControl = document.getElementById('pinsp-control');
     if (!pinspControl) return;
@@ -295,12 +453,12 @@ function bindModeToggle() {
         if (!btn) return;
 
         const mode = btn.dataset.mode;
-        vent.mode = mode;
+        sim.setMode(mode);
 
         group.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('mode-btn--active'));
         btn.classList.add('mode-btn--active');
 
-        sim.reset();
+        syncOperatorControls();
         applyModeUI(mode);
         updateMonitorValues(vent.summary());
         updateHoldResults();
@@ -310,6 +468,12 @@ function bindModeToggle() {
 function applyModeUI(mode) {
     const isPressureMode = mode !== 'vc-cmv';
     const isCsv = mode === MODE_PC_CSV;
+    const isAdaptive = mode === MODE_PC_CMVA;
+    document.body.classList.toggle('adaptive-mode', isAdaptive);
+    const effortSlider = document.getElementById('pmus-max');
+    effortSlider.min = isAdaptive ? '0' : '0.25';
+    effortSlider.title = isAdaptive ? ADAPTIVE_HELP['adaptive-effort']
+        : 'Peak inspiratory muscle pressure (Pmus), 0.25–12 cmH₂O';
     updateModeLabel();
     updatePcDisclosure();
 
@@ -322,20 +486,22 @@ function applyModeUI(mode) {
     const pinspParamRow  = document.getElementById('pinsp-param-row');
     const pinspParamLabel = pinspParamRow?.querySelector('.param-row__label');
 
-    if (isPressureMode) {
+    if (isPressureMode && !isAdaptive) {
         vtControl.classList.add('control--hidden');
         patternControl.classList.add('control--hidden');
     } else {
         vtControl.classList.remove('control--hidden');
-        patternControl.classList.remove('control--hidden');
+        patternControl.classList.toggle('control--hidden', isAdaptive);
     }
+    setText('vt-control-label', isAdaptive ? 'Target VT' : 'Tidal Volume');
+    document.getElementById('adaptive-setup').hidden = !isAdaptive;
 
     pinspControl.classList.toggle('control--hidden', mode !== 'pc-cmv');
     if (psControl) psControl.classList.toggle('control--hidden', !isCsv);
     if (cycleControl) cycleControl.classList.toggle('control--hidden', !isCsv);
     if (rrControl) rrControl.style.display = isCsv ? 'none' : '';
 
-    if (pinspParamRow) pinspParamRow.style.display = isPressureMode ? '' : 'none';
+    if (pinspParamRow) pinspParamRow.style.display = isPressureMode && !isAdaptive ? '' : 'none';
     document.getElementById('ti-tau-row').style.display = mode === 'pc-cmv' ? '' : 'none';
 
     if (pinspParamLabel) {
@@ -351,6 +517,7 @@ function applyModeUI(mode) {
 
     updateHoldResultsVisibility();
     updateHoldControlState(isCsv);
+    updateAdaptiveView();
 }
 
 function updateModeLabel() {
@@ -359,7 +526,8 @@ function updateModeLabel() {
     const isCsv = vent.isSpontaneousMode();
 
     let tag = 'set-point';
-    if (isCsv) tag = 'flow-cycled';
+    if (vent.isAdaptiveMode()) tag = 'Adaptive targeting';
+    else if (isCsv) tag = 'flow-cycled';
     else if (!isPC && vent.flowPattern === 'ramp') tag = 'ramp';
 
     const holdTag = vent.holdActive
@@ -369,7 +537,7 @@ function updateModeLabel() {
         ? '<span style="color:var(--color-volume); margin-left:4px; font-size:10px;">💪 EFFORT</span>' : '';
 
     const modeName = vent.modeLabel;
-    modeLabel.innerHTML = `${modeName}<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${tag}</span>${holdTag}${pmusTag}`;
+    modeLabel.innerHTML = `${modeName}<span class="mode-label__tag" style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">${tag}</span>${holdTag}${pmusTag}`;
 
     // Mirror the mode into the monitored-value column (SME-013). Same strings as
     // the header — this is a second glance path, not new copy.
@@ -426,6 +594,7 @@ function bindFlowPatternToggle() {
 function bindHoldToggle() {
     const btn = document.getElementById('hold-toggle');
     btn.addEventListener('click', () => {
+        if (vent.isAdaptiveMode()) return;
         if (vent.holdActive) {
             vent.holdTime = 0;
             btn.classList.remove('hold-btn--active');
@@ -453,6 +622,7 @@ function bindHoldToggle() {
 }
 
 function onHoldDurationChange(slider) {
+    if (vent.isAdaptiveMode()) return;
     const dur = parseInt(slider.value) / 10;
     vent.holdTime = dur;
     document.getElementById('hold-duration-display').textContent = `${dur.toFixed(1)}s`;
@@ -471,7 +641,9 @@ function updateHoldResultsVisibility() {
 function updateHoldControlState(isSpontaneous) {
     const btn      = document.getElementById('hold-toggle');
     const slider   = document.getElementById('hold-duration');
-    if (isSpontaneous) {
+    const isAdaptive = vent.isAdaptiveMode();
+    document.getElementById('adaptive-hold-exclusion').hidden = !isAdaptive;
+    if (isSpontaneous || isAdaptive) {
         // Engine already suppresses hold in spontaneous modes (effectiveHoldTime → 0).
         // Reset any stale operator intent and lock the UI to match.
         vent.holdTime = 0;
@@ -483,7 +655,8 @@ function updateHoldControlState(isSpontaneous) {
         document.getElementById('hold-duration-group').style.display = 'none';
         document.getElementById('hold-results').style.display        = 'none';
         if (slider) slider.disabled = true;
-        btn.title = 'Inspiratory hold is a passive-mechanics measurement; not available in spontaneous modes';
+        btn.title = isAdaptive ? ADAPTIVE_HELP['adaptive-hold']
+            : 'Inspiratory hold is a passive-mechanics measurement; not available in spontaneous modes';
     } else {
         btn.disabled = false;
         if (slider) slider.disabled = false;
@@ -530,6 +703,10 @@ function bindPmusToggle() {
             setText('neural-ti-display', `${nti.toFixed(1)} s`);
             document.getElementById('pmus-sliders').style.display = '';
             document.getElementById('patient-rr-control').style.display = '';
+        }
+        if (vent.isAdaptiveMode()) {
+            sim.notifyMeasurementSettingsChanged();
+            updateMonitorValues(vent.summary());
         }
         updateModeLabel();
     });
@@ -815,6 +992,7 @@ function bindTransportControls() {
             pauseBtn.textContent = '▶';
             pauseBtn.classList.add('transport-btn--paused');
         }
+        updateAdaptiveView();
     });
 
     const speedGroup = document.getElementById('speed-group');
@@ -931,8 +1109,11 @@ function bindSlider(id, callback) {
     if (!slider) return;
     slider.addEventListener('input', () => {
         callback(slider);
-        if (!['pmus-max', 'neural-ti', 'patient-rr'].includes(id) && !id.startsWith('alarm-')) {
-            sim.notifyMeasurementSettingsChanged();
+        const adaptive = vent.isAdaptiveMode();
+        const effort = ['pmus-max', 'neural-ti', 'patient-rr'].includes(id);
+        if ((!effort || adaptive) && !id.startsWith('alarm-')) {
+            // Adaptive target/PEEP request already invalidates once atomically.
+            if (!(adaptive && ['vt', 'peep'].includes(id))) sim.notifyMeasurementSettingsChanged();
             updateMonitorValues(vent.summary());
             updateHoldResults();
         }
@@ -941,7 +1122,8 @@ function bindSlider(id, callback) {
 
 function onVtChange(slider) {
     const vtMl = parseInt(slider.value);
-    vent.tidalVolume = vtMl / 1000;
+    if (vent.isAdaptiveMode()) sim.requestAdaptiveSettings({ targetVT_mL: vtMl });
+    else vent.tidalVolume = vtMl / 1000;
     document.getElementById('vt-display').textContent = `${vtMl} mL`;
 }
 
@@ -971,7 +1153,8 @@ function onRrChange(slider) {
 
 function onPeepChange(slider) {
     const peep = parseInt(slider.value);
-    vent.peep = peep;
+    if (vent.isAdaptiveMode()) sim.requestAdaptiveSettings({ peep_cmH2O: peep });
+    else vent.peep = peep;
     document.getElementById('peep-display').textContent = `${peep} cmH₂O`;
 }
 
@@ -1173,16 +1356,16 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
     setText('param-pip',     `${displayPip}`);
     setText('param-pplat', hold.pplat.value !== null ? `${formatHoldValue(hold.pplat.value)}` : '—');
     setText('pplat-status', holdStatusCopy(hold));
-    setText('param-map',     `${s.pressures.map_cmH2O}`);
+    setText('param-map', s.isAdaptive ? '—' : `${s.pressures.map_cmH2O}`);
     setText('param-dp', hold.drivingPressure.value !== null
         ? `${formatHoldValue(hold.drivingPressure.value)}` : '—');
-    setText('param-pr',      `${s.pressures.resistivePressure}`);
+    setText('param-pr', s.isAdaptive ? '—' : `${s.pressures.resistivePressure}`);
 
-    if (s.isPC) setText('param-pinsp', `${s.pressures.inspiratoryPressure}`);
+    if (s.isPC) setText('param-pinsp', s.isAdaptive ? '—' : `${s.pressures.inspiratoryPressure}`);
 
     setText('param-peep-set',   `${s.pressures.peep_cmH2O}`);
-    setText('param-auto-peep',  `${s.pressures.autoPeep_cmH2O}`);
-    setText('param-total-peep', `${s.pressures.totalPeep_cmH2O}`);
+    setText('param-auto-peep', s.isAdaptive ? '—' : `${s.pressures.autoPeep_cmH2O}`);
+    setText('param-total-peep', s.isAdaptive ? '—' : `${s.pressures.totalPeep_cmH2O}`);
 
     const displayVt = completed !== null ? completed.measuredVT_mL : null;
     const displayVe = currentDelivery && deliveredVentilation.status === 'available'
@@ -1201,7 +1384,7 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
     // End-expiratory residual immediately BEFORE the current breath began,
     // latched by _startNewBreath and retained throughout that breath, in mL.
     setText('param-live-trapped', `${Math.round(sim.volumeAtBreathStart * 1000)}`);
-    setText('param-flow', `${displayFlow}`);
+    setText('param-flow', s.isAdaptive ? '—' : `${displayFlow}`);
 
     setText('param-ti',     `${s.timing.inspiratoryTime_s}s`);
     setText('param-te',     `${s.timing.expiratoryTime_s}s`);
@@ -1232,6 +1415,7 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
 
     updateTeachingIndicators();
     updateMechanicsBar(s);
+    updateAdaptiveView();
 }
 
 function updateParams() {
@@ -1629,7 +1813,7 @@ function updateMechanicsBar(summary) {
         </span>`;
     }
 
-    chips += `
+    if (!s.isAdaptive) chips += `
         <span class="mechanics-chip mechanics-chip--prediction" style="color: ${trappedMl > 20 ? 'var(--color-warning)' : 'var(--text-primary)'}">
             <span class="mechanics-chip__symbol">Predicted steady-state trapped volume</span>
             ${trappedMl < 0.1 ? '<1' : Math.round(trappedMl)} mL
@@ -1645,10 +1829,10 @@ function updateAlerts(summary, measured) {
     const badges = [];
     const s = summary;
 
-    if (s.safety.pplatAbove30) badges.push(makeBadge('danger', `Predicted Pplat ${s.pressures.pplat_cmH2O} > 30`));
-    if (s.safety.drivingPressureAbove15) badges.push(makeBadge('warning', `ΔP ${s.pressures.drivingPressure} > 15`));
+    if (!s.isAdaptive && s.safety.pplatAbove30) badges.push(makeBadge('danger', `Predicted Pplat ${s.pressures.pplat_cmH2O} > 30`));
+    if (!s.isAdaptive && s.safety.drivingPressureAbove15) badges.push(makeBadge('warning', `ΔP ${s.pressures.drivingPressure} > 15`));
     if (s.safety.gasTrappingRisk) badges.push(makeBadge('warning', `Te/τ ${s.safety.teOverTau} < 3`));
-    if (s.pressures.autoPeep_cmH2O > 2) badges.push(makeBadge('warning', `Predicted steady-state auto-PEEP ${s.pressures.autoPeep_cmH2O}`));
+    if (!s.isAdaptive && s.pressures.autoPeep_cmH2O > 2) badges.push(makeBadge('warning', `Predicted steady-state auto-PEEP ${s.pressures.autoPeep_cmH2O}`));
     if (s.safety.tiTooShort) badges.push(makeBadge('warning', `Ti/τ ${s.safety.tiOverTau} < 1 — short fill`));
 
     if (sim.patientRR > 0 && measured.triggerType === 'patient') {
@@ -1663,6 +1847,7 @@ function formatHoldValue(value) {
 }
 
 function holdStatusCopy(hold) {
+    if (vent.isAdaptiveMode()) return 'Hold unavailable in PC-CMVa';
     const reasons = hold?.reasons ?? [];
     if (hold?.status === 'valid') return '';
     if (reasons.includes('HOLD_INAPPLICABLE_MODE')) return 'Unavailable in PC-CSV';
@@ -1679,6 +1864,7 @@ function holdStatusCopy(hold) {
 }
 
 function detailedHoldStatusCopy(result) {
+    if (vent.isAdaptiveMode()) return ADAPTIVE_HELP['adaptive-hold'];
     const reasons = result?.reasons ?? [];
     if (result?.status === 'valid') return 'Valid Pplat measurement.';
     if (reasons.includes('HOLD_INAPPLICABLE_MODE')) return 'Hold measurements unavailable in PC-CSV.';
@@ -1725,7 +1911,7 @@ function updatePcDisclosure() {
     const row = document.getElementById('pc-disclosure');
     const trigger = document.getElementById('pc-disclosure-trigger');
     if (!row || !trigger) return;
-    const applicable = vent.mode === 'pc-cmv' || vent.mode === MODE_PC_CSV;
+    const applicable = vent.isPressureMode();
     const hadFocus = document.activeElement === trigger;
     if (!applicable && openMeasurementHelpTrigger === trigger) closeMeasurementHelp();
     row.hidden = !applicable;
@@ -1748,12 +1934,16 @@ function detailedResistanceStatusCopy(result) {
 }
 
 function measurementHelpText(key) {
+    if (key === 'adaptive-mode') return `${ADAPTIVE_HELP[key]}\n\n${ADAPTIVE_HELP['adaptive-tag']}`;
+    if (key === 'adaptive-status') return ADAPTIVE_HELP[adaptivePresentation(sim.adaptiveState).help];
+    if (ADAPTIVE_HELP[key]) return ADAPTIVE_HELP[key];
     if (key === 'mechanics-examples') {
         const preset = LungModel.presets()[document.getElementById('preset').value];
         return [customMechanics ? CUSTOM_MECHANICS_HELP : preset.note,
             MECHANICS_EXAMPLES_HELP, MECHANICS_UNITS_HELP, CALCULATED_TAU_HELP].join('\n\n');
     }
     if (key === 'pc-idealization') {
+        if (vent.isAdaptiveMode()) return ADAPTIVE_HELP['adaptive-idealization'];
         const opening = vent.mode === MODE_PC_CSV
             ? 'In PC-CSV, this simulator uses idealized set-point pressure control. When a breath is delivered, Paw stays at PEEP plus Pressure Support during pressure-targeted inspiration, even with patient effort.'
             : 'In PC-CMV, this simulator uses idealized set-point pressure control. During pressure-targeted inspiration, Paw stays at PEEP plus the set inspiratory pressure, even with patient effort.';
@@ -1775,7 +1965,9 @@ function measurementHelpText(key) {
         } else if (delivery.valueLpm === 0) {
             parts.push('No delivered volume from completed breaths in this 30 s window. Zero is an available value; VE alarms can evaluate it.');
         }
-        if (!vent.isSpontaneousMode()) {
+        if (vent.isAdaptiveMode()) {
+            parts.push(ADAPTIVE_HELP['adaptive-predictions']);
+        } else if (!vent.isSpontaneousMode()) {
             const prediction = vent.summary().volumes.minuteVentilation;
             parts.push(Number.isFinite(prediction)
                 ? `Predicted VE: ${prediction.toFixed(1)} L/min — configured machine rate × set VT (VC) or analytical steady-state VT (PC). This prediction does not drive VE alarms.`
@@ -2084,6 +2276,102 @@ function installTestHooks() {
             return { ticks, globalTime: sim.globalTime };
         },
 
+        /** Fixture setup only; browser control tests separately exercise actual UI events. */
+        setupAdaptive({ resistance = 10, compliance = 0.05, respiratoryRate = 12,
+            ieRatio = [1, 4], targetVT_mL = 500, peep_cmH2O = 5, pMusMax = 0,
+            patientRR = 0, neuralTi = 1, maximumPressure_cmH2O = 25 } = {}) {
+            this.pause();
+            // Resolve any previous scenario's operator queue before replacing fixture inputs.
+            if (vent.isAdaptiveMode()) sim.setMode('vc-cmv');
+            lung.resistance = resistance;
+            lung.compliance = compliance;
+            vent.tidalVolume = targetVT_mL / 1000;
+            vent.peep = peep_cmH2O;
+            vent.respiratoryRate = respiratoryRate;
+            vent.ieRatio = [...ieRatio];
+            currentIE = [...ieRatio];
+            vent.fio2 = 0.40;
+            vent.holdTime = 0;
+            vent.flowPattern = 'square';
+            vent.triggerType = 'flow';
+            vent.flowTriggerLpm = 2;
+            vent.pressureTriggerCmH2O = 1;
+            vent.pMusMax = pMusMax;
+            vent.neuralTi = neuralTi;
+            sim.patientRR = patientRR;
+            sim.configureAdaptive({ maximumPressure_cmH2O });
+            sim.setMode(MODE_PC_CMVA);
+            customMechanics = true;
+            syncMechanicsControls();
+            updateMechanicsExamplePresentation();
+            syncOperatorControls();
+            document.getElementById('rr').value = respiratoryRate;
+            setText('rr-display', `${respiratoryRate} /min`);
+            setText('ie-display', vent.ieRatioString);
+            document.querySelectorAll('#ie-group .ie-btn').forEach(button => {
+                button.classList.toggle('ie-btn--active', button.dataset.ie === ieRatio.join(','));
+            });
+            document.querySelectorAll('#mode-toggle .mode-btn').forEach(button => {
+                button.classList.toggle('mode-btn--active', button.dataset.mode === MODE_PC_CMVA);
+            });
+            applyModeUI(MODE_PC_CMVA);
+            document.getElementById('pmus-max').value = pMusMax;
+            document.getElementById('neural-ti').value = neuralTi * 10;
+            document.getElementById('patient-rr').value = patientRR || 12;
+            document.getElementById('pmus-toggle').classList.toggle('hold-btn--active', patientRR > 0);
+            setText('pmus-icon', patientRR > 0 ? '💪' : '♿');
+            setText('pmus-btn-label', patientRR > 0 ? 'Active' : 'Passive');
+            setText('pmus-display', patientRR > 0 ? formatPmusValue(pMusMax) : 'Off');
+            setText('pmus-max-display', formatPmusValue(pMusMax));
+            setText('patient-rr-display', `${patientRR || 12} /min`);
+            setText('neural-ti-display', `${neuralTi.toFixed(1)} s`);
+            document.getElementById('pmus-sliders').style.display = patientRR > 0 ? '' : 'none';
+            document.getElementById('patient-rr-control').style.display = patientRR > 0 ? '' : 'none';
+            document.getElementById('fio2').value = 40;
+            setText('fio2-display', '40%');
+            updateTriggerDisplay();
+            renderFrame();
+            return this.state();
+        },
+
+        /** Exact ticks without resetting or changing oscillator/transport state. */
+        stepTicks(count) {
+            if (!Number.isInteger(count) || count < 0 || count > 1000000) throw new RangeError('Invalid fixture tick count');
+            this.pause();
+            for (let i = 0; i < count; i++) sim.tick();
+            renderFrame();
+            return this.state();
+        },
+
+        /** Stop on the tick of the requested number of new canonical publications. */
+        stepToCompleted(count) {
+            if (!Number.isInteger(count) || count < 0 || count > 1000) throw new RangeError('Invalid fixture completion count');
+            this.pause();
+            let previous = sim.lastCompletedBreath;
+            let completed = 0;
+            let ticks = 0;
+            while (completed < count && ticks < 1000000) {
+                sim.tick();
+                ticks++;
+                if (sim.lastCompletedBreath !== previous) {
+                    previous = sim.lastCompletedBreath;
+                    completed++;
+                }
+            }
+            if (completed !== count) throw new Error('Fixture did not produce the requested completions');
+            renderFrame();
+            return this.state();
+        },
+
+        /** Exercise real transport advancement, separately from the deliberate tick bypass. */
+        advanceTransport(seconds) {
+            this.pause();
+            if (!Number.isFinite(seconds) || seconds < 0) throw new RangeError('Invalid transport interval');
+            sim.advance(seconds);
+            renderFrame();
+            return this.state();
+        },
+
         /** Perturb one collected HOLD pressure sample for an invalid-state visual fixture. */
         offsetCurrentHoldPressure(indexFromEnd, deltaCmH2O) {
             this.pause();
@@ -2113,6 +2401,11 @@ function installTestHooks() {
                 globalTime:      +sim.globalTime.toFixed(3),
                 phase:           sim.phaseName,
                 mode:            vent.mode,
+                running:         sim.running,
+                adaptiveState:   sim.adaptiveState,
+                operatorSettings: { targetVT_mL: vent.tidalVolume * 1000, peep_cmH2O: vent.peep,
+                    inspiratoryPressure_cmH2O: vent.inspiratoryPressure, pressureSupport_cmH2O: vent.psPressure,
+                    pMusMax: vent.pMusMax, patientRR: sim.patientRR, neuralTi_s: vent.neuralTi },
                 teachingMode:    document.body.classList.contains('teaching-mode'),
                 breathCount:     s.breathCount,
                 machineBreaths:  s.machineBreathCount,

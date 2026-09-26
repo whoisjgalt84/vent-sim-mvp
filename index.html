@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=17">
+    <link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
 
@@ -84,11 +84,32 @@
                 <!-- Tidal Volume (VC only) -->
                 <div class="control control--primary" id="vt-control">
                     <div class="control__header">
-                        <span class="control__label">Tidal Volume</span>
+                        <span class="control__label" id="vt-control-label">Tidal Volume</span>
                         <span class="control__value" id="vt-display">500 mL</span>
                     </div>
                     <input type="range" class="control__range" id="vt"
                            min="200" max="800" step="10" value="500">
+                    <div class="adaptive-pending" id="adaptive-target-pending" hidden>
+                        <span>Target change pending</span>
+                        <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-target-pending"
+                                aria-label="Target change pending help" aria-expanded="false">i</button>
+                    </div>
+                </div>
+
+                <div class="control adaptive-setup" id="adaptive-setup" hidden>
+                    <div class="control__header">
+                        <label class="control__label" for="adaptive-maximum">Maximum pressure</label>
+                        <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-bounds"
+                                aria-label="Controller pressure bounds help" aria-expanded="false">i</button>
+                    </div>
+                    <div class="adaptive-setup__actions">
+                        <select id="adaptive-maximum" aria-label="Maximum pressure above set PEEP">
+                            <option value="25">25 cmH₂O above PEEP</option>
+                            <option value="20">20 cmH₂O above PEEP</option>
+                        </select>
+                        <button type="button" class="hold-btn" id="adaptive-reset">Reset demonstration</button>
+                    </div>
+                    <small>Minimum pressure: <span id="adaptive-minimum">5</span> cmH₂O above PEEP</small>
                 </div>
 
                 <!-- Inspiratory Pressure (PC only) -->
@@ -150,6 +171,11 @@
                     </div>
                     <input type="range" class="control__range" id="peep"
                            min="0" max="24" step="1" value="5">
+                    <div class="adaptive-pending" id="adaptive-peep-pending" hidden>
+                        <span>PEEP change pending</span>
+                        <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-peep-pending"
+                                aria-label="PEEP change pending help" aria-expanded="false">i</button>
+                    </div>
                 </div>
 
                 <!-- FiO2 -->
@@ -212,6 +238,11 @@
                             <button type="button" class="measurement-help-trigger" data-measurement-help="duration"
                                     aria-label="Hold duration criterion help" aria-expanded="false">i</button>
                         </div>
+                    </div>
+                    <div class="adaptive-pending" id="adaptive-hold-exclusion" hidden>
+                        <span>Hold unavailable in PC-CMVa</span>
+                        <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-hold"
+                                aria-label="Hold unavailable in PC-CMVa help" aria-expanded="false">i</button>
                     </div>
                 </div>
 
@@ -414,6 +445,60 @@
     <!-- CENTER — Waveform Displays                                       -->
     <!-- ================================================================ -->
     <main class="waveforms">
+        <section class="adaptive-panel" id="adaptive-panel" aria-label="PC-CMVa adaptive targeting" hidden>
+            <div class="adaptive-panel__heading">
+                <span>Adaptive targeting</span>
+                <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-mode"
+                        aria-label="PC-CMVa mode help" aria-expanded="false">i</button>
+                <span class="adaptive-panel__status" id="adaptive-status">Awaiting completed inspiration</span>
+                <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-status"
+                        aria-label="Adaptive controller status help" aria-expanded="false">i</button>
+                <span id="adaptive-paused" hidden>Paused — no new feedback</span>
+            </div>
+            <div class="adaptive-panel__values">
+                <div class="adaptive-value">
+                    <span>Target VT <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-target"
+                        aria-label="Target VT help" aria-expanded="false">i</button></span>
+                    <strong><span id="adaptive-target">500</span> <small>mL</small></strong>
+                </div>
+                <div class="adaptive-value">
+                    <span>Achieved VT <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-achieved"
+                        aria-label="Achieved VT help" aria-expanded="false">i</button></span>
+                    <strong><span id="adaptive-achieved">—</span> <small>mL</small></strong>
+                </div>
+                <div class="adaptive-value">
+                    <span>Adaptive pressure <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-pressure"
+                        aria-label="Adaptive pressure help" aria-expanded="false">i</button></span>
+                    <strong><span id="adaptive-pressure">10</span> <small>cmH₂O above PEEP</small></strong>
+                </div>
+                <div class="adaptive-value">
+                    <span>Next pressure <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-next"
+                        aria-label="Next pressure help" aria-expanded="false">i</button></span>
+                    <strong><span id="adaptive-next">—</span> <small>cmH₂O above PEEP</small></strong>
+                </div>
+            </div>
+            <div class="adaptive-panel__context">
+                <span id="adaptive-source">Source: —</span>
+                <span id="adaptive-source-target">Source target: —</span>
+                <span id="adaptive-applied-peep">Applied PEEP: 5 cmH₂O</span>
+                <span id="adaptive-limits">Minimum pressure 5 · Maximum pressure 25 cmH₂O above PEEP</span>
+                <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-bounds"
+                        aria-label="Applied controller bounds help" aria-expanded="false">i</button>
+                <span id="adaptive-bound"></span>
+                <span id="adaptive-next-bound"></span>
+                <span id="adaptive-effort">Prescribed effort · Pmus max 0 cmH₂O</span>
+                <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-effort"
+                        aria-label="Prescribed effort help" aria-expanded="false">i</button>
+            </div>
+            <div class="adaptive-panel__requests" id="adaptive-requests" hidden>
+                <span id="adaptive-requested-target" hidden></span>
+                <button type="button" class="measurement-help-trigger" id="adaptive-requested-target-help" data-measurement-help="adaptive-target-pending"
+                        aria-label="Pending target transition help" aria-expanded="false" hidden>i</button>
+                <span id="adaptive-requested-peep" hidden></span>
+                <button type="button" class="measurement-help-trigger" id="adaptive-requested-peep-help" data-measurement-help="adaptive-peep-pending"
+                        aria-label="Pending PEEP transition help" aria-expanded="false" hidden>i</button>
+            </div>
+        </section>
         <div class="pc-disclosure" id="pc-disclosure" hidden>
             <button type="button" class="measurement-help-trigger pc-disclosure-trigger"
                     id="pc-disclosure-trigger" data-measurement-help="pc-idealization"
@@ -601,8 +686,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=17"></script>
-<script type="module" src="js/main.js?v=17"></script>
+<script type="module" src="alarms.js?v=18"></script>
+<script type="module" src="js/main.js?v=18"></script>
 
 </body>
 </html>

@@ -45,15 +45,17 @@
  * ============================================================================
  */
 
-import { LungModel } from './lung-model.js?v=17';
+import { LungModel } from './lung-model.js?v=18';
 
 export const MODE_VC_CMV = 'vc-cmv';
 export const MODE_PC_CMV = 'pc-cmv';
 export const MODE_PC_CSV = 'PC-CSV';
+export const MODE_PC_CMVA = 'pc-cmva';
 export const SUPPORTED_MODES = Object.freeze([
     MODE_VC_CMV,
     MODE_PC_CMV,
     MODE_PC_CSV,
+    MODE_PC_CMVA,
 ]);
 
 
@@ -81,6 +83,9 @@ export class Ventilator {
 
         // --- Mode ---
         this.mode = settings.mode ?? MODE_VC_CMV;  // 'vc-cmv', 'pc-cmv', or 'PC-CSV'
+        if (!this.isSupportedMode(this.mode)) throw new RangeError('Unsupported ventilation mode');
+        this.adaptiveConfig = settings.adaptiveConfig;
+        this.adaptivePressure_cmH2O = null;
 
         // --- Flow Pattern (VC only) ---
         // 'square' = constant flow throughout inspiration
@@ -281,8 +286,12 @@ export class Ventilator {
 
     /** Any pressure-targeted mode (PC-CMV or PC-CSV) */
     isPressureMode() {
-        return this.mode === MODE_PC_CMV || this.mode === MODE_PC_CSV;
+        return this.mode === MODE_PC_CMV || this.mode === MODE_PC_CSV || this.isAdaptiveMode();
     }
+
+    isAdaptiveMode() { return this.mode === MODE_PC_CMVA; }
+
+    isSupportedMode(mode) { return SUPPORTED_MODES.includes(mode); }
 
     /** Spontaneous pressure-support mode */
     isSpontaneousMode() {
@@ -291,6 +300,7 @@ export class Ventilator {
 
     /** Active inspiratory pressure target above PEEP (cmH2O) */
     get pressureControlLevel() {
+        if (this.isAdaptiveMode()) return this.adaptivePressure_cmH2O;
         return this.isSpontaneousMode() ? this.psPressure : this.inspiratoryPressure;
     }
 
@@ -304,6 +314,7 @@ export class Ventilator {
      * In clinical practice, extremely long holds would compromise gas exchange.
      */
     get effectiveHoldTime() {
+        if (this.isAdaptiveMode()) return 0;
         if (this.isSpontaneousMode()) return 0;
         if (this.holdTime <= 0) return 0;
         const maxHold = this.expiratoryTime - 0.2;  // leave 200ms minimum Te
@@ -371,8 +382,9 @@ export class Ventilator {
 
     /** Mode display label */
     get modeLabel() {
+        if (this.isAdaptiveMode()) return 'PC-CMVa';
         if (this.mode === MODE_PC_CSV) return 'PC-CSV';
-        return this.mode === MODE_VC_CMV ? 'VC-CMV' : 'PC-CMV';
+        return this.mode === MODE_VC_CMV ? 'VC-CMV' : this.mode === MODE_PC_CMV ? 'PC-CMV' : 'Unsupported mode';
     }
 
 
@@ -400,6 +412,7 @@ export class Ventilator {
      * If auto-PEEP ≥ Pinsp, no flow occurs (complete breath stacking).
      */
     get pcDrivingPressure() {
+        if (this.isAdaptiveMode()) return null;
         return Math.max(0, this.pressureControlLevel - this.autoPeep);
     }
 
@@ -410,11 +423,13 @@ export class Ventilator {
      *   V̇_peak = ΔP_drive / R
      */
     get pcPeakFlow() {
+        if (this.isAdaptiveMode()) return null;
         return this.pcDrivingPressure / this.lung.resistance;
     }
 
     /** Peak inspiratory flow in PC-CMV (L/min) */
     get pcPeakFlowLpm() {
+        if (this.isAdaptiveMode()) return null;
         return this.pcPeakFlow * 60;
     }
 
@@ -423,6 +438,7 @@ export class Ventilator {
      *   VT_max = ΔP_drive × C
      */
     get pcMaxVt() {
+        if (this.isAdaptiveMode()) return null;
         return this.pcDrivingPressure * this.lung.compliance;
     }
 
@@ -438,6 +454,7 @@ export class Ventilator {
      *   — Chatburn, Fundamentals, Ch. 4
      */
     get pcDeliveredVt() {
+        if (this.isAdaptiveMode()) return null;
         const tau = this.lung.timeConstant;
         return this.pcDrivingPressure * this.lung.compliance *
                (1 - Math.exp(-this.inspiratoryTime / tau));
@@ -445,6 +462,7 @@ export class Ventilator {
 
     /** Delivered VT in PC-CMV (mL) */
     get pcDeliveredVtMl() {
+        if (this.isAdaptiveMode()) return null;
         return this.pcDeliveredVt * 1000;
     }
 
@@ -465,6 +483,7 @@ export class Ventilator {
 
     /** Steady-state auto-PEEP (cmH2O) — uses effective Te (accounts for hold) */
     get autoPeep() {
+        if (this.isAdaptiveMode()) return null;
         if (this.isPressureMode()) {
             return this._pcAutoPeep();
         }
@@ -473,11 +492,13 @@ export class Ventilator {
 
     /** Total PEEP = set PEEP + auto-PEEP (cmH2O) */
     get totalPeep() {
+        if (this.isAdaptiveMode()) return null;
         return this.peep + this.autoPeep;
     }
 
     /** Steady-state trapped gas volume (L) — uses effective Te */
     get trappedVolume() {
+        if (this.isAdaptiveMode()) return null;
         if (this.isPressureMode()) {
             return this._pcTrappedVolume();
         }
@@ -552,6 +573,7 @@ export class Ventilator {
      * PC-CMV: PIP = PEEP + Pinsp (constant throughout inspiration)
      */
     get pip() {
+        if (this.isAdaptiveMode()) return null;
         if (this.isPressureMode()) {
             return this.peep + this.pressureControlLevel;
         }
@@ -623,6 +645,7 @@ export class Ventilator {
      *   This should equal PEEP + Pinsp if Ti >> τ (flow has stopped).
      */
     get pplat() {
+        if (this.isAdaptiveMode()) return null;
         if (this.isPressureMode()) {
             const vtDelivered = this._pcSteadyStateVt();
             return this.peep + this.autoPeep + vtDelivered / this.lung.compliance;
@@ -641,6 +664,7 @@ export class Ventilator {
      * PC-CMV: ΔP = VT_delivered / C (the elastic pressure from delivered volume)
      */
     get drivingPressure() {
+        if (this.isAdaptiveMode()) return null;
         if (this.isPressureMode()) {
             return this._pcSteadyStateVt() / this.lung.compliance;
         }
@@ -657,6 +681,7 @@ export class Ventilator {
      * PC-CMV: Report peak value = ΔP_drive
      */
     get resistivePressure() {
+        if (this.isAdaptiveMode()) return null;
         if (this.isPressureMode()) {
             return this.pcDrivingPressure;
         }
@@ -710,6 +735,7 @@ export class Ventilator {
      *   {number[]} flow     - Flow (L/min)
      */
     generateBreathWaveforms(numBreaths = 4) {
+        if (this.isAdaptiveMode()) throw new Error('PC-CMVa requires breath-to-breath tick integration; fixed-pressure waveform predictions are unavailable.');
         if (this.isPressureMode()) {
             return this._generatePC(numBreaths);
         }
@@ -1160,6 +1186,7 @@ export class Ventilator {
      * @returns {number} MAP (cmH2O)
      */
     calculateMAP() {
+        if (this.isAdaptiveMode()) return null;
         const waveforms = this.generateBreathWaveforms(1);
         const pressures = waveforms.pressure;
         const sum = pressures.reduce((acc, p) => acc + p, 0);
@@ -1173,17 +1200,20 @@ export class Ventilator {
 
     /** Predicted ventilation: set/analytical VT × configured RR (L/min). */
     get minuteVentilation() {
+        if (this.isAdaptiveMode()) return null;
         const vt = this.isPressureMode() ? this._pcSteadyStateVt() : this.tidalVolume;
         return vt * this.respiratoryRate;
     }
 
     /** Effective tidal volume for display (L) — set in VC, calculated in PC */
     get effectiveVt() {
+        if (this.isAdaptiveMode()) return null;
         return this.isPressureMode() ? this._pcSteadyStateVt() : this.tidalVolume;
     }
 
     /** Effective tidal volume in mL */
     get effectiveVtMl() {
+        if (this.isAdaptiveMode()) return null;
         return this.effectiveVt * 1000;
     }
 
@@ -1199,6 +1229,7 @@ export class Ventilator {
      * @returns {Object} Complete summary of ventilator state
      */
     summary() {
+        if (this.isAdaptiveMode()) return this._adaptiveSummary();
         const map = this.calculateMAP();
         const isPC = this.isPressureMode();
         const isRamp = !isPC && this.flowPattern === 'ramp';
@@ -1296,6 +1327,33 @@ export class Ventilator {
                 drivingPressureAbove15: this.drivingPressure > 15,
                 tiTooShort:          isPC && this.tiOverTau < 1,
             },
+        };
+    }
+    _adaptiveSummary() {
+        // No fixed-pressure steady-state forecast is valid for a changing command.
+        return {
+            mode: this.modeLabel, isPC: true, isAdaptive: true, predictionsAvailable: false,
+            flowPattern: null, isRamp: false, holdActive: false,
+            pMusActive: this.pMusActive, pMusMax: this.pMusMax, neuralTi: this.neuralTi,
+            settings: { triggerType: this.triggerType, flowTriggerLpm: this.flowTriggerLpm,
+                pressureTriggerCmH2O: this.pressureTriggerCmH2O, tidalVolume_mL: this.tidalVolume * 1000,
+                inspiratoryPressure: null, respiratoryRate: this.respiratoryRate,
+                ieRatio: this.ieRatioString, peep_cmH2O: this.peep, fio2: this.fio2 },
+            timing: { inspiratoryTime_s: round(this.inspiratoryTime, 2), expiratoryTime_s: round(this.expiratoryTime, 2),
+                totalCycleTime_s: round(this.totalCycleTime, 2), holdTime_s: 0,
+                effectiveExpTime_s: round(this.effectiveExpiratoryTime, 2),
+                inspFlow_Lpm: null, tiOverTau: round(this.tiOverTau, 1) },
+            pressures: { pip_cmH2O: null, pplat_cmH2O: null, peep_cmH2O: this.peep, autoPeep_cmH2O: null, totalPeep_cmH2O: null,
+                drivingPressure: null, resistivePressure: null, map_cmH2O: null,
+                inspiratoryPressure: null },
+            mechanics: { compliance: this.lung.compliance,
+                resistance: this.lung.resistance, elastance: round(this.lung.elastance, 1),
+                timeConstant_s: round(this.lung.timeConstant, 2), staticCompliance: null, measuredResistance: null },
+            volumes: { tidalVolume_mL: null, minuteVentilation: null, trappedVolume_mL: null },
+            safety: { teOverTau: round(this.teOverTau, 1), tiOverTau: round(this.tiOverTau, 1),
+                expiratoryCompletion: this.expiratoryCompletion, expiratoryCompletionPercent: this.expiratoryCompletionPercent,
+                expiratoryCompletionStatus: this.expiratoryCompletionStatus, gasTrappingRisk: this.gasTrappingRisk,
+                pplatAbove30: false, drivingPressureAbove15: false, tiTooShort: this.tiOverTau < 1 },
         };
     }
 }

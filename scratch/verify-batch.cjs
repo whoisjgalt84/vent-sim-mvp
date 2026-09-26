@@ -1022,11 +1022,12 @@ if (require.main === module) (async () => {
         const mainJs = fs.readFileSync(`${__dirname}/../js/main.js`, 'utf8');
         const ventJs = fs.readFileSync(`${__dirname}/../js/ventilator.js`, 'utf8');
         const imp = [...new Set([...mainJs.matchAll(/from\s+'[^']*\?v=(\d+)'/g)].map((m) => m[1]))];
-        const allVersions = [...(html + mainJs + ventJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
+        const simJs = fs.readFileSync(`${__dirname}/../js/simulation.js`, 'utf8');
+        const allVersions = [...(html + mainJs + ventJs + simJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 10 && allVersions.every(v => v === '17'),
-            `imports=${imp.join(',')} html=${versions.join(',')} all ten=${allVersions.join(',')}`);
+                && allVersions.length === 11 && allVersions.every(v => v === '18'),
+            `imports=${imp.join(',')} html=${versions.join(',')} all eleven=${allVersions.join(',')}`);
     }
 
     console.log(`\n${'='.repeat(60)}`);

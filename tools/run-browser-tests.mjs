@@ -17,7 +17,9 @@ import { join } from 'node:path';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const serverFile = fileURLToPath(new URL('./serve.mjs', import.meta.url));
 const harnessFile = fileURLToPath(new URL('../scratch/verify-batch.cjs', import.meta.url));
-const playwrightCli = fileURLToPath(new URL('../node_modules/playwright/cli.js', import.meta.url));
+// Resolve the installed runtime normally, including isolated evidence copies
+// beneath the workspace. Docker/CI still resolves its local npm-ci installation.
+const playwrightCli = fileURLToPath(new URL('cli.js', import.meta.resolve('playwright/package.json')));
 const healthUrl = new URL('http://127.0.0.1:8899/index.html');
 const START_TIMEOUT_MS = 15_000;
 const visualMode = process.argv[2] === '--visual';
@@ -64,7 +66,7 @@ function requireCommissionedTally(output) {
         ? /^COMMISSIONED_VISUAL_TALLY (\d+) passed, (\d+) failed$/gm
         : /^\s*(\d+) passed, (\d+) failed\s*$/gm;
     const matches = [...cleanOutput.matchAll(pattern)];
-    const expectedPassed = visualMode ? 9 : 44;
+    const expectedPassed = visualMode ? 13 : 44;
     const label = visualMode ? 'visual/determinism' : 'browser';
 
     if (matches.length !== 1) {
@@ -229,10 +231,10 @@ async function ensureServer() {
     );
 }
 
-async function runHarness() {
+async function runHarness(adaptive = false) {
     const target = visualMode
         ? [playwrightCli, 'test', ...process.argv.slice(3)]
-        : [harnessFile];
+        : [adaptive ? fileURLToPath(new URL('../scratch/verify-adaptive.cjs', import.meta.url)) : harnessFile];
     testProcess = spawn(process.execPath, target, {
         cwd: root,
         env: process.env,
@@ -264,6 +266,16 @@ try {
     const { code, output } = await runHarness();
     requireCommissionedTally(output);
     if (code !== 0) process.exitCode = code;
+    if (!visualMode && code === 0) {
+        const adaptive = await runHarness(true);
+        const matches = [...stripAnsi(adaptive.output).matchAll(/^ADAPTIVE_BROWSER_TALLY (.+)$/gm)];
+        if (matches.length !== 1) throw new Error('Expected exactly one adaptive browser tally');
+        const tally = JSON.parse(matches[0][1]);
+        if (adaptive.code !== 0 || tally.groups !== 12 || tally.passed !== 12 || tally.failed !== 0) {
+            throw new Error('Commissioned adaptive browser tally is 12 passed / 0 failed; received ' + matches[0][1]);
+        }
+        console.log('Commissioned adaptive browser tally verified: 12 passed, 0 failed.');
+    }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);
     process.exitCode = 1;

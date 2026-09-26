@@ -18,6 +18,7 @@ import {
     MODE_VC_CMV,
     MODE_PC_CMV,
     MODE_PC_CSV,
+    MODE_PC_CMVA,
     SUPPORTED_MODES,
 } from '../js/ventilator.js';
 import { SimulationEngine, RingBuffer } from '../js/simulation.js';
@@ -709,7 +710,7 @@ console.log(
 
 assertTrue('VSM-CLIN-003 supported inventory is exact, case-sensitive, and excludes VC-CSV',
     JSON.stringify(SUPPORTED_MODES) === JSON.stringify([
-        MODE_VC_CMV, MODE_PC_CMV, 'PC-CSV',
+        MODE_VC_CMV, MODE_PC_CMV, 'PC-CSV', MODE_PC_CMVA,
     ])
     && MODE_PC_CSV === 'PC-CSV'
     && !SUPPORTED_MODES.includes('VC-CSV'));

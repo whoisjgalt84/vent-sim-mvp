@@ -187,3 +187,30 @@ asserts nothing and is not a gate.
 The visual suite is the regression gate. `shot.cjs` is a diagnostic aid. They
 share a 1440×900 viewport and scenario recipes so the output remains visually
 comparable, but only the pinned Linux baselines participate in CI comparisons.
+
+## 7. PC-CMVa candidates and preservation (VSM-ADAPT-001)
+
+The commissioned visual gate now retains the original nine groups and adds four
+adaptive groups (13 total). The original 74 Linux snapshot paths and assertions
+remain identifiable. The added cases distinguish source target from current or
+queued target, applied from next pressure, paused transport, invalid/mixed
+feedback, configured bounds, the three approved demonstrations, lower-bound
+excess VT and saturation release. Full-resolution views cover both display styles.
+
+Use the same pinned Playwright image and comparison tolerances. First run the
+untouched checkpoint with updates disabled. An implementation comparison against
+accepted images may then fail for intended UI changes or missing new truth; that
+is separate from isolated candidate generation and repeat comparison. Generate
+candidates in a separate evidence checkout, never in the working accepted snapshot
+directory. Preserve the candidate filenames, source/scenario identities and exact
+SHA-256 manifest for owner review. Supplemental diagnostics are not suite baselines.
+An unavailable Linux engine leaves this gate unavailable: a Windows render or a
+passing engine/browser suite cannot replace it.
+
+`npm test` enforces 300 original engine checks, 22 controller groups, 24 integration
+groups, and 22 exact legacy fixtures over 92,500 matched ticks. `npm run test:browser`
+enforces the original 44 groups and 12 new adaptive groups. Count guards remain
+strict. CI fetches the pinned ancestor required by the legacy test rather than
+substituting current HEAD as its reference. Independent review and meaningful
+fault detection supplement these gates; owner acceptance of exact image bytes,
+baseline installation, staging and commits are separate subsequent actions.

@@ -604,3 +604,47 @@ the revised readout lifecycle and hover-transfer/Escape behavior. Independent
 canonical-ledger, exact checkpoint numerical, and isolated mutation checks
 supplement these gates; they do not replace pinned-Linux visual comparison or
 owner acceptance of changed baseline bytes.
+
+## PC-CMVa educational controller (VSM-ADAPT-001)
+
+The fourth mode uses the existing pressure-targeted tick integrator with a
+separate conventional feedback controller. The approved contract, transitions,
+units, eligibility rules and copy are in [adaptive-mode-contract.md](adaptive-mode-contract.md).
+This is a generic educational implementation, not a commercial-device model.
+
+For each eligible canonical expiration-start publication, let `e` be the
+operator target minus unrounded modeled inspired VT, in mL. The requested
+increment is zero when `abs(e) <= 10`; otherwise it is `clip(0.01*e, -2, 2)`
+cmH2O. Add it to the command actually delivered to that source breath and clamp
+to the configured bounds (default 5–25 cmH2O above set PEEP). Initialize at 10.
+These constants and bounds are educational engineering choices. There is no
+integral accumulator, volume clamp, learned model, or R/C/effort input to the
+controller. Maximum 20 is an explicit setup/reset option for the limit demo.
+
+The next command is applied only at the next actual machine- or patient-triggered
+breath start. Applied pressure and set PEEP remain latched through its inspiration
+and expiration. Target/PEEP requests are validated atomically and queued; the
+latest valid request for each setting wins. Explicit reset or exit resolves both
+operator values before destination initialization, clears controller history,
+and preserves pause state. Re-entry uses current retained settings and initial
+pressure; it cannot resurrect old queued requests or alter manual Pinsp/PS.
+
+Other relevant input edits immediately invalidate the adaptive eligibility
+epoch, including edit/revert. A mixed or otherwise ineligible publication still
+contributes its genuine delivered volume to the existing VE window. No interrupted
+inspiration is synthesized as completed. HOLD is unavailable in this mode.
+
+Target, achieved inspired VT, its source target/breath, applied pressure, next
+pressure, applied PEEP and requested settings are distinct display values.
+Old feedback remains identified but cannot support a current target-band/miss
+assessment after an edit. A pending command reaching a bound is not an already
+delivered bound. Prescribed effort remains an instructor input with no drive,
+work-of-breathing, fatigue or injury response model. Fixed-pressure steady-state
+predictions are unavailable while pressure changes between breaths; numerical
+R/C, calculated R×C and timing ratios retain their existing meanings.
+
+Verification distinguishes equation/controller checks, exact legacy numerical
+preservation, browser behavior and visual comparison from clinical/source
+validity. Tests do not establish clinical validity or guarantee convergence over
+the full UI range. The approved demonstrations and operating-range evidence
+retain bound-limited, trapping and prescribed-effort limitations.

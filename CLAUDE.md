@@ -29,13 +29,13 @@ physiology sloppier is a regression, even if every test passes.
 # Serve. ES modules will NOT load over file:// — you need HTTP.
 npm run serve                      # node tools/serve.mjs — then http://127.0.0.1:8899
 
-# Engine assertions (300, currently all passing)
+# Engine: 300 original + 22 controller + 24 integration + 22 preservation fixtures
 npm test
 
-# Authoritative visual regression + determinism + cache-busting (9), pinned Linux
+# Authoritative visual regression + determinism + cache-busting (13: 9 original + 4 adaptive), pinned Linux
 npm run test:visual:docker
 
-# Browser behaviour assertions (44), self-contained server lifecycle
+# Browser behaviour (44 original + 12 adaptive), self-contained server lifecycle
 npm run test:browser
 
 # Screenshots — the only reliable UI verification
@@ -69,7 +69,7 @@ require generating host-specific, non-authoritative snapshots first with
 ### Read the tally anyway
 
 `npm test` exits nonzero on any assertion failure and also enforces the
-commissioned `300 passed / 0 failed` tally, so an accidental test-count drop is
+commissioned original `300 passed / 0 failed` tally plus the separate 22/24/22 adaptive and preservation tallies, so an accidental test-count drop is
 a failure. Mutation-verified: multiplying `LungModel.timeConstant` by 1.5 gives
 29 failures and exit 1.
 
@@ -134,14 +134,14 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=16`, at **10** sites: `index.html` ×3, `js/main.js` ×6, and
-   `js/ventilator.js` ×1. A returning browser that pairs new markup and new JS
+   Currently `?v=18`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
    cache-busting test watches the **network**, which is what caught
    `js/ventilator.js` importing `lung-model.js` un-versioned and making the
    browser fetch it twice on every load.
-8. **Mode ID strings are `'vc-cmv'`, `'pc-cmv'`, `'PC-CSV'` — the third is
+8. **Mode ID strings are `'vc-cmv'`, `'pc-cmv'`, `'PC-CSV'`, `'pc-cmva'` — the third is
    capitalised.** Never lowercase a mode string, never compare
    case-insensitively, and prefer the exported `MODE_*` constants over literals.
    `js/main.js` currently mixes both styles.
@@ -180,6 +180,18 @@ Each of these encodes a bug that already shipped once.
     (Teaching), retaining precise completed-breath interval/smoothing/retention
     help and independence from delivered VE. Preserve the existing RR tooltip
     nodes and capitalization styling when updating this wording.
+
+13. **PC-CMVa pressure and PEEP latch at the actual breath start.** The pure
+    controller consumes raw canonical inspired VT once per eligible source; it
+    has no model-state inputs. Operator target/PEEP requests are atomic and
+    queued, while explicit reset/exit resolves both before initialization.
+    Re-entry uses retained current settings and initial pressure, never stale
+    requests or feedback. Manual Pinsp/PS remain independent. Relevant edits,
+    including edit/revert, invalidate the separate adaptive epoch. A delivered
+    but adaptation-ineligible breath still belongs to VE. Preserve source-target
+    display pairing, applied-versus-next bounds, pause state and unavailable
+    fixed-pressure predictions. See docs/adaptive-mode-contract.md for the
+    approved owner clarification; do not infer new clinical behavior from tests.
 
 New invariants belong in this list, with the failure they prevent.
 

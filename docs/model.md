@@ -35,6 +35,13 @@ equilibrium**, not absolute lung volume, so `V = 0` at passive FRC-plus-PEEP.
 Sign conventions: positive flow is inspiration; `Pmus > 0` is inspiratory
 effort. Inertance is ignored, as it is in all clinical practice.
 
+The live pressure coordinate is `Paw + Pmus = B + V/C + RQ`, where Paw is
+gauge pressure at the airway opening on the patient side of the delivery valve,
+B is applied PEEP, and Q is inward-positive flow in L/s. R is the existing
+airway-plus-tube resistance; the expiratory inward supply impedance Rc is
+separate (§3.4). Residual elastic load is already included in V/C; do not add
+a second intrinsic-PEEP term to this live equation.
+
 ---
 
 ## 2. What the engine actually runs
@@ -45,18 +52,28 @@ effort. Inertance is ignored, as it is in all clinical practice.
 | --- | --- | --- |
 | Where | `Ventilator.generateBreathWaveforms()` | `SimulationEngine._computePhysics()` |
 | Style | Closed-form, steady state | Forward Euler, 100 Hz |
-| Assumes | Every breath identical; auto-PEEP pre-computed | Nothing; state carries breath to breath |
-| Drives | `calculateMAP()`, every frame | **The screen** |
-| Test coverage | ~78 of 300 assertions; mutating it fails 2 | ~127 of 300 |
+| Assumes | Every breath identical; auto-PEEP pre-computed | Single compartment and ideal directional boundaries; state carries breath to breath |
+| Drives | Passive analytical predictions; active-effort predictions are unavailable | **The screen** |
+| Historical coverage in the original 300-assertion suite | ~78 assertions; mutating it failed 2 | ~127 assertions |
 
 The tick integrator is the simulator. The analytical path survives because mean
-airway pressure is computed from a freshly generated breath each frame, and
+airway pressure can be computed from a generated passive breath, and
 because closed-form solutions are what the tests can check by hand.
 
-Note the coverage asymmetry: the largest bloc of assertions — roughly 118 of 300
+The legacy analytical preview/MAP generator does not implement the corrected
+live directional boundary or closed delivery-valve pressure. Its active-effort
+results are not the repaired live signal. A configured prescribed Pmus greater
+than zero gates affected analytical MAP, auto/total PEEP, trapped volume,
+predicted PC VT/VE and dependent pressure/flow/timing predictions as unavailable.
+Adaptive mode retains its existing fixed-pressure prediction unavailability.
+Passive analytics, configured mechanics and canonical measured outputs remain
+distinct and available where applicable.
+
+This historical original-suite coverage breakdown is separate from the current
+group inventory in Section 11. In that breakdown, the largest bloc — roughly 118 of 300
 — tests closed-form **properties** on `LungModel` and `Ventilator` that belong to
 neither generator. The analytical *breath generator* is barely tested; mutating
-its VC pressure line fails 2 assertions out of 300.
+its VC pressure line failed 2 assertions out of 300.
 
 **Consequence to know about:** the monitored auto-PEEP value is closed-form,
 while the trapping visible in the waveform is emergent residual volume in the
@@ -70,6 +87,16 @@ can disagree. Reconciling them is open work.
 State advances at `dt = 0.01 s`. Each tick computes flow, volume and airway
 pressure for the current phase, then evaluates transitions.
 
+The order is neural advance, settings synchronization, old-phase physics,
+mechanics observation, trigger detection, phase transitions, buffer recording,
+clock advance and scheduled patient-breath publication. Physics identity refers
+to the sampled phase and applied settings, not mutable phase bookkeeping after
+a transition. Detection time and delivery time can differ by one dt. PC-CMVa
+uses its latched applied PEEP throughout the breath, including expiration;
+other modes retain immediate PEEP semantics. A PEEP edit does not jump V: the
+existing model reinterprets its equilibrium coordinate without modeling gas
+redistribution, recruitment or circuit storage.
+
 ### 3.1 Inspiration, volume control
 
 Flow is prescribed; pressure is the dependent variable.
@@ -79,7 +106,7 @@ square flow:   V̇ = VT / Ti
 ramp flow:     V̇ = (2 · VT / Ti) · max(0, 1 − t/Ti)
 
 V ← V + V̇ · dt
-Paw = PEEP + V/C + R·V̇ − Pmus
+Paw = B + Vpost/C + R·V̇ − Pmus
 ```
 
 The descending ramp starts at twice the mean flow and decays linearly to zero at
@@ -93,6 +120,10 @@ the sample, and then advances the clocks. The initial breath begins at phase
 time zero; subsequent machine breaths reach their first physics tick after the
 phase clock has advanced to 0.01 s. That ordering produces deterministic
 startup-specific and repeated post-startup boundary samples.
+
+VC pressure deliberately uses the updated volume Vpost. Its EOM check therefore
+uses that post-integration state; an old-volume pressure residual is not the
+contract for this sample.
 
 For passive VC-CMV with no hold, I:E 1:2, set VT 500 mL, and Ti = 5/3 s
 (approximately 1.67 s), the characterized results are:
@@ -116,28 +147,46 @@ reading rule made literal.
 
 ### 3.2 Inspiration, pressure control
 
-Pressure is prescribed; flow is the ODE.
+Delivered PC inspiration uses an ideal upstream command and a unidirectional
+delivery valve. Define D using pre-integration volume Vpre:
 
 ```
-V̇ = (Pinsp + Pmus − V/C) / R          Euler step
-V̇ ← max(0, V̇)                        inspiratory valve cannot reverse
-V ← V + V̇ · dt
-Paw = PEEP + Pinsp
+D = Pinsp_applied + Pmus − Vpre/C
+Q = max(0, D/R)
+Paw = B + Pinsp_applied                when D >= 0 (open/neutral)
+Paw = B + Vpre/C − Pmus                when D < 0 (closed)
+Vpost = Vpre + Q · dt                   explicit Euler
 ```
 
-`Pinsp` is `pressureControlLevel` — the set inspiratory pressure in PC-CMV, the
-pressure-support level in PC-CSV. Both are **referenced to PEEP**, which is why
-raising PEEP does not change VT in PC-CSV.
+`Pinsp_applied` is `pressureControlLevel`: set inspiratory pressure in PC-CMV,
+Pressure Support in PC-CSV, or the latched adaptive command in PC-CMVa. Commands
+are **referenced to applied set PEEP**. They are upstream targets, not a hard cap
+on every patient-side Paw sample.
 
-In this simulator, PC-CMV and PC-CSV use idealized set-point pressure control during pressure-targeted inspiration. The live engine prescribes Paw exactly as PEEP plus the inspiratory pressure setting in PC-CMV, or PEEP plus Pressure Support in PC-CSV. Patient effort can change inspiratory flow and delivered volume while that modeled pressure target remains unchanged. In PC-CSV this describes a delivered inspiration; no successful trigger means no supported breath.
+While inward flow is being delivered, airway pressure is held at the target.
+If the delivery valve closes because inward flow would reverse, flow is zero
+and airway pressure follows lung recoil and prescribed muscle pressure until
+the valve can reopen or inspiration ends. Paw is modeled at the airway opening
+on the patient side of the delivery valve. The pressure target is upstream of
+that valve; it is not a guarantee that patient-side pressure remains at the
+target when the valve is closed. Reverse flow is not allowed during delivered
+inspiration in this model. Both formulas agree at D=0; reopening is algebraic,
+without delay or hysteresis.
 
+Valve closure does not end mandatory inspiration or make the ventilator
+available to trigger. PC-CSV retains its existing flow and maximum-Ti cycling
+rules, including zero-flow cycling after an established positive peak and the
+maximum-Ti fallback without one. A closed delivery valve is not a HOLD phase.
+No successful PC-CSV trigger means no supported breath; holds remain
+inapplicable in PC-CSV and PC-CMVa.
 
-
-This statement is limited to pressure-targeted inspiration. Triggering, flow or maximum-Ti cycling, inspiratory holds, and expiration follow separate state rules. Holds are inapplicable in PC-CSV. In PC-CMV HOLD, Paw is calculated from the closed-system equation below; expiration uses its own equation.
-
-
-
-In real pressure control, flow and volume are important for interpreting patient effort, and pressure may also change (Mireles-Cabodevila et al., 2022, PDF p.4 / journal p.132). The source does not require a particular pressure dip or validate this simulator's active morphology. Under CLIN-OD-008, the current trace remains deferred pending a state-specific target and direct SME review; disclosure does not constitute clinical approval or acceptance as an intentional simplification.
+This is a selected educational valve/sensor architecture, not a universal
+device description. Real ventilators can show additional pressure deformation.
+Read flow and volume alongside pressure. This model does not reproduce a
+particular commercial ventilator, measure work of breathing, or model a
+patient's response to changing assistance. The 2026-10-02 Phase B authorization
+accepts this bounded successor contract; historical CLIN-OD-008 morphology
+records remain intact and are not converted into clinical/device validation.
 
 Source: [MC2022](https://doi.org/10.4187/respcare.09316), PDF p.4 / journal p.132.
 
@@ -147,7 +196,7 @@ Both valves closed, flow zero.
 
 ```
 V̇ = 0
-Paw = PEEP + V/C − Pmus
+Paw = B + V/C − Pmus
 ```
 
 The trace continues to show `Pmus` acting on a sealed system. A measured Pplat is
@@ -172,20 +221,32 @@ used. Ramp VC and pressure-control resistance are inapplicable.
 
 ### 3.4 Expiration
 
-Passive recoil, plus whatever the patient is doing.
+Expiration uses a directional supply boundary at the common pre-integration
+state. Define d = Pmus − Vpre/C:
 
 ```
-V̇ = −(V/C − Pmus) / R
-V ← max(0, V + V̇ · dt)
-Paw = PEEP − Pmus
+d <= 0: Q = d/R;         Paw = B
+d >  0: Q = d/(R + Rc);  Paw = B − Rc·Q
+Vpost = max(0, Vpre + Q·dt)
 ```
 
-With `Pmus = 0` this is exponential decay with time constant `τ = R·C`:
+Q is L/s and both R and Rc are cmH2O·s/L. Rc is inward supply resistance,
+distinct from patient airway resistance; outflow remains ideal. The accepted
+default is Rc=2, an educational engineering assumption, with setup-only
+exploration range 0.5–5 and reset before changing it. No learner Rc slider is
+provided. Rc=10 is diagnostic only. No supplied source calibrates this default,
+and no circuit-compliance, bias-flow, leak, storage or pressure-delay state is
+modeled. The branches agree continuously at zero demand. Effort cessation
+returns Paw to B with passive outflow; no persistent artificial dip is retained.
+
+With `Pmus = 0` this retains passive decay with time constant `τ = R·C`:
 `V(t) = V₀ · e^(−t/τ)`, 63% complete at 1τ, 95% at 3τ.
 
-If `Pmus` exceeds `V/C` late in expiration, flow reverses briefly. **That
-deflection is the visible signature of an inspiratory effort** — the thing
-Teaching Mode highlights in amber when the effort fails to trigger a breath.
+If Pmus exceeds recoil, inward demand can lower Paw below applied PEEP. A dip
+below PEEP need not be below atmospheric zero: genuine negative Paw requires
+Rc·Q > B. Resolved/unavailable efforts still contribute mechanically through
+Pmus, without becoming eligible again. Failed eligible efforts retain their
+existing applicable amber flow highlights.
 
 **Known simplification:** expiration is a passive resistor. There is no
 expiratory flow limitation, no airway collapse, no separate expiratory
@@ -279,33 +340,76 @@ gate b   phaseTime > 0.10 s   (trigger lockout after expiration begins)
                           └─ otherwise: wait, do not fail
 
 gate c   threshold:
-           pressure trigger:  max(0, Pmus − V/C)  ≥  pressureTriggerCmH2O
-           flow trigger:      max(0, V̇ × 60)     ≥  flowTriggerLpm
+           pressure trigger:  max(0, B_sample − Paw_sample) ≥ pressureTriggerCmH2O
+           flow trigger:      max(0, Q_sample × 60)         ≥ flowTriggerLpm
                           └─ otherwise, at neural inspiration end: FAILED, gateFailed = 'threshold'
 ```
 
 The two failure modes are physiologically different and teach different things:
 
-- **`ventilator_unavailable`** — the effort occurred while the ventilator was inspiring or holding, so it could not start another breath. During the simulator's pressure-targeted inspiration, effort can change flow and delivered volume while Paw remains at the target (see §3.2). During a HOLD, flow is zero and effort enters the HOLD pressure equation (§3.3). This event receives no expiratory-flow highlight; the `Failed triggers N /60s` counter includes it.
+- **`ventilator_unavailable`** — the effort was resolved during INSPIRATION or
+  HOLD, when it could not start another breath. Mechanical effort remains
+  active. During delivered PC inward flow, Paw follows the upstream target;
+  during a closed delivery-valve interval or HOLD, flow is zero and patient-side
+  Paw follows recoil and muscle pressure. Such an event is not reconsidered
+  later in its neural cycle. It receives no expiratory-flow highlight; the
+  `Failed triggers N /60s` counter includes it.
 - **`threshold`** — the ventilator was listening and the effort was too weak, or
   the sensitivity setting too low. This bends **expiratory** flow, and gets the
   amber highlight.
 
 Both are **failed triggers** in taxonomy terms.
 
-**Known simplification:** the flow gate reads **total net lung flow**, not a
-separate patient-flow channel — the same signal a real ventilator sees at the
-circuit. Correct, and confusing enough that Teaching Mode explains it explicitly.
+Both detectors use the same solved pre-integration state as the pressure/flow
+trace sample. A queued PEEP is not the current reference. The first eligible
+sample at or above threshold triggers; there is no interpolation or new
+rising-edge requirement after refractory. The old effort-minus-recoil pressure
+proxy is retired; changed delivery counts/timing are intentional consequences
+of using the modeled signal. The flow signal is simulator net lung flow, not a
+separately modeled commercial bias-flow sensing channel.
 
-**Known inconsistency:** the displayed expiratory `Paw` dips by the full `Pmus`,
-while the pressure trigger tests `Pmus − V/C`. The gate is the physiologically
-correct one; the display is the simplification.
+The prior expiration pressure and flow expressions were mutually inconsistent
+under the declared EOM. The coupled boundary restores that algebra, while its
+directional supply behavior and Rc remain reviewed educational assumptions.
+Prior results and accepted visual baselines do not validate repaired physiology.
+
+### Recorded events and signed pressure views
+
+A patient-trigger symbol marks the start of a delivered breath. It appears only
+on the pressure or flow waveform used to detect that trigger, using the
+configuration recorded at detection. The trace shows the modeled signal; the
+symbol does not replace the signal or measure effort. No patient-trigger symbol
+appears on volume. Machine-trigger symbols keep their existing appearance on
+all three waveforms. Failed triggers have no delivered-breath symbol; their
+counter and applicable flow highlights remain.
+
+Detection freezes trigger variable, threshold/units, signed Paw/flow, sampled
+reference PEEP, sample time/index and setting/neural-cycle identities. Delivery
+retains that snapshot and separately records its actual applied PEEP. Queued
+settings, later edits, pause and mixed visible history never relabel old events.
+Reset, interruption and cancellation clear pending metadata. Unknown legacy
+patient provenance has no variable-specific marker and is disclosed as:
+"Some earlier patient-trigger events have no recorded trigger variable; their
+waveform markers are omitted."
+
+Paw is gauge pressure at the modeled airway opening. The dashed zero line is
+atmospheric pressure, not PEEP. A pressure drop below applied PEEP can still be
+above zero. Genuine negative modeled values remain visible; no pressure dip is
+added for appearance. Scalar and P-V pressure axes include zero and all finite
+visible samples, with signed outward-rounded bounds for negative values.
+Positive-only scalar geometry retains its established lower bound. Trace,
+highlight, tooltip and loop geometry share the signed transform; nonfinite
+samples lift the pen, and canvas clipping does not pin data to a zero floor.
 
 ---
 
 ## 7. Closed-form solutions (analytical path)
 
-Used by the tests and by `calculateMAP()`. Throughout, **`ΔP = max(0,
+Used by historical analytical tests and passive predictions. This legacy
+analytical preview/MAP generator does not implement the live directional
+boundary or closed delivery-valve pressure. Its active-effort results are not
+the repaired live signal and do not drive learner predictions. Throughout the
+passive formulas, **`ΔP = max(0,
 pressureControlLevel − autoPEEP)`** — the driving pressure actually available
 once trapping has raised the baseline.
 
@@ -421,7 +525,11 @@ bedside harder. The counter-argument, also from the literature, is that the
 idealised waveform should be taught *first*. Both are true, which argues for
 making artifact level a learner-level-linked toggle rather than a global default.
 
-For PC-CMV and PC-CSV, the current inspiratory pressure idealization is disclosed in §3.2. Its clinical morphology remains deferred under CLIN-OD-008; general discussion of idealized teaching waveforms does not approve this particular trace.
+For all three PC modes, the accepted one-way delivery/sensor idealization is
+disclosed in §3.2. The selected equations and copy are an educational model
+contract; neither general teaching-waveform discussion nor regression checks
+establish clinical morphology or device validation. Historical CLIN-OD-008
+records remain historical evidence.
 
 ---
 
@@ -431,6 +539,15 @@ For PC-CMV and PC-CSV, the current inspiratory pressure idealization is disclose
 equations, numerical properties, waveform integrity, trigger eligibility, and
 other commissioned behavior. Passing them establishes conformance to those
 tested implementation contracts, not clinical validation of the simulator.
+
+The current `npm test` inventory also requires 22 controller groups, 24 adaptive
+integration groups, 22 selective legacy fixtures and 41 effort/pressure groups
+(40 engine groups plus a renderer group with 66 subchecks). The unchanged legacy
+fixture inventory exercises 92,500 ticks: 28,000 exact passive comparisons in
+8 fixtures and 64,500 corrected active conformance ticks in 14 fixtures. Browser
+verification requires 44 original, 12 adaptive and 4 effort/pressure groups;
+the pinned-Linux visual inventory is 16 groups (13 existing plus 3 effort/pressure).
+Fresh receipts establish passing results; this paragraph records required scope.
 
 The VC characterization assertions establish deterministic numerical behavior
 only for the parameter domain listed in Section 9. Clinical evidence for the
@@ -456,8 +573,10 @@ state), **Predicted** (analytical generated-breath or steady-state calculation),
 and **unavailable/inapplicable** (`—`). Color and tooltips are not provenance.
 The existing analytical header badges also say **Predicted Pplat** and
 **Predicted steady-state auto-PEEP** when present. Their existing values,
-conditions, thresholds, severity, and timing are unchanged; they are separate
-from the live `AlarmEngine` consumers.
+conditions, thresholds, severity and timing remain unchanged when passive
+analytics are applicable; active-effort pressure/flow-dependent predictions
+are unavailable under the accepted finite-boundary contract. They remain
+separate from the live `AlarmEngine` consumers.
 
 | Visible label | Source and availability |
 | --- | --- |
@@ -470,11 +589,11 @@ from the live `AlarmEngine` consumers.
 | Measured inspiratory resistance | Same-breath unrounded `(PIP − Pplat) / final inspiratory flow`, only for passive constant-flow square VC; otherwise `—` with an applicability explanation. |
 | Measured RR (standard); RR / Measured (Teaching) | Existing completion-timestamp interval rate; zero until two completions, then the first interval initializes it. Later updates blend 70% prior rate and 30% rate from up to ten timestamps. It retains its last value without new completions and is not used to compute VE. |
 | Delivered VE (all modes) | Sum of canonical delivered inspiratory volumes in the last 30 simulated seconds, multiplied by 2 to L/min. Unavailable until a full valid window; a full empty window is zero. Display rounds to one decimal; VE alarms use the identical raw snapshot. |
-| Predicted VE (VE help, mandatory modes only) | Unchanged analytical `summary().volumes.minuteVentilation`, explicitly separate from delivery and VE alarms. Omitted in CSV because configured RR does not schedule breaths there. |
-| Predicted breath MAP | Unchanged `calculateMAP()` over generated analytical breath samples; available before delivery, not live pressure-history integration. |
-| Predicted steady-state auto-PEEP | Unchanged analytical auto-PEEP, shown in standard mode; Teaching retains the existing live Flow Baseline and Exp completion cues. |
-| Predicted total PEEP | Unchanged analytical configured PEEP plus predicted auto-PEEP. |
-| Predicted steady-state trapped volume | Unchanged analytical `summary().volumes.trappedVolume_mL`, in the existing Patient mechanics strip; retains its previous rounding. |
+| Predicted VE (VE help, mandatory modes only) | Passive analytical `summary().volumes.minuteVentilation`, explicitly separate from delivery and VE alarms. Affected active-effort predictions and adaptive fixed-pressure predictions are unavailable. Omitted in CSV because configured RR does not schedule breaths there. |
+| Predicted breath MAP | Passive `calculateMAP()` over generated analytical breath samples; not live pressure-history integration. Unavailable with configured active effort or adaptive mode. |
+| Predicted steady-state auto-PEEP | Passive analytical auto-PEEP in standard mode; unavailable with configured active effort or adaptive mode. Teaching retains live Flow Baseline and Exp completion cues. |
+| Predicted total PEEP | Passive analytical configured PEEP plus predicted auto-PEEP; unavailable with configured active effort or adaptive mode. |
+| Predicted steady-state trapped volume | Passive analytical `summary().volumes.trappedVolume_mL`, in the Patient mechanics strip; unavailable with configured active effort or adaptive mode. |
 | Live modeled trapped volume | `sim.volumeAtBreathStart * 1000`, rounded to mL, separately displayed in the monitor. |
 
 Hold-mechanics rows keep only the current value, units, a compact unavailable
@@ -497,7 +616,8 @@ and Pplat show `—`, measured RR shows zero, delivered VE shows `—` with
 `Collecting 30 s`, and live
 modeled trapped volume is zero. The mode/reset handlers refresh display values
 synchronously, without waiting for the next animation frame or adding an alarm
-evaluation. Analytical predictions can remain numeric under their labels.
+evaluation. Applicable passive analytical predictions can remain numeric under
+their labels; unavailable active/adaptive predictions do not become zero.
 No-effort or unsuccessful-trigger PC-CSV does not create a delivered breath or
 backup ventilation. After the first completed breath, VT and PIP are available
 but RR remains zero until two completions and delivered VE remains unavailable
@@ -546,7 +666,7 @@ fallback. The alarm engine checks source, validity and current context independe
 
 Count only actual canonical publications at expiration start, after any HOLD,
 using unrounded `measuredVT_mL / 1000`. Include all trigger/cycle classifications
-and all three modes; neither failed efforts nor incomplete breaths count. HOLD
+and all four modes; neither failed efforts nor incomplete breaths count. HOLD
 validity is independent of delivered VT. Exclude positive pretrigger flow while
 still in expiration. This signal is not a separate measurement of exhaled volume.
 
@@ -593,7 +713,8 @@ state transitions; its mode predicate remains. The existing cache composite
 adds the transitive import and exact ten-site version inventory. Existing
 visual cases add screenshots and geometry assertions without removing their
 original screenshots, scenario guards, determinism, or network checks. These
-extensions preserve the commissioned 300/44/9 check counts and do not replace
+historical VSM-CLIN-004 extensions preserved its commissioned 300/44/9 check
+counts; the current successor inventory is recorded in Section 11. They do not replace
 the existing alarm, tooltip, waveform, loop, or clipping coverage.
 
 VSM-CLIN-006 adds focused publication/window/lifecycle/invalid-history and raw
@@ -622,8 +743,9 @@ integral accumulator, volume clamp, learned model, or R/C/effort input to the
 controller. Maximum 20 is an explicit setup/reset option for the limit demo.
 
 The next command is applied only at the next actual machine- or patient-triggered
-breath start. Applied pressure and set PEEP remain latched through its inspiration
-and expiration. Target/PEEP requests are validated atomically and queued; the
+breath start. The applied pressure command and set PEEP remain latched;
+patient-side Paw is computed from the active boundary/valve state. Target/PEEP
+requests are validated atomically and queued; the
 latest valid request for each setting wins. Explicit reset or exit resolves both
 operator values before destination initialization, clears controller history,
 and preserves pause state. Re-entry uses current retained settings and initial

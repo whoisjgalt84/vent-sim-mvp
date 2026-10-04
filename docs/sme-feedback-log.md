@@ -133,3 +133,28 @@ Where the change would likely live, so we can gauge review risk early:
   are both fixed.
 
 Last updated: 2026-08-05.
+
+## 2026-10-02 successor: accepted effort/pressure contract
+
+The earlier SME-021/022 rows and clinical decision records above remain
+historical findings; their exact numerical recipes, verdicts and live-setting
+tooltip description are not rewritten. The owner accepted the Phase A2 shared
+effort/pressure correction contract and authorized bounded Phase B
+implementation. Its correction-contract SHA-256 is
+`a1cf4a42ff9604a30c361ded318c29c06305f702f01818d67d09c3f573c50d11`.
+
+The successor couples expiratory Paw/flow with educational inward impedance
+Rc2, displays patient-side pressure behind a closed one-way PC delivery valve,
+retains signed pressure, and records delivered trigger-variable provenance.
+Availability, refractory and one-terminal-outcome policy remain. Historical
+failed-event tooltips use neutral wording because their old configurations were
+not stored; a live setting must not retrospectively explain an old event.
+
+The frozen source-to-claim ledger and contract are in
+`scratch/shots-vsm-effort-pressure-contract-r1/`. Fresh implementation,
+demonstration, test, review and candidate receipts belong to
+`scratch/shots-vsm-effort-pressure-phase-b-r1/`. They distinguish changed inputs
+under unchanged alarm rules from alarm-policy changes, and prescribed effort
+from measured work or drive response. This successor records the authorized
+contract; it does not mark morphology clinically validated or accept candidate
+PNG bytes. Visual acceptance and later publication remain separate owner gates.

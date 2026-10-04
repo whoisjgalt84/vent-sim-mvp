@@ -22,8 +22,8 @@ npm run serve      # then open http://127.0.0.1:8899
 Any static server works — VS Code's Live Server extension is fine too.
 
 ```bash
-npm test              # 300 engine assertions
-npm run test:visual:docker  # 9 authoritative pinned-Linux visual checks
+npm test              # 300 original assertions + controller/integration/legacy/effort-pressure gates
+npm run test:visual:docker  # 16 authoritative pinned-Linux visual groups
 ```
 
 Read the printed `Passed: N / Failed: M` tally. See
@@ -46,6 +46,10 @@ including the host-specific snapshots required for Windows visual diagnostics.
 Seven mechanics examples are available, with per-example provenance and manual resistance/compliance controls. Disease names and severity are not inferred from R and C.
 Effort is modelled as `Pmus`, with settable strength, neural inspiratory time,
 and neural respiratory rate independent of the ventilator's set rate.
+Effort mechanics and pressure/flow triggering use a disclosed simplified supply
+boundary. Its inward supply resistance is an educational assumption, distinct
+from patient airway resistance. Prescribed effort is an instructor input, not
+measured work of breathing or a patient's response to changing assistance.
 
 **Ventilator** — square and descending-ramp flow, inspiratory hold, PEEP, FiO₂,
 I:E, flow or pressure triggering with adjustable sensitivity, plus pressure
@@ -54,6 +58,11 @@ support and cycle % in `PC-CSV`.
 **Waveforms** — pressure, volume and flow drawn the way a real ventilator draws
 them: a sweep with an erase bar, over a selectable 5 / 10 / 20 / 30 s window.
 Pressure–volume and flow–volume loops. Playback at 1× / 2× / 4×.
+Patient trigger: recorded event on its pressure or flow waveform. Machine
+trigger: timed breath. Patient markers do not appear on volume. Paw is
+patient-side gauge pressure; atmospheric zero differs from applied PEEP.
+Signed pressure views retain genuine negative modeled values without adding
+a pressure dip for appearance.
 
 **Monitoring and alarms** — PIP, Pplat, delivered VT, measured rate, minute
 ventilation, mean airway pressure, auto-PEEP. Five alarms (high pressure,

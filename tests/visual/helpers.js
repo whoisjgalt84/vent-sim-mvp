@@ -95,3 +95,13 @@ export async function seek(page, seconds) {
 export async function state(page) {
     return page.evaluate(() => window.__vsim.state());
 }
+
+/** Supported diagnostic settings, configured before reset; no fabricated signal. */
+export async function setupEffort(page, options) {
+    return page.evaluate(value => window.__vsim.setupEffort(value), options);
+}
+
+/** Retain current trigger history and neural phase; unlike seek, does not reset. */
+export async function stepTicks(page, count) {
+    return page.evaluate(value => window.__vsim.stepTicks(value), count);
+}

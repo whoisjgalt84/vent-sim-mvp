@@ -45,7 +45,7 @@
  * ============================================================================
  */
 
-import { LungModel } from './lung-model.js?v=18';
+import { LungModel } from './lung-model.js?v=20';
 
 export const MODE_VC_CMV = 'vc-cmv';
 export const MODE_PC_CMV = 'pc-cmv';
@@ -1186,7 +1186,7 @@ export class Ventilator {
      * @returns {number} MAP (cmH2O)
      */
     calculateMAP() {
-        if (this.isAdaptiveMode()) return null;
+        if (this.isAdaptiveMode() || this.pMusActive) return null;
         const waveforms = this.generateBreathWaveforms(1);
         const pressures = waveforms.pressure;
         const sum = pressures.reduce((acc, p) => acc + p, 0);
@@ -1200,20 +1200,20 @@ export class Ventilator {
 
     /** Predicted ventilation: set/analytical VT × configured RR (L/min). */
     get minuteVentilation() {
-        if (this.isAdaptiveMode()) return null;
+        if (this.isAdaptiveMode() || (this.pMusActive && this.isPressureMode())) return null;
         const vt = this.isPressureMode() ? this._pcSteadyStateVt() : this.tidalVolume;
         return vt * this.respiratoryRate;
     }
 
     /** Effective tidal volume for display (L) — set in VC, calculated in PC */
     get effectiveVt() {
-        if (this.isAdaptiveMode()) return null;
+        if (this.isAdaptiveMode() || (this.pMusActive && this.isPressureMode())) return null;
         return this.isPressureMode() ? this._pcSteadyStateVt() : this.tidalVolume;
     }
 
     /** Effective tidal volume in mL */
     get effectiveVtMl() {
-        if (this.isAdaptiveMode()) return null;
+        if (this.isAdaptiveMode() || (this.pMusActive && this.isPressureMode())) return null;
         return this.effectiveVt * 1000;
     }
 
@@ -1245,7 +1245,7 @@ export class Ventilator {
             displayFlowLpm = round(this.inspiratoryFlowLpm, 1);
         }
 
-        return {
+        const result = {
             // --- Mode ---
             mode: this.modeLabel,
             isPC: isPC,
@@ -1328,10 +1328,35 @@ export class Ventilator {
                 tiTooShort:          isPC && this.tiOverTau < 1,
             },
         };
+        return this.pMusActive ? this._withoutActivePredictions(result) : result;
+    }
+
+    /** The legacy analytical generator is not the live finite-boundary model.
+     * Keep its historical idealized API for analytical fixtures, but never
+     * present its active-effort forecasts as repaired live-model predictions.
+     */
+    _withoutActivePredictions(result) {
+        result.predictionsAvailable = false;
+        result.predictionReason = 'ACTIVE_EFFORT_BOUNDARY';
+        for (const key of ['pip_cmH2O', 'pplat_cmH2O', 'map_cmH2O', 'autoPeep_cmH2O',
+            'totalPeep_cmH2O', 'drivingPressure', 'resistivePressure']) result.pressures[key] = null;
+        result.timing.inspFlow_Lpm = null;
+        result.timing.tiOverTau = null;
+        result.volumes.trappedVolume_mL = null;
+        if (result.isPC) {
+            result.volumes.tidalVolume_mL = null;
+            result.volumes.minuteVentilation = null;
+        }
+        result.mechanics.staticCompliance = null;
+        result.mechanics.measuredResistance = null;
+        for (const key of ['teOverTau', 'tiOverTau', 'expiratoryCompletion',
+            'expiratoryCompletionPercent', 'expiratoryCompletionStatus']) result.safety[key] = null;
+        for (const key of ['gasTrappingRisk', 'pplatAbove30', 'drivingPressureAbove15', 'tiTooShort']) result.safety[key] = false;
+        return result;
     }
     _adaptiveSummary() {
         // No fixed-pressure steady-state forecast is valid for a changing command.
-        return {
+        const result = {
             mode: this.modeLabel, isPC: true, isAdaptive: true, predictionsAvailable: false,
             flowPattern: null, isRamp: false, holdActive: false,
             pMusActive: this.pMusActive, pMusMax: this.pMusMax, neuralTi: this.neuralTi,
@@ -1355,6 +1380,7 @@ export class Ventilator {
                 expiratoryCompletionStatus: this.expiratoryCompletionStatus, gasTrappingRisk: this.gasTrappingRisk,
                 pplatAbove30: false, drivingPressureAbove15: false, tiTooShort: this.tiOverTau < 1 },
         };
+        return this.pMusActive ? this._withoutActivePredictions(result) : result;
     }
 }
 
@@ -1365,6 +1391,7 @@ export class Ventilator {
 
 /** Round a number to a specified number of decimal places. */
 function round(value, decimals) {
+    if (value === null) return null;
     if (!isFinite(value)) return value;
     const factor = Math.pow(10, decimals);
     return Math.round(value * factor) / factor;

@@ -29,13 +29,13 @@ physiology sloppier is a regression, even if every test passes.
 # Serve. ES modules will NOT load over file:// — you need HTTP.
 npm run serve                      # node tools/serve.mjs — then http://127.0.0.1:8899
 
-# Engine: 300 original + 22 controller + 24 integration + 22 preservation fixtures
+# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy + 41 effort/pressure groups
 npm test
 
-# Authoritative visual regression + determinism + cache-busting (13: 9 original + 4 adaptive), pinned Linux
+# Authoritative visual regression + determinism + cache-busting (16: 13 existing + 3 effort/pressure), pinned Linux
 npm run test:visual:docker
 
-# Browser behaviour (44 original + 12 adaptive), self-contained server lifecycle
+# Browser behaviour (44 original + 12 adaptive + 4 effort/pressure), self-contained server lifecycle
 npm run test:browser
 
 # Screenshots — the only reliable UI verification
@@ -69,8 +69,14 @@ require generating host-specific, non-authoritative snapshots first with
 ### Read the tally anyway
 
 `npm test` exits nonzero on any assertion failure and also enforces the
-commissioned original `300 passed / 0 failed` tally plus the separate 22/24/22 adaptive and preservation tallies, so an accidental test-count drop is
-a failure. Mutation-verified: multiplying `LungModel.timeConstant` by 1.5 gives
+commissioned original `300 passed / 0 failed` tally plus the separate 22 controller,
+24 integration, 22 selective legacy and 41 effort/pressure group inventories, so
+an accidental test-count drop is a failure. The 41 groups comprise 40 engine
+groups and one renderer group with 66 subchecks. Selective legacy preservation
+retains 92,500 exercised ticks: 28,000 exact passive ticks across 8 fixtures and
+64,500 active conformance ticks across 14 fixtures; these are not 92,500 exact
+matches. These inventories specify the required gate; passing results require
+fresh run receipts. Mutation-verified on the original suite: multiplying `LungModel.timeConstant` by 1.5 gives
 29 failures and exit 1.
 
 Before 2026-08-05 it had no exit code at all and CI stayed green through any
@@ -134,7 +140,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=18`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=20`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -192,6 +198,45 @@ Each of these encodes a bug that already shipped once.
     display pairing, applied-versus-next bounds, pause state and unavailable
     fixed-pressure predictions. See docs/adaptive-mode-contract.md for the
     approved owner clarification; do not infer new clinical behavior from tests.
+
+14. **Pressure/flow physics and detection share one sampled state.** Expiration
+    uses applied B and pre-step V: d=Pmus-V/C; d<=0 gives Q=d/R, Paw=B;
+    d>0 gives Q=d/(R+Rc), Paw=B-Rc*Q. Rc defaults to 2 cmH2O·s/L, is a
+    setup-only 0.5–5 educational assumption, and is distinct from airway R.
+    This prevents the original expiration defect: separately computed Paw and
+    Q failed the declared EOM by -Pmus. Check pre-state residual separately
+    from the expected -Q*dt/C post-Euler staggering. Preserve 100 Hz Euler,
+    supported UI R/C, and VC's deliberate post-step pressure collocation.
+    No volume jump on PEEP edits or hidden volume-floor loss is allowed.
+
+15. **PC command and patient-side Paw differ behind a closed delivery valve.**
+    With D=Pinsp+Pmus-Vpre/C, open/neutral flow is D/R at Paw=B+Pinsp;
+    D<0 closes the one-way valve, Q=0 and Paw=B+Vpre/C-Pmus. This prevents
+    retaining commanded pressure with clamped flow in violation of the EOM.
+    Closed Paw/PIP may exceed the command bounds. It is neither a HOLD nor a
+    controller update nor new trigger eligibility. Preserve PC-CSV cycle and
+    max-Ti rules, live PIP/alarm inputs and the single expiration-start latch.
+
+16. **Patient-trigger history owns immutable detection provenance.** Pressure
+    uses max(0,Bsample-Pawsample); flow uses max(0,Qsample*60), with existing
+    inclusive thresholds and eligibility. Freeze variable, threshold/units,
+    signed signal, sampled PEEP, time/index and settings/neural identities at
+    detection; copy them to delivery with separately recorded delivery PEEP.
+    Queues and live-setting edits must not relabel old events. Clear pending
+    data on reset/exit/cancellation. Pressure patient markers belong on pressure,
+    flow patient markers on flow, neither on volume; unknown legacy provenance
+    gets no variable marker. Failed events never acquire a delivered symbol.
+
+17. **Pressure rendering preserves signed raw physics, and unsupported active
+    analytical predictions stay unavailable.** Scalar/P-V pressure geometry
+    includes negative samples and atmospheric zero without a synthetic dip or
+    zero-floor clipping; nonfinite paths lift the pen. Keep applied PEEP distinct
+    from gauge zero. Configured active effort gates affected legacy MAP,
+    auto/total PEEP, trapped volume and pressure/flow-dependent predictions;
+    preserve applicable passive analytics, configured mechanics and canonical
+    measured outputs. Null is unavailable, never fabricated zero. This prevents
+    unrepaired legacy predictions and live-setting tooltips from claiming the
+    corrected live signal. See docs/model.md for the accepted successor contract.
 
 New invariants belong in this list, with the failure they prevent.
 

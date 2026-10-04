@@ -1,4 +1,7 @@
-/** Exact live-engine preservation against the pre-PC-CMVa checkpoint.
+/** Selective preservation against the pinned pre-PC-CMVa checkpoint.
+ * The original 22 fixtures / 92,500 exercised ticks remain commissioned.
+ * Passive paths compare exactly; accepted active boundary changes use independent
+ * conformance checks rather than treating the broken old traces as a new golden.
  * Run: node tests/legacy-mode-preservation.test.mjs
  * Optional: LEGACY_PRESERVATION_OUTPUT=<JSON path>,
  * LEGACY_PRESERVATION_CURRENT_ROOT=<disposable mutation checkout>,
@@ -132,12 +135,162 @@ function frozenPaths(value, prefix = '', paths = []) {
     }
     return paths;
 }
+// Only additive Phase B provenance is omitted from old-schema exact comparison.
+// Do not recursively project onto reference keys: that would hide unrelated drift.
+function legacyProjection(value) {
+    if (!value || typeof value !== 'object') return value;
+    if (Array.isArray(value)) return value.map(legacyProjection);
+    const record = Object.hasOwn(value, 'triggerDetection') && Object.hasOwn(value, 'triggerDelivery');
+    const event = value.type === 'patient' || value.type === 'failed';
+    return Object.fromEntries(Object.entries(value).filter(([key]) =>
+        !(record && ['triggerDetection', 'triggerDelivery'].includes(key)) &&
+        !(event && ['schemaVersion', 'detection', 'delivery', 'simulationGeneration', 'modeGeneration', 'neuralCycleId'].includes(key)))
+        .map(([key, item]) => [key, key === 'signature' && typeof item === 'string'
+            ? JSON.stringify(legacyProjection(JSON.parse(item))) : legacyProjection(item)]));
+}
 function compareFull(reference, current, where) {
     for (const key of Object.keys(reference.sim.buffers)) exact(reference.sim.buffers[key].toArray(), current.sim.buffers[key].toArray(), `${where}.buffer.${key}`);
     exact(reference.sim.loopCurrent, current.sim.loopCurrent, `${where}.loopCurrent`);
     exact(reference.sim.loopCompleted, current.sim.loopCompleted, `${where}.loopCompleted`);
     exact(reference.vent.summary(), current.vent.summary(), `${where}.analyticalSummary`);
-    exact(frozenPaths(reference.sim.lastCompletedBreath), frozenPaths(current.sim.lastCompletedBreath), `${where}.recordImmutability`);
+    exact(frozenPaths(reference.sim.lastCompletedBreath), frozenPaths(current.sim.lastCompletedBreath)
+        .filter(name => !name.includes('.triggerDetection') && !name.includes('.triggerDelivery')), `${where}.recordImmutability`);
+}
+
+const near = (actual, expected, tolerance, where) => assert.ok(Number.isFinite(actual) && Number.isFinite(expected) &&
+    Math.abs(actual - expected) <= tolerance, `${where}: ${actual} != ${expected} +/- ${tolerance}`);
+const passiveFixtures = new Set(['vc-square-passive', 'vc-ramp-passive', 'vc-valid-hold', 'vc-short-hold',
+    'pc-passive', 'pc-valid-hold', 'pc-incomplete-expiration', 'vc-high-pressure-rate-ventilation']);
+
+function conformanceObserver(pair, checkpointAlarms) {
+    const { sim, vent } = pair;
+    const compute = sim._computePhysics;
+    let decision = null;
+    sim._computePhysics = function (...args) {
+        const pre = { volume: this.volumeAboveEq, phase: this.phase, phaseTime: this.phaseTime,
+            pmus: this.currentPmus, time: this.globalTime, index: this._sampleCount,
+            peep: vent.peep, R: this.lung.resistance, C: this.lung.compliance };
+        compute.apply(this, args);
+        const sample = this.physicsSample;
+        const variable = vent.triggerType === 'pressure' ? 'pressure' : 'flow';
+        const signal = variable === 'pressure' ? Math.max(0, sample.appliedPeep_cmH2O - sample.paw_cmH2O)
+            : Math.max(0, sample.netFlow_Lps * 60);
+        const threshold = variable === 'pressure' ? vent.pressureTriggerCmH2O : vent.flowTriggerLpm;
+        decision = { pre, variable, signal, threshold, patientCount: this.patientBreathCount,
+            expected: this.patientRR > 0 && vent.pMusMax > 0 && this.neuralInspActive &&
+                !this.neuralCycleResolved && sample.phase === 'EXPIRATION' && sample.phaseTime_s > .10 && signal >= threshold };
+    };
+    let generation = null, lastRecord = null, lastEvent = null, rr = 0;
+    let ledger = [], times = [];
+    const peaks = new Map(), outcomes = new Set();
+    let samples = 0, publications = 0, deliveries = 0;
+    return {
+        check(snapshot, physics, where) {
+            if (generation !== sim.simulationGeneration) {
+                generation = sim.simulationGeneration; lastRecord = null; lastEvent = null;
+                ledger = []; times = []; rr = 0; peaks.clear(); outcomes.clear();
+            }
+            if (physics) {
+                const s = sim.physicsSample;
+                assert.ok(s && Object.isFrozen(s), `${where}: immutable coherent physics evidence missing`);
+                exact(owned(s, ['phase', 'phaseTime_s', 'pmus_cmH2O', 'time_s', 'sampleIndex',
+                    'appliedPeep_cmH2O', 'resistance_cmH2O_s_per_L', 'compliance_L_per_cmH2O', 'volumePre_L']),
+                    { phase: decision.pre.phase, phaseTime_s: decision.pre.phaseTime, pmus_cmH2O: decision.pre.pmus,
+                        time_s: decision.pre.time, sampleIndex: decision.pre.index, appliedPeep_cmH2O: decision.pre.peep,
+                        resistance_cmH2O_s_per_L: decision.pre.R, compliance_L_per_cmH2O: decision.pre.C,
+                        volumePre_L: decision.pre.volume }, `${where}.actual-pre-state`);
+                near(s.volumePost_L, sim.volumeAboveEq, 1e-12, `${where}.actual-post-volume`);
+                near(s.paw_cmH2O, sim.currentPressure, 1e-12, `${where}.actual-pressure`);
+                near(s.netFlow_Lps, sim.currentFlow, 1e-12, `${where}.actual-flow`);
+                const R = s.resistance_cmH2O_s_per_L, C = s.compliance_L_per_cmH2O;
+                const d = s.pmus_cmH2O - s.volumePre_L / C;
+                const pc = vent.isPressureMode();
+                let q, paw;
+                if (s.phase === 'EXPIRATION') {
+                    q = d <= 0 ? d / R : d / (R + 2);
+                    paw = d <= 0 ? s.appliedPeep_cmH2O : s.appliedPeep_cmH2O - 2 * q;
+                } else if (s.phase === 'HOLD') {
+                    q = 0; paw = s.appliedPeep_cmH2O + s.volumePre_L / C - s.pmus_cmH2O;
+                } else if (pc) {
+                    q = Math.max(0, (s.pressureCommand_cmH2O + d) / R);
+                    paw = s.pressureCommand_cmH2O + d >= 0 ? s.appliedPeep_cmH2O + s.pressureCommand_cmH2O
+                        : s.appliedPeep_cmH2O + s.volumePre_L / C - s.pmus_cmH2O;
+                } else {
+                    q = vent.flowPattern === 'ramp' ? 2 * vent.tidalVolume / vent.inspiratoryTime *
+                        Math.max(0, 1 - s.phaseTime_s / vent.inspiratoryTime) : vent.tidalVolume / vent.inspiratoryTime;
+                    paw = s.appliedPeep_cmH2O + s.volumePost_L / C + R * q - s.pmus_cmH2O;
+                }
+                near(s.netFlow_Lps, q, 1e-12, `${where}.flow`);
+                near(s.paw_cmH2O, paw, 1e-9, `${where}.pressure`);
+                const volume = s.phase === 'INSPIRATION' && !pc ? s.volumePost_L : s.volumePre_L;
+                near(s.paw_cmH2O + s.pmus_cmH2O - s.appliedPeep_cmH2O - volume / C - R * s.netFlow_Lps,
+                    0, 1e-9, `${where}.common-state-EOM`);
+                near(s.volumePost_L - s.volumePre_L, s.netFlow_Lps * sim.dt, 1e-12, `${where}.volume-accounting`);
+                assert.equal(s.volumeGuardApplied, false, `${where}: volume floor hid lost volume`);
+                near(sim.buffers.pressure.last, s.paw_cmH2O, 1e-12, `${where}.pressure-buffer`);
+                near(sim.buffers.flow.last, s.netFlow_Lps * 60, 1e-12, `${where}.flow-buffer`);
+                assert.equal(sim.patientBreathCount - decision.patientCount, decision.expected ? 1 : 0,
+                    `${where}: delivered outcome disagrees with eligible physical threshold`);
+                if (s.phase === 'INSPIRATION') {
+                    const key = `${generation}:${snapshot.preBreathId}`;
+                    peaks.set(key, Math.max(peaks.get(key) ?? 0, s.paw_cmH2O));
+                }
+                samples++;
+            }
+            const record = sim.lastCompletedBreath;
+            if (record && record !== lastRecord) {
+                near(record.measuredVT_mL, (sim.volumeAboveEq - sim.volumeAtBreathStart) * 1000, 1e-9,
+                    `${where}.canonical-inspired-VT`);
+                near(record.measuredPIP_cmH2O, peaks.get(`${generation}:${record.breathId}`) ?? 0, 1e-9,
+                    `${where}.patient-side-PIP`);
+                assert.equal(sim.lastBreathPIP, record.measuredPIP_cmH2O, `${where}.PIP-latch`);
+                assert.ok(Object.isFrozen(record), `${where}.canonical-record-immutable`);
+                ledger.push({ tick: Math.round(record.completedAt_s / sim.dt), volumeL: record.measuredVT_mL / 1000 });
+                times.push(record.completedAt_s * 1000); if (times.length > 10) times.shift();
+                if (times.length < 2) rr = 0;
+                else {
+                    const raw = 60000 / ((times.at(-1) - times[0]) / (times.length - 1));
+                    rr = rr > 0 ? rr * .7 + raw * .3 : raw;
+                }
+                lastRecord = record; publications++;
+            }
+            near(sim.measuredRR, rr, 1e-9, `${where}.completion-only-RR`);
+            const now = Math.round(sim.globalTime / sim.dt);
+            const recent = ledger.filter(item => item.tick > now - 3000 && item.tick <= now);
+            const v = sim.deliveredVentilation;
+            assert.equal(v.completedCount, recent.length, `${where}.VE-canonical-count`);
+            near(v.sumVolumeL, recent.reduce((sum, item) => sum + item.volumeL, 0), 1e-12, `${where}.VE-canonical-sum`);
+            if (v.status === 'available') near(v.valueLpm, v.sumVolumeL * 2, 1e-12, `${where}.VE-raw-value`);
+            else assert.equal(v.valueLpm, null, `${where}.VE-unavailable-not-zero`);
+            // The pinned alarm algorithm remains the oracle; corrected inputs are intentional.
+            exact(checkpointAlarms.evaluateAlarms(alarmMetrics(sim, v)), snapshot.alarms, `${where}.alarm-input-coherence`);
+            const event = sim.triggerEvents.at(-1);
+            if (event && event !== lastEvent) {
+                if (event.type === 'patient' || event.type === 'failed') {
+                    const d = event.detection;
+                    const key = `${event.simulationGeneration ?? d?.simulationGeneration}:${event.modeGeneration ?? d?.modeGeneration}:${event.neuralCycleId ?? d?.neuralCycleId}`;
+                    assert.ok(!outcomes.has(key), `${where}: duplicate terminal neural outcome`); outcomes.add(key);
+                    if (event.type === 'patient') {
+                        assert.ok(d && Object.isFrozen(event) && Object.isFrozen(d) && Object.isFrozen(d.signal) && Object.isFrozen(d.threshold),
+                            `${where}: immutable detection provenance missing`);
+                        const expectedSignal = d.triggerVariable === 'pressure' ? Math.max(0, d.signal.appliedPeep_cmH2O - d.signal.paw_cmH2O)
+                            : Math.max(0, d.signal.netFlow_Lps * 60);
+                        near(d.signal.value, expectedSignal, 1e-12, `${where}.recorded-signal`);
+                        assert.ok(d.signal.value >= d.threshold.value && d.phase === 'EXPIRATION' && d.phaseTime_s > .10,
+                            `${where}: delivered patient event without eligible crossing`);
+                        assert.equal(d.signal.location, 'airway-opening-patient-side');
+                        assert.equal(d.threshold.unit, d.triggerVariable === 'pressure' ? 'cmH2O' : 'L/min');
+                        near(event.time - d.time_s, sim.dt, 1e-9, `${where}.detection-before-delivery`);
+                        assert.equal(d.sampleIndex, sim.physicsSample.sampleIndex, `${where}.detection-sample`);
+                        assert.equal(event.delivery.appliedPeep_cmH2O, vent.peep, `${where}.delivery-PEEP`);
+                        deliveries++;
+                    }
+                }
+                lastEvent = event;
+            }
+        },
+        receipt: () => ({ samples, publications, patientDeliveries: deliveries }),
+    };
 }
 
 const edit = (tick, values) => ({ tick, name: `edit-${tick}`, apply({ lung, vent, sim }) {
@@ -210,16 +363,28 @@ function observe(pair, snapshot, seen) {
 
 function runFixture(fixture, before, after) {
     const reference = make(before, fixture), current = make(after, fixture);
-    const ticks = fixture.ticks || 3500, seen = new Set(), events = [];
+    const ticks = fixture.ticks || 3500, seen = new Set(), currentSeen = new Set(), events = [];
+    const exactPassive = passiveFixtures.has(fixture.name);
+    const classification = exactPassive ? 'passive-exact' : 'active-contract-conformance';
+    const observer = exactPassive ? null : conformanceObserver(current, before.alarms);
     const digests = [crypto.createHash('sha256'), crypto.createHash('sha256')];
     const schema = { sim: Object.keys(reference.sim).filter(k => !['vent', 'lung', 'buffers', 'loopCurrent', 'loopCompleted'].includes(k)),
         vent: Object.keys(reference.vent).filter(k => k !== 'lung'), lung: Object.keys(reference.lung) };
     let lastRecord = null, lastCount = reference.sim.breathCount;
-    function compare(label, full = false) {
+    function compare(label, full = false, physics = false, preBreathId = null) {
         // Recompute the old schema in case a legacy property is created lazily.
         schema.sim = Object.keys(reference.sim).filter(k => !['vent', 'lung', 'buffers', 'loopCurrent', 'loopCompleted'].includes(k));
         const a = capture(reference, schema), b = capture(current, schema);
-        exact(a, b, `${fixture.name}.${label}`); observe(reference, a, seen);
+        if (exactPassive) exact(legacyProjection(a), legacyProjection(b), `${fixture.name}.${label}`);
+        else {
+            exact(a.settings, b.settings, `${fixture.name}.${label}.operator-settings`);
+            exact(a.lung, b.lung, `${fixture.name}.${label}.configured-mechanics`);
+            const oscillator = ['globalTime', 'sampleRate', 'dt', 'patientRR', 'neuralTimer',
+                'neuralInspActive', 'triggerLockoutSeconds', 'running', 'speed', 'displaySeconds'];
+            exact(owned(reference.sim, oscillator), owned(current.sim, oscillator), `${fixture.name}.${label}.unchanged-oscillator-transport`);
+            observer.check({ ...b, preBreathId }, physics, `${fixture.name}.${label}`);
+        }
+        observe(reference, a, seen); observe(current, b, currentSeen);
         for (const [index, snapshot] of [a, b].entries()) digests[index].update(JSON.stringify({
             time: snapshot.state.globalTime, pressure: snapshot.state.currentPressure, flow: snapshot.state.currentFlow,
             volume: snapshot.state.volumeAboveEq, phase: snapshot.state.phase, breath: snapshot.state.breathCount,
@@ -227,7 +392,23 @@ function runFixture(fixture, before, after) {
             ve: snapshot.selectors.delivery.valueLpm, alarms: snapshot.alarms.map(x => x.id),
         }) + '\n');
         if (full || reference.sim.lastCompletedBreath !== lastRecord || reference.sim.breathCount !== lastCount) {
-            compareFull(reference, current, `${fixture.name}.${label}`);
+            if (exactPassive) compareFull(reference, current, `${fixture.name}.${label}`);
+            else {
+                const summary = current.vent.summary();
+                if (!current.vent.pMusActive) exact(reference.vent.summary(), summary, `${fixture.name}.${label}.passive-analytics`);
+                else {
+                    assert.equal(summary.predictionsAvailable, false, `${fixture.name}.${label}.active-analytics-availability`);
+                    for (const key of ['pip_cmH2O', 'pplat_cmH2O', 'map_cmH2O', 'autoPeep_cmH2O',
+                        'totalPeep_cmH2O', 'drivingPressure', 'resistivePressure']) {
+                        assert.equal(summary.pressures[key], null, `${fixture.name}.${label}.active-${key}`);
+                    }
+                    assert.equal(summary.volumes.trappedVolume_mL, null, `${fixture.name}.${label}.active-trapped-prediction`);
+                    if (current.vent.isPressureMode()) {
+                        assert.equal(summary.volumes.tidalVolume_mL, null, `${fixture.name}.${label}.active-PC-VT-prediction`);
+                        assert.equal(summary.volumes.minuteVentilation, null, `${fixture.name}.${label}.active-PC-VE-prediction`);
+                    }
+                }
+            }
             lastRecord = reference.sim.lastCompletedBreath; lastCount = reference.sim.breathCount;
         }
     }
@@ -236,15 +417,44 @@ function runFixture(fixture, before, after) {
         for (const event of fixture.events || []) if (event.tick === tick) {
             event.apply(reference); event.apply(current); events.push({ tick, name: event.name }); compare(`event-${tick}`, true);
         }
-        reference.sim.tick(); current.sim.tick(); compare(`tick-${tick + 1}`);
+        const preBreathId = current.sim.breathCount;
+        reference.sim.tick(); current.sim.tick(); compare(`tick-${tick + 1}`, false, true, preBreathId);
     }
     compare('final', true);
     for (const condition of fixture.required || []) assert(seen.has(condition), `${fixture.name}: required path was not exercised: ${condition}`);
     const [referenceSampleSha256, currentSampleSha256] = digests.map(x => x.digest('hex'));
-    assert.equal(currentSampleSha256, referenceSampleSha256);
-    return { fixture: fixture.name, passed: true, ticks, events, required: fixture.required, observed: [...seen].filter(x => x !== null).sort(),
+    if (exactPassive) assert.equal(currentSampleSha256, referenceSampleSha256);
+    return { fixture: fixture.name, passed: true, ticks, exercisedTicks: ticks,
+        exactMatchedTicks: exactPassive ? ticks : 0, conformanceTicks: exactPassive ? 0 : ticks,
+        classification, conformance: observer?.receipt() ?? null,
+        events, required: fixture.required, observed: [...seen].filter(x => x !== null).sort(),
+        currentObserved: [...currentSeen].filter(x => x !== null).sort(),
         referenceSampleSha256, currentSampleSha256, final: { mode: current.vent.mode, simulationTime: current.sim.globalTime,
             simulationGeneration: current.sim.simulationGeneration, breathCount: current.sim.breathCount } };
+}
+
+function clampOnlyIdentity(before, after) {
+    const receipt = [];
+    for (const mode of ['pc-cmv', 'PC-CSV']) for (const state of [
+        { name: 'open', volume: .3, effort: 0 },
+        { name: 'closed', volume: .9, effort: 1 },
+        { name: 'reopen', volume: .9, effort: 6 },
+    ]) {
+        const fixture = { settings: { mode, inspiratoryPressure: 15, psPressure: 15 } };
+        const reference = make(before, fixture), current = make(after, fixture);
+        for (const pair of [reference, current]) {
+            pair.sim.volumeAboveEq = state.volume;
+            pair.sim._computeInspiration(10, .05, 5, state.effort, .01);
+        }
+        exact(owned(reference.sim, ['currentFlow', 'volumeAboveEq', 'peakInspFlow_Lpm', 'peakInspiratoryFlow']),
+            owned(current.sim, ['currentFlow', 'volumeAboveEq', 'peakInspFlow_Lpm', 'peakInspiratoryFlow']), `${mode}.${state.name}.clamp-only-Q-V`);
+        const drive = 15 + state.effort - state.volume / .05;
+        near(current.sim.currentPressure, drive >= 0 ? 20 : 5 + state.volume / .05 - state.effort,
+            1e-9, `${mode}.${state.name}.patient-side-Paw`);
+        receipt.push({ mode, state: state.name, flowVolumeExact: true,
+            referencePaw: reference.sim.currentPressure, currentPaw: current.sim.currentPressure });
+    }
+    return receipt;
 }
 
 let reference;
@@ -255,8 +465,11 @@ try {
     report.currentSourceHashes = currentIdentities();
     const before = await load(reference.directory), after = await load(CURRENT_ROOT);
     assert.equal(fixtures.length, 22, 'Commissioned fixture inventory changed');
+    assert.equal(fixtures.reduce((sum, fixture) => sum + (fixture.ticks || 3500), 0), 92500, 'Commissioned exercised tick inventory changed');
+    assert.equal(passiveFixtures.size, 8, 'Selective exact fixture inventory changed');
+    report.clampOnlyIdentity = clampOnlyIdentity(before, after);
     for (const fixture of fixtures) {
-        try { results.push(runFixture(fixture, before, after)); console.log(`PASS legacy ${fixture.name} (${results.at(-1).ticks} ticks)`); }
+        try { results.push(runFixture(fixture, before, after)); console.log(`PASS legacy ${fixture.name} (${results.at(-1).ticks} exercised ticks; ${results.at(-1).classification})`); }
         catch (error) { results.push({ fixture: fixture.name, passed: false, error: error.message }); console.error(`FAIL legacy ${fixture.name}: ${error.message}`); }
     }
     exact(report.currentSourceHashes, currentIdentities(), 'Current source changed while the preservation run was executing');
@@ -272,10 +485,20 @@ finally {
 report.passed = results.filter(r => r.passed).length;
 report.failed = results.filter(r => !r.passed).length + (report.infrastructureError ? 1 : 0);
 report.ticks = results.reduce((sum, r) => sum + (r.ticks || 0), 0);
+report.exercisedTicks = report.ticks;
+report.exactMatchedTicks = results.reduce((sum, r) => sum + (r.exactMatchedTicks || 0), 0);
+report.conformanceTicks = results.reduce((sum, r) => sum + (r.conformanceTicks || 0), 0);
+report.classifications = { passiveExactFixtures: results.filter(r => r.classification === 'passive-exact').length,
+    activeConformanceFixtures: results.filter(r => r.classification === 'active-contract-conformance').length };
 if (!report.failed && report.ticks !== 92500) { report.failed++; report.infrastructureError = 'Commissioned fixture tick total changed'; }
+if (!report.failed && (report.exactMatchedTicks !== 28000 || report.conformanceTicks !== 64500)) {
+    report.failed++; report.infrastructureError = 'Selective exact/conformance tick inventory changed';
+}
 if (process.env.LEGACY_PRESERVATION_OUTPUT) {
     const destination = path.resolve(process.env.LEGACY_PRESERVATION_OUTPUT);
     fs.mkdirSync(path.dirname(destination), { recursive: true }); fs.writeFileSync(destination, JSON.stringify(report, null, 2) + '\n');
 }
-console.log(`LEGACY_PRESERVATION_TALLY ${JSON.stringify({ fixtures: results.length, passed: report.passed, failed: report.failed, ticks: report.ticks })}`);
+console.log(`LEGACY_PRESERVATION_TALLY ${JSON.stringify({ fixtures: results.length, passed: report.passed, failed: report.failed,
+    ticks: report.ticks, exercisedTicks: report.exercisedTicks, exactMatchedTicks: report.exactMatchedTicks,
+    conformanceTicks: report.conformanceTicks, ...report.classifications })}`);
 if (report.failed) process.exitCode = 1;

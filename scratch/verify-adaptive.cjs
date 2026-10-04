@@ -19,9 +19,9 @@ const HELP = {
     effort: "Instructor-selected peak amplitude of this model's periodic inspiratory muscle-pressure waveform. Effort does not respond physiologically to changing assistance. This amplitude is not measured work of breathing.",
     hold: 'Inspiratory hold is excluded from this initial adaptive demonstration. Hold-derived measurements remain unavailable in this mode.',
     predictions: 'Fixed-pressure steady-state predictions are unavailable while pressure adapts between breaths.',
-    idealization: 'In PC-CMVa, Paw stays at the latched set PEEP plus adaptive pressure during each pressure-targeted inspiration. The next pressure command may change between breaths. Patient effort can change flow and delivered volume. Real ventilators may also show pressure deformation; this trace is a model idealization.',
-    targetPending: 'The new target applies at the next breath. The current inspiration will not be used to adjust pressure after this edit. Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath. Destination modes use settings only where applicable.',
-    peepPending: 'The new set PEEP applies at the next breath. The current inspiratory pressure target remains unchanged until then. Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath. Destination modes use settings only where applicable.',
+    idealization: "In PC-CMVa, the applied set PEEP and adaptive pressure command latch at the start of each breath. While inward flow is delivered, modeled Paw is their sum. If the delivery valve closes because inward flow would reverse, flow is zero and patient-side Paw follows recoil and prescribed muscle pressure. The adaptive command stays unchanged during that breath. A later eligible inspired volume can adjust the command for the next breath. Expiratory inward demand uses a finite supply resistance. This is an educational model, not a commercial ventilator or measured work of breathing.",
+    targetPending: 'Your new VT target takes effect at the start of the next breath. The simulator will not use the breath affected by this change to calculate the next pressure adjustment.\n\nResetting or changing modes keeps your latest selected settings. After a mode change, only the settings used by that mode affect breath delivery.',
+    peepPending: "The new set PEEP applies at the next breath. Until then, the current applied PEEP is used by the model and pressure trigger. At the next breath, the selected PEEP and pressure command apply together. Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath. Destination modes use settings only where applicable.",
 };
 const state = page => page.evaluate(() => window.__vsim.state());
 const text = (page, selector) => page.locator(selector).textContent().then(x => x.trim());
@@ -254,13 +254,100 @@ const groups = [
     }],
 ];
 
+// Separate commissioned Phase B groups. Original adaptive inventory remains12.
+const effortGroups = [
+    ['finite-boundary-history-and-signed-geometry', async page => {
+        await page.evaluate(() => window.__vsim.setupEffort({mode:'PC-CSV',resistance:5,compliance:.06,pMusMax:12,patientRR:12,neuralTi:1,triggerType:'pressure',peep_cmH2O:5}));
+        await rail(page); await step(page, 1200);
+        const old = await state(page), events = old.triggerEvents.filter(e=>e.type==='patient');
+        assert(events.length>=2); assert(events.every(e=>e.detection.triggerVariable==='pressure'));
+        assert(old.renderers.pressure.markers.some(m=>m.type==='patient'));
+        assert(!old.renderers.flow.markers.some(m=>m.type==='patient'));
+        assert(!old.renderers.volume.markers.some(m=>m.type==='patient'));
+        await page.locator('[data-trigger-type="flow"]').click(); await step(page, 500);
+        const mixed = await state(page);
+        assert.deepEqual(mixed.triggerEvents.filter(e=>events.some(old=>old.time===e.time)),events);
+        assert(mixed.renderers.pressure.markers.some(m=>m.type==='patient'));
+        assert(mixed.renderers.flow.markers.some(m=>m.type==='patient'));
+        assert(!mixed.renderers.volume.markers.some(m=>m.type==='patient'));
+        await page.locator('[data-measurement-help="waveform-legend"]').focus();
+        assert((await text(page,'#measurement-help-text')).includes('atmospheric pressure, not PEEP'));
+        await page.keyboard.press('Escape');
+        await page.evaluate(() => window.__vsim.setupEffort({mode:'vc-cmv',resistance:5,compliance:.1,respiratoryRate:6,peep_cmH2O:0,pMusMax:12,patientRR:12,neuralTi:1}));
+        await step(page, 560);
+        const negative=await state(page);
+        assert(negative.renderers.pressure.geometry.yMin<0);
+        assert(negative.pvGeometry.xRange.lo<0);
+        assert.equal(negative.renderers.pressure.sampleDataStatus,'available');
+    }],
+    ['active-prediction-gating-and-canonical-monitor', async page => {
+        for(const mode of ['vc-cmv','pc-cmv','PC-CSV','pc-cmva']) {
+            await page.evaluate(mode => window.__vsim.setupEffort({mode,resistance:5,compliance:.06,pMusMax:12,patientRR:12,neuralTi:1}),mode);
+            await teaching(page,true); await step(page, 1800);
+            const s=await state(page);
+            assert.equal(s.predicted.predictionsAvailable,false);
+            for(const key of ['map_cmH2O','autoPeep_cmH2O','totalPeep_cmH2O'])assert.equal(s.predicted.pressures[key],null);
+            if(mode==='vc-cmv') assert(Number.isFinite(s.predicted.volumes.tidalVolume_mL));
+            else assert.equal(s.predicted.volumes.tidalVolume_mL,null);
+            assert(s.completed && Number.isFinite(s.completed.measuredVT_mL));
+            assert.equal(await text(page,'#param-map'),'—');
+            assert(await page.locator('#active-predictions-help').isVisible());
+            await page.locator('#active-predictions-help').focus();
+            assert.equal(await text(page,'#measurement-help-text'), 'This prediction is unavailable when patient effort is enabled. Its calculation does not account for all effects of patient effort on airway pressure and flow.\n\nUse the live waveforms and measured values to assess the simulated breath.');
+            await page.keyboard.press('Escape');
+            assert.equal(s.monitorDelivery.asOfTick,s.evaluatedDelivery.asOfTick);
+            await teaching(page,false);
+        }
+        await page.evaluate(() => window.__vsim.setupEffort({mode:'pc-cmv',pMusMax:0,patientRR:0}));
+        assert(Number.isFinite((await state(page)).predicted.pressures.map_cmH2O));
+        assert(!(await page.locator('#active-predictions-help').isVisible()));
+    }],
+    ['closed-valve-alarm-live-latch-and-wall-clock-audio', async page => {
+        await page.evaluate(() => window.__vsim.setupEffort({mode:'pc-cmv',resistance:5,compliance:.03,respiratoryRate:12,ieRatio:[1,2],peep_cmH2O:24,inspiratoryPressure:15,pMusMax:12,patientRR:12,neuralTi:1}));
+        await rail(page); await page.locator('#alarm-mute-btn').click();
+        if(!(await state(page)).alarmAudio.enabled)await page.locator('#alarm-mute-btn').click();
+        await step(page,569); let prior=await state(page);
+        assert(!prior.activeAlarms.some(a=>a.id==='HIGH_PRESSURE'));
+        const crossed=await step(page,1),sample=crossed.physicsSample;
+        assert.equal(sample.valveState,'delivery-closed'); assert.equal(sample.netFlow_Lps,0);
+        assert(sample.paw_cmH2O>40 && sample.appliedPeep_cmH2O+sample.pressureCommand_cmH2O===39);
+        assert(crossed.activeAlarms.some(a=>a.id==='HIGH_PRESSURE'));
+        assert(crossed.runningPip>40 && crossed.pipLatched<=39);
+        assert(crossed.alarmAudio.armed && crossed.alarmAudio.lastAlarmSignature.includes('HIGH_PRESSURE'));
+        assert(Math.abs(crossed.alarmAudio.lastSoundAtSec-await page.evaluate(()=>performance.now()/1000))<1);
+        const simTime=crossed.globalTime;
+        await page.locator('#alarm-silence-btn').click(); const muted=await state(page);
+        assert(muted.alarmAudio.silencedUntilSec>await page.evaluate(()=>performance.now()/1000)+100);
+        await page.waitForTimeout(150); await page.evaluate(()=>window.__vsim.redraw());
+        assert.equal((await state(page)).globalTime,simTime);
+        await page.locator('#alarm-silence-btn').click(); assert.equal((await state(page)).alarmAudio.silencedUntilSec,0);
+        await step(page,100); assert((await state(page)).pipLatched>40);
+        await page.evaluate(()=>window.__vsim.seek(0)); const reset=await state(page);
+        assert(!reset.activeAlarms.some(a=>a.id==='HIGH_PRESSURE'));
+        assert.equal(reset.completed,null);
+    }],
+    ['finite-boundary-first-VE-availability-and-reset', async page => {
+        await page.evaluate(()=>window.__vsim.setupEffort({mode:'PC-CSV',pMusMax:0,patientRR:0}));
+        await step(page,2999); let s=await state(page);
+        assert.equal(s.deliveredVentilation.status,'warming');
+        assert(!s.activeAlarms.some(a=>a.id.endsWith('_VE')));
+        s=await step(page,1);assert.equal(s.deliveredVentilation.status,'available');
+        assert.equal(s.deliveredVentilation.valueLpm,0);
+        assert(s.activeAlarms.some(a=>a.id==='LOW_VE'));
+        assert.deepEqual(s.monitorDelivery,s.evaluatedDelivery);
+        await page.evaluate(()=>window.__vsim.seek(0));s=await state(page);
+        assert.equal(s.deliveredVentilation.status,'warming');
+        assert(!s.activeAlarms.some(a=>a.id.endsWith('_VE')));
+    }],
+];
+
 (async () => {
     assert.equal(groups.length, 12, 'Commissioned adaptive browser inventory changed');
     const launch = { args: ['--no-sandbox'] };
     if (process.env.CHROMIUM_PATH) launch.executablePath = process.env.CHROMIUM_PATH;
     const browser = await chromium.launch(launch), results = [];
     try {
-        for (const [name, run] of groups) {
+        for (const [name, run] of [...groups,...effortGroups]) {
             const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
             const page = await context.newPage(), errors = [];
             page.on('pageerror', error => errors.push(String(error)));
@@ -283,6 +370,8 @@ const groups = [
     } finally { await browser.close(); }
     const report = { groups: results.length, passed: results.filter(r => r.passed).length, failed: results.filter(r => !r.passed).length, results };
     if (process.env.ADAPTIVE_BROWSER_OUTPUT) { const destination = path.resolve(process.env.ADAPTIVE_BROWSER_OUTPUT); fs.mkdirSync(path.dirname(destination), { recursive: true }); fs.writeFileSync(destination, JSON.stringify(report, null, 2) + '\n'); }
-    console.log(`ADAPTIVE_BROWSER_TALLY ${JSON.stringify({ groups: report.groups, passed: report.passed, failed: report.failed })}`);
-    if (report.groups !== 12 || report.failed) process.exitCode = 1;
+    for(const [prefix, selected] of [['ADAPTIVE_BROWSER_TALLY',results.slice(0,12)],['EFFORT_PRESSURE_BROWSER_TALLY',results.slice(12)]]) {
+        console.log(`${prefix} ${JSON.stringify({groups:selected.length,passed:selected.filter(r=>r.passed).length,failed:selected.filter(r=>!r.passed).length})}`);
+    }
+    if (groups.length !== 12 || effortGroups.length !== 4 || report.groups !== 16 || report.failed) process.exitCode = 1;
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });

@@ -20,7 +20,8 @@
  *   Paw + Pmus = PEEP + V/C + R × V̇
  *
  *   VC mode: V̇ is prescribed (square or ramp), Paw is computed
- *   PC mode: Paw is prescribed (PEEP + Pinsp), V̇ is computed via ODE
+ *   PC mode: ideal upstream pressure, one-way delivery valve, patient-side Paw
+ *   EXP: ideal outward PEEP boundary; finite inward supply resistance
  *
  * State Machine:
  *
@@ -42,7 +43,7 @@
  */
 
 
-import { AdaptiveController } from './adaptive-controller.js?v=18';
+import { AdaptiveController } from './adaptive-controller.js?v=20';
 
 // =============================================================================
 // RING BUFFER
@@ -138,6 +139,13 @@ function addReason(reasons, reason) {
     if (!reasons.includes(reason)) reasons.push(reason);
 }
 
+function validatedSupplyResistance(value) {
+    if (!Number.isFinite(value) || value < 0.5 || value > 5) {
+        throw new RangeError('Inward supply resistance must be 0.5–5 cmH2O s/L');
+    }
+    return value;
+}
+
 
 // =============================================================================
 // SIMULATION ENGINE
@@ -151,6 +159,7 @@ export class SimulationEngine {
      * @param {number} options.sampleRate      - Hz (default 100)
      * @param {number} options.displaySeconds  - Visible time window (default 10)
      * @param {number} options.triggerEventRetentionSeconds - Trigger metadata retention (default 60)
+     * @param {number} options.inwardSupplyResistance_cmH2O_s_per_L - Educational setup assumption (default 2, range 0.5–5)
      */
     constructor(ventilator, options = {}) {
         this.vent = ventilator;
@@ -167,6 +176,10 @@ export class SimulationEngine {
         this.displaySeconds = Math.min(options.displaySeconds ?? 10, this.maxDisplaySeconds);
         this.triggerEventRetentionSeconds = options.triggerEventRetentionSeconds ?? 60;
         this.triggerLockoutSeconds = 0.10;
+        this._inwardSupplyResistance = validatedSupplyResistance(options.inwardSupplyResistance_cmH2O_s_per_L ?? 2);
+        this.physicsSample = null;
+        this.inputRevision = 0;
+        this._inputFingerprint = null;
 
         // --- Ring Buffers (streaming display data) ---
         const bufSize = Math.round(this.maxDisplaySeconds * this.sampleRate);
@@ -202,6 +215,9 @@ export class SimulationEngine {
         this.neuralCycleResolved = false; // one trigger outcome per neural inspiration (delivered OR failed)
         this.neuralEligibleSeen = false;  // effort reached the threshold gate this neural inspiration
         this.scheduledBreathTrigger = null;
+        this._pendingTriggerDetection = null;
+        this.lastCanceledTrigger = null;
+        this.neuralCycleId = 0;
 
         // --- Per-Breath Measurements ---
         //   Updated each breath for the parameter display panel.
@@ -427,6 +443,7 @@ export class SimulationEngine {
         // neural inspiration begins undecided (no outcome, no eligibility yet).
         if (this.neuralTimer >= neuralCycleTime) {
             this.neuralTimer -= neuralCycleTime;  // carry remainder for timing accuracy
+            this.neuralCycleId++;
             this.neuralInspActive = true;
             this.neuralCycleResolved = false;
             this.neuralEligibleSeen = false;
@@ -437,8 +454,9 @@ export class SimulationEngine {
      * Three-gate patient-trigger eligibility, evaluated EVERY tick while a neural
      * inspiration is active (design spec §2). Exactly one outcome per neural
      * inspiration — a delivered patient breath OR a failed-trigger event — never
-     * a silent drop. The trigger MATH (gate c) is unchanged from before; only
-     * WHEN/HOW OFTEN it is evaluated, and what is recorded on failure, changed.
+     * a silent drop. Explicit cancellation is terminal internally and has no
+     * delivered marker or new failed-trigger classification. Gate (c) uses the
+     * same coherent patient-side sample as the trace, not an effort/recoil proxy.
      */
     _evaluatePatientTrigger() {
         // Effort must actually be present. A commanded oscillator with zero Pmus
@@ -465,18 +483,15 @@ export class SimulationEngine {
         // Gates (a)+(b) passed → the effort is eligible to trigger this cycle.
         this.neuralEligibleSeen = true;
 
-        // Gate (c) — does the effort cross sensitivity? (existing math, UNCHANGED)
-        const pmus = this.currentPmus;
-        const elasticRecoilPressure = this.volumeAboveEq / this.lung.compliance;
-
-        // Effective patient-generated effort available at the airway opening
-        // after overcoming residual lung recoil / intrinsic PEEP load.
-        const pressureDeflectionCmH2O = Math.max(0, pmus - elasticRecoilPressure);
-
-        // Positive flow during expiration represents inspiratory flow demand.
-        const inspiratoryFlowDeflectionLpm = Math.max(0, this.currentFlow * 60);
-
-        const triggerType = this.vent.triggerType ?? 'flow';
+        // Gate (c): first eligible sampled level crossing, inclusive >=. The
+        // applied reference belongs to the solved sample, never a queued PEEP.
+        const sample = this.physicsSample;
+        if (!sample || sample.phase !== Phase.EXPIRATION ||
+            sample.simulationGeneration !== this.simulationGeneration ||
+            sample.modeGeneration !== this.modeGeneration) return;
+        const pressureDeflectionCmH2O = Math.max(0, sample.appliedPeep_cmH2O - sample.paw_cmH2O);
+        const inspiratoryFlowDeflectionLpm = Math.max(0, sample.netFlow_Lps * 60);
+        const triggerType = this.vent.triggerType === 'pressure' ? 'pressure' : 'flow';
 
         const triggered =
             triggerType === 'pressure'
@@ -484,6 +499,29 @@ export class SimulationEngine {
                 : inspiratoryFlowDeflectionLpm >= this.vent.flowTriggerLpm;
 
         if (triggered) {
+            const pressure = triggerType === 'pressure';
+            const unit = pressure ? 'cmH2O' : 'L/min';
+            this._pendingTriggerDetection = freezeRecord({
+                time_s: sample.time_s, sampleIndex: sample.sampleIndex,
+                simulationGeneration: sample.simulationGeneration,
+                modeGeneration: sample.modeGeneration, neuralCycleId: sample.neuralCycleId,
+                triggerVariable: triggerType,
+                threshold: { value: pressure ? this.vent.pressureTriggerCmH2O : this.vent.flowTriggerLpm, unit },
+                comparator: '>=',
+                signal: { location: 'airway-opening-patient-side',
+                    paw_cmH2O: sample.paw_cmH2O, netFlow_Lps: sample.netFlow_Lps,
+                    appliedPeep_cmH2O: sample.appliedPeep_cmH2O,
+                    value: pressure ? pressureDeflectionCmH2O : inspiratoryFlowDeflectionLpm,
+                    unit, basis: pressure ? 'applied-peep-minus-paw' : 'positive-net-lung-flow' },
+                configuration: { configuredMode: this.vent.mode,
+                    settingsGeneration: sample.settingsGeneration, inputRevision: sample.inputRevision,
+                    Rc_cmH2O_s_per_L: this._inwardSupplyResistance,
+                    pressureThreshold_cmH2O: this.vent.pressureTriggerCmH2O,
+                    flowThreshold_Lpm: this.vent.flowTriggerLpm,
+                    requestedPeep_cmH2O: this._pendingAdaptiveSettings?.peep_cmH2O ?? null },
+                phase: sample.phase, phaseTime_s: sample.phaseTime_s,
+                lockout_s: this.triggerLockoutSeconds, previousEligibleSignal: null,
+            });
             this.scheduledBreathTrigger = 'patient';
             this.neuralCycleResolved = true;
         }
@@ -499,6 +537,7 @@ export class SimulationEngine {
     _onNeuralInspirationEnd() {
         if (this.neuralEligibleSeen && !this.neuralCycleResolved) {
             this._recordFailedTrigger('threshold');
+            this.neuralCycleResolved = true;
         }
     }
 
@@ -508,6 +547,8 @@ export class SimulationEngine {
             gateFailed,
             pmus: this.currentPmus,
             phase: this.phase,
+            simulationGeneration: this.simulationGeneration,
+            modeGeneration: this.modeGeneration, neuralCycleId: this.neuralCycleId,
         });
     }
 
@@ -519,7 +560,7 @@ export class SimulationEngine {
     _recordTriggerEvent(type, time = this.globalTime, extra = {}) {
         // Backward compatible: delivered ('machine'/'patient') events keep the
         // {type, time} shape; failed events add {gateFailed, pmus, phase} (§3).
-        this.triggerEvents.push({ type, time, ...extra });
+        this.triggerEvents.push(freezeRecord({ type, time, ...extra }));
 
         const cutoff = time - this.triggerEventRetentionSeconds;
         while (this.triggerEvents.length > 0 && this.triggerEvents[0].time < cutoff) {
@@ -530,6 +571,26 @@ export class SimulationEngine {
     _setPhase(phase) {
         this.phase = phase;
         this.currentPhase = phase === Phase.EXPIRATION ? 'expiration' : 'inspiration';
+    }
+
+    /** Setup only: a changed inward impedance always resets, retaining pause state. */
+    get inwardSupplyResistance_cmH2O_s_per_L() { return this._inwardSupplyResistance; }
+
+    configureInwardSupplyResistance(value) {
+        const validated = validatedSupplyResistance(value);
+        this._inwardSupplyResistance = validated;
+        this.reset();
+    }
+
+    /** Terminal internal cancellation; no new failed counter or delivered event. */
+    cancelScheduledPatientBreath(reason = 'explicit-cancellation') {
+        if (this.scheduledBreathTrigger === 'patient' || this._pendingTriggerDetection) {
+            this.lastCanceledTrigger = freezeRecord({ reason, time_s: this.globalTime,
+                detection: this._pendingTriggerDetection });
+            this.neuralCycleResolved = true;
+        }
+        this.scheduledBreathTrigger = null;
+        this._pendingTriggerDetection = null;
     }
 
     _initializeAdaptive() {
@@ -629,6 +690,12 @@ export class SimulationEngine {
     }
 
     _syncMeasurementSettings() {
+        const inputFingerprint = JSON.stringify([this._measurementFingerprint(), this.vent.pMusMax,
+            this.vent.neuralTi, this.patientRR, this._inwardSupplyResistance, this._pendingAdaptiveSettings]);
+        if (this._inputFingerprint !== inputFingerprint) {
+            this.inputRevision++;
+            this._inputFingerprint = inputFingerprint;
+        }
         const fingerprint = this._measurementFingerprint();
         if (this._lastMode === null) {
             this._lastMode = this.vent.mode;
@@ -656,6 +723,8 @@ export class SimulationEngine {
     }
 
     notifyMeasurementSettingsChanged() {
+        // Explicit edit/revert is an input event even when values compare equal.
+        this.inputRevision++;
         if (this._adaptive) {
             // Explicit events also invalidate edit-then-revert and equal-value requests.
             this._adaptive.invalidate('SETTINGS_CHANGED');
@@ -1052,6 +1121,8 @@ export class SimulationEngine {
                 configuredMode: this.currentBreath.configuredMode,
                 flowPattern: this.currentBreath.flowPattern,
                 triggerAgent: this.currentBreath.triggerAgent,
+                triggerDetection: this.currentBreath.triggerDetection,
+                triggerDelivery: this.currentBreath.triggerDelivery,
                 cycleAgent,
                 terminationReason,
                 breathType,
@@ -1093,6 +1164,11 @@ export class SimulationEngine {
 
     /** Start a new breath (machine-triggered or patient-triggered). */
     _startNewBreath(triggerType, eventTime = this.globalTime) {
+        const pending = triggerType === 'patient' ? this._pendingTriggerDetection : null;
+        const triggerDetection = pending?.simulationGeneration === this.simulationGeneration &&
+            pending?.modeGeneration === this.modeGeneration ? pending : null;
+        this._pendingTriggerDetection = null;
+        this.scheduledBreathTrigger = null;
         if (this._adaptive) {
             this._resolveAdaptiveSettings();
             const command = this._adaptive.beginBreath({ targetVT_mL: this.vent.tidalVolume * 1000 });
@@ -1119,10 +1195,18 @@ export class SimulationEngine {
             settingsGeneration: this.settingsGeneration,
             breathId: this.breathCount,
         });
+        const triggerDelivery = triggerType === 'patient' ? freezeRecord({
+            simulationGeneration: this.simulationGeneration, modeGeneration: this.modeGeneration,
+            breathId: this.breathCount, configuredMode: this.vent.mode,
+            appliedPeep_cmH2O: this._adaptiveContext?.appliedPeep_cmH2O ?? this.vent.peep,
+            pressureCommand_cmH2O: this.vent.isPressureMode() ? this.vent.pressureControlLevel : null,
+            adaptiveCommandVersion: this._adaptiveContext?.commandVersion ?? null,
+        }) : null;
         this.currentBreath = {
             configuredMode: this.vent.mode,
             flowPattern: this.vent.isPressureMode() ? null : this.vent.flowPattern,
             triggerAgent: triggerType,
+            triggerDetection, triggerDelivery,
             startedAt_s: eventTime,
             ...identity,
             identity,
@@ -1146,7 +1230,8 @@ export class SimulationEngine {
         };
         this.machineTimer = 0;
         this.lastBreathStartSec = this.globalTime;
-        this._recordTriggerEvent(triggerType, eventTime);
+        this._recordTriggerEvent(triggerType, eventTime, triggerType === 'patient'
+            ? { schemaVersion: 1, detection: triggerDetection, delivery: triggerDelivery } : {});
 
         // Swap loop data: current (now complete) → completed, then reset current
         if (this.loopCurrent.pressure.length > 10) {
@@ -1232,6 +1317,11 @@ export class SimulationEngine {
         const peep = this._adaptiveContext?.appliedPeep_cmH2O ?? this.vent.peep;
         const pmus = this.currentPmus;
         const dt   = this.dt;
+        const phase = this.phase;
+        const phaseTime = this.phaseTime;
+        const volumePre = this.volumeAboveEq;
+        const pressureMode = this.vent.isPressureMode();
+        const command = phase === Phase.INSPIRATION && pressureMode ? this.vent.pressureControlLevel : null;
 
         switch (this.phase) {
             case Phase.INSPIRATION:
@@ -1244,6 +1334,25 @@ export class SimulationEngine {
                 this._computeExpiration(R, C, peep, pmus, dt);
                 break;
         }
+        const demand = pmus - volumePre / C;
+        const valveState = phase === Phase.HOLD ? 'sealed-hold'
+            : phase === Phase.EXPIRATION ? demand > 0 ? 'inward-supply' : demand < 0 ? 'outward-peep' : 'neutral-peep'
+            : pressureMode ? command + demand >= 0 ? 'delivery-open' : 'delivery-closed' : 'prescribed-flow';
+        const postCollocation = phase === Phase.INSPIRATION && !pressureMode;
+        this.physicsSample = freezeRecord({ schemaVersion: 1,
+            simulationGeneration: this.simulationGeneration, modeGeneration: this.modeGeneration,
+            settingsGeneration: this.settingsGeneration, inputRevision: this.inputRevision,
+            neuralCycleId: this.neuralCycleId, time_s: this.globalTime, sampleIndex: this._sampleCount,
+            phase, phaseTime_s: phaseTime, valveState,
+            volumePre_L: volumePre, volumePost_L: this.volumeAboveEq,
+            volumeState_L: postCollocation ? this.volumeAboveEq : volumePre,
+            volumeCollocation: postCollocation ? 'post' : 'pre',
+            pmus_cmH2O: pmus, appliedPeep_cmH2O: peep,
+            resistance_cmH2O_s_per_L: R, compliance_L_per_cmH2O: C,
+            Rc_cmH2O_s_per_L: this._inwardSupplyResistance,
+            pressureCommand_cmH2O: command, netFlow_Lps: this.currentFlow, paw_cmH2O: this.currentPressure,
+            volumeGuardApplied: phase === Phase.EXPIRATION && this.volumeAboveEq !== volumePre + this.currentFlow * dt,
+        });
     }
 
     /**
@@ -1283,13 +1392,12 @@ export class SimulationEngine {
             // V̇ = (Pinsp + Pmus − V_above_eq/C) / R
             const flow = (pinsp + pmus - this.volumeAboveEq / C) / R;
 
-            // Clamp: flow can't reverse during PC inspiration
-            // (ventilator closes insp valve if flow reverses)
+            // One-way valve: reverse demand closes delivery. The pressure source
+            // remains upstream; sensed patient-side Paw follows the sealed EOM.
             this.currentFlow = Math.max(0, flow);
             this.volumeAboveEq += this.currentFlow * dt;
 
-            // Displayed Paw = set pressure (the vent maintains this)
-            this.currentPressure = peep + pinsp;
+            this.currentPressure = flow >= 0 ? peep + pinsp : peep + this.volumeAboveEq / C - pmus;
         }
 
         // Track peak values for this breath
@@ -1321,25 +1429,28 @@ export class SimulationEngine {
     /**
      * Expiration — passive recoil ± patient effort.
      *
-     *   V̇ = −(V_above_eq/C − Pmus) / R
+     *   d = Pmus − Vpre/C
+     *   d <= 0: Q=d/R, Paw=applied PEEP (ideal outward boundary)
+     *   d > 0: Q=d/(R+Rc), Paw=applied PEEP−Rc Q (finite inward path)
      *
      * Normally V̇ < 0 (expiratory flow). If Pmus > V/C near end of
      * expiration, flow can reverse briefly (this is the trigger
      * pressure/flow deflection visible on the waveform).
      *
-     * Paw during passive exp ≈ PEEP (maintained by valve).
-     * Computed as: Paw = PEEP + V/C + R × V̇
-     * Which equals PEEP when V̇ = −(V/C)/R.
+     * Rc is an educational setup assumption, distinct from patient airway/tube R.
+     * No compliance, leak, bias-flow or delay state is added. Pressure and flow
+     * share the pre-integration state; the waveform's volume has advanced by dt.
      */
     _computeExpiration(R, C, peep, pmus, dt) {
-        const flow = -(this.volumeAboveEq / C - pmus) / R;
+        // Keep the original outward arithmetic (including passive signed zero).
+        const demand = -(this.volumeAboveEq / C - pmus);
+        const flow = demand > 0 ? demand / (R + this._inwardSupplyResistance) : demand / R;
         this.currentFlow = flow;
+        this.currentPressure = demand > 0 ? peep - this._inwardSupplyResistance * flow : peep;
 
         this.volumeAboveEq += flow * dt;
         this.volumeAboveEq = Math.max(0, this.volumeAboveEq);
 
-        // Paw = PEEP + V/C + R × V̇  (equals PEEP for passive exp)
-        this.currentPressure = peep - pmus;
     }
 
 
@@ -1359,6 +1470,11 @@ export class SimulationEngine {
      *   6. Advance clocks
      */
     tick() {
+        if (this._pendingTriggerDetection && this.scheduledBreathTrigger !== 'patient') {
+            const interruptedSchedule = this.scheduledBreathTrigger;
+            this.cancelScheduledPatientBreath('schedule-interruption');
+            this.scheduledBreathTrigger = interruptedSchedule;
+        }
         if (this.vent.isAdaptiveMode() !== this._activeAdaptiveMode) {
             throw new Error('Transitions involving PC-CMVa require setMode() or reset() before ticking');
         }
@@ -1447,6 +1563,9 @@ export class SimulationEngine {
         this.settingsGeneration = 0;
         this._lastMode = null;
         this._settingsFingerprint = null;
+        this._inputFingerprint = null;
+        this.inputRevision++;
+        this.physicsSample = null;
         this.globalTime        = 0;
         this._resetDeliveredVentilation();
         this.phase             = Phase.EXPIRATION;
@@ -1463,6 +1582,9 @@ export class SimulationEngine {
         this.neuralCycleResolved = false;
         this.neuralEligibleSeen = false;
         this.scheduledBreathTrigger = null;
+        this._pendingTriggerDetection = null;
+        this.lastCanceledTrigger = null;
+        this.neuralCycleId = 0;
         this.breathCount       = 0;
         this.machineBreathCount = 0;
         this.patientBreathCount = 0;

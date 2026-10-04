@@ -38,8 +38,12 @@ function step(x) {
     const pressure = sim.adaptiveState?.applied_cmH2O;
     sim.tick();
     if (prior && physicsPhase === 'INSPIRATION') {
-        assert.equal(sim.currentPressure, prior.appliedPeep_cmH2O + prior.applied_cmH2O,
-            'every adaptive inspiration sample uses its own latched PEEP and command');
+        const sample = sim.physicsSample;
+        const expected = sample.valveState === 'delivery-closed'
+            ? prior.appliedPeep_cmH2O + sample.volumePre_L / lung.compliance - sample.pmus_cmH2O
+            : prior.appliedPeep_cmH2O + prior.applied_cmH2O;
+        assert.equal(sim.currentPressure, expected,
+            'adaptive sample uses latched command and the accepted patient-side valve boundary');
     }
     if (sim.adaptiveState && sim.adaptiveState.applied_cmH2O !== pressure) {
         assert.ok(sim.breathCount > count, 'pressure correction changed without a breath start');

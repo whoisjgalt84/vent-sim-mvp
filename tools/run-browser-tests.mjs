@@ -66,7 +66,7 @@ function requireCommissionedTally(output) {
         ? /^COMMISSIONED_VISUAL_TALLY (\d+) passed, (\d+) failed$/gm
         : /^\s*(\d+) passed, (\d+) failed\s*$/gm;
     const matches = [...cleanOutput.matchAll(pattern)];
-    const expectedPassed = visualMode ? 13 : 44;
+    const expectedPassed = visualMode ? 16 : 44;
     const label = visualMode ? 'visual/determinism' : 'browser';
 
     if (matches.length !== 1) {
@@ -275,6 +275,11 @@ try {
             throw new Error('Commissioned adaptive browser tally is 12 passed / 0 failed; received ' + matches[0][1]);
         }
         console.log('Commissioned adaptive browser tally verified: 12 passed, 0 failed.');
+        const effortMatches=[...stripAnsi(adaptive.output).matchAll(/^EFFORT_PRESSURE_BROWSER_TALLY (.+)$/gm)];
+        if(effortMatches.length!==1)throw new Error('Expected exactly one effort-pressure browser tally');
+        const effort=JSON.parse(effortMatches[0][1]);
+        if(effort.groups!==4||effort.passed!==4||effort.failed!==0)throw new Error('Commissioned effort-pressure browser tally must be4/0');
+        console.log('Commissioned effort-pressure browser tally verified: 4 passed, 0 failed.');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

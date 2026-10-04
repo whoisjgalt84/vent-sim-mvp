@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=18">
+    <link rel="stylesheet" href="css/style.css?v=20">
 </head>
 <body>
 
@@ -192,6 +192,8 @@
                 <div class="control trigger-control">
                     <div class="control__header">
                         <span class="control__label">Trigger</span>
+                        <button type="button" class="measurement-help-trigger" data-measurement-help="trigger-signal"
+                                aria-label="Trigger signal help" aria-expanded="false">i</button>
                         <span class="control__value" id="trigger-display">Flow 2.0 L/min</span>
                     </div>
 
@@ -502,9 +504,16 @@
         <div class="pc-disclosure" id="pc-disclosure" hidden>
             <button type="button" class="measurement-help-trigger pc-disclosure-trigger"
                     id="pc-disclosure-trigger" data-measurement-help="pc-idealization"
-                    aria-label="Idealized pressure control help" aria-expanded="false">
-                <span>Idealized pressure control</span><span aria-hidden="true">ⓘ</span>
+                    aria-label="Idealized pressure delivery help" aria-expanded="false">
+                <span>Idealized pressure delivery</span><span aria-hidden="true">ⓘ</span>
             </button>
+        </div>
+        <div class="pc-disclosure" id="waveform-legend">
+            <button type="button" class="measurement-help-trigger pc-disclosure-trigger" data-measurement-help="waveform-legend"
+                    aria-label="Waveform signals and trigger markers help" aria-expanded="false">
+                <span>Patient trigger: recorded event on its pressure or flow waveform. Machine trigger: timed breath.</span><span aria-hidden="true">ⓘ</span>
+            </button>
+            <div id="unknown-patient-trigger" hidden>Some earlier patient-trigger events have no recorded trigger variable; their waveform markers are omitted.</div>
         </div>
         <div class="waveform-panel">
             <canvas id="canvas-pressure"></canvas>
@@ -561,6 +570,8 @@
                 </div>
                 <div class="param-row param-row--provenance teaching-key" role="group" aria-labelledby="map-param-label">
                     <span class="param-row__label" id="map-param-label">Predicted breath MAP</span>
+                    <button type="button" class="measurement-help-trigger" id="active-predictions-help" data-measurement-help="active-predictions"
+                            aria-label="Active effort predictions unavailable help" aria-expanded="false" hidden>i</button>
                     <span class="param-row__value param-row__value--pressure" id="param-map">—</span>
                 </div>
                 <div class="param-row param-row--large param-row--rr teaching-key teaching-only" role="group" aria-labelledby="rr-param-label">
@@ -686,8 +697,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=18"></script>
-<script type="module" src="js/main.js?v=18"></script>
+<script type="module" src="alarms.js?v=20"></script>
+<script type="module" src="js/main.js?v=20"></script>
 
 </body>
 </html>

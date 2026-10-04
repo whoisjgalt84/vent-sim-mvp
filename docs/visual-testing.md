@@ -7,21 +7,23 @@ mid-countdown. This suite exists so that class of defect fails a test instead of
 reaching an SME.
 
 ```bash
-npm run test:visual:docker       # authoritative comparison in the pinned CI image
-npm run test:visual:docker -- --update-snapshots  # generate candidates only
+npm run test:visual:docker -- --update-snapshots=none  # authoritative comparison in the pinned CI image
+# Run candidate generation only from a separate evidence checkout:
+npm run test:visual:docker -- --update-snapshots
 
 # Optional current-host diagnostics require host-specific snapshots first:
 npm run test:visual:update       # create non-authoritative snapshots for this host
 npm run test:visual              # compare against those host snapshots
 ```
 
-This is one of four distinct verification surfaces:
+The verification surfaces have distinct purposes:
 
-- `npm test`: 300 engine assertions (CI on Node 22 and 24).
-- `npm run test:browser`: 44 real-browser behavior assertions; its server
+- `npm test`: 300 original engine assertions plus 22 controller, 24 integration,
+  22 selective legacy and 41 effort/pressure groups (CI on Node 22 and 24).
+- `npm run test:browser`: 44 original, 12 adaptive and 4 effort/pressure groups; its server
   lifecycle is self-contained (CI in the pinned Playwright image).
-- `npm run test:visual:docker`: the authoritative six screenshot comparisons
-  plus three determinism/cache-busting checks in the pinned Playwright image.
+- `npm run test:visual:docker`: 16 required visual/determinism/cache-busting
+  groups (13 existing plus 3 effort/pressure) in the pinned Playwright image.
 - `npm run test:visual`: the same test code against current-host diagnostic
   snapshots, usable only after snapshots for that host have been generated.
 - `node scratch/shot.cjs`: diagnostic screenshots for human investigation; not
@@ -82,14 +84,18 @@ The Docker wrapper is cross-platform and runs a clean `npm ci` in an isolated
 container volume before Playwright:
 
 ```bash
+# From a separate evidence checkout, never the accepted snapshot directory:
 npm run test:visual:docker -- --update-snapshots
 ```
 
 That command creates **candidates**, not approved baselines. Run the visual suite
-a second time in the same image, build the six-image manifest/review bundle, and
+a second time with updates disabled in the same image and evidence checkout,
+build the complete image manifest/review bundle, and
 give Christian every full-resolution PNG. Only his explicit acceptance makes
-the files authoritative. Then commit exactly those reviewed bytes and verify
-their SHA-256 hashes against the approved manifest.
+the files authoritative. Any later authorized installation must use exactly
+those reviewed bytes, verify their SHA-256 hashes against the approved manifest,
+and compare with updates disabled. Installation and Git commits require their
+separate applicable authorization.
 
 Baselines are committed. `test-results/` and `playwright-report/` are not.
 
@@ -100,8 +106,9 @@ before Playwright starts. It never creates or accepts missing truth during a
 comparison run. For initial commissioning or an intentional visual change:
 
 ```bash
-npm run test:visual:docker -- --update-snapshots  # writes six Linux candidates
-npm run test:visual:docker                       # second consecutive comparison
+# All three candidate commands run from the separate evidence checkout:
+npm run test:visual:docker -- --update-snapshots  # candidate paths recorded by the manifest
+npm run test:visual:docker -- --update-snapshots=none  # second consecutive comparison
 node tools/create-visual-review-bundle.mjs       # run in the pinned environment
 ```
 
@@ -167,12 +174,15 @@ the scenario *not happening*.
 ## 5. What this suite is not
 
 It sees pixels, not meaning. It cannot tell you a waveform is physiologically
-wrong — only that it changed. Physiological correctness lives in
-`npm test` (300 engine assertions) and in
-[`docs/model.md`](./model.md).
+wrong — only that it changed. `npm test` checks implemented equations and
+behavior against declared contracts, documented in
+[`docs/model.md`](./model.md); passing those checks does not establish clinical
+or device validity.
 
 It also does not replace `scratch/verify-batch.cjs`, which asserts *behaviour*
-across 44 checks — tooltips, alarm state machines, element geometry. The two are
+across its original 44 checks — tooltips, alarm state machines, element geometry.
+The current browser runner also requires 12 adaptive and 4 effort/pressure
+groups. Browser and visual gates are
 complementary: verify-batch answers "does it still work", this answers "does it
 still look right".
 
@@ -190,8 +200,8 @@ comparable, but only the pinned Linux baselines participate in CI comparisons.
 
 ## 7. PC-CMVa candidates and preservation (VSM-ADAPT-001)
 
-The commissioned visual gate now retains the original nine groups and adds four
-adaptive groups (13 total). The original 74 Linux snapshot paths and assertions
+At VSM-ADAPT-001 commissioning, the visual gate retained the original nine groups
+and added four adaptive groups (13 total). Its original 74 Linux snapshot paths and assertions
 remain identifiable. The added cases distinguish source target from current or
 queued target, applied from next pressure, paused transport, invalid/mixed
 feedback, configured bounds, the three approved demonstrations, lower-bound
@@ -207,10 +217,31 @@ SHA-256 manifest for owner review. Supplemental diagnostics are not suite baseli
 An unavailable Linux engine leaves this gate unavailable: a Windows render or a
 passing engine/browser suite cannot replace it.
 
-`npm test` enforces 300 original engine checks, 22 controller groups, 24 integration
-groups, and 22 exact legacy fixtures over 92,500 matched ticks. `npm run test:browser`
-enforces the original 44 groups and 12 new adaptive groups. Count guards remain
-strict. CI fetches the pinned ancestor required by the legacy test rather than
+The VSM-ADAPT-001 checkpoint used 300 original engine checks, 22 controller
+groups, 24 integration groups and 22 exact legacy fixtures over 92,500 matched
+ticks, plus 44 original and 12 adaptive browser groups. That is historical
+checkpoint accounting; the effort/pressure successor below changes the active
+legacy comparison contract without regenerating the pinned reference.
+
+## 8. Effort/pressure successor candidates (2026-10-02)
+
+The required visual inventory adds three effort/pressure groups to the existing
+13, for 16 total. Signed pressure and pressure-volume loops, trigger-axis and
+historical metadata, finite expiratory supply and closed-valve patient-side
+pressure receive behavior guards and full-resolution candidate views. Candidate
+PNG totals and exact identities come from the generated review manifest; group
+counts are not PNG counts. Candidate generation and repeat comparison use the
+isolated evidence checkout and preserve all accepted baseline bytes.
+
+The current `npm test` inventory is 300 original assertions, 22 controller
+groups, 24 integration groups, 22 selective legacy fixtures and 41 effort/pressure
+groups (40 engine groups plus one renderer group containing 66 subchecks).
+Legacy accounting retains 92,500 exercised ticks: 28,000 exact passive ticks
+across 8 fixtures and 64,500 independent active conformance ticks across 14
+fixtures. It does not claim all 92,500 are exact checkpoint matches. Browser
+inventory is 44 original + 12 adaptive + 4 effort/pressure groups. These are
+required inventories, not fresh passing receipts. Count guards remain strict.
+CI fetches the pinned ancestor required by the legacy test rather than
 substituting current HEAD as its reference. Independent review and meaningful
 fault detection supplement these gates; owner acceptance of exact image bytes,
 baseline installation, staging and commits are separate subsequent actions.

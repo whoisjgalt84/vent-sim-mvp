@@ -111,6 +111,14 @@ are in refractory" with "the effort never happened."
 **(c) Effort crosses threshold.** **Unchanged from today** — the engine's
 existing physiology stays exactly as in `_maybeTriggerFromPatientEffort`
 (`js/simulation.js:367-382`):
+  - **2026-10-02 Phase B approved successor:** The original pressure proxy
+    below is retained as historical design evidence. The approved correction
+    uses the modeled applied-PEEP-minus-Paw signal; availability/refractory and
+    one-terminal-outcome rules are unchanged. See [docs/model.md](model.md#6-trigger-eligibility--three-gates)
+    for the current boundary and sensor contract. The historical pseudocode
+    below is not the current pressure detector. Delivered patient events now
+    retain detection-time pressure/flow configuration independently of delivery
+    settings and later history rendering.
   - `pmus = this.currentPmus`
   - `elasticRecoilPressure = this.volumeAboveEq / this.lung.compliance` (this is
     the auto-PEEP / trapped-gas load the effort must overcome — preserved)

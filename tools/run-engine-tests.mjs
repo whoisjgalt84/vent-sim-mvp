@@ -10,8 +10,14 @@ const gates = [
         const matches = [...output.matchAll(/^LEGACY_PRESERVATION_TALLY (.+)$/gm)];
         if (matches.length !== 1) return false;
         const tally = JSON.parse(matches[0][1]);
-        return tally.fixtures === 22 && tally.passed === 22 && tally.failed === 0 && tally.ticks === 92500;
-    }, 'legacy preservation 22/0; 92500 ticks'],
+        return tally.fixtures === 22 && tally.passed === 22 && tally.failed === 0 && tally.ticks === 92500 && tally.exercisedTicks === 92500 && tally.exactMatchedTicks === 28000 && tally.conformanceTicks === 64500 && tally.passiveExactFixtures === 8 && tally.activeConformanceFixtures === 14;
+    }, 'selective legacy22/0;92500 exercised ticks (28000 exact,64500 conformance)'],
+    ['tests/effort-pressure-contract.test.mjs', output => {
+        const matches = [...output.matchAll(/^EFFORT_PRESSURE_TALLY (.+)$/gm)];
+        if(matches.length!==1)return false;
+        const tally=JSON.parse(matches[0][1]);
+        return tally.groups===41 && tally.passed===41 && tally.failed===0;
+    }, 'effort-pressure conformance41/0'],
 ];
 for (const [file, valid, label] of gates) {
     try {

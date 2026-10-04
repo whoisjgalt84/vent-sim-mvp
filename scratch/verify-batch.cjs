@@ -90,7 +90,7 @@ async function failedTriggerTerminologyContract(page) {
                 canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: rect.left + x, clientY: rect.top + rect.height / 2 }));
                 if (canvas.title) titles.add(canvas.title);
             }
-            require(titles.size > 0 && [...titles].every(t => t.startsWith('Failed trigger —') && t.includes('5.0 L/min') && !t.includes('ineffective effort')), `${mode} canonical-flow-title`);
+            require(titles.size > 0 && [...titles].every(t => t.startsWith('Failed trigger —') && t.includes('Earlier trigger settings are not stored') && !t.includes('ineffective effort')), `${mode} canonical-flow-title`);
             canvas.dispatchEvent(new MouseEvent('mouseleave'));
             require(canvas.title === '', `${mode} hover-leave`);
         }
@@ -152,8 +152,8 @@ async function readoutContract(page) {
                     : String(Number(s.holdMechanics.drivingPressure.value.toFixed(1))),
                 'param-ve': s.deliveredVentilation.status === 'available'
                     ? s.deliveredVentilation.valueLpm.toFixed(1) : '—',
-                'param-map': String(p.pressures.map_cmH2O),
-                'param-total-peep': String(p.pressures.totalPeep_cmH2O),
+                'param-map': p.pressures.map_cmH2O === null ? '—' : String(p.pressures.map_cmH2O),
+                'param-total-peep': p.pressures.totalPeep_cmH2O === null ? '—' : String(p.pressures.totalPeep_cmH2O),
                 'param-live-trapped': String(Math.round(s.liveTrapped_mL)),
             };
             for (const [id, value] of Object.entries(expected)) {
@@ -177,7 +177,7 @@ async function readoutContract(page) {
                     `${name} ${id}: accessible group must use visible provenance`);
             }
             if (!s.teachingMode) {
-                require(text('param-auto-peep') === String(p.pressures.autoPeep_cmH2O), `${name} predicted auto-PEEP`);
+                require(text('param-auto-peep') === (p.pressures.autoPeep_cmH2O === null ? '—' : String(p.pressures.autoPeep_cmH2O)), `${name} predicted auto-PEEP`);
                 require(text('rr-param-label') === 'Measured RR', `${name} measured RR label`);
                 require(el('param-rr').title.includes('zero until two completions'), `${name} measured RR help`);
                 require(el('param-rr').closest('.param-row').getAttribute('aria-labelledby') === 'rr-param-label',
@@ -188,7 +188,9 @@ async function readoutContract(page) {
                 document.querySelectorAll('.controls [data-collapsible][data-collapsed]').forEach(e => e.click());
                 const trap = [...document.querySelectorAll('.mechanics-chip')].at(-1);
                 const trapMl = p.volumes.trappedVolume_mL;
-                require(trap.innerText.replace(/\s+/g, ' ').trim() ===
+                require(trapMl === null
+                    ? ![...document.querySelectorAll('.mechanics-chip')].some(e => e.textContent.includes('Predicted steady-state trapped volume'))
+                    : trap.innerText.replace(/\s+/g, ' ').trim() ===
                     `Predicted steady-state trapped volume ${trapMl < 0.1 ? '<1' : Math.round(trapMl)} mL`,
                     `${name} predicted trapped volume visible label/value`);
             } else {
@@ -496,9 +498,9 @@ async function pcDisclosureContract(page, { stopOnFailure = false } = {}) {
         }
     };
     const cue = page.locator('#pc-disclosure-trigger'), help = page.locator('#measurement-help');
-    const common = 'Patient effort can change flow and delivered volume in this model. Triggering, cycling, inspiratory holds, and expiration follow their own rules.\n\nThe flat inspiratory trace here is a model idealization. On real ventilators, patient effort may also affect pressure; assess flow and volume as well.';
-    const cmv = 'In PC-CMV, this simulator uses idealized set-point pressure control. During pressure-targeted inspiration, Paw stays at PEEP plus the set inspiratory pressure, even with patient effort.';
-    const csv = 'In PC-CSV, this simulator uses idealized set-point pressure control. When a breath is delivered, Paw stays at PEEP plus Pressure Support during pressure-targeted inspiration, even with patient effort.';
+    const common = "Paw is modeled at the airway opening on the patient side of the delivery valve. The pressure target is upstream of that valve; it is not a guarantee that patient-side pressure remains at the target when the valve is closed. Reverse flow is not allowed during delivered inspiration in this model.\n\nDuring expiration, inward patient demand draws flow through a finite supply resistance and can lower Paw below applied PEEP. Passive outflow uses an ideal PEEP boundary. This simplified boundary has no circuit compliance, bias flow, leak, or pressure-response delay. Its supply resistance is an educational assumption.\n\nReal ventilators can show additional pressure deformation. Read flow and volume alongside pressure. This model does not reproduce a particular commercial ventilator, measure work of breathing, or model a patient's response to changing assistance.";
+    const cmv = "In PC-CMV, this model sets an ideal inspiratory pressure target at PEEP plus the set inspiratory pressure. While inward flow is being delivered, airway pressure is held at that target. If the delivery valve closes because inward flow would reverse, flow is zero and airway pressure follows lung recoil and prescribed muscle pressure until the valve can reopen or inspiration ends.";
+    const csv = "In PC-CSV, a successful patient trigger starts a supported breath with an ideal inspiratory pressure target at PEEP plus Pressure Support. While inward flow is being delivered, airway pressure is held at that target. If the delivery valve closes because inward flow would reverse, flow is zero and airway pressure follows lung recoil and prescribed muscle pressure. The existing flow or maximum-time cycling rule still ends inspiration.";
     const state = () => page.evaluate(() => window.__vsim.state());
     const redraw = () => page.evaluate(() => window.__vsim.redraw());
     const mode = m => page.evaluate(m => document.querySelector(`.mode-btn[data-mode="${m}"]`).click(), m);
@@ -513,7 +515,7 @@ async function pcDisclosureContract(page, { stopOnFailure = false } = {}) {
     const dismiss = async () => { await page.keyboard.press('Escape'); await focusElsewhere(); await page.mouse.move(1, 1); };
     const open = async () => { await dismiss(); await cue.focus(); };
     const exists = await cue.count() === 1;
-    check('PC.markup', exists && await page.locator('.waveforms > .pc-disclosure').count() === 1);
+    check('PC.markup', exists && await page.locator('.waveforms > #pc-disclosure').count() === 1);
     if (!exists) return { checks, geometry, caveats, errors: ['PC.markup: missing trigger'] };
     await cue.evaluate(e => { window.__pcInitialCue = e; });
     await page.evaluate(() => window.__vsim.pause());
@@ -529,14 +531,14 @@ async function pcDisclosureContract(page, { stopOnFailure = false } = {}) {
         check('PC.static-node-identity', await cue.evaluate(e => e === window.__pcInitialCue));
         check(`PC.${m}.reset-presence`, await cue.isVisible());
         if (!(await cue.isVisible())) continue;
-        check('PC.accessible-name', await cue.getAttribute('aria-label') === 'Idealized pressure control help');
-        check('PC.visible-copy', (await cue.locator('span').first().textContent()) === 'Idealized pressure control');
+        check('PC.accessible-name', await cue.getAttribute('aria-label') === 'Idealized pressure delivery help');
+        check('PC.visible-copy', (await cue.locator('span').first().textContent()) === 'Idealized pressure delivery');
         await open();
         check(`PC.${m}.exact-help`, (await help.textContent()).trim() === (m === 'PC-CSV' ? csv : cmv) + '\n\n' + common);
         check('PC.no-hold-fallback', !(await help.textContent()).includes('Reason codes:'));
         await seek(15);
         check(`PC.${m}.passive-presence`, await cue.isVisible());
-        if (m === 'PC-CSV') check('PC.csv-idle-conditional', (await state()).completed === null && (await help.textContent()).includes('When a breath is delivered'));
+        if (m === 'PC-CSV') check('PC.csv-idle-conditional', (await state()).completed === null && (await help.textContent()).includes('a successful patient trigger starts a supported breath'));
         await teaching(true);
         check(`PC.${m}.teaching-presence`, await cue.isVisible());
         await teaching(false);
@@ -894,8 +896,8 @@ if (require.main === module) (async () => {
         const joined = titles.join(' || ');
         check('tooltip explains WHY, not just THAT (SME-022)',
             /did not|not available/.test(joined), joined.slice(0, 160));
-        check('tooltip names the actual flow threshold',
-            /2\.0 L\/min/.test(joined) || /not available/.test(joined), joined.slice(0, 200));
+        check('historical failed tooltip does not invent current sensitivity',
+            titles.every(t => !/trigger threshold.*L\/min/.test(t)), joined.slice(0, 200));
         console.log('    tooltip(s):');
         titles.forEach((t) => console.log(`      - ${t}`));
 
@@ -922,7 +924,7 @@ if (require.main === module) (async () => {
         });
         const pj = ptitles.join(' || ');
         check('tooltip follows the trigger setting (pressure)',
-            ptitles.length === 0 || /cmH₂O|not available/.test(pj), pj.slice(0, 200));
+            ptitles.length === 0 || /Earlier trigger settings are not stored|inspiring or holding/.test(pj), pj.slice(0, 200));
         console.log('    pressure-trigger tooltip(s):');
         ptitles.forEach((t) => console.log(`      - ${t}`));
 
@@ -1026,7 +1028,7 @@ if (require.main === module) (async () => {
         const allVersions = [...(html + mainJs + ventJs + simJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 11 && allVersions.every(v => v === '18'),
+                && allVersions.length === 11 && allVersions.every(v => v === '20'),
             `imports=${imp.join(',')} html=${versions.join(',')} all eleven=${allVersions.join(',')}`);
     }
 

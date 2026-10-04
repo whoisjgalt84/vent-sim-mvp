@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=18';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=18';
-import { SimulationEngine }  from './simulation.js?v=18';
-import { WaveformDisplay, LoopRenderer }   from './waveforms.js?v=18';
-import AlarmEngine from '../alarms.js?v=18';
+import { LungModel }        from './lung-model.js?v=20';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=20';
+import { SimulationEngine }  from './simulation.js?v=20';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=20';
+import AlarmEngine from '../alarms.js?v=20';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=18';
+} from '../alarm-audio.js?v=20';
 
 
 // =============================================================================
@@ -62,7 +62,7 @@ const ADAPTIVE_HELP = Object.freeze({
     "adaptive-mode": "Pressure-controlled continuous mandatory ventilation with adaptive targeting. The model holds an inspiratory pressure command during each breath and adjusts the next command from completed inspired volume. This is a generic educational controller.",
     "adaptive-tag": "Conventional feedback control. This controller does not learn, reason clinically, or reproduce a particular commercial ventilator.",
     "adaptive-target": "Operator-selected volume target for eligible completed inspirations. A target is not a guarantee of delivered volume.",
-    "adaptive-target-pending": "The new target applies at the next breath. The current inspiration will not be used to adjust pressure after this edit. Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath. Destination modes use settings only where applicable.",
+    "adaptive-target-pending": "Your new VT target takes effect at the start of the next breath. The simulator will not use the breath affected by this change to calculate the next pressure adjustment.\n\nResetting or changing modes keeps your latest selected settings. After a mode change, only the settings used by that mode affect breath delivery.",
     "adaptive-context": "The retained achieved VT belongs to the identified earlier breath and its settings. Target-band and target-miss status will resume after an eligible completed inspiration under the new settings.",
     "adaptive-achieved": "Unrounded modeled inspired volume from the last completed inspiration drives adaptation. This display rounds to whole milliliters. The record is finalized when expiration starts; it is not a separate exhaled-volume measurement.",
     "adaptive-pressure": "Pressure command applied to the current or most recently started breath, above set PEEP. It is separate from measured peak airway pressure and from total PEEP. Patient contribution and mechanics can change achieved volume.",
@@ -75,12 +75,17 @@ const ADAPTIVE_HELP = Object.freeze({
     "adaptive-startup": "No eligible completed inspiration is available for pressure adaptation. Initial pressure is used until valid feedback arrives. Unavailable volume is not measured zero.",
     "adaptive-invalid": "Settings or prescribed effort changed during this inspiration. Its delivered volume remains available to the monitor and ventilation history, but is excluded from pressure adaptation. The next complete unchanged inspiration can provide feedback.",
     "adaptive-paused": "Simulation advancement is paused. The displayed achieved volume retains its source breath; pressure does not advance with wall-clock time.",
-    "adaptive-peep-pending": "The new set PEEP applies at the next breath. The current inspiratory pressure target remains unchanged until then. Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath. Destination modes use settings only where applicable.",
+    "adaptive-peep-pending": "The new set PEEP applies at the next breath. Until then, the current applied PEEP is used by the model and pressure trigger. At the next breath, the selected PEEP and pressure command apply together. Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath. Destination modes use settings only where applicable.",
     "adaptive-hold": "Inspiratory hold is excluded from this initial adaptive demonstration. Hold-derived measurements remain unavailable in this mode.",
     "adaptive-predictions": "Fixed-pressure steady-state predictions are unavailable while pressure adapts between breaths.",
     "adaptive-effort": "Instructor-selected peak amplitude of this model's periodic inspiratory muscle-pressure waveform. Effort does not respond physiologically to changing assistance. This amplitude is not measured work of breathing.",
-    "adaptive-idealization": "In PC-CMVa, Paw stays at the latched set PEEP plus adaptive pressure during each pressure-targeted inspiration. The next pressure command may change between breaths. Patient effort can change flow and delivered volume. Real ventilators may also show pressure deformation; this trace is a model idealization."
+    "adaptive-idealization": "In PC-CMVa, the applied set PEEP and adaptive pressure command latch at the start of each breath. While inward flow is delivered, modeled Paw is their sum. If the delivery valve closes because inward flow would reverse, flow is zero and patient-side Paw follows recoil and prescribed muscle pressure. The adaptive command stays unchanged during that breath. A later eligible inspired volume can adjust the command for the next breath. Expiratory inward demand uses a finite supply resistance. This is an educational model, not a commercial ventilator or measured work of breathing."
 });
+
+const WAVEFORM_HELP = 'A patient-trigger symbol marks the start of a delivered breath. It appears only on the pressure or flow waveform used to detect that trigger, using the configuration recorded at detection. The trace shows the modeled signal; the symbol does not replace the signal or measure effort. No patient-trigger symbol appears on volume. Machine-trigger symbols keep their existing appearance on all three waveforms. Failed triggers have no delivered-breath symbol; their counter and applicable flow highlights remain.';
+const SIGNED_PRESSURE_HELP = 'Paw is gauge pressure at the modeled airway opening. The dashed zero line is atmospheric pressure, not PEEP. A pressure drop below applied PEEP can still be above zero. Genuine negative modeled values remain visible; no pressure dip is added for appearance.';
+const TRIGGER_SIGNAL_HELP = 'Flow triggering compares positive modeled net lung flow with the selected L/min threshold. Pressure triggering compares the modeled Paw drop below current applied PEEP with the selected cmH2O threshold. Detection occurs only during eligible expiration after the 0.1 s refractory interval. An effort resolved while the ventilator is inspiring or holding cannot trigger later in that same effort.';
+const ACTIVE_PREDICTIONS_HELP = 'This prediction is unavailable when patient effort is enabled. Its calculation does not account for all effects of patient effort on airway pressure and flow.\n\nUse the live waveforms and measured values to assess the simulated breath.';
 
 // Trailing window for the Teaching-Mode failed-trigger counter, in seconds.
 // Fixed (not tied to the display window) so the number means the same thing at
@@ -158,6 +163,7 @@ function init() {
     //     Inspiratory flow positive (top), expiratory negative (bottom).
     //     Scooped expiratory limb = obstruction.
     pvLoop = new LoopRenderer(document.getElementById('canvas-pv-loop'), {
+        xKind: 'pressure',
         xLabel: 'Paw (cmH₂O)',
         yLabel: 'Vol (mL)',
         color:  '#f0c050',
@@ -247,6 +253,9 @@ function animate(timestamp) {
 
 function renderFrame() {
     display.renderFromSim(sim);
+    const unknown = document.getElementById('unknown-patient-trigger');
+    if (unknown) unknown.hidden = !hasUnknownPatientTriggerProvenance(
+        sim.getTriggerEvents(sim.globalTime - sim.displaySeconds, sim.globalTime));
     if (loopsVisible) renderLoops();
     updateParams();
     updateBreathInfo();
@@ -262,8 +271,7 @@ function renderLoops() {
     // P-V Loop: X = pressure, Y = volume
     pvLoop.render(
         { x: completed.pressure, y: completed.volume },
-        { x: current.pressure,   y: current.volume },
-        { xMin: 0 }
+        { x: current.pressure,   y: current.volume }
     );
 
     // F-V Loop: X = volume, Y = flow
@@ -1356,16 +1364,16 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
     setText('param-pip',     `${displayPip}`);
     setText('param-pplat', hold.pplat.value !== null ? `${formatHoldValue(hold.pplat.value)}` : '—');
     setText('pplat-status', holdStatusCopy(hold));
-    setText('param-map', s.isAdaptive ? '—' : `${s.pressures.map_cmH2O}`);
+    setText('param-map', formatHoldValue(s.pressures.map_cmH2O));
     setText('param-dp', hold.drivingPressure.value !== null
         ? `${formatHoldValue(hold.drivingPressure.value)}` : '—');
-    setText('param-pr', s.isAdaptive ? '—' : `${s.pressures.resistivePressure}`);
+    setText('param-pr', formatHoldValue(s.pressures.resistivePressure));
 
     if (s.isPC) setText('param-pinsp', s.isAdaptive ? '—' : `${s.pressures.inspiratoryPressure}`);
 
     setText('param-peep-set',   `${s.pressures.peep_cmH2O}`);
-    setText('param-auto-peep', s.isAdaptive ? '—' : `${s.pressures.autoPeep_cmH2O}`);
-    setText('param-total-peep', s.isAdaptive ? '—' : `${s.pressures.totalPeep_cmH2O}`);
+    setText('param-auto-peep', formatHoldValue(s.pressures.autoPeep_cmH2O));
+    setText('param-total-peep', formatHoldValue(s.pressures.totalPeep_cmH2O));
 
     const displayVt = completed !== null ? completed.measuredVT_mL : null;
     const displayVe = currentDelivery && deliveredVentilation.status === 'available'
@@ -1384,12 +1392,12 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
     // End-expiratory residual immediately BEFORE the current breath began,
     // latched by _startNewBreath and retained throughout that breath, in mL.
     setText('param-live-trapped', `${Math.round(sim.volumeAtBreathStart * 1000)}`);
-    setText('param-flow', s.isAdaptive ? '—' : `${displayFlow}`);
+    setText('param-flow', Number.isFinite(displayFlow) ? `${displayFlow}` : '—');
 
     setText('param-ti',     `${s.timing.inspiratoryTime_s}s`);
     setText('param-te',     `${s.timing.expiratoryTime_s}s`);
-    setText('param-te-tau', `${s.safety.teOverTau}`);
-    setText('param-exp-completion', `${Math.round(s.safety.expiratoryCompletionPercent)}%`);
+    setText('param-te-tau', s.safety.teOverTau === null ? '—' : `${s.safety.teOverTau}`);
+    setText('param-exp-completion', s.safety.expiratoryCompletionPercent === null ? '—' : `${Math.round(s.safety.expiratoryCompletionPercent)}%`);
 
     const expCompletionEl = document.getElementById('param-exp-completion');
     if (expCompletionEl) {
@@ -1399,14 +1407,15 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
             expCompletionEl.classList.add('ok');
         } else if (s.safety.expiratoryCompletionStatus === 'borderline') {
             expCompletionEl.classList.add('warn');
-        } else {
+        } else if (s.safety.expiratoryCompletionStatus !== null) {
             expCompletionEl.classList.add('danger');
         }
     }
 
-    if (s.isPC && s.timing.tiOverTau !== null) {
-        setText('param-ti-tau', `${s.timing.tiOverTau}`);
-    }
+    if (s.isPC) setText('param-ti-tau', s.timing.tiOverTau === null ? '—' : `${s.timing.tiOverTau}`);
+
+    const predictionHelp = document.getElementById('active-predictions-help');
+    if (predictionHelp) predictionHelp.hidden = !vent.pMusActive;
 
     setText('param-crs', `${s.mechanics.compliance * 1000}`);
     setText('param-raw', `${s.mechanics.resistance}`);
@@ -1775,7 +1784,8 @@ function updateMechanicsBar(summary) {
         <span class="mechanics-chip" title="${CALCULATED_TAU_HELP}" aria-description="${CALCULATED_TAU_HELP}">
             <span class="mechanics-chip__symbol">Calculated τ</span>
             ${s.mechanics.timeConstant_s}s
-        </span>
+        </span>`;
+    if (teOverTau !== null) chips += `
         <span class="mechanics-chip" style="color: ${teOverTau < 3 ? 'var(--color-warning)' : 'var(--text-primary)'}">
             <span class="mechanics-chip__symbol">Te/τ</span>
             ${teOverTau}
@@ -1813,7 +1823,7 @@ function updateMechanicsBar(summary) {
         </span>`;
     }
 
-    if (!s.isAdaptive) chips += `
+    if (Number.isFinite(trappedMl)) chips += `
         <span class="mechanics-chip mechanics-chip--prediction" style="color: ${trappedMl > 20 ? 'var(--color-warning)' : 'var(--text-primary)'}">
             <span class="mechanics-chip__symbol">Predicted steady-state trapped volume</span>
             ${trappedMl < 0.1 ? '<1' : Math.round(trappedMl)} mL
@@ -1934,6 +1944,9 @@ function detailedResistanceStatusCopy(result) {
 }
 
 function measurementHelpText(key) {
+    if (key === 'waveform-legend') return `${WAVEFORM_HELP}\n\n${SIGNED_PRESSURE_HELP}`;
+    if (key === 'trigger-signal') return TRIGGER_SIGNAL_HELP;
+    if (key === 'active-predictions') return ACTIVE_PREDICTIONS_HELP;
     if (key === 'adaptive-mode') return `${ADAPTIVE_HELP[key]}\n\n${ADAPTIVE_HELP['adaptive-tag']}`;
     if (key === 'adaptive-status') return ADAPTIVE_HELP[adaptivePresentation(sim.adaptiveState).help];
     if (ADAPTIVE_HELP[key]) return ADAPTIVE_HELP[key];
@@ -1945,11 +1958,12 @@ function measurementHelpText(key) {
     if (key === 'pc-idealization') {
         if (vent.isAdaptiveMode()) return ADAPTIVE_HELP['adaptive-idealization'];
         const opening = vent.mode === MODE_PC_CSV
-            ? 'In PC-CSV, this simulator uses idealized set-point pressure control. When a breath is delivered, Paw stays at PEEP plus Pressure Support during pressure-targeted inspiration, even with patient effort.'
-            : 'In PC-CMV, this simulator uses idealized set-point pressure control. During pressure-targeted inspiration, Paw stays at PEEP plus the set inspiratory pressure, even with patient effort.';
+            ? 'In PC-CSV, a successful patient trigger starts a supported breath with an ideal inspiratory pressure target at PEEP plus Pressure Support. While inward flow is being delivered, airway pressure is held at that target. If the delivery valve closes because inward flow would reverse, flow is zero and airway pressure follows lung recoil and prescribed muscle pressure. The existing flow or maximum-time cycling rule still ends inspiration.'
+            : 'In PC-CMV, this model sets an ideal inspiratory pressure target at PEEP plus the set inspiratory pressure. While inward flow is being delivered, airway pressure is held at that target. If the delivery valve closes because inward flow would reverse, flow is zero and airway pressure follows lung recoil and prescribed muscle pressure until the valve can reopen or inspiration ends.';
         return [opening,
-            'Patient effort can change flow and delivered volume in this model. Triggering, cycling, inspiratory holds, and expiration follow their own rules.',
-            'The flat inspiratory trace here is a model idealization. On real ventilators, patient effort may also affect pressure; assess flow and volume as well.',
+            'Paw is modeled at the airway opening on the patient side of the delivery valve. The pressure target is upstream of that valve; it is not a guarantee that patient-side pressure remains at the target when the valve is closed. Reverse flow is not allowed during delivered inspiration in this model.',
+            'During expiration, inward patient demand draws flow through a finite supply resistance and can lower Paw below applied PEEP. Passive outflow uses an ideal PEEP boundary. This simplified boundary has no circuit compliance, bias flow, leak, or pressure-response delay. Its supply resistance is an educational assumption.',
+            "Real ventilators can show additional pressure deformation. Read flow and volume alongside pressure. This model does not reproduce a particular commercial ventilator, measure work of breathing, or model a patient's response to changing assistance.",
         ].join('\n\n');
     }
     if (key === 'delivered-ve') {
@@ -1967,6 +1981,8 @@ function measurementHelpText(key) {
         }
         if (vent.isAdaptiveMode()) {
             parts.push(ADAPTIVE_HELP['adaptive-predictions']);
+        } else if (vent.pMusActive && vent.isPressureMode()) {
+            parts.push('Predicted VE: unavailable. ' + ACTIVE_PREDICTIONS_HELP);
         } else if (!vent.isSpontaneousMode()) {
             const prediction = vent.summary().volumes.minuteVentilation;
             parts.push(Number.isFinite(prediction)
@@ -2334,6 +2350,29 @@ function installTestHooks() {
             return this.state();
         },
 
+        /** Supported-settings diagnostic setup; no learner preset or injected physics. */
+        setupEffort(options = {}) {
+            this.setupAdaptive(options);
+            const mode = options.mode ?? 'PC-CSV';
+            if (mode !== MODE_PC_CMVA) sim.setMode(mode);
+            vent.inspiratoryPressure = options.inspiratoryPressure ?? 15;
+            vent.psPressure = options.psPressure ?? 10;
+            vent.triggerType = options.triggerType ?? 'flow';
+            vent.flowTriggerLpm = options.flowTriggerLpm ?? 2;
+            vent.pressureTriggerCmH2O = options.pressureTriggerCmH2O ?? 1;
+            vent.cyclePercent = options.cyclePercent ?? 25;
+            vent.holdTime = options.holdTime ?? 0;
+            sim.reset();
+            syncOperatorControls();
+            document.querySelectorAll('#mode-toggle .mode-btn').forEach(button => {
+                button.classList.toggle('mode-btn--active', button.dataset.mode === mode);
+            });
+            applyModeUI(mode);
+            updateTriggerDisplay();
+            renderFrame();
+            return this.state();
+        },
+
         /** Exact ticks without resetting or changing oscillator/transport state. */
         stepTicks(count) {
             if (!Number.isInteger(count) || count < 0 || count > 1000000) throw new RangeError('Invalid fixture tick count');
@@ -2415,6 +2454,20 @@ function installTestHooks() {
                 measuredRR:      +sim.measuredRR.toFixed(1),
                 measuredRRRaw:   sim.measuredRR,
                 failedTriggers:  sim.getTriggerEvents().filter(e => e.type === 'failed').length,
+                physicsSample: sim.physicsSample,
+                triggerEvents: sim.getTriggerEvents(),
+                renderers: Object.fromEntries(['pressure', 'flow', 'volume'].map(key => {
+                    const renderer = display[`${key}Renderer`];
+                    return [key, renderer ? { geometry: renderer.lastGeometry,
+                        sampleDataStatus: renderer.sampleDataStatus,
+                        markers: renderer.renderedTriggerMarkers } : null];
+                })),
+                pvGeometry: pvLoop.lastGeometry,
+                activeAlarms,
+                alarmAudio: { enabled: alarmAudioState.enabled, armed: alarmAudioState.armed,
+                    silencedUntilSec: alarmAudioState.silencedUntilSec,
+                    lastSoundAtSec: alarmAudioState.lastSoundAtSec,
+                    lastAlarmSignature: alarmAudioState.lastAlarmSignature },
                 // Read-only evidence for provenance tests; no new engine state.
                 completed:       sim.lastCompletedBreath,
                 holdMechanics:   sim.holdMechanics,

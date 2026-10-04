@@ -4,13 +4,41 @@ Owner: Christian Striggow. Consolidated 2026-09-22 from the approved Phase A rec
 
 PC-CMVa is a generic educational pressure-controlled continuous mandatory ventilation mode with adaptive targeting. It is conventional deterministic feedback control, not machine learning, autonomous clinical reasoning, clinical validation, or replication of a commercial ventilator. Numerical constants are educational engineering choices. Existing VSM-CLIN ticket identities and deferred decisions remain intact.
 
-The current authorization covers bounded implementation, verification, independent review and isolated Linux visual candidates. Its endpoint is **OWNER_DECISION_REQUIRED — PC-CMVa VISUAL ACCEPTANCE**. Unseen PNGs are not accepted. Accepted-baseline installation, staging, commit, remote publication and deployment require their later applicable authorization.
+The original adaptive authorization covered bounded implementation,
+verification, independent review and isolated Linux candidates, ending at its
+PC-CMVa visual-acceptance gate. The shared effort/pressure successor below has
+its own authorization and **OWNER_DECISION_REQUIRED — VISUAL ACCEPTANCE**
+endpoint. Unseen PNGs are not accepted. Accepted-baseline installation, staging,
+commit, remote publication and deployment require their later applicable
+authorization.
 
 ## Authority and preserved evidence
 
 The authoritative owner request is preserved at `scratch/shots-vsm-adapt-001-phase-b/owner-authorization.txt`. The consolidated evidence copy is `scratch/shots-vsm-adapt-001-phase-b/consolidated-contract.md`; the exact combined UI copy and section-level supersession map are `exact-copy.md` and `supersession-map.md` in the same directory.
 
 The six reviewed Phase A documents and their evidence remain byte-preserved under `scratch/shots-vsm-adapt-001-phase-a/`. Their proposal-status language, prototype results and 2026-09-20 source review describe that earlier phase. The Phase B authorization supersedes approval prerequisites and the specific queued-transition ambiguities; it does not retrospectively alter Phase A findings or approve later images.
+
+### 2026-10-02 effort/pressure successor
+
+The owner accepted the four Phase A2 effort/pressure decisions in
+`scratch/shots-vsm-effort-pressure-contract-r1/` and authorized bounded Phase B
+implementation. The accepted correction contract SHA-256 is
+`a1cf4a42ff9604a30c361ded318c29c06305f702f01818d67d09c3f573c50d11`.
+It changes the shared boundary/sensor and display contracts below, not the
+controller law, gains, bounds, source eligibility or atomic target/PEEP queue.
+Prior adaptive evidence and clinical decision records remain intact. New
+verification and isolated candidates belong to
+`scratch/shots-vsm-effort-pressure-phase-b-r1/`; visual acceptance, accepted-byte
+installation and Git publication are separate later gates.
+
+The successor requires the original 300 engine assertions, 22 controller groups,
+24 integration groups, 22 selective legacy fixtures and 41 effort/pressure groups
+(40 engine groups plus one renderer group with 66 subchecks). Legacy accounting
+is 92,500 exercised ticks: 28,000 exact passive ticks in 8 fixtures and 64,500
+active conformance ticks in 14 fixtures. Required browser groups are 44 original,
+12 adaptive and 4 effort/pressure; required visual groups are 13 existing plus
+3 effort/pressure (16 total). These inventories do not assert fresh passing
+results or owner acceptance of candidate image bytes.
 
 | Decision | Approved selection |
 | --- | --- |
@@ -86,7 +114,13 @@ Persistent adaptive state includes initialization/current context, configured co
 
 1. **Initialize before prefill.** Resolve queued operator values when applicable, initialize pressure to 10 within validated bounds, and clear feedback/source/pending correction before synchronous reset/construction prefill starts a mandatory breath. Initial achieved VT is unavailable.
 2. **At every ordinary adaptive start**, centrally apply latest target and PEEP together, clear their pending indicators, latch the resulting context, and select the valid pending pressure or retained applied pressure before the first physics sample. A superseded old-context pressure correction cannot apply. Both machine-triggered and patient-triggered mandatory starts use this path.
-3. **During inspiration**, use immutable applied pressure above immutable applied set PEEP. No controller, render, playback or ordinary target/PEEP edit changes that pressure. Immediate mechanics/effort/timing edits keep their established physical effect but invalidate mixed adaptive feedback.
+3. **During inspiration**, use an immutable applied pressure command above
+   immutable applied set PEEP. No controller, render, playback or ordinary
+   target/PEEP edit changes that command. Patient-side Paw follows the
+   open/closed valve equations in [model.md](model.md#32-inspiration-pressure-control)
+   and can rise above the upstream command while closed. Immediate
+   mechanics/effort/timing edits keep their established physical effect but
+   invalidate mixed adaptive feedback.
 4. **At canonical publication**, finalize VT/PIP and ordinary RR/VE bookkeeping, consume the source once, and calculate the next command only if eligible. Rejection does not remove its genuine delivered volume.
 5. **During expiration**, distinguish the source's achieved VT/applied pressure from a pending next command. A new incompatible edit cancels the pending correction and old band/miss assessment. Retain the last delivered command until a fresh eligible source authorizes another, or an explicit reset/reentry initializes it.
 
@@ -110,15 +144,38 @@ Direct programmatic mode changes must route through the controlled transition or
 
 ## Pressure reference, limits and saturation
 
-`Paw_target = applied set PEEP + applied adaptive pressure`. The adaptive command is above set PEEP, not total PEEP, alveolar driving pressure or transpulmonary pressure. Residual volume affects the unchanged physics but is not secretly subtracted by the controller.
+`Paw_target = applied set PEEP + applied adaptive pressure` is the ideal upstream
+target. The adaptive command is above set PEEP, not total PEEP, alveolar driving
+pressure or transpulmonary pressure. Residual volume affects the shared
+boundary/valve physics but is not secretly subtracted by the controller.
 
-Bounds constrain this above-set-PEEP command, not absolute Paw. PEEP 5 plus command 20 yields idealized inspiratory Paw 25; PEEP 24 plus command 25 yields 49 and can activate the existing High Pressure alarm. These examples explain coordinates and alarm coexistence; they are not clinical settings or safety assurances. An active command bound does not end inspiration. No absolute-Paw cap or new alarm-derived cycling is added.
+Bounds constrain this above-set-PEEP command, not absolute Paw. While the
+delivery valve is open, PEEP 5 plus command 20 yields idealized inspiratory Paw
+25; PEEP 24 plus command 25 yields 49 and can activate the existing High
+Pressure alarm. Closed patient-side Paw follows `B+Vpre/C-Pmus` and can exceed
+that command. The existing high-pressure alarm compares actual modeled Paw and
+live PIP, not the upstream target. These examples explain coordinates and alarm
+coexistence; they are not clinical settings or safety assurances. An active
+command bound does not end inspiration. No absolute-Paw cap or new alarm-derived
+cycling is added.
+
+The existing bounds-help numbers continue to describe the upstream command
+coordinates. A displayed maximum of 25 cmH2O above applied set PEEP therefore
+does not promise a 25 cmH2O patient-side pressure ceiling. Closed-valve Paw and
+its canonical PIP remain governed by the patient-side sensor equation above.
 
 At saturation, keep achieved VT and signed error visible. Once the error reverses, the next valid correction starts from the actual saturated command, with at most 2 cmH2O change and no accumulated backlog. Physical overshoot after a mechanics change can still occur. Validate finite ordered bounds containing initial pressure and valid tuning; reject malformed setup instead of coercing nonfinite/impossible values.
 
 ## Presentation and interpretation
 
-Use the final exact wording in `scratch/shots-vsm-adapt-001-phase-b/exact-copy.md`. Compact values have fuller static accessible help, preserving existing hover/focus/Escape behavior. Keep Target VT, Achieved VT, Adaptive pressure, Next pressure, applied PEEP, source breath/time and source target distinguishable. Measured PIP remains the existing canonical measurement, not the adaptive command.
+Use the adaptive wording in
+`scratch/shots-vsm-adapt-001-phase-b/exact-copy.md`, with the accepted shared
+effort/pressure successor replacements in
+`scratch/shots-vsm-effort-pressure-contract-r1/proposed-copy.md`. Compact values
+have fuller static accessible help, preserving existing hover/focus/Escape
+behavior. Keep Target VT, Achieved VT, Adaptive pressure, Next pressure, applied
+PEEP, source breath/time and source target distinguishable. Measured PIP remains
+the existing canonical measurement, not the adaptive command.
 
 Retain achieved VT with its immutable source target/epoch. An input edit suppresses old target-band/miss status and shows `Awaiting feedback for new settings` until eligible feedback matches current applied context. Do not retrospectively compare old volume against the requested target. An applied bound and a next command newly reaching that bound are distinct; `Next pressure: maximum` or `Next pressure: minimum` must not imply that pressure has already been delivered.
 
@@ -128,7 +185,27 @@ Status precedence remains configuration error/inapplicable mode, unavailable/inv
 
 Unsupported fixed-pressure analytical predictions are unavailable everywhere they appear, including help, mechanics chips and teaching badges. Do not render null as measured zero, `<1`, predicted MAP/VE or a fixed-pressure auto-PEEP claim. Retain configured/calculated mechanics that remain applicable and label their provenance.
 
-The pressure waveform remains the disclosed idealization: Paw is held at the latched pressure/PEEP during adaptive inspiration while effort can change flow and volume. Prescribed effort is an instructor-selected input, not a physiological response to reduced assistance, measured WOB, fatigue, injury or clinical appropriateness. No additional effort trace, WOB, work-fraction, pleural-pressure, transpulmonary-pressure, gas-exchange or respiratory-drive model is required.
+In PC-CMVa, the applied set PEEP and adaptive pressure command latch at the
+start of each breath. While inward flow is delivered, modeled Paw is their
+sum. If the delivery valve closes because inward flow would reverse, flow is
+zero and patient-side Paw follows recoil and prescribed muscle pressure. The
+adaptive command stays unchanged during that breath. A later eligible inspired
+volume can adjust the command for the next breath. Expiratory inward demand
+uses a finite supply resistance. This is an educational model, not a commercial
+ventilator or measured work of breathing.
+
+The accepted expiratory inward supply impedance is Rc=2 cmH2O·s/L, separate
+from airway/tube resistance. It is an engineering assumption, with setup-only
+range 0.5–5/reset before changes and no learner slider. Applied PEEP remains the
+current pressure-trigger reference through expiration; queued PEEP cannot
+rewrite detection history. Detection freezes the actual variable/configuration
+and sample; delivery records its applied PEEP separately. Corresponding patient
+markers appear on pressure or flow only, never volume.
+
+Prescribed effort is an instructor-selected input, not a physiological response
+to reduced assistance, measured WOB, fatigue, injury or clinical appropriateness.
+No additional effort trace, WOB, work-fraction, pleural-pressure,
+transpulmonary-pressure, gas-exchange or respiratory-drive model is required.
 
 ## Demonstrations and evidence boundaries
 
@@ -140,9 +217,37 @@ The approved scenarios retain Phase A's exact reproducible settings, completion-
 
 Repeat these through the integrated production path, not only the disposable surrogate. Preserve lower-bound excess VT, saturation release and incomplete-expiration/mistimed-effort stress evidence. Broader tuning/operating-range checks must report actual behavior rather than infer broad convergence from three favorable fixtures. Phase A numeric outcomes remain historical prototype characterization, not fresh Phase B results or clinical acceptance.
 
-The source-to-claim ledger was reviewed on 2026-09-20. Its full local taxonomy/vocabulary/fundamentals readings support classification and qualitative interpretation; the two requested research articles were abstract-only, with full-text limitations. No new source review is claimed here. Study-specific circuit compensation, sensors, work calculations and commercial behavior are not simulator capabilities. The controller constants and lifecycle are owner-approved engineering decisions, not source-prescribed universal values.
+The shared effort/pressure successor retains these exact settings and
+completion-indexed edits. Fresh outcomes are recorded separately; active
+pressure morphology and trigger/VT/command values need not match the prior
+defective traces. Describe the contribution lesson as an instructor increase of
+prescribed muscle pressure that first raises VT, followed by lower controller
+commands on later eligible breaths. It does not demonstrate measured work
+redistribution or an effort response to reduced assistance. A separately
+characterized pressure-trigger diagnostic is not a new approved learner preset
+or a replacement for these flow-trigger recipes.
+
+The original adaptive source-to-claim ledger was reviewed on 2026-09-20. Its
+full local taxonomy/vocabulary/fundamentals readings supported classification
+and qualitative interpretation; the two requested research articles were
+abstract-only, with full-text limitations. That historical receipt is unchanged.
+The later effort/pressure source ledger is separately preserved at
+`scratch/shots-vsm-effort-pressure-contract-r1/source-to-claim-ledger.md`, with
+its supplied Hess/MC full-text locators and explicit derivation/assumption limits.
+Study-specific circuit compensation, sensors, work calculations and commercial
+behavior are not simulator capabilities. Controller constants/lifecycle and
+Rc/valve architecture remain owner-approved engineering decisions, not
+source-prescribed universal values.
 
 ## Scope and required verification
+
+The following scope/verification record describes the original adaptive-mode
+introduction. The accepted shared effort/pressure successor uses the exact
+allowlist in `scratch/shots-vsm-effort-pressure-contract-r1/phase-b-plan.md`.
+Its active finite-boundary traces intentionally differ; exact preservation is
+required for unaffected passive behavior and isolated valve-only Q/V/cycling,
+not for the old inconsistent active pressure signal. New metadata is operative
+in all four modes. Controller law and lifecycle requirements below remain.
 
 Approved tracked scope: runtime `js/adaptive-controller.js`, `js/simulation.js`, `js/ventilator.js`, `js/main.js`, `index.html`; engine tests `tests/adaptive-controller.test.mjs`, `tests/adaptive-integration.test.mjs`, `tests/legacy-mode-preservation.test.mjs`, `tests/test-engine.js`; browser/visual tests `scratch/verify-adaptive.cjs`, `scratch/verify-batch.cjs`, `tests/visual/waveforms.spec.js`; verification integration `tools/run-engine-tests.mjs`, `tools/run-browser-tests.mjs`, `.github/workflows/smoke-test.yml`; documentation `docs/adaptive-mode-contract.md`, `docs/model.md`, `docs/glossary.md`, `docs/visual-testing.md`, `CLAUDE.md`.
 

@@ -1320,6 +1320,10 @@ body.teaching-mode .parameters .param-row.param-row--measurement.teaching-key {
     display: none;
 }
 
+#active-predictions-help[hidden] {
+    display: none;
+}
+
 .pc-disclosure-trigger {
     width: auto;
     max-width: 100%;

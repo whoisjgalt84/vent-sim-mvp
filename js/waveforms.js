@@ -15,6 +15,64 @@
  * ============================================================================
  */
 
+/** The pressure axis includes atmospheric zero and every finite modeled sample. */
+export function signedPressureRange(dataMin, dataMax) {
+    if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
+        return { yMin: 0, yMax: 10, yStep: 2 };
+    }
+    const negative = dataMin < 0;
+    const pad = Math.max(0.5, 0.1 * (negative ? dataMax - dataMin : dataMax));
+    const lo = negative ? dataMin - pad : 0;
+    const hi = Math.max(0, dataMax) + pad;
+    const rawStep = (hi - lo) / 5;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const normalized = rawStep / magnitude;
+    const step = (normalized <= 1.5 ? 1 : normalized <= 3.5 ? 2 : normalized <= 7.5 ? 5 : 10) * magnitude;
+    return { yMin: Math.floor(lo / step) * step, yMax: Math.ceil(hi / step) * step, yStep: step };
+}
+
+/** Unknown/partial historical metadata must never acquire an inferred variable. */
+export function patientTriggerVariable(event) {
+    const d = event?.detection, s = d?.signal, c = d?.configuration, delivery = event?.delivery;
+    const variable = d?.triggerVariable;
+    if (event?.type !== 'patient' || event.schemaVersion !== 1
+        || !['pressure', 'flow'].includes(variable)) return null;
+    const unit = variable === 'pressure' ? 'cmH2O' : 'L/min';
+    const basis = variable === 'pressure' ? 'applied-peep-minus-paw' : 'positive-net-lung-flow';
+    const natural = value => Number.isInteger(value) && value >= 0;
+    const finite = value => Number.isFinite(value);
+    if (!finite(event.time) || event.time < 0 || !finite(d.time_s) || d.time_s < 0 || event.time < d.time_s
+        || !natural(d.sampleIndex) || !natural(d.simulationGeneration) || !natural(d.modeGeneration)
+        || !natural(d.neuralCycleId) || d.neuralCycleId === 0 || d.comparator !== '>='
+        || d.phase !== 'EXPIRATION' || d.lockout_s !== 0.1 || !finite(d.phaseTime_s) || d.phaseTime_s <= d.lockout_s
+        || s?.location !== 'airway-opening-patient-side' || s.unit !== unit || s.basis !== basis
+        || ![s.paw_cmH2O, s.netFlow_Lps, s.appliedPeep_cmH2O, s.value].every(finite)
+        || d.threshold?.unit !== unit || !finite(d.threshold.value) || d.threshold.value <= 0
+        || s.value < d.threshold.value || !c || !delivery) return null;
+    const modes = ['vc-cmv', 'pc-cmv', 'PC-CSV', 'pc-cmva'];
+    const actual = variable === 'pressure' ? Math.max(0, s.appliedPeep_cmH2O - s.paw_cmH2O)
+        : Math.max(0, s.netFlow_Lps * 60);
+    const threshold = variable === 'pressure' ? c.pressureThreshold_cmH2O : c.flowThreshold_Lpm;
+    if (Math.abs(actual - s.value) > 1e-9 || threshold !== d.threshold.value
+        || !modes.includes(c.configuredMode) || !natural(c.settingsGeneration) || !natural(c.inputRevision)
+        || !finite(c.Rc_cmH2O_s_per_L) || c.Rc_cmH2O_s_per_L < 0.5 || c.Rc_cmH2O_s_per_L > 5
+        || !finite(c.pressureThreshold_cmH2O) || c.pressureThreshold_cmH2O <= 0
+        || !finite(c.flowThreshold_Lpm) || c.flowThreshold_Lpm <= 0
+        || !(c.requestedPeep_cmH2O === null || finite(c.requestedPeep_cmH2O))
+        || delivery.simulationGeneration !== d.simulationGeneration || delivery.modeGeneration !== d.modeGeneration
+        || !natural(delivery.breathId) || delivery.breathId === 0 || delivery.configuredMode !== c.configuredMode
+        || !finite(delivery.appliedPeep_cmH2O)
+        || !(c.configuredMode === 'vc-cmv' ? delivery.pressureCommand_cmH2O === null
+            : finite(delivery.pressureCommand_cmH2O) && delivery.pressureCommand_cmH2O >= 0)
+        || !(c.configuredMode === 'pc-cmva' ? natural(delivery.adaptiveCommandVersion)
+            : delivery.adaptiveCommandVersion === null)) return null;
+    return variable;
+}
+
+export function hasUnknownPatientTriggerProvenance(events) {
+    return (events || []).some(event => event?.type === 'patient' && patientTriggerVariable(event) === null);
+}
+
 export class WaveformRenderer {
 
     /**
@@ -89,6 +147,10 @@ export class WaveformRenderer {
      * @returns {{ yMin: number, yMax: number, yStep: number }}
      */
     _niceYRange(dataMin, dataMax) {
+        if (this.kind === 'pressure') return signedPressureRange(dataMin, dataMax);
+        if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
+            return { yMin: this.yMinFixed ?? 0, yMax: this.yMaxFixed ?? 10, yStep: this.yStep ?? 2 };
+        }
         // Use fixed bounds if provided
         let yMin = this.yMinFixed ?? dataMin;
         let yMax = this.yMaxFixed ?? dataMax;
@@ -150,16 +212,21 @@ export class WaveformRenderer {
         const plot = this.plotArea;
 
         // Determine data ranges
-        const tMin = timeData[0];
-        const tMax = timeData[timeData.length - 1];
+        const finiteTimes = timeData.filter(Number.isFinite);
+        const tMin = finiteTimes[0] ?? 0;
+        const tMax = finiteTimes[finiteTimes.length - 1] ?? tMin;
 
         let dataMin = Infinity, dataMax = -Infinity;
+        let finiteCount = 0, invalidCount = 0;
         for (let i = 0; i < valueData.length; i++) {
+            if (!Number.isFinite(valueData[i]) || !Number.isFinite(timeData[i])) { invalidCount++; continue; }
+            finiteCount++;
             if (valueData[i] < dataMin) dataMin = valueData[i];
             if (valueData[i] > dataMax) dataMax = valueData[i];
         }
 
         const { yMin, yMax, yStep } = this._niceYRange(dataMin, dataMax);
+        this.sampleDataStatus = finiteCount === 0 ? 'unavailable' : invalidCount > 0 ? 'partial' : 'available';
 
         // --- Clear background ---
         ctx.fillStyle = this.bgColor;
@@ -178,10 +245,10 @@ export class WaveformRenderer {
         // Retained for the static `render(ventilator)` preview path, which has no
         // wall clock to sweep against.
         const sweeping = sweepSeconds > 0;
-        const T = sweeping ? sweepSeconds : (tMax - tMin);
+        const T = sweeping ? sweepSeconds : Math.max(1e-9, tMax - tMin);
         const xScale = sweeping
             ? (t) => plot.x + ((((t % T) + T) % T) / T) * plot.w
-            : (t) => plot.x + ((t - tMin) / (tMax - tMin)) * plot.w;
+            : (t) => plot.x + ((t - tMin) / T) * plot.w;
         const yScale = (v) => plot.y + plot.h - ((v - yMin) / (yMax - yMin)) * plot.h;
 
         // The pen sits at the newest sample; the erase band is the strip immediately
@@ -196,6 +263,8 @@ export class WaveformRenderer {
                 return ahead > 0 && ahead <= eraseW;
             }
             : () => false;
+        // Geometry receipt for read-only browser verification; never changes data.
+        this.lastGeometry = { yMin, yMax, yStep, plot: { ...plot }, tMin, tMax, sweepSeconds };
 
         // --- Draw horizontal grid lines and Y-axis labels ---
         ctx.font = gridFont;
@@ -269,6 +338,10 @@ export class WaveformRenderer {
         ctx.strokeRect(plot.x, plot.y, plot.w, plot.h);
 
         // --- Draw waveform trace ---
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(plot.x, plot.y, plot.w, plot.h);
+        ctx.clip();
         ctx.strokeStyle = this.color;
         ctx.lineWidth = 1.8;
         ctx.lineJoin = 'round';
@@ -277,6 +350,10 @@ export class WaveformRenderer {
         let penDown = false;
         let prevPx = -Infinity;
         for (let i = 0; i < timeData.length; i++) {
+            if (!Number.isFinite(timeData[i]) || !Number.isFinite(valueData[i])) {
+                penDown = false;
+                continue;
+            }
             const px = xScale(timeData[i]);
 
             // Samples inside the erase band are the previous sweep's oldest data —
@@ -289,20 +366,18 @@ export class WaveformRenderer {
 
             const py = yScale(valueData[i]);
 
-            // Clamp to plot area
-            const cyp = Math.max(plot.y, Math.min(plot.y + plot.h, py));
-
             // Lift the pen at the sweep wrap (x jumps back to the left edge);
             // connecting across it would streak a horizontal line over the plot.
             if (!penDown || px < prevPx) {
-                ctx.moveTo(px, cyp);
+                ctx.moveTo(px, py);
             } else {
-                ctx.lineTo(px, cyp);
+                ctx.lineTo(px, py);
             }
             penDown = true;
             prevPx = px;
         }
         ctx.stroke();
+        ctx.restore();
 
         if (teachingMode && overlay?.tailWindow) {
             this._drawTailHighlight(
@@ -313,12 +388,13 @@ export class WaveformRenderer {
                 overlay.baselineReached,
                 xScale,
                 yScale,
-                plot
+                plot,
+                hidden
             );
         }
 
         // Reusable trace highlights (e.g. ineffective-effort flow deflection).
-        this._drawWaveformHighlights(ctx, highlights, timeData, valueData, xScale, yScale, plot);
+        this._drawWaveformHighlights(ctx, highlights, timeData, valueData, xScale, yScale, plot, hidden);
 
         this._drawTriggerMarkers(ctx, triggerEvents, xScale, plot, hidden);
 
@@ -334,7 +410,7 @@ export class WaveformRenderer {
         ctx.restore();
     }
 
-    _drawTailHighlight(ctx, timeData, valueData, tailWindow, baselineReached, xScale, yScale, plot) {
+    _drawTailHighlight(ctx, timeData, valueData, tailWindow, baselineReached, xScale, yScale, plot, hidden = () => false) {
         const start = Math.max(0, Math.min(timeData.length - 1, tailWindow.start));
         const end = Math.max(start + 1, Math.min(timeData.length, tailWindow.end));
 
@@ -359,22 +435,27 @@ export class WaveformRenderer {
         ctx.beginPath();
 
         let minX = Infinity, maxX = -Infinity, topY = Infinity;
-        let prevPx = -Infinity;
+        let prevPx = -Infinity, penDown = false;
         for (let i = start; i < end; i++) {
+            if (!Number.isFinite(timeData[i]) || !Number.isFinite(valueData[i])) {
+                penDown = false;
+                continue;
+            }
             const px = xScale(timeData[i]);
+            if (hidden(px)) { penDown = false; continue; }
             const py = yScale(valueData[i]);
-            const cyp = Math.max(plot.y, Math.min(plot.y + plot.h, py));
 
             // Lift the pen at the sweep wrap (see render()).
-            if (i === start || px < prevPx) {
-                ctx.moveTo(px, cyp);
+            if (!penDown || px < prevPx) {
+                ctx.moveTo(px, py);
             } else {
-                ctx.lineTo(px, cyp);
+                ctx.lineTo(px, py);
             }
+            penDown = true;
             prevPx = px;
             if (px < minX) minX = px;
             if (px > maxX) maxX = px;
-            if (cyp < topY) topY = cyp;
+            if (py < topY) topY = py;
         }
 
         ctx.stroke();
@@ -383,7 +464,7 @@ export class WaveformRenderer {
         // ineffective-effort label in _drawWaveformHighlights). The whole tail
         // highlight is already teaching-gated at the call site, so this is
         // teaching-only. Gas-trapping branch only — the blue branch stays unlabeled.
-        if (!baselineReached) {
+        if (!baselineReached && Number.isFinite(minX)) {
             ctx.fillStyle = GAS_TRAPPING_COLOR;
             ctx.font = '10px system-ui, -apple-system, sans-serif';
             ctx.textAlign = 'center';
@@ -395,6 +476,7 @@ export class WaveformRenderer {
     }
 
     _drawTriggerMarkers(ctx, triggerEvents, xScale, plot, hidden = () => false) {
+        this.renderedTriggerMarkers = [];
         if (!triggerEvents || triggerEvents.length === 0) return;
 
         ctx.save();
@@ -403,9 +485,13 @@ export class WaveformRenderer {
         ctx.clip();
 
         for (const event of triggerEvents) {
+            if (!event) continue;
             // Failed (ineffective) efforts are rendered as a highlighted amber
             // segment on the flow trace by _drawWaveformHighlights — not a marker.
             if (event.type === 'failed') continue;
+            if (!Number.isFinite(event.time)) continue;
+            if (event.type === 'patient' && patientTriggerVariable(event) !== this.kind) continue;
+            if (event.type !== 'patient' && event.type !== 'machine') continue;
 
             const x = xScale(event.time);
 
@@ -418,6 +504,8 @@ export class WaveformRenderer {
             } else {
                 this._drawMachineTriggerMarker(ctx, x, plot);
             }
+            this.renderedTriggerMarkers.push({ type: event.type, time: event.time,
+                variable: event.type === 'patient' ? event.detection?.triggerVariable ?? null : null, x });
         }
 
         ctx.restore();
@@ -466,9 +554,10 @@ export class WaveformRenderer {
      * Each segment: { trace, tStart, tEnd, color, lineWidthDelta, label, tooltip }.
      * A segment is drawn only on the renderer whose `kind` matches `segment.trace`.
      */
-    _drawWaveformHighlights(ctx, segments, timeData, valueData, xScale, yScale, plot) {
+    _drawWaveformHighlights(ctx, segments, timeData, valueData, xScale, yScale, plot, hidden = () => false) {
         const mine = (segments || []).filter((s) => s && s.trace === this.kind);
         this._highlightHoverRegions = [];
+        this._highlightHidden = hidden;
         if (mine.length === 0) { this._syncHighlightTooltip(); return; }
 
         const teachingMode = document.body.classList.contains('teaching-mode');
@@ -488,16 +577,31 @@ export class WaveformRenderer {
 
             // Collect the exact same sample points first, so the feathered
             // gradient can span the segment from its left to right edge.
-            const pts = [];
+            const runs = [];
+            let pts = [], previousX = -Infinity;
             let minX = Infinity, maxX = -Infinity, topY = Infinity;
             for (let i = i0; i <= i1; i++) {
+                if (!Number.isFinite(timeData[i]) || !Number.isFinite(valueData[i])) {
+                    if (pts.length) runs.push(pts);
+                    pts = [];
+                    continue;
+                }
                 const px = xScale(timeData[i]);
-                const py = Math.max(plot.y, Math.min(plot.y + plot.h, yScale(valueData[i])));
+                if (hidden(px)) {
+                    if (pts.length) runs.push(pts);
+                    pts = [];
+                    continue;
+                }
+                if (px < previousX && pts.length) { runs.push(pts); pts = []; }
+                const py = yScale(valueData[i]);
                 pts.push(px, py);
+                previousX = px;
                 if (px < minX) minX = px;
                 if (px > maxX) maxX = px;
                 if (py < topY) topY = py;
             }
+            if (pts.length) runs.push(pts);
+            if (!Number.isFinite(minX)) continue;
 
             // Edge-feathered stroke: full highlight through the middle, fading to
             // transparent at each end so it emerges from (not painted onto) the trace.
@@ -506,10 +610,11 @@ export class WaveformRenderer {
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
             ctx.beginPath();
-            for (let k = 0; k < pts.length; k += 2) {
-                // Lift the pen at the sweep wrap (see render()).
-                if (k === 0 || pts[k] < pts[k - 2]) ctx.moveTo(pts[k], pts[k + 1]);
-                else ctx.lineTo(pts[k], pts[k + 1]);
+            for (const run of runs) {
+                for (let k = 0; k < run.length; k += 2) {
+                    if (k === 0) ctx.moveTo(run[k], run[k + 1]);
+                    else ctx.lineTo(run[k], run[k + 1]);
+                }
             }
             ctx.stroke();
 
@@ -521,7 +626,9 @@ export class WaveformRenderer {
                 ctx.textBaseline = 'bottom';
                 ctx.fillText(seg.label, (minX + maxX) / 2, Math.max(plot.y + 10, topY - 4));
             }
-            if (seg.tooltip) this._highlightHoverRegions.push({ x0: minX, x1: maxX, text: seg.tooltip });
+            if (seg.tooltip) {
+                for (const run of runs) this._highlightHoverRegions.push({ x0: run[0], x1: run[run.length - 2], text: seg.tooltip });
+            }
         }
         ctx.restore();
         this._ensureHighlightHover();
@@ -549,7 +656,7 @@ export class WaveformRenderer {
         const regions = this._highlightHoverRegions || [];
         const x = this._highlightHoverX;
         let text = '';
-        if (x != null) {
+        if (x != null && !this._highlightHidden?.(x)) {
             for (const r of regions) {
                 if (x >= r.x0 - 3 && x <= r.x1 + 3) { text = r.text; break; }
             }
@@ -619,6 +726,7 @@ export class LoopRenderer {
      * @param {HTMLCanvasElement} canvas
      * @param {Object} options
      * @param {string} options.xLabel   - X-axis label
+     * @param {string} options.xKind    - 'pressure' selects the shared signed domain
      * @param {string} options.yLabel   - Y-axis label
      * @param {string} options.color    - Completed loop color
      * @param {string} options.traceColor - Current breath trace color
@@ -628,6 +736,7 @@ export class LoopRenderer {
         this.ctx    = canvas.getContext('2d');
 
         this.xLabel     = options.xLabel     ?? 'X';
+        this.xKind      = options.xKind      ?? null;
         this.yLabel     = options.yLabel     ?? 'Y';
         this.color      = options.color      ?? '#f0c050';
         this.traceColor = options.traceColor ?? 'rgba(255,255,255,0.35)';
@@ -666,6 +775,9 @@ export class LoopRenderer {
      * Compute nice axis range (same algorithm as WaveformRenderer).
      */
     _niceRange(dataMin, dataMax, fixedMin, fixedMax) {
+        if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
+            return { lo: fixedMin ?? 0, hi: fixedMax ?? 10, step: 2 };
+        }
         let lo = fixedMin ?? dataMin;
         let hi = fixedMax ?? dataMax;
 
@@ -717,19 +829,29 @@ export class LoopRenderer {
         }
 
         if (allX.length < 2) {
+            this.sampleDataStatus = 'unavailable';
+            this.lastGeometry = null;
             // Not enough data — just draw empty background
             ctx.fillStyle = this.bgColor;
             ctx.fillRect(0, 0, this.cssWidth, this.cssHeight);
-            return;
+            if (this.xKind !== 'pressure') return;
         }
 
-        const xDataMin = Math.min(...allX);
-        const xDataMax = Math.max(...allX);
-        const yDataMin = Math.min(...allY);
-        const yDataMax = Math.max(...allY);
-
-        const xRange = this._niceRange(xDataMin, xDataMax, opts.xMin, opts.xMax);
+        let xDataMin = Infinity, xDataMax = -Infinity, yDataMin = Infinity, yDataMax = -Infinity;
+        let finiteCount = 0;
+        for (let i = 0; i < allX.length; i++) {
+            if (!Number.isFinite(allX[i]) || !Number.isFinite(allY[i])) continue;
+            finiteCount++;
+            xDataMin = Math.min(xDataMin, allX[i]); xDataMax = Math.max(xDataMax, allX[i]);
+            yDataMin = Math.min(yDataMin, allY[i]); yDataMax = Math.max(yDataMax, allY[i]);
+        }
+        this.sampleDataStatus = finiteCount === 0 ? 'unavailable' : finiteCount < allX.length ? 'partial' : 'available';
+        const pressureRange = this.xKind === 'pressure' ? signedPressureRange(xDataMin, xDataMax) : null;
+        const xRange = pressureRange
+            ? { lo: pressureRange.yMin, hi: pressureRange.yMax, step: pressureRange.yStep }
+            : this._niceRange(xDataMin, xDataMax, opts.xMin, opts.xMax);
         const yRange = this._niceRange(yDataMin, yDataMax, opts.yMin, opts.yMax);
+        this.lastGeometry = { xRange: { ...xRange }, yRange: { ...yRange }, plot: { ...plot } };
 
         // --- Clear ---
         ctx.fillStyle = this.bgColor;
@@ -809,10 +931,15 @@ export class LoopRenderer {
             // Bright dot at the current position (the "pen tip")
             const lastX = xScale(current.x[current.x.length - 1]);
             const lastY = yScale(current.y[current.y.length - 1]);
-            ctx.beginPath();
-            ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
-            ctx.fillStyle = '#ffffff';
-            ctx.fill();
+            if (Number.isFinite(lastX) && Number.isFinite(lastY)) {
+                ctx.save();
+                ctx.beginPath(); ctx.rect(plot.x, plot.y, plot.w, plot.h); ctx.clip();
+                ctx.beginPath();
+                ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.restore();
+            }
         }
 
         // --- X-axis label (bottom center) ---
@@ -850,6 +977,7 @@ export class LoopRenderer {
 
         let started = false;
         for (let i = 0; i < xData.length; i++) {
+            if (!Number.isFinite(xData[i]) || !Number.isFinite(yData[i])) { started = false; continue; }
             const px = xScale(xData[i]);
             const py = yScale(yData[i]);
             if (!started) { ctx.moveTo(px, py); started = true; }
@@ -889,7 +1017,6 @@ export class WaveformDisplay {
             label: 'Paw (cmH₂O)',
             kind:  'pressure',
             color: '#f0c050',
-            yMin:  0,
         });
 
         // Volume: Cyan — clearly distinct from pressure
@@ -963,14 +1090,9 @@ export class WaveformDisplay {
         // PR4a producer: ineffective-effort flow highlights (tagged trace:'flow',
         // so only the flow renderer draws them; the others filter them out).
         const neuralTi = sim.vent?.neuralTi ?? 1.0;
-        // Live trigger settings, so the tooltip can name the actual threshold the
-        // effort failed to reach rather than a hard-coded one (SME-022).
-        const trigger = {
-            type: sim.vent?.triggerType ?? 'flow',
-            flowLpm: sim.vent?.flowTriggerLpm ?? 2.0,
-            pressureCmH2O: sim.vent?.pressureTriggerCmH2O ?? 1.0,
-        };
-        const highlights = this._deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi, trigger);
+        // Failed history has no stored threshold/configuration: never relabel it
+        // from live settings. Delivered markers carry their own detection record.
+        const highlights = this._deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi);
 
         // Sweep window = the engine's display window, so the buffer holds exactly one
         // sweep and the pen overwrites data of its own age. Passing this switches the
@@ -1001,7 +1123,7 @@ export class WaveformDisplay {
      * highlighted here. Their pressure and flow response depends on the configured mode and
      * phase; see the pressure-targeted inspiration disclosure in docs/model.md §3.2.
      */
-    _deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi, trigger = null) {
+    _deriveFailedEffortSegments(time, flow, triggerEvents, neuralTi) {
         // Muted amber-gold "interpretation" finding color (NOT an alarm) — single
         // source of truth in css/style.css (--color-interpretation-highlight).
         const HIGHLIGHT_COLOR = (typeof getComputedStyle === 'function'
@@ -1022,39 +1144,25 @@ export class WaveformDisplay {
                 color: HIGHLIGHT_COLOR,
                 lineWidthDelta: 1.4,                  // ~1.8 base → ~3.2 px, clearly thicker
                 label: 'Failed trigger',
-                tooltip: this._failedEffortTooltip(ev, trigger),
+                tooltip: this._failedEffortTooltip(ev),
             });
         }
         return segments;
     }
 
     /**
-     * SME-022 — say WHY the effort failed, not just that it did.
-     *
-     * The counterintuitive moment this exists for: a ~20 L/min swing on the flow
-     * trace with no triggered breath. The trace plots total net (signed) lung
-     * flow, which is mostly passive expiration bent upward by the effort; the
-     * trigger watches inspiratory-direction flow only, and it never crosses the
-     * threshold. Naming the actual threshold turns that from a bug-looking event
-     * into a readable one (SME-021 verdict; Mireles-Cabodevila 2021).
+     * Historical failures have no trigger-setting snapshot. Explain their
+     * recorded outcome without assigning the current variable or sensitivity.
      */
-    _failedEffortTooltip(ev, trigger) {
+    _failedEffortTooltip(ev) {
         if (ev.gateFailed === 'ventilator_unavailable') {
-            const phase = ev.phase === 'HOLD' ? 'an inspiratory hold' : 'inspiration';
-            return `Failed trigger — the patient pulled during ${phase}, `
-                 + 'so the ventilator was not available to be triggered.';
+            return 'Failed trigger — this effort was resolved while the ventilator was inspiring or holding, '
+                + 'so it could not start another breath. Its mechanical effects may continue, '
+                + 'but it is not reconsidered for triggering in the same effort.';
         }
-        const kind = trigger?.type === 'pressure' ? 'pressure' : 'flow';
-        const limit = kind === 'pressure'
-            ? `${Number(trigger?.pressureCmH2O ?? 1).toFixed(1)} cmH₂O`
-            : `${Number(trigger?.flowLpm ?? 2).toFixed(1)} L/min`;
-        const signal = kind === 'pressure'
-            ? `drop airway pressure by ${limit} below PEEP`
-            : `generate ${limit} of inspiratory flow`;
-        return 'Failed trigger — the effort bent expiratory flow toward '
-             + `baseline but did not ${signal}, so it never reached the trigger `
-             + 'threshold. The large swing on this trace is mostly passive '
-             + 'exhalation, not trigger signal.';
+        return 'Failed trigger — this effort did not meet an active trigger criterion during its eligible expiratory samples. '
+            + 'The flow trace shows signed net lung flow, not a separate effort signal. '
+            + 'No delivered breath was recorded for this effort. Earlier trigger settings are not stored for this failed event.';
     }
 
     /**

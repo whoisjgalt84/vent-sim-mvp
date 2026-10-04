@@ -1,10 +1,23 @@
 // @ts-check
-import { test, expect } from '@playwright/test';
+import { test, expect as baseExpect } from '@playwright/test';
 import * as h from './helpers.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+
+// Optional evidence capture preserves the original matcher and its tolerances.
+// Export each real repeated frame so byte/pixel differences can be accounted for.
+const expect = process.env.VISUAL_REPEAT_CAPTURE ? baseExpect.extend({
+    async toHaveScreenshot(receiver, name, options = {}) {
+        await baseExpect(receiver).toHaveScreenshot(name, options);
+        const directory = process.env.VISUAL_REPEAT_CAPTURE;
+        fs.mkdirSync(directory, { recursive: true });
+        await receiver.screenshot({ animations: 'disabled', caret: 'hide', scale: 'css',
+            ...options, path: path.join(directory, path.basename(test.info().snapshotPath(name))) });
+        return { pass: true, message: () => 'Original screenshot comparison passed.' };
+    },
+}) : baseExpect;
 
 // The Desktop Chrome device preset supplies a 1280x720 viewport at the project
 // layer, which otherwise overrides the documented 1440x900 suite viewport.
@@ -29,7 +42,7 @@ const SEEK_SECONDS = 14;
 // VSM-CLIN-007: characterize existing traces with the approved disclosure.
 // These images require separate owner acceptance; they do not approve morphology.
 async function pcDisclosureSnapshots(page) {
-    const common = 'Patient effort can change flow and delivered volume in this model. Triggering, cycling, inspiratory holds, and expiration follow their own rules.\n\nThe flat inspiratory trace here is a model idealization. On real ventilators, patient effort may also affect pressure; assess flow and volume as well.';
+    const common = "Paw is modeled at the airway opening on the patient side of the delivery valve. The pressure target is upstream of that valve; it is not a guarantee that patient-side pressure remains at the target when the valve is closed. Reverse flow is not allowed during delivered inspiration in this model.\n\nDuring expiration, inward patient demand draws flow through a finite supply resistance and can lower Paw below applied PEEP. Passive outflow uses an ideal PEEP boundary. This simplified boundary has no circuit compliance, bias flow, leak, or pressure-response delay. Its supply resistance is an educational assumption.\n\nReal ventilators can show additional pressure deformation. Read flow and volume alongside pressure. This model does not reproduce a particular commercial ventilator, measure work of breathing, or model a patient's response to changing assistance.";
     for (const mode of ['pc-cmv', 'PC-CSV']) for (const active of [false, true]) for (const teaching of [false, true]) {
         const errors = await h.open(page);
         await page.setViewportSize({ width: 1440, height: 900 });
@@ -47,16 +60,16 @@ async function pcDisclosureSnapshots(page) {
         if (mode === 'PC-CSV' && !active) expect(s.completed).toBeNull();
         else expect(s.completed).not.toBeNull();
         if (mode === 'PC-CSV' && active) expect(s.completed.terminationReason).toBe('flowCycle');
-        const cue = page.getByRole('button', { name: 'Idealized pressure control help', exact: true });
+        const cue = page.getByRole('button', { name: 'Idealized pressure delivery help', exact: true });
         await expect(cue).toBeVisible();
-        await expect(cue.locator('span').first()).toHaveText('Idealized pressure control');
+        await expect(cue.locator('span').first()).toHaveText('Idealized pressure delivery');
         const name = `pc-disclosure-${mode}-${active ? 'active' : 'passive'}-${teaching ? 'teaching' : 'standard'}`;
         await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: true });
         if (!active) {
             await cue.click();
             const opening = mode === 'PC-CSV'
-                ? 'In PC-CSV, this simulator uses idealized set-point pressure control. When a breath is delivered, Paw stays at PEEP plus Pressure Support during pressure-targeted inspiration, even with patient effort.'
-                : 'In PC-CMV, this simulator uses idealized set-point pressure control. During pressure-targeted inspiration, Paw stays at PEEP plus the set inspiratory pressure, even with patient effort.';
+                ? 'In PC-CSV, a successful patient trigger starts a supported breath with an ideal inspiratory pressure target at PEEP plus Pressure Support. While inward flow is being delivered, airway pressure is held at that target. If the delivery valve closes because inward flow would reverse, flow is zero and airway pressure follows lung recoil and prescribed muscle pressure. The existing flow or maximum-time cycling rule still ends inspiration.'
+                : 'In PC-CMV, this model sets an ideal inspiratory pressure target at PEEP plus the set inspiratory pressure. While inward flow is being delivered, airway pressure is held at that target. If the delivery valve closes because inward flow would reverse, flow is zero and airway pressure follows lung recoil and prescribed muscle pressure until the valve can reopen or inspiration ends.';
             expect((await page.locator('#measurement-help').textContent()).trim()).toBe(opening + '\n\n' + common);
             await expect(page).toHaveScreenshot(`${name}-help.png`, { fullPage: true });
         }
@@ -340,7 +353,7 @@ test.describe('waveform display', () => {
         await expectAvailableDelivery(page);
         await expect(page).toHaveScreenshot('ve-established-csv-teaching-full.png', { fullPage: true });
         await page.click('[data-measurement-help="delivered-ve"]');
-        await expect(page.locator('#measurement-help')).not.toContainText('Predicted VE:');
+        await expect(page.locator('#measurement-help')).toContainText('Predicted VE: unavailable.');
         await expect(page).toHaveScreenshot('ve-established-csv-help-teaching-full.png', { fullPage: true });
     });
 
@@ -423,21 +436,28 @@ test.describe('determinism', () => {
 
         expect(secondState.completed.simulationGeneration)
             .toBe(firstState.completed.simulationGeneration + 1);
-        // All newly exposed VE identities must belong to the current reset,
-        // while every other sampled value remains deterministic.
-        const normalizeGeneration = (value, generation) => {
-            if (Array.isArray(value)) return value.map(v => normalizeGeneration(v, generation));
+        // Reset and its first settings synchronization each advance this audit
+        // revision. Preserve relative historical revisions while comparing every
+        // physical value and the actual pixels without tolerance.
+        expect(secondState.physicsSample.inputRevision)
+            .toBe(firstState.physicsSample.inputRevision + 2);
+        const normalizeGeneration = (value, generation, inputRevision) => {
+            if (Array.isArray(value)) return value.map(v => normalizeGeneration(v, generation, inputRevision));
             if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).flatMap(([key, v]) => {
                 if (key === 'simulationGeneration') {
                     expect(v).toBe(generation);
                     return [];
                 }
-                return [[key, normalizeGeneration(v, generation)]];
+                if (key === 'inputRevision') {
+                    expect(Number.isInteger(v)).toBe(true);
+                    return [[key, v - inputRevision]];
+                }
+                return [[key, normalizeGeneration(v, generation, inputRevision)]];
             }));
             return value;
         };
-        const comparableFirst = normalizeGeneration(firstState, firstState.completed.simulationGeneration);
-        const comparableSecond = normalizeGeneration(secondState, secondState.completed.simulationGeneration);
+        const comparableFirst = normalizeGeneration(firstState, firstState.completed.simulationGeneration, firstState.physicsSample.inputRevision);
+        const comparableSecond = normalizeGeneration(secondState, secondState.completed.simulationGeneration, secondState.physicsSample.inputRevision);
         expect(comparableSecond).toEqual(comparableFirst);
         expect(Buffer.compare(first, second), 'frames must be byte-identical').toBe(0);
     });
@@ -465,7 +485,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'VSM-ADAPT-001 asset release').toEqual(['18']);
+        expect(versions, 'VSM effort/pressure asset release').toEqual(['20']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);
@@ -500,7 +520,7 @@ async function adaptiveShot(page, name) {
     await page.evaluate(() => window.__vsim.redraw());
     const root = fileURLToPath(new URL('../..', import.meta.url));
     const output = process.env.ADAPTIVE_VISUAL_EVIDENCE
-        || path.join(root, 'scratch/shots-vsm-adapt-001-phase-b/visual-scenarios.json');
+        || path.join(root, 'scratch/shots-vsm-effort-pressure-phase-b-r1/adaptive-visual-scenarios.json');
     const sources = ['index.html', 'css/style.css', 'js/main.js', 'js/simulation.js', 'js/ventilator.js',
         'js/adaptive-controller.js', 'js/lung-model.js', 'js/waveforms.js', 'alarms.js', 'alarm-audio.js',
         'tests/visual/waveforms.spec.js', 'tests/visual/helpers.js', 'playwright.config.js'];
@@ -666,8 +686,7 @@ test.describe('PC-CMVa adaptive visual contract', () => {
         await page.locator('#btn-pause').click();
         await h.setRange(page, '#vt', 650); await h.setRange(page, '#peep', 9);
         await page.locator('#adaptive-requested-target-help').focus();
-        await expect(page.locator('#measurement-help-text')).toContainText('Reset or a mode change retains your latest selected value; it does not wait for another adaptive breath.');
-        await expect(page.locator('#measurement-help-text')).toContainText('Destination modes use settings only where applicable.');
+        await expect(page.locator('#measurement-help-text')).toHaveText('Your new VT target takes effect at the start of the next breath. The simulator will not use the breath affected by this change to calculate the next pressure adjustment.\n\nResetting or changing modes keeps your latest selected settings. After a mode change, only the settings used by that mode affect breath delivery.');
         await adaptiveShot(page, 'adaptive-pending-transition-help-standard.png');
         await page.keyboard.press('Escape');
         await page.locator('#adaptive-reset').click();
@@ -703,5 +722,107 @@ test.describe('PC-CMVa adaptive visual contract', () => {
         await expect(page.locator('#measurement-help-text')).toContainText('This amplitude is not measured work of breathing.');
         await adaptiveShot(page, 'adaptive-prescribed-effort-help-teaching.png');
         expect(errors).toEqual([]);
+    });
+});
+
+// Phase B additions are separately commissioned: no accepted PNG replacement.
+async function effortShot(page, name, recipe, screenshotOptions = {}) {
+    const root = fileURLToPath(new URL('../..', import.meta.url));
+    const output = process.env.EFFORT_VISUAL_EVIDENCE
+        || path.join(root, 'scratch/shots-vsm-effort-pressure-phase-b-r1/visual-scenarios.json');
+    const manifest = fs.existsSync(output) ? JSON.parse(fs.readFileSync(output, 'utf8')) : { schemaVersion: 1, candidates: {} };
+    const sources = ['index.html', 'js/main.js', 'js/simulation.js', 'js/ventilator.js', 'js/waveforms.js',
+        'tests/visual/waveforms.spec.js', 'tests/visual/helpers.js'];
+    manifest.candidates[name] = { name, recipe, snapshotPath: test.info().snapshotPath(name),
+        testTitle: test.info().title, viewport: page.viewportSize(),
+        deviceScaleFactor: await page.evaluate(() => window.devicePixelRatio), platform: process.platform,
+        sourceSha256: Object.fromEntries(sources.map(file => [file, crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex')])),
+        state: await h.state(page) };
+    fs.mkdirSync(path.dirname(output), { recursive: true });
+    fs.writeFileSync(output, JSON.stringify(manifest, null, 2) + '\n');
+    await expect(page).toHaveScreenshot(name, { fullPage: true, ...screenshotOptions });
+}
+
+test.describe('effort pressure finite-boundary visual contract', () => {
+    test('signed pressure and P-V geometry retain mixed trigger-variable history', async ({ page }) => {
+        const errors = await h.open(page); await h.expandRail(page);
+        const signed = { mode:'vc-cmv',resistance:5,compliance:.1,respiratoryRate:6,ieRatio:[1,4],
+            peep_cmH2O:0,pMusMax:12,patientRR:12,neuralTi:1,triggerType:'flow' };
+        await h.setupEffort(page,signed); let state = await h.stepTicks(page,1400);
+        expect(state.renderers.pressure.geometry.yMin).toBeLessThan(0);
+        expect(state.pvGeometry.xRange.lo).toBeLessThan(0);
+        expect(state.renderers.volume.markers.filter(e=>e.type==='patient')).toEqual([]);
+        await effortShot(page,'effort-signed-vc-pv.png','VC R5/C100,RR6,I:E1:4,PEEP0,Pmus12,patientRR12,neuralTi1,flow2; configure before reset,1400 exact ticks; Standard; no injected dip.');
+        await page.locator('[data-measurement-help="waveform-legend"]').click();
+        await expect(page.locator('#measurement-help')).toContainText('The dashed zero line is atmospheric pressure, not PEEP.');
+        await expect(page.locator('#measurement-help')).toContainText('the symbol does not replace the signal');
+        await effortShot(page,'effort-signed-legend-help.png','Same signed VC snapshot; open static waveform legend help; no ticks.');
+        await page.keyboard.press('Escape');
+
+        await h.setupEffort(page,{...signed,mode:'PC-CSV',compliance:.06,peep_cmH2O:5,triggerType:'pressure',pressureTriggerCmH2O:1,psPressure:10});
+        state = await h.stepTicks(page,600);
+        const recorded = state.triggerEvents.filter(e=>e.type==='patient');
+        expect(recorded.length).toBeGreaterThan(0); expect(recorded.every(e=>e.detection.triggerVariable==='pressure')).toBe(true);
+        const before = JSON.stringify(recorded);
+        await page.locator('[data-trigger-type="flow"]').click(); await h.stepTicks(page,800); state=await h.state(page);
+        expect(JSON.stringify(state.triggerEvents.filter(e=>e.type==='patient'&&e.time<=6))).toBe(before);
+        expect(state.triggerEvents.some(e=>e.type==='patient'&&e.detection.triggerVariable==='flow')).toBe(true);
+        expect(state.renderers.pressure.markers.some(e=>e.type==='patient'&&e.variable==='pressure')).toBe(true);
+        expect(state.renderers.flow.markers.some(e=>e.type==='patient'&&e.variable==='flow')).toBe(true);
+        expect(state.renderers.volume.markers.filter(e=>e.type==='patient')).toEqual([]);
+        const frozenTime=state.globalTime; await page.locator('[data-trigger-type="pressure"]').click();
+        expect((await h.state(page)).globalTime).toBe(frozenTime);
+        await effortShot(page,'effort-mixed-trigger-history.png','CSV R5/C60,PEEP5,PS10,Pmus12,patientRR12,neuralTi1,RR6,I:E1:4; pressure1 for600ticks, actual UI flow switch then800ticks, paused UI pressure switch; mixed event history remains mapped by recorded variable.');
+
+        await h.setupEffort(page,{...signed,mode:'pc-cmva',peep_cmH2O:5,triggerType:'pressure',pressureTriggerCmH2O:1});
+        await h.stepTicks(page,480); await h.setRange(page,'#peep',9); state=await h.stepTicks(page,120);
+        const queuedDelivery=state.triggerEvents.find(e=>e.type==='patient'&&e.detection.signal.appliedPeep_cmH2O!==e.delivery.appliedPeep_cmH2O);
+        expect(queuedDelivery).toBeTruthy(); expect(queuedDelivery.detection.signal.appliedPeep_cmH2O).toBe(5); expect(queuedDelivery.delivery.appliedPeep_cmH2O).toBe(9);
+        await effortShot(page,'effort-queued-peep-history.png','Adaptive R5/C100,RR6,I:E1:4,target500,bounds5-25,PEEP5,Pmus12,patientRR12,neuralTi1,pressure1;480ticks,actual PEEP request9,120ticks; detect at applied5,delivery at9.');
+        expect(errors).toEqual([]);
+    });
+
+    test('closed patient-side PC pressure and active analytical unavailability', async ({ page }) => {
+        const errors=await h.open(page); await h.expandRail(page);
+        for(const mode of ['vc-cmv','pc-cmv','PC-CSV','pc-cmva']) {
+            await h.setupEffort(page,{mode,resistance:5,compliance:.06,peep_cmH2O:5,pMusMax:12,patientRR:12,neuralTi:1,respiratoryRate:6,ieRatio:[1,4],triggerType:'pressure',pressureTriggerCmH2O:1});
+            const state=await h.stepTicks(page,1400);
+            expect(state.predicted.predictionsAvailable).toBe(false);
+            expect(state.predicted.predictionReason).toBe('ACTIVE_EFFORT_BOUNDARY');
+            expect(state.predicted.pressures.map_cmH2O).toBeNull();
+            await expect(page.locator('#param-map')).toHaveText('—');
+            expect(state.completed).not.toBeNull();
+            await effortShot(page,`effort-active-${mode}.png`,`${mode} R5/C60,PEEP5,Pmus12,patientRR12,neuralTi1,RR6,I:E1:4,pressure1;1400ticks; Standard, active analytical predictions unavailable, measured source retained.`);
+        }
+        await h.setupEffort(page,{mode:'pc-cmv',resistance:5,compliance:.06,peep_cmH2O:24,pMusMax:12,patientRR:12,neuralTi:1,respiratoryRate:14,ieRatio:[1,2],inspiratoryPressure:15});
+        const closed=await h.stepTicks(page,1581);
+        expect(closed.physicsSample.valveState).toBe('delivery-closed'); expect(closed.physicsSample.netFlow_Lps).toBe(0);
+        expect(closed.physicsSample.paw_cmH2O).toBeGreaterThan(40);
+        expect(closed.physicsSample.appliedPeep_cmH2O+closed.physicsSample.pressureCommand_cmH2O).toBe(39);
+        expect(closed.activeAlarms.some(a=>a.id==='HIGH_PRESSURE')).toBe(true);
+        await effortShot(page,'effort-closed-valve-high-pressure.png','PC-CMV R5/C60,PEEP24,Pinsp15,RR14,I:E1:2,Pmus12,patientRR12,neuralTi1,flow2;1581ticks; natural delivery valve closure Paw>40 while upstream command39; unchanged alarm threshold.');
+        await page.locator('#active-predictions-help').click();
+        await expect(page.locator('#measurement-help')).toHaveText('This prediction is unavailable when patient effort is enabled. Its calculation does not account for all effects of patient effort on airway pressure and flow.\n\nUse the live waveforms and measured values to assess the simulated breath.');
+        await effortShot(page,'effort-active-predictions-help.png','Same natural PC closure snapshot; open existing static active-predictions help; no ticks.');
+        expect(errors).toEqual([]);
+    });
+
+    test('signed geometry and frozen history survive narrow high-DPI views', async ({ browser }) => {
+        const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,baseURL:'http://127.0.0.1:8899'});
+        const page=await context.newPage();
+        try {
+            const errors=await h.open(page);
+            await h.setupEffort(page,{mode:'vc-cmv',resistance:5,compliance:.1,respiratoryRate:6,ieRatio:[1,4],peep_cmH2O:0,pMusMax:12,patientRR:12,neuralTi:1});
+            await h.stepTicks(page,1400); await h.teachingMode(page);
+            const state=await h.state(page); expect(state.renderers.pressure.geometry.yMin).toBeLessThan(0);
+            expect(await page.locator('#canvas-pressure').evaluate(c=>c.width===Math.round(c.getBoundingClientRect().width*window.devicePixelRatio))).toBe(true);
+            await effortShot(page,'effort-signed-highdpi-390.png','Signed VC recipe at1400ticks; Teaching390x844/deviceScaleFactor2; device-resolution PNG, frozen render.',{scale:'device'});
+            await page.setViewportSize({width:320,height:844}); await page.evaluate(()=>window.__vsim.redraw());
+            const resized=await h.state(page); expect(resized.globalTime).toBe(state.globalTime);
+            expect(resized.triggerEvents).toEqual(state.triggerEvents);
+            expect(resized.renderers.pressure.geometry.yMin).toBe(state.renderers.pressure.geometry.yMin);
+            await effortShot(page,'effort-signed-highdpi-320.png','Same frozen Teaching signed VC sample/history; resize320x844/deviceScaleFactor2; device-resolution PNG, no ticks.',{scale:'device'});
+            expect(errors).toEqual([]);
+        } finally { await context.close(); }
     });
 });

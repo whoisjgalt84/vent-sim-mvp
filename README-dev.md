@@ -36,12 +36,12 @@ npm install
 # Serve over HTTP — ES modules will NOT load over file://
 npm run serve                      # then open http://127.0.0.1:8899
 
-# Engine assertions (300)
+# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy + 41 effort/pressure groups
 npm test
 
 # Browser gates install Playwright's managed Chromium if the cache is empty
-npm run test:browser                 # 44 checks; starts/reuses its own server
-npm run test:visual:docker           # authoritative pinned-Linux visual gate
+npm run test:browser                 # 44 original + 12 adaptive + 4 effort/pressure groups; starts/reuses its own server
+npm run test:visual:docker           # 16 authoritative pinned-Linux visual groups
 
 # Optional current-host diagnostics require host-specific snapshots first
 npm run test:visual:update
@@ -110,7 +110,7 @@ Two modules live at the repo **root**, not under `js/`: `alarms.js` and
 `alarm-audio.js`. Both are imported by `js/main.js`. `alarms.js` is *also*
 script-tagged in `index.html`, where it publishes `window.AlarmEngine` — but
 **nothing reads that global.** The tag is vestigial and removable; it is one of
-the nine `?v=` sites currently maintained by hand.
+the eleven `?v=` sites currently maintained by hand (version 20).
 
 The only devDependency is `@playwright/test`, used by the visual suite and the
 `scratch/*.cjs` harnesses. (`typescript`, `tsx` and `vitest` were declared but
@@ -144,12 +144,16 @@ frame, the monitored-value panel, alarm dispatch and audio, and Teaching Mode.
 generator. `SimulationEngine._computePhysics()` is a **tick integrator**. They
 are not the same model.
 
-The tick integrator drives the display. The analytical path survives as
-`calculateMAP()`, called every frame. Consequence: the monitor's auto-PEEP is
-closed-form while the waveform's trapping is emergent, and **the two do
-disagree** — COPD at RR 20, I:E 1:1 gives a monitored 5.82 cmH₂O against the
-integrator's 6.59. Know which one you are changing. Test coverage is lopsided
-too: see [`docs/model.md`](./docs/model.md#2-what-the-engine-actually-runs).
+The tick integrator drives the display. Passive analytical predictions retain
+their labeled, separate provenance; waveform trapping is emergent residual
+volume and need not agree with those predictions. The legacy analytical
+preview/MAP generator does not implement the live directional supply boundary
+or closed delivery-valve pressure. Its active-effort results are not the
+repaired live signal. Affected active-effort MAP, auto/total PEEP, trapped-volume,
+predicted PC VT/VE and dependent pressure/flow/timing predictions are gated as
+unavailable; adaptive fixed-pressure predictions remain unavailable. Configured
+R/C/calculated RxC, canonical measured values and applicable passive analytics
+retain their meanings. See [`docs/model.md`](./docs/model.md#2-what-the-engine-actually-runs).
 
 ---
 
@@ -166,13 +170,28 @@ VC modes have closed-form solutions; passive expiration is exponential decay.
 
 ### 3. Numerical only when necessary
 
-PC with patient effort requires time-stepping:
+PC with patient effort uses an ideal upstream command and a one-way delivery
+valve. At pre-integration state Vpre:
 
 ```
-V̇(t) = [Pinsp + Pmus(t) − E·V(t)] / R
+D = Pinsp_applied + Pmus − Vpre/C
+Q = max(0, D/R)
+Paw = B + Pinsp_applied       if D >= 0
+Paw = B + Vpre/C − Pmus       if D < 0
+Vpost = Vpre + Q·dt
 ```
 
 Integrated at **100 Hz** (`dt = 0.01 s`), forward Euler.
+
+The closed branch has zero flow and patient-side recoil/muscle pressure, which
+may exceed the upstream command. Closure does not change mandatory Ti, PC-CSV
+flow/max-Ti cycling or trigger availability. Expiration in all four modes uses
+d=Pmus-Vpre/C: d<=0 gives Q=d/R and Paw=B; d>0 gives Q=d/(R+Rc) and Paw=B-Rc·Q.
+Rc=2 cmH2O·s/L is an accepted educational inward-supply assumption, distinct
+from patient airway R; setup-only range 0.5–5 requires reset and has no learner
+slider. No circuit compliance, bias flow, leak or pressure-response delay is
+modeled. HOLD stays sealed; VC retains its deliberately post-integration
+pressure sample. See docs/model.md for collocation and numerical limits.
 
 ### 4. Steady-state assumption in the analytical path
 
@@ -183,22 +202,37 @@ no such assumption — trapping there is emergent residual volume.
 ### 5. Modes reveal different truths
 
 * **VC** → flow is controlled → **pressure** reveals mechanics and effort
-* **PC** → during pressure-targeted inspiration, flow and volume reflect mechanics and effort. This simulator prescribes Paw exactly at its target in PC-CMV and PC-CSV: idealized set-point pressure control.
+* **PC** → during pressure-targeted inspiration, flow and volume reflect
+  mechanics and effort. Patient-side Paw equals the upstream target while
+  inward flow is delivered; if the delivery valve closes, flow is zero and Paw
+  follows recoil and prescribed muscle pressure. The upstream command remains
+  unchanged within the breath.
 
+The clinical reading rule emphasizes the waveform opposite the control
+variable. Real ventilators can show additional pressure deformation. Read flow
+and volume alongside pressure. This model does not reproduce a particular
+commercial ventilator, measure work of breathing, or model a patient's response
+to changing assistance. See `docs/model.md` §3.2 for the accepted educational
+valve/sensor contract; historical morphology records are not clinical validation.
 
-
-The clinical reading rule emphasizes the waveform opposite the control variable. Patient effort may also affect pressure on real ventilators (MC2022, PDF p.4 / journal p.132). See `docs/model.md` §3.2 for the phase boundaries and deferred morphology review.
+Patient trigger: recorded event on its pressure or flow waveform. Machine
+trigger: timed breath. Detection metadata, not the live trigger setting, selects
+the historical patient marker; neither patient marker belongs on volume.
+Paw is gauge pressure at the modeled airway opening. The dashed zero line is
+atmospheric pressure, not PEEP. A pressure drop below applied PEEP can still be
+above zero. Genuine negative modeled values remain visible; no pressure dip is
+added for appearance.
 
 ---
 
 ## 🧪 Validation (critical)
 
-The harness is not optional — it is the **ground truth**.
+The harness is required evidence for the implemented contracts.
 
 ```bash
-npm test                              # 300 engine assertions; exact count gated
-npm run test:browser                  # 44 browser assertions; self-contained
-npm run test:visual:docker            # 9 authoritative Linux visual/determinism/cache checks
+npm test                              # 300 original + 22 controller + 24 integration + 22 selective legacy + 41 effort/pressure groups
+npm run test:browser                  # 44 original + 12 adaptive + 4 effort/pressure groups; self-contained
+npm run test:visual:docker            # 16 authoritative Linux visual/determinism/cache groups
 node scratch/shot.cjs <outDir> [...]  # diagnostic screenshots
 ```
 
@@ -210,17 +244,23 @@ frame-timing-dependent — see [`docs/visual-testing.md`](./docs/visual-testing.
 `shot.cjs` scenarios: `baseline`, `teaching`, `effort`, `effort-teaching`,
 `weak-csv`, `teaching-loops`, `alarm-silenced`.
 
-The engine tests verify hand-calculable physiology, time constants, auto-PEEP,
-waveform integrity, trigger eligibility, and clinical sanity. If these fail:
-
-> The simulator is wrong.
+The engine tests verify implemented equations, time constants, auto-PEEP,
+waveform integrity and trigger eligibility. They establish implementation
+conformance within their tested domains, not clinical or device validation.
 
 ### The verification layers gate CI
 
-`npm test` sets a nonzero exit on any failure and enforces the exact 300/0
-tally. Mutation-verified: multiplying `LungModel.timeConstant` by 1.5 gives 29
-failures and exit 1. The 44 browser checks and nine visual checks also propagate
-nonzero exits and retain Playwright diagnostics on CI failure.
+`npm test` sets a nonzero exit on any failure and retains the original 300/0
+guard alongside the 22/24/22/41 group inventories. The 41 effort/pressure groups
+comprise 40 engine groups and one renderer group with 66 subchecks. The 22 legacy
+fixtures exercise 92,500 ticks: 8 passive fixtures compare 28,000 ticks exactly;
+14 active fixtures independently check corrected conformance over 64,500 ticks.
+No claim of 92,500 exact matches is made. The required browser inventory is
+44 original + 12 adaptive + 4 effort/pressure groups; visual inventory is
+13 existing + 3 effort/pressure groups. These are gate requirements, not a fresh
+passing-run receipt. All gates propagate nonzero exits and browser gates retain
+Playwright diagnostics on CI failure. The original suite's historical mutation
+check multiplied `LungModel.timeConstant` by 1.5, giving 29 failures and exit 1.
 
 For most of this project's life it did not: the file had no exit code, so the CI
 badge stayed green through any number of failures. Worth knowing when reading
@@ -245,6 +285,7 @@ confirm it goes red. Five assertions that could not fail were found this way.
 | Flow       | L/s                 | L/min               |
 | Compliance | L/cmH₂O             | mL/cmH₂O            |
 | Resistance | cmH₂O·s/L           | cmH₂O·s/L           |
+| Supply Rc  | cmH₂O·s/L           | disclosed educational assumption; no learner slider |
 | Time       | s                   | s                   |
 
 Sign conventions: **positive flow = inspiration**; **Pmus > 0 = inspiratory
@@ -252,7 +293,10 @@ effort**, Pmus < 0 = expiratory effort.
 
 Every pressure needs a declared reference frame — absolute, gauge, or relative
 to PEEP. `Pvent` and pressure-support levels are **relative to PEEP**; `Paw` is
-gauge.
+gauge. Paw is patient-side airway-opening gauge pressure; command is upstream
+during closed delivery-valve intervals. Applied PEEP, not a queued request, is
+the pressure-trigger reference. Existing PEEP-coordinate changes do not jump
+V; they do not model gas redistribution or recruitment.
 
 ---
 

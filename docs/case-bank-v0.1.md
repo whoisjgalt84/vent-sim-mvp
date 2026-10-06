@@ -8,6 +8,8 @@ immediate reinforcement, and debrief value.
 
 ## Manual viability summary
 
+Manual viability means that a proposed setup uses available controls; it is not approval of the clinical narrative, expected numerical trace, alarm interpretation or intervention. Every case needs a build-specific rehearsal and separate VSM-CLIN-010 review. All values are educational-model outputs. Refer to [current model documentation](model.md) for availability and measurement provenance.
+
 Preset labels describe mechanics examples. The legacy keys are retained for compatibility. Clinical case narratives, interventions and expected clinical interpretations remain draft and require separate VSM-CLIN-010 review.
 
 | Case | Manual today in current MVP | Best early phase | Notes |
@@ -15,7 +17,7 @@ Preset labels describe mechanics examples. The legacy keys are retained for comp
 | 1. Normal VC-CMV baseline | Yes | Phase 0 | Strong orientation case |
 | 2. COPD air trapping | Yes | Phase 0 | Teaching Mode helps reveal mechanism |
 | 3. ARDS lung protection | Yes | Phase 0 | Uses inspiratory hold well; loads "Low compliance (25)" preset |
-| 4. PC-CMV compliance change | Partial | Phase 1 | Best with manual or automated change in mechanics |
+| 4. PC-CMV mechanics-example change | Partial | Phase 1 | Best with manual or automated change in mechanics |
 | 5. Patient effort in VC-CMV | Yes | Phase 0 | Good for synchrony reasoning |
 | 6. PC-CSV apnea / no effort | Yes | Phase 0 | Current alarms already support it |
 | 7. Trigger sensitivity and failed triggering | Yes | Phase 0 | Good recognition and adjustment case |
@@ -72,7 +74,7 @@ timing anatomy here, later abnormalities become easier to recognize."
 
 Instructor notes:
 - After initial observation, optionally use Teaching Mode to connect the normal
-  waveform to normal measured RR, PIP, Pplat, and flow baseline.
+  waveform to Measured RR, PIP and flow baseline, plus valid hold-derived Measured Pplat when a qualifying inspiratory hold is performed.
 
 Independent learner hints:
 - Start with the flow waveform to identify inspiration and expiration.
@@ -108,7 +110,7 @@ Setup:
 Primary signals:
 - expiratory flow does not return to baseline before the next breath
 - Teaching Mode shows incomplete expiratory completion
-- auto-PEEP / total PEEP trend upward
+- Live modeled trapped volume may accumulate across breaths; the separate passive predicted steady-state auto-PEEP/total-PEEP readouts describe analytical targets, not a live occlusion measurement. Verify actual observation times and values in rehearsal.
 
 Distractors/noise:
 - VT is still being delivered, which may falsely reassure the learner
@@ -125,8 +127,7 @@ What the learner might incorrectly conclude:
 - "This is only a pressure problem."
 
 Key teaching point:
-The signature of air trapping is persistent expiratory flow, not merely a COPD
-label. In high resistance states, Te/tau matters.
+In this model, persistent expiratory flow can demonstrate incomplete expiration under the stated mechanics and timing. Flow non-return does not quantify intrinsic PEEP or establish a unique clinical cause.
 
 Suggested intervention:
 - reduce RR and/or lengthen I:E to increase expiratory time
@@ -173,7 +174,7 @@ Setup:
   driving-pressure reasoning are vivid; driving pressure ≈ 20 cmH2O at VT 500).
   This ARDSnet planning comparison and clinical rationale are unverified draft claims pending VSM-CLIN-010 review.
 - Passive patient
-- Inspiratory hold available for plateau check
+- A qualifying completed inspiratory hold is required for Measured Pplat; hold-derived driving pressure uses the modeled total-PEEP baseline frozen at breath start, not an unqualified Pplat minus set PEEP.
 
 Primary signals:
 - low compliance pattern with high plateau pressure
@@ -185,7 +186,7 @@ Distractors/noise:
 - learner may focus only on PIP and ignore plateau
 
 What the learner should see:
-- a stiff lung in which the delivered VT creates an unsafe pressure burden
+- a low total-system compliance example with elevated modeled pressure; whether the selected VT represents an unsafe clinical burden requires the case reviewer's interpretation
 - inspiratory hold helps show that the issue is compliance-driven
 
 What the learner might incorrectly conclude:
@@ -207,7 +208,8 @@ Feedback message:
 frame risk, and lowers the stretch burden rather than escalating it."
 
 Instructor notes:
-- This case works well with inspiratory hold to separate peak from plateau.
+- This case requires separate review of patient size/PBW, target rationale and the limits of a constant total-system C example. The ARDSnet comparison above remains unverified.
+- This case works well with a validity-qualified inspiratory hold to compare peak and plateau.
 - The most useful debrief is often about why the learner chose the number they
   chose, not only whether they turned VT down.
 
@@ -225,7 +227,7 @@ Future simulator features needed:
 - automated capture of pre- and post-intervention pressures
 - optional scoring for protective strategy choices
 
-## Case 4: PC-CMV compliance change
+## Case 4: PC-CMV mechanics-example change
 
 - Manual today in MVP: Partial
 - Best roadmap phase: Phase 1
@@ -233,27 +235,20 @@ Future simulator features needed:
 - Expected alarms: Low VE may occur if VT falls enough
 
 Short narrative:
-A patient on PC-CMV initially looks stable, then compliance worsens. The
-learner must recognize that the pressure waveform can look unchanged while VT
-and VE fall.
+A PC-CMV mechanics example is changed from Normal to Low compliance (25), changing both R and C. The learner compares VT and the trailing Delivered VE history under the same pressure command. This draft is not an isolated compliance experiment.
 
 Setup:
 - Mode PC-CMV
 - Pinsp 10 above PEEP, RR 14, I:E 1:2, PEEP 5, FiO2 40%
-- Start with Normal example (delivered VT ≈ 545 mL, VE ≈ 7.6 L/min at these
-  settings)
-- Then manually change to the "Low compliance (25)" preset while keeping vent settings
-  the same (delivered VT falls to ≈ 250 mL, VE drops to ≈ 3.5 L/min — just
-  above the 3.0 L/min low-VE alarm threshold)
+- Start with Normal example. Exact measured VT and observation time require rehearsal.
+- Then manually change to the "Low compliance (25)" preset while keeping vent settings the same. Record completed inspired VT and the Delivered VE history rather than assume fixed immediate values.
 
 This example switch changes R from 10 to 12 cmH₂O·s/L as well as C from 60 to 25 mL/cmH₂O; it is not an isolated compliance change.
 
 Primary signals:
 - pressure waveform remains pressure-targeted and visually similar
-- delivered VT falls from ≈ 545 mL on Normal to ≈ 250 mL on "Low compliance (25)" as
-  compliance worsens — the pressure waveform shape gives no warning
-- VE falls from ≈ 7.6 L/min to ≈ 3.5 L/min, sitting just above the 3.0 L/min
-  low-VE alarm threshold unless compensated
+- completed inspired VT changes with the two-parameter mechanics switch; exact numerical targets require rehearsal
+- Delivered VE follows the trailing 30-second volume history and changes over that window; fresh reset data remain unavailable during warm-up
 
 Distractors/noise:
 - a stable pressure waveform may falsely reassure the learner
@@ -282,7 +277,7 @@ Feedback message:
 responds by checking VT rather than trusting the pressure waveform alone."
 
 Instructor notes:
-- This is best run as a compare case: before compliance change and after.
+- This is best run as a compare case: before and after the mechanics-example change. A separately rehearsed isolated-C version using manual C needs its own approval.
 - Today, the change can be done manually by the instructor or learner.
 
 Independent learner hints:
@@ -295,7 +290,7 @@ Instructor debrief prompts:
 - How would this differ from the same compliance change in VC-CMV?
 
 Future simulator features needed:
-- automated mid-case compliance deterioration
+- automated mid-case mechanics-example change
 - decision point and feedback after the learner responds
 
 ## Case 5: Patient effort in VC-CMV
@@ -314,8 +309,8 @@ Setup:
 - Mode VC-CMV, square flow
 - VT 500 mL, RR 12, I:E 1:2, PEEP 5, FiO2 40%
 - Normal example
-- Patient effort On: effort 6 to 8 cmH2O, neural Ti about 1.0 s, patient RR 20
-- Trigger set easy enough to allow patient-triggered breaths
+- Draft rehearsal setup: Patient effort On, prescribed peak Pmus 8 cmH2O, neural Ti 1.0 s, patient RR 20/min
+- Flow trigger 2.0 L/min; verify the exact state under the current finite-boundary successor before case approval
 
 Primary signals:
 - pressure scalloping during inspiration
@@ -328,7 +323,7 @@ Distractors/noise:
 
 What the learner should see:
 - patient effort unloading the pressure waveform in VC
-- the patient contributing work and triggering extra breaths
+- prescribed muscle pressure changing airway pressure, with additional breaths only when the modeled trigger and eligibility conditions are satisfied
 
 What the learner might incorrectly conclude:
 - "Lower pressure means compliance improved."
@@ -336,8 +331,7 @@ What the learner might incorrectly conclude:
 - "Nothing important is happening because VT is still delivered."
 
 Key teaching point:
-In VC, patient effort can create scalloped pressure without changing the
-delivered flow target. The patient may be doing work the ventilator used to do.
+The instructor increases prescribed inspiratory muscle pressure. Under fixed-flow VC, that input changes the pressure required at the airway opening while the delivered flow target remains constrained; eligible efforts may also trigger additional breaths. The simulator does not calculate work of breathing or model drive, fatigue, injury or a patient's physiological response to assistance. An isolated pressure dip does not establish a unique clinical interaction.
 
 Suggested intervention:
 - identify the breath as patient-interactive rather than purely passive
@@ -349,8 +343,8 @@ Feedback message:
 compliance, and recognizes why actual RR can exceed set RR."
 
 Instructor notes:
-- This is a good calibration case for the phrase "the patient is doing work."
-- Avoid turning it into a sedation discussion unless that is the explicit goal.
+- Describe prescribed Pmus and the modeled pressure/flow signals; do not present a work-of-breathing measurement or drug response.
+- Sedation, drive, gas exchange and fatigue responses are not simulated.
 
 Independent learner hints:
 - Compare pressure behavior with the normal VC baseline case.
@@ -382,13 +376,13 @@ Setup:
 - Pressure support 10 above PEEP, cycle threshold 25%
 - PEEP 5, FiO2 40%
 - Normal example
-- No patient effort, patient RR 0 / passive
+- Set patient effort to Passive and verify modeled Pmus is zero; Patient RR has no zero slider setting. Check the deferred zero-effort mode-switch discrepancy before relying on this state.
 - Default alarm thresholds
 
 Primary signals:
 - no effective breaths occur
 - measured RR stays at 0
-- minute ventilation stays at 0
+- Delivered VE shows unavailable/Collecting 30 s during warm-up, then 0.0 L/min for a valid empty window
 - apnea alarm then low VE alarm activate
 
 Distractors/noise:
@@ -410,7 +404,7 @@ pressure is not the same thing as backup mandatory ventilation.
 
 Suggested intervention:
 - recognize mode dependence on spontaneous effort
-- switch to a mandatory mode or restore a backup ventilation strategy
+- switch deliberately to another supported mandatory mode; PC-CSV has no backup ventilation strategy to enable
 
 Feedback message:
 "Correct if the learner understands that pressure support without effort gives
@@ -424,9 +418,7 @@ Instructor notes:
   patient effort is zero (confirmed in js/simulation.js — the machine-timer
   backup path is gated on non-spontaneous modes), so the patient will sit at
   PEEP indefinitely until effort returns or the operator switches modes.
-- Engine note: alarms are suppressed during a 5-second startup grace
-  (stabilizationSeconds = 5 in DEFAULT_ALARM_LIMITS) before the apnea timer
-  becomes meaningful.
+- By default apnea activates after more than 20 simulated seconds without a breath start. Low VE becomes eligible only after the full valid 30-second delivery window and the separate five-second VE grace; high pressure/high RR/apnea do not share a blanket startup grace.
 
 Independent learner hints:
 - Ask whether this mode has a machine backup breath in the current MVP.
@@ -457,10 +449,8 @@ Setup:
 - Mode VC-CMV, square flow
 - VT 500 mL, RR 6, I:E 1:2, PEEP 5, FiO2 40%
 - Normal example
-- Weak patient effort On: effort about 0.5 to 1 cmH2O, neural Ti about 1.0 s,
-  patient RR 20
-- Trigger set intentionally insensitive, for example flow trigger 5.0 L/min or
-  pressure trigger 2.0 cmH2O
+- Draft rehearsal setup: Patient effort On, prescribed peak Pmus 1.0 cmH2O, neural Ti 1.0 s, patient RR 20/min
+- Flow trigger 5.0 L/min. Rehearse this exact state against the finite-boundary successor; the old amplitude/pressure-trigger recipes are not current verification receipts.
 
 Primary signals:
 - visible effort-related deflection before some breaths
@@ -510,7 +500,7 @@ Instructor debrief prompts:
 - How would the waveform change after a successful adjustment?
 
 Future simulator features needed:
-- explicit failed-trigger annotations
+- The current amber highlight and Failed triggers /60 s counter are available. Further guided comparison remains future work; no new failed-trigger marker or pre-apnea banner is implied.
 - prompt that asks the learner to compare before and after trigger adjustment
 
 ## Case 8: High pressure alarm differential
@@ -533,8 +523,9 @@ Setup:
 - Scene B compliance pattern:
   VC-CMV, VT 500 mL, RR 14, I:E 1:2, PEEP 5, "Low compliance (25)" preset
   (R=12, C=0.025)
-- Lower the high pressure alarm threshold if needed so both scenes trip it
-- Inspiratory hold available in both scenes
+- Draft rehearsal high-pressure threshold: 20 cmH2O in each scene; independently verify that each selected state actually crosses it
+- Verify Passive effort (Pmus zero), square flow and a completed qualifying 0.5 s hold in each scene; preserve full validity criteria
+- Reset each scene; record breath identity, observation time, measurement availability and 30 s VE warm-up before comparisons
 
 Primary signals:
 - both scenes may trigger a high pressure alarm
@@ -568,7 +559,8 @@ Feedback message:
 alone, to separate resistance from compliance."
 
 Instructor notes:
-- This is best framed as a differential diagnosis case, not a single-scene case.
+- Exact threshold crossings and qualifying hold outputs need build-specific rehearsal. The diagnostic/intervention narrative remains draft; the generic alarm does not validate resistance-versus-compliance interpretation.
+- This is best framed as a draft differential case, not a single-scene case.
 - Today it works as a manual A/B comparison. Later it should become a guided
   branch case.
 

@@ -5,6 +5,8 @@ description: Verify, self-review, commit and report a batch of work on vent-sim-
 
 # ship-batch
 
+The desktop-bridge/OneDrive procedures below describe that environment and its observed limitations. Verify the selected task environment before applying them; do not infer that every current executor has the same paths, tools, connectivity or lock behavior.
+
 The end-of-batch recipe. It exists because this sequence gets re-derived every
 session and the failure modes are all silent ones.
 
@@ -27,9 +29,9 @@ physiological assertion) ship with a checkpoint note in the report.
 Run all four. Do not skip one because the change "obviously" doesn't touch it.
 
 ```bash
-npm test                          # 300 engine assertions
-npm run test:browser              # 44 browser assertions; self-contained
-npm run test:visual:docker        # 9 authoritative Linux visual/determinism/cache checks
+npm test                          # 300 original assertions + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
+npm run test:browser              # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; self-contained
+npm run test:visual:docker        # 16 authoritative pinned-Linux visual/determinism/cache checks
 node scratch/shot.cjs scratch/shots-<batch> baseline teaching effort effort-teaching
 ```
 
@@ -87,9 +89,7 @@ plausible-looking cleanup:
 - `#param-rr` guarded innerHTML rebuild, count written by `textContent` after
 - every local asset carrying the same `?v=`, including `css/style.css`
 
-If you bumped `?v=`, bump **all ten sites** — `index.html` ×3, `js/main.js` ×6,
-plus `js/ventilator.js`'s import. The visual suite's cache-busting test
-catches misses from the network side.
+If you bumped `?v=`, update every local asset/import site in the current `CLAUDE.md` §4 inventory (eleven at the inspected baseline, including the simulation import). The visual suite's cache-busting test catches misses from the network side.
 
 ---
 
@@ -163,7 +163,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Give Christian, in this order:
 
-1. **The tallies.** `300 passed / 0 failed`, `9 visual`, `44 browser`, and where
+1. **The tallies.** original `300 passed / 0 failed`; controller 22/0; integration 24/0; selective legacy 22/0; effort/pressure 41/0; browser 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; 16 pinned-Linux visual groups, each with the checked revision and receipt, and where
    the screenshots are.
 2. **Anything found by self-review**, including in your own work.
 3. **Any Yellow-lane checkpoint** he needs to rule on before merge.
@@ -178,3 +178,7 @@ Give Christian, in this order:
    `git checkout main && git pull`.
 
 Do not end with "tests pass." End with numbers.
+
+The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups and 5 Effort-slider groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
+
+Legacy fixture accounting is 92,500 exercised ticks: 28,000 exact passive ticks in 8 fixtures and 64,500 active conformance ticks in 14 fixtures. Review the [current model](../../../docs/model.md) and [successor index](../../../docs/clinical/CLIN-001/successor-index.md) for provenance and open owner gates.

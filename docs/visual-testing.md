@@ -19,8 +19,8 @@ npm run test:visual              # compare against those host snapshots
 The verification surfaces have distinct purposes:
 
 - `npm test`: 300 original engine assertions plus 22 controller, 24 integration,
-  22 selective legacy and 41 effort/pressure groups (CI on Node 22 and 24).
-- `npm run test:browser`: 44 original, 12 adaptive and 4 effort/pressure groups; its server
+  22 selective legacy fixtures and 41 effort/pressure groups (CI on Node 22 and 24).
+- `npm run test:browser`: 44 original checks, 12 adaptive, 4 effort/pressure and 5 Effort-slider groups; its server
   lifecycle is self-contained (CI in the pinned Playwright image).
 - `npm run test:visual:docker`: 16 required visual/determinism/cache-busting
   groups (13 existing plus 3 effort/pressure) in the pinned Playwright image.
@@ -181,7 +181,7 @@ or device validity.
 
 It also does not replace `scratch/verify-batch.cjs`, which asserts *behaviour*
 across its original 44 checks — tooltips, alarm state machines, element geometry.
-The current browser runner also requires 12 adaptive and 4 effort/pressure
+The current browser runner also requires 12 adaptive, 4 effort/pressure and 5 Effort-slider
 groups. Browser and visual gates are
 complementary: verify-batch answers "does it still work", this answers "does it
 still look right".
@@ -239,9 +239,11 @@ groups (40 engine groups plus one renderer group containing 66 subchecks).
 Legacy accounting retains 92,500 exercised ticks: 28,000 exact passive ticks
 across 8 fixtures and 64,500 independent active conformance ticks across 14
 fixtures. It does not claim all 92,500 are exact checkpoint matches. Browser
-inventory is 44 original + 12 adaptive + 4 effort/pressure groups. These are
+inventory is 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups. These are
 required inventories, not fresh passing receipts. Count guards remain strict.
 CI fetches the pinned ancestor required by the legacy test rather than
 substituting current HEAD as its reference. Independent review and meaningful
 fault detection supplement these gates; owner acceptance of exact image bytes,
 baseline installation, staging and commits are separate subsequent actions.
+
+The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups and 5 Effort-slider groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.

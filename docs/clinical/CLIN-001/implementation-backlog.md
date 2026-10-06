@@ -1,5 +1,7 @@
 # Implementation backlog proposals
 
+**Historical CLIN-001 baseline.** The findings, source availability, approved decisions and verification receipts in this packet describe the reviewed `b3c895c914070920d8122d3b88134d03107f1e51` implementation and their stated dates. Later implementation and scope changes are recorded in the [successor index](successor-index.md); they do not retrospectively change this evidence. Current behavior must be read from the [current model](../../model.md)/contract plus the successor receipt.
+
 These are downstream proposals only. CLIN-001 changes no runtime, tests, existing documents, copy, or baselines. Proposals marked **owner-gated** are not approved implementation work.
 
 ## VSM-CLIN-002 - reconcile live VC tidal-volume boundary behavior
@@ -167,3 +169,7 @@ These are downstream proposals only. CLIN-001 changes no runtime, tests, existin
 - **Visual review:** Required if learner-facing labels or trigger tooltips change.
 - **Dependencies/sequencing:** Obtain applicable evidence and an owner decision for the intended teaching semantics. Preserve current trigger detection until that specification is approved.
 - **Non-goals:** Do not add a circuit, bias flow, leak model, or device-equivalence claim in the specification ticket.
+
+## Current successor dispositions - 2026-10-06
+
+The original bounded proposals and non-goals above are preserved. The [successor index](successor-index.md#ticket-dispositions) supplies the dated implementation/gate disposition for each CLIN-002 through CLIN-016 ticket and links its current primary contract. These editorial status fields are separate from the historical matrix vocabulary; a merged implementation does not automatically close every source-ticket claim.

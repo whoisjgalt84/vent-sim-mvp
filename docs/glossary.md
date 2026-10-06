@@ -258,6 +258,8 @@ Causes of a **failed trigger**, all worth teaching: auto-PEEP (Pmus must exceed
 it before flow can be positive), **over-assistance**, high trigger threshold,
 weak effort or low drive.
 
+These are literature-described mechanisms, not a list of implemented patient responses. Here, Pmus amplitude, neural rate and neural inspiratory time are prescribed instructor inputs. Changing assistance does not suppress or increase modeled drive, fatigue or effort; no work-of-breathing or work-fraction measurement is implemented.
+
 > ⚠️ Documented dissent: Piraino argues "failed trigger" pushes clinicians to
 > reach for the sensitivity knob when the cause is over-support, and teaches
 > "ineffective effort" instead. Canonical term here remains **failed trigger** —
@@ -282,7 +284,7 @@ intended).
 > manifestations of work shifting, reflecting **under-assistance rather than
 > timing errors** (MC2026, Maxim 8).
 
-How work shifting appears, by targeting scheme — this governs rendering:
+Source interpretation of work shifting by targeting scheme follows. It does not override this simulator's valve/sensor contract or establish a work-measuring model:
 
 | Targeting | Pvent as Pmus ↑ | Total work | Signature |
 | --- | --- | --- | --- |

@@ -75,10 +75,7 @@ group inventory in Section 11. In that breakdown, the largest bloc — roughly 1
 neither generator. The analytical *breath generator* is barely tested; mutating
 its VC pressure line failed 2 assertions out of 300.
 
-**Consequence to know about:** the monitored auto-PEEP value is closed-form,
-while the trapping visible in the waveform is emergent residual volume in the
-integrator. They are computed by different code from different assumptions and
-can disagree. Reconciling them is open work.
+The standard monitor's **Predicted steady-state auto-PEEP** is a passive closed-form prediction, unavailable with configured active effort or PC-CMVa. Teaching Mode uses that row for the live **Flow Baseline** cue. **Predicted steady-state trapped volume** is an applicable analytical prediction; **Live modeled trapped volume** is the residual volume latched immediately before the current breath started. It is not a continuously updated volume or an expiratory-hold measurement. These paths have different assumptions and can disagree; VSM-CLIN-014 reconciliation remains open.
 
 ---
 
@@ -286,15 +283,11 @@ results without erasing finalized VT or PIP. The boundary sample is written
 later in the same 100 Hz tick; no waveform or integration timing is changed by
 recording it.
 
-**Hold ends** at the effective hold duration. Hold is forced to zero in PC-CSV.
+**Hold ends** at the effective hold duration. HOLD is unavailable in PC-CSV and PC-CMVa.
 
-**Expiration ends** when the machine backup timer reaches `Ttot = 60/RR`, *or*
-earlier if the patient triggers. A patient trigger already scheduled wins a tie
-against the timer.
+**Expiration ends** on a successful patient trigger. In VC-CMV, PC-CMV and PC-CMVa, the mandatory-breath timer can also start the next breath when Ttot = 60/RR is reached; a scheduled patient trigger wins a tie. PC-CSV does not use that timer and provides no apnea backup breath.
 
-Settings are re-read every tick, so most changes take effect mid-breath rather
-than at the next breath boundary. This is deliberate — cause and effect stay
-adjacent for the learner.
+Most legacy settings are re-read every tick and may take effect mid-breath. PC-CMVa is the explicit exception for pressure command and applied PEEP, which latch at breath start; target/PEEP requests queue and follow the atomic reset/exit rules in [adaptive-mode-contract.md](adaptive-mode-contract.md). Immediate mechanics/effort edits invalidate mixed adaptive feedback.
 
 ---
 
@@ -311,6 +304,8 @@ driven by an independent neural oscillator with period `60 / patientRR`. The
 patient's rate, effort amplitude and neural inspiratory time are set separately
 from the ventilator's rate — which is the whole point. `Ti_neural ≠ Ti_vent` is
 the normal case, not an edge case.
+
+This oscillator prescribes effort; it is not a respiratory-drive or work-of-breathing response model. Changing ventilator assistance alone does not change its selected amplitude, rate or neural inspiratory time. No drug response is modeled.
 
 Making `Pmus` visible is the simulator's core teaching affordance. It is a
 variable no real ventilator displays.
@@ -494,8 +489,7 @@ Everything here is a known gap, not an oversight. Listed so nobody has to
 rediscover them, and so teaching claims stay honest.
 
 **Mechanics.** Single compartment only — no regional heterogeneity, no
-recruitment or derecruitment, no pendelluft. R and C are constant within a
-breath: no volume- or flow-dependent resistance, no sigmoid pressure–volume
+recruitment or derecruitment, no pendelluft. R and C have no intrinsic volume-, flow-, or time-dependent variation; operator edits can take effect mid-breath: no volume- or flow-dependent resistance, no sigmoid pressure–volume
 curve, no lower or upper inflection point. No chest-wall vs lung partitioning,
 so no transpulmonary pressure. No expiratory flow limitation.
 
@@ -507,10 +501,7 @@ transitions, changing retained volume and pretrigger flow can separate the
 integrals over the inspiratory and expiratory phases. The completed VT record
 is the modeled inspiratory increase above breath-start residual volume.
 
-**Ventilator.** Set-point targeting only — no adaptive, servo, dual, optimal or
-intelligent schemes, so PRVC, Volume Support, NAVA, PAV and ASV are all out of
-reach. CMV and CSV only; no IMV, so no SIMV. Rise time is not settable. No
-apnea backup ventilation. No breath-to-breath ventilator noise.
+**Ventilator.** Three set-point modes and generic adaptive PC-CMVa are implemented. Additional adaptive schemes, servo, dual, optimal and intelligent targeting are not implemented; there is no vendor-specific PRVC, Volume Support, NAVA, PAV or ASV emulation. CMV and CSV only; no IMV. Rise time is not settable. PC-CSV has no apnea backup ventilation. No breath-to-breath ventilator noise is modeled.
 
 **Patient.** No expiratory effort, no reverse triggering or entrainment, no
 cough, no secretions, no variability in effort amplitude or timing.
@@ -545,7 +536,8 @@ integration groups, 22 selective legacy fixtures and 41 effort/pressure groups
 (40 engine groups plus a renderer group with 66 subchecks). The unchanged legacy
 fixture inventory exercises 92,500 ticks: 28,000 exact passive comparisons in
 8 fixtures and 64,500 corrected active conformance ticks in 14 fixtures. Browser
-verification requires 44 original, 12 adaptive and 4 effort/pressure groups;
+verification requires 44 original checks, 12 adaptive, 4 effort/pressure and
+5 Effort-slider groups;
 the pinned-Linux visual inventory is 16 groups (13 existing plus 3 effort/pressure).
 Fresh receipts establish passing results; this paragraph records required scope.
 

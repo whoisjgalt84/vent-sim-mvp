@@ -39,3 +39,7 @@ Historical TEST 9 in `tests/test-engine.js` prints the preset table but has **ze
 Case selector references are maintained; clinical narratives, interventions and learning judgments remain draft under VSM-CLIN-010, including the unverified Case 3 ARDSnet comparison. Case 4 changes both R and C. Responsive layout, general contextual-help standardization, waveform annotation placement, clinical morphology, source-table correction research and disease-specific restoration remain separate work.
 
 Phase B prepares isolated Linux visual candidates for owner inspection. Accepted baseline installation and Git publication require separate authorization.
+
+## Implementation/publication successor - 2026-10-06
+
+[PR 44](https://github.com/whoisjgalt84/vent-sim-mvp/pull/44) merged on 2026-09-19; its description records accepted-baseline installation. The preceding Phase B authorization boundary is historical. Source-table image and RC discrepancy limits remain unresolved, and case narratives remain draft. See the [successor index](../CLIN-001/successor-index.md) for current gates and retained-evidence retrieval limits.

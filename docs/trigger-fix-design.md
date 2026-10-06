@@ -1,16 +1,10 @@
 # Design Spec — Patient-Trigger Eligibility Fix + Failed-Trigger Rendering
 
-Status: **APPROVED — decisions recorded; ready for PR2 (failing tests)** (planning only — no engine code in this PR)
-Author: Engine investigation (Vesper) · Date: 2026-06-11
-Tracker refs: SME-001, SME-004 (trigger drop); SME-005, SME-006 (PC-CSV measured RR);
-SME-016 (silent-drop / unifying fix)
+**Historical approved design, 2026-06-11.** The problem investigation, decisions, proposed sequence and source coordinates below describe main @ 79a830f. They are retained as historical evidence, not a current implementation checklist or a passing-test receipt.
 
-> Scope guard: this document specifies behavior and contracts only. It changes no
-> engine code, no tests, no UI. Line numbers cite the source as read on this
-> branch's base (`main` @ 79a830f). Implementation is staged in later PRs
-> (see §7).
+Later owner decisions removed the proposed failed-trigger marker and pre-apnea banner; the accepted effort/pressure successor replaced the historical pressure-trigger proxy and added immutable detection provenance. For current behavior, use [model.md](model.md) §6, [glossary.md](glossary.md) §9 and [CLAUDE.md](../CLAUDE.md) §§4 and 7. Historical pseudocode and numerical observations below are not the current detector contract.
 
----
+Tracker refs: SME-001, SME-004, SME-005, SME-006, SME-016.
 
 ## 1. Problem restatement
 

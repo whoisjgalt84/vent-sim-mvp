@@ -51,12 +51,12 @@ The current MVP already has strong teaching raw material. Future cases should
 orchestrate these strengths rather than replace them:
 
 - real-time pressure, volume, and flow waveforms
-- VC-CMV, PC-CMV, and PC-CSV mode behavior
+- VC-CMV, PC-CMV, PC-CSV and generic educational PC-CMVa mode behavior
 - patient mechanics presets and manual R/C adjustment
 - patient effort and trigger sensitivity
-- inspiratory hold, PIP, Pplat, DeltaP, auto-PEEP, and measured RR
-- Teaching Mode metrics such as flow baseline and expiratory completion
-- active alarm logic for high pressure, high RR, apnea, low VE, and high VE
+- live PIP/VT and Measured RR; validity-qualified inspiratory-hold outputs in supported modes
+- separately labeled passive predicted auto-PEEP and live modeled trapped volume
+- project-defined Teaching Mode cues and current project-default alarms
 
 In practice, a good case should ask the learner to use the existing simulator
 screen to answer a question such as:
@@ -286,6 +286,8 @@ Guardrail:
 
 ## Current MVP fit
 
+Draft technical feasibility only; case-level clinical approval and build-specific rehearsal remain required. Manual-fit labels do not approve narratives, alarms or interventions. Private facilitator guides are separate review drafts, not approved additions to this repository bank.
+
 Cases that can already run manually today with the current MVP:
 
 - Case 1: Normal VC-CMV baseline
@@ -298,7 +300,7 @@ Cases that can already run manually today with the current MVP:
 Cases that are partially runnable today but work best with future scenario
 support:
 
-- Case 4: PC-CMV compliance change
+- Case 4: PC-CMV mechanics-example change
 - Case 8: High pressure alarm differential
 
 Future functionality that will improve the full case vision:

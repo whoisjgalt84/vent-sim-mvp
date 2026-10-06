@@ -42,6 +42,10 @@ Where the change would likely live, so we can gauge review risk early:
 `waveforms.js` (medium) · `main.js` (med-high) · `alarms.js` · `style.css`
 (low-med) · `test-engine.js` (high importance) · `docs` · `unknown`
 
+## Current reading guide - 2026-10-06
+
+The intake rows and dated theme summaries below preserve the reports, investigations and approvals recorded at those times. Their numerical recipes, copy strings and status descriptions are not all current contracts. Use the successor dispositions below and the [current model documentation](model.md) when preparing a new demonstration. Earlier sign-offs remain evidence for their original scope; they do not approve later wording or morphology.
+
 ## Intake ledger
 
 | ID | Logged | Reviewer (role) | Bucket | Severity | Status | Summary | Implicated layer | Reproduction / detail |
@@ -81,7 +85,7 @@ Where the change would likely live, so we can gauge review risk early:
 | I-time / flow control instead of I:E | 4 | Feature | should-fix | new | SME-015 | Four senior RTs; revisit in feature pass. |
 | Alarm bugs surfaced in deep testing | 1 (self, deep testing) | Bug+Usability | mixed | mixed (17, 18 fixed; 19-20 open) | SME-017, SME-018, SME-019, SME-020 | Found while stress-testing the alarm subsystem. SME-017 false apnea/low-VE blocker FIXED (commit 921a469). SME-018 silence-cancel FIXED, and its uncancellable-after-alarm-clears variant fixed with it. Residual: SME-019 medium-alarm volume/cadence tuning and SME-020 minor low-VE flicker — both still open, both need an RT ear/eye rather than a code decision. |
 
-## Reading the log (current priorities)
+## Historical priority summary - 2026-08-05
 
 - **2026-08-05: the trigger cluster is closed.** SME-001, SME-004, SME-005 and
   SME-006 — three of them logged as blockers — are confirmed resolved
@@ -132,7 +136,7 @@ Where the change would likely live, so we can gauge review risk early:
   flicker). SME-017 (false apnea on mode switch) and SME-018 (silence-cancel)
   are both fixed.
 
-Last updated: 2026-08-05.
+Historical summary date: 2026-08-05.
 
 ## 2026-10-02 successor: accepted effort/pressure contract
 
@@ -158,3 +162,18 @@ under unchanged alarm rules from alarm-policy changes, and prescribed effort
 from measured work or drive response. This successor records the authorized
 contract; it does not mark morphology clinically validated or accept candidate
 PNG bytes. Visual acceptance and later publication remain separate owner gates.
+
+## 2026-10-06 successor dispositions
+
+| Item | Current disposition (historical intake retained) |
+| --- | --- |
+| SME-021 | Historical investigation retained. The old numerical recipe and literature-faithful verdict apply to the traced implementation at that time. PR 46 implements the accepted shared effort/pressure successor. New teaching demonstrations must use the current common-state pressure/flow contract and obtain state-specific review; the old recipe is not a current verification receipt. |
+| SME-022 | Historical copy pending-sign-off record retained; the old live-setting tooltip is superseded for current failed events. PR 43 established Failed trigger terminology. PR 46 requires neutral wording when the failed event's earlier configuration was not stored. Do not ask for or imply retrospective approval of obsolete copy. Current delivered-trigger markers carry recorded trigger-variable provenance; failed-event tooltips must not reconstruct history from live controls. |
+| SME-014 | Historical per-breath stability approval retained. The current monitor PIP latch is finalized at expiration start, with the live PIP signal retained for alarms. Use the current completed-breath/null-state contract rather than the historical row's breath-start description. |
+| SME-020 | Historical symptom remains recorded; current status needs targeted reproduction before closure. CLIN-006 replaced the VE source and warm-up behavior. The old proposed first-completed-breath gate is superseded: a valid full empty 30-second window must evaluate as zero and remain eligible for low-VE evaluation. Do not implement the historical proposal. |
+| SME-002 / SME-010 / SME-023 | PR 47 implements the bounded Effort-slider geometry fix with native pointer/keyboard and clipping checks. This does not close the broader touchpad precision/non-drag input-layer proposal, trigger-slider concerns or set-versus-measured layout work. Duplicate Pmus readouts and the zero-effort mode-switch discrepancy remain deferred. |
+| SME-019 | Open audio usability judgment. No retuning or fresh owner audio acceptance is established by this documentation audit. Rehearse actual laptop/desktop audibility if sound is part of the pilot. |
+
+[PR 46](https://github.com/whoisjgalt84/vent-sim-mvp/pull/46) merged on 2026-10-04 and [PR 47](https://github.com/whoisjgalt84/vent-sim-mvp/pull/47) merged on 2026-10-06. These implementation/publication receipts do not independently confer broader clinical validation or future publication authority.
+
+The [clinical successor index](clinical/CLIN-001/successor-index.md) links current contracts, identical-tree CI evidence and open case/alarm/morphology gates. The slider harness explicitly excludes PC-CMVa Pmus 0 to PC-CMV synchronization and sets effort to 8 before its exit checks; other zero-effort destinations remain unconfirmed. Five passing slider groups do not close that discrepancy. Stop a case if its prescribed effort state cannot be established reliably.

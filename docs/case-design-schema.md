@@ -34,7 +34,7 @@ This should guide how much signal/noise and how much hinting the case uses.
 #### Mode focus
 
 The primary ventilator mode or cross-mode comparison the learner should reason
-through, such as VC-CMV, PC-CMV, PC-CSV, or VC vs PC differential.
+through, such as VC-CMV, PC-CMV, PC-CSV, PC-CMVa (generic educational adaptive targeting), or VC vs PC differential.
 
 #### Core concept
 
@@ -278,13 +278,9 @@ Use this checklist when drafting a new case:
 
 ## Authoring guardrail
 
-Cases must reference only preset keys/labels that appear in the Engine Ground
-Truth table below. If a clinical scenario needs a preset, mode, control range,
-or alarm threshold that does not exist in the current build, either pick the
-closest engine value or explicitly mark the case as blocked on a future build
-change rather than silently inventing parameters.
+Cases must name actual supported controls, units and ranges. If the required state is unavailable, mark the case blocked or propose a clearly labeled model-limited alternative for owner review. Do not silently choose the nearest available setting and preserve the original clinical interpretation.
 
-## Engine Ground Truth (verified against current build)
+## Implementation inventory checked against main c80da4a on 2026-10-06
 
 ### Lung presets (js/lung-model.js, LungModel.presets())
 
@@ -307,7 +303,9 @@ change rather than silently inventing parameters.
 | apneaSeconds | 20 |
 | lowMinuteVentilationLpm | 3 |
 | highMinuteVentilationLpm | 20 |
-| stabilizationSeconds (startup grace before alarms can fire) | 5 |
+| stabilizationSeconds (additional VE-only eligibility requirement) | 5 |
+
+Low/high VE also require a valid full 30-simulation-second delivery window. High pressure, high RR and apnea are not suppressed by this five-second grace. These defaults have no general clinical-safety approval.
 
 ### Mode constants (js/ventilator.js)
 
@@ -315,7 +313,8 @@ change rather than silently inventing parameters.
 | --- | --- |
 | MODE_VC_CMV | `vc-cmv` |
 | MODE_PC_CMV | `pc-cmv` |
-| MODE_PC_CSV | `PC-CSV` (capitalized, unlike the other two — string-equality footgun) |
+| MODE_PC_CSV | `PC-CSV` (case-sensitive legacy ID) |
+| MODE_PC_CMVA | `pc-cmva` |
 
 ### VC flow patterns (js/ventilator.js, this.flowPattern)
 
@@ -326,22 +325,52 @@ change rather than silently inventing parameters.
 
 | Control | min | max | step | default | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Tidal Volume (mL) | 200 | 800 | 10 | 500 | VC modes |
+| Tidal Volume / Target VT (mL) | 200 | 800 | 10 | 500 | VC-CMV Tidal Volume; PC-CMVa Target VT |
 | Pinsp above PEEP (cmH₂O) | 5 | 35 | 1 | 15 | PC-CMV |
 | Respiratory Rate (/min) | 6 | 35 | 1 | 14 | |
 | I:E ratio | — | — | — | 1:2 | buttons: 1:1, 1:1.5, 1:2, 1:3, 1:4 |
 | PEEP (cmH₂O) | 0 | 24 | 1 | 5 | |
 | FiO₂ (%) | 21 | 100 | 1 | 40 | |
-| Flow trigger (L/min) | 0.5 | 5 | 0.5 | 2.0 | trigger-type buttons: flow, pressure |
-| Pressure trigger (cmH₂O) | 0.5 | 5 | 0.5 | 1.0 | |
+| Flow trigger (L/min) | 0.5 | 5 | 0.1 | 2.0 | trigger-type buttons: flow, pressure |
+| Pressure trigger (cmH2O) | 0.5 | 5 | 0.1 | 1.0 | |
 | Hold duration (slider raw) | 3 | 20 | 1 | 5 | displayed value = slider ÷ 10 (so 0.3–2.0 s, default 0.5 s) |
 | Pressure Support (cmH₂O) | 5 | 30 | 1 | 10 | PC-CSV (control injected dynamically by ensurePcCsvControls()) |
 | Cycle % | 10 | 60 | 1 | 25 | PC-CSV |
-| Alarm: High Pressure (cmH₂O) | 20 | 60 | 1 | 40 | |
+| Patient R (cmH2O·s/L) | 5 | 40 | 1 | 10 | shared airway R; no separate expiratory R |
+| Patient C (mL/cmH2O) | 15 | 100 | 1 | 60 | total respiratory-system compliance |
+| Enabled Effort (cmH2O) | 0.25 | 12 | 0.25 | 2 | prescribed peak inspiratory Pmus |
+| Neural Ti (s) | 0.4 | 2.0 | 0.1 | 1.0 | raw slider 4-20 divided by 10 |
+| Patient RR (/min) | 6 | 35 | 1 | 16 | no zero slider setting |
+| Adaptive maximum above set PEEP (cmH2O) | 20 | 25 | selector | 25 | exactly 20 or 25; setup-only, then Reset demonstration |
+| Alarm: High Pressure (cmH2O) | 20 | 60 | 1 | 40 | |
 | Alarm: High RR (/min) | 10 | 60 | 1 | 35 | |
 | Alarm: Apnea (s) | 5 | 60 | 1 | 20 | |
 | Alarm: Low V̇E (L/min) | 0 | 15 | 0.5 | 3.0 | |
 | Alarm: High V̇E (L/min) | 5 | 40 | 0.5 | 20.0 | |
 
-Last verified: 2026-05-30, commit 0a96113. These values can drift — re-verify
-before authoring.
+Inspected implementation reference: main `c80da4a3736d9313bcaaf8a15e4d129efc216bf3`, tree `801dc5b9424c16503d99dbf8326d36186c0ee0c1`, on 2026-10-06. This is a read-only source inventory, not a fresh execution result. Re-verify the served build before authoring or rehearsal.
+
+### Applicability and lifecycle notes
+
+Passive state is established with the effort control, not a nonexistent zero setting on the Patient RR or enabled Effort sliders. Verify modeled Pmus is zero. The zero-effort PC-CMVa exit input discrepancy and duplicate Pmus readouts remain deferred; the Effort-slider geometry fix does not close them. Stop rehearsal if the prescribed state is ambiguous.
+
+Adaptive minimum is 5 cmH2O above set PEEP, initial command after reset is 10, default maximum is 25 (explicit alternative 20) and target default is 500 mL. The selected maximum is setup-only and requires **Reset demonstration**. These are educational engineering constants, not patient recommendations. Target and PEEP requests queue to a normal next adaptive breath boundary; source values and applied values remain distinct. See the [approved adaptive contract](adaptive-mode-contract.md).
+
+A requested short hold does not guarantee a valid measurement. Measured Pplat requires an actual completed 0.5-2.0 s interval and the full [validity criteria](model.md#33-inspiratory-hold). HOLD is inapplicable in PC-CSV and PC-CMVa; measured resistance requires passive square-flow VC. There is no expiratory-occlusion maneuver.
+
+### Required rehearsal and review fields
+
+Record these alongside the instructional fields; none implies clinical approval:
+
+- Served build commit/tree and launch URL or local launch.
+- Browser/version, operating system, viewport and display zoom.
+- Reset state, warm-up procedure and verified passive/active effort state.
+- Readout provenance, availability and omitted mechanisms.
+- Observation simulation time and breath/source identity.
+- Exact intervention settings, order and timing.
+- Expected project-default alarms, their eligibility and actual observation times.
+- Numerical trace and screenshot receipt for that state.
+- Per-case owner/SME approval status for objective, causal explanation and interpretation.
+- Stop conditions and recovery/reset procedure.
+
+All cases remain subject to [VSM-CLIN-010 and the current successor gates](clinical/CLIN-001/successor-index.md).

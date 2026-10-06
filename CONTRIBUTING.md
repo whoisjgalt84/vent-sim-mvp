@@ -15,14 +15,14 @@ cd vent-sim-mvp
 npm ci
 
 npm run serve                      # serve; open http://127.0.0.1:8899
-npm test                           # 300 engine assertions
+npm test                           # 300 original assertions + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
 ```
 
 The browser commands use Playwright's managed Chromium and install it
 automatically if the local cache is empty:
 
 ```bash
-npm run test:browser               # 44 checks; starts/reuses its own server
+npm run test:browser               # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; starts/reuses its own server
 npm run test:visual:docker         # authoritative Linux visual gate
 
 # Optional host diagnostics (not an authoritative comparison):
@@ -46,9 +46,9 @@ been created with `npm run test:visual:update`.
 
 ## Before you open a PR
 
-- [ ] `npm test` — 300 engine assertions; exits nonzero on failure.
-- [ ] `npm run test:browser` — 44 browser-behavior checks.
-- [ ] `npm run test:visual:docker` — 9 authoritative Linux visual,
+- [ ] `npm test` — 300 original assertions + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups; exits nonzero on failure.
+- [ ] `npm run test:browser` — 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups.
+- [ ] `npm run test:visual:docker` — 16 authoritative pinned-Linux visual,
       determinism, and cache-busting checks. A host-specific diagnostic run is
       not a substitute for this pinned-Linux comparison.
 - [ ] Screenshots — **mandatory for any UI change.** Compare before and after.
@@ -175,3 +175,7 @@ Conventional-commit prefixes. In use today: `docs:`, `feat:`, `fix:`, `chore:`,
 verified** — the test tally, the browser checks, the screenshots.
 
 Author is `Chris <christian.striggow@outlook.com>` to match repo convention.
+
+The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups and 5 Effort-slider groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
+
+Legacy fixture accounting is 92,500 exercised ticks: 28,000 exact passive ticks in 8 fixtures and 64,500 active conformance ticks in 14 fixtures. Review the [current model](./docs/model.md) and [successor index](./docs/clinical/CLIN-001/successor-index.md) for provenance and open owner gates.

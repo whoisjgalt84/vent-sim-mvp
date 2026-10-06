@@ -1,6 +1,8 @@
 # Usability scoping (READ-ONLY recon) — SME-010/002/011/012
 
-Branch: main @ 0a10cc8 (current). No code changed. Quotes are file:line.
+Historical reconnaissance at main @ 0a10cc8. No code changed during that investigation. File:line references and proposed fixes below belong to that snapshot and must be rechecked against current source; this is not a current work queue.
+
+For shipped Effort-slider geometry and remaining broader input/layout work, see the [2026-10-06 feedback successor dispositions](../docs/sme-feedback-log.md#2026-10-06-successor-dispositions). Duplicate Pmus displays and zero-effort adaptive-exit synchronization remain deferred.
 
 ## Item 1 — Coarse trigger slider (SME-010)  → TRIVIAL (markup only)
 - index.html:174-175 flow-trigger `min="0.5" max="5" step="0.5" value="2"`

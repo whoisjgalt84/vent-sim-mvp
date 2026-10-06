@@ -29,13 +29,13 @@ physiology sloppier is a regression, even if every test passes.
 # Serve. ES modules will NOT load over file:// — you need HTTP.
 npm run serve                      # node tools/serve.mjs — then http://127.0.0.1:8899
 
-# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy + 41 effort/pressure groups
+# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
 npm test
 
 # Authoritative visual regression + determinism + cache-busting (16: 13 existing + 3 effort/pressure), pinned Linux
 npm run test:visual:docker
 
-# Browser behaviour (44 original + 12 adaptive + 4 effort/pressure), self-contained server lifecycle
+# Browser behaviour (44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider), self-contained server lifecycle
 npm run test:browser
 
 # Screenshots — the only reliable UI verification
@@ -261,9 +261,7 @@ a single console error and a blank-ish page.
 **Two physics implementations.** `ventilator.js` has an analytical
 steady-state batch generator; `simulation.js` has the tick integrator. **The
 tick integrator is what the screen shows.** The analytical path survives as
-`calculateMAP()` and as the tests' target. Auto-PEEP on the monitor is closed-form
-from the analytical path while waveform trapping is emergent from the
-integrator — they are different models and can disagree.
+`calculateMAP()` and as the tests' target. The standard monitor's **Predicted steady-state auto-PEEP** is a passive closed-form prediction, unavailable with configured active effort or PC-CMVa. Teaching Mode uses that row for the live **Flow Baseline** cue. **Predicted steady-state trapped volume** is an applicable analytical prediction; **Live modeled trapped volume** is the residual volume latched immediately before the current breath started. It is not a continuously updated volume or an expiratory-hold measurement. These paths have different assumptions and can disagree; VSM-CLIN-014 reconciliation remains open.
 
 **Sweep rendering.** The visible slice must be **≤ one sweep period** or old
 samples wrap on top of new. The pen lifts on `px < prevPx` in three separate
@@ -303,8 +301,7 @@ If a new term is needed, add it to the glossary with a citation in the same PR.
 
 ## 7. Owner decisions that override the design docs
 
-`docs/trigger-fix-design.md` is an as-built record of intent, not a spec to
-finish. These decisions supersede it:
+`docs/trigger-fix-design.md` is a historical design and decision record, not a specification to finish. The current model contract and these later owner decisions supersede its affected sections:
 
 - **No failed-trigger marker above the trace.** The amber waveform highlight and
   the `Failed triggers N /60s` counter carry it.
@@ -352,8 +349,7 @@ When committing through the desktop bridge:
   Run every new assertion against the broken code to confirm it goes red. In one
   batch this found two real defects in Claude's own work plus five assertions
   that could not fail.
-- **Report the tally, not the vibe.** "300 passed, 0 failed; 44 browser checks
-  passed; screenshots in scratch/shots-x/" — not "tests pass".
+- **Report each gate and its checked revision.** Separate the original 300-assertion tally from added engine groups, list all browser groups and the pinned-Linux visual tally, and link receipts. Distinguish fresh results from carried-forward evidence and unavailable checks.
 
 ---
 
@@ -370,8 +366,8 @@ When committing through the desktop bridge:
 | `.claude/skills/ship-batch/` | The end-of-batch recipe — invoke with `/ship-batch` |
 | `tools/serve.mjs` | Static server for dev and the harnesses (`npm run serve`) |
 | `docs/sme-feedback-log.md` | SME findings ledger — the work queue |
-| `docs/case-design-schema.md` | Case authoring template; appendix snapshots engine ground truth — stale-dated, re-verify before trusting |
+| `docs/case-design-schema.md` | Draft authoring template and dated implementation inventory; re-verify the served build before rehearsal |
 | `docs/case-bank-v0.1.md` | Authored teaching cases |
 | `docs/case-scenario-roadmap.md` | Aspirational — phases 0–4, mostly unbuilt |
-| `docs/trigger-fix-design.md` | As-built record of the trigger rewrite |
+| `docs/trigger-fix-design.md` | Historical trigger-rewrite design; current signal contract is in `docs/model.md` |
 | `scratch/` | Diagnostics and one-off harnesses; not part of the app |

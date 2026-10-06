@@ -22,7 +22,8 @@ npm run serve      # then open http://127.0.0.1:8899
 Any static server works — VS Code's Live Server extension is fine too.
 
 ```bash
-npm test              # 300 original assertions + controller/integration/legacy/effort-pressure gates
+npm test              # 300 original + 22 controller + 24 integration + 22 legacy fixtures + 41 effort/pressure groups
+npm run test:browser  # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups
 npm run test:visual:docker  # 16 authoritative pinned-Linux visual groups
 ```
 
@@ -34,15 +35,16 @@ including the host-specific snapshots required for Windows visual diagnostics.
 
 ## What it does today
 
-**Modes** — three, named by taxonomy TAG rather than vendor brand name:
+**Modes** - four, named by taxonomy TAG rather than vendor brand name:
 
-| TAG | What it is | Common brand names |
+| TAG | What it is | Common names / implementation note |
 | --- | --- | --- |
 | `VC-CMV` | Volume control, continuous mandatory | Volume A/C |
 | `PC-CMV` | Pressure control, continuous mandatory | Pressure A/C, PCV |
 | `PC-CSV` | Pressure control, continuous spontaneous | Pressure Support, PSV |
+| `PC-CMVa` | Pressure control, continuous mandatory, adaptive targeting | Generic educational controller; not a commercial-device replica |
 
-**Patient** — a single-compartment lung (resistance + compliance).
+**Patient** - one linear total respiratory-system compartment (resistance + compliance). A single airway R is shared by inspiration and expiration; separate expiratory resistance, airway collapse and expiratory flow limitation are absent. There is no expiratory hold, drug-response or gas-exchange model; FiO2 is a display setting.
 Seven mechanics examples are available, with per-example provenance and manual resistance/compliance controls. Disease names and severity are not inferred from R and C.
 Effort is modelled as `Pmus`, with settable strength, neural inspiratory time,
 and neural respiratory rate independent of the ventilator's set rate.
@@ -64,10 +66,9 @@ patient-side gauge pressure; atmospheric zero differs from applied PEEP.
 Signed pressure views retain genuine negative modeled values without adding
 a pressure dip for appearance.
 
-**Monitoring and alarms** — PIP, Pplat, delivered VT, measured rate, minute
-ventilation, mean airway pressure, auto-PEEP. Five alarms (high pressure,
-high rate, apnea, low and high minute ventilation) with priority tiers, audio,
-and a silence toggle.
+**Monitoring and alarms** - Measured PIP, VT and RR; valid-hold Pplat and derived mechanics; Delivered VE from a 30-simulation-second delivery window; separately labeled live modeled trapped volume and applicable analytical predictions. Active-effort and adaptive predictions that the analytical model cannot support are unavailable. Five alarms (high pressure, high rate, apnea, low and high minute ventilation) have priority tiers, audio and a silence toggle. Measured values are simulator outputs, not physical patient or device measurements.
+
+Delivered VE and its low/high alarms remain unavailable until a full valid 30-simulation-second window has been observed.
 
 **Teaching Mode** — shows Set, Measured, and Patient rates; a
 `Failed triggers N /60s` counter for recorded efforts that did not start a breath;
@@ -86,11 +87,13 @@ existing air-trapping annotation.
 | [`docs/glossary.md`](./docs/glossary.md) | Normative vocabulary, with citations |
 | [`docs/model.md`](./docs/model.md) | The mathematical model, published in full |
 | [`docs/visual-testing.md`](./docs/visual-testing.md) | The screenshot regression suite |
-| [`docs/case-design-schema.md`](./docs/case-design-schema.md) | Case authoring template; its appendix snapshots engine ground truth (ranges, presets, alarm defaults) — stale-dated, re-verify |
+| [`docs/case-design-schema.md`](./docs/case-design-schema.md) | Draft authoring template with a dated implementation inventory; re-verify the served build before rehearsal |
 | [`docs/case-bank-v0.1.md`](./docs/case-bank-v0.1.md) | Authored teaching cases |
 | [`docs/case-scenario-roadmap.md`](./docs/case-scenario-roadmap.md) | Where case-based learning is going |
 | [`docs/sme-feedback-log.md`](./docs/sme-feedback-log.md) | What practising RTs have reported |
-| [`docs/trigger-fix-design.md`](./docs/trigger-fix-design.md) | As-built record of the trigger rewrite |
+| [`docs/trigger-fix-design.md`](./docs/trigger-fix-design.md) | Historical trigger-rewrite design and decisions; current signal contract is in `docs/model.md` |
+| [`docs/adaptive-mode-contract.md`](./docs/adaptive-mode-contract.md) | PC-CMVa controller, operator-setting lifecycle, shared effort/pressure successor, and evidence boundaries |
+| [`docs/clinical/CLIN-001/successor-index.md`](./docs/clinical/CLIN-001/successor-index.md) | Current implementation receipts and open clinical gates, linked to the historical baseline |
 
 ---
 
@@ -121,9 +124,7 @@ literature places with mannequins and live scenarios.
 **It is not a medical device**, is not validated for clinical decision-making,
 and nothing in it should be used to guide the care of a real patient.
 
-Out of scope for now: multi-compartment lung models, adaptive and servo
-targeting schemes (PRVC, Volume Support, NAVA, PAV), IMV breath sequences, and
-vendor-specific behaviour.
+Out of scope for now: multi-compartment lung models; adaptive schemes beyond the implemented generic PC-CMVa controller, including Volume Support; servo, dual, optimal and intelligent targeting; IMV breath sequences; and vendor-specific behavior. PC-CMVa adjusts the next breath's pressure command from eligible completed inspired VT. It does not guarantee a target volume or reproduce a commercial PRVC algorithm.
 
 ---
 

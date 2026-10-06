@@ -173,6 +173,10 @@ Only explicit decisions from Christian Striggow are recorded. Visual approval, s
 - **Date:** 2026-08-16
 - **Downstream consequence:** Preserve `downstream_ticket=NOT_APPLICABLE` for these rows. Future learner-facing claims, presets, cases, or waveform interpretations that depend upon an omitted mechanism must identify the applicable K-row limitation and require separate scope expansion before clinical approval. This governance rule does not require standalone implementation tickets now.
 
-## Decisions still required
+## Decisions still required at the CLIN-001 closeout
 
 PC effort morphology remains deliberately unresolved under CLIN-OD-008, and other effort/expiration morphologies remain unresolved under CLIN-OD-015; current traces are preserved only with disclosure and must not be described as approved clinical morphology. Preset and alarm adjudication are stopped for missing evidence under CLIN-OD-010 and CLIN-OD-012, every case remains draft curriculum under CLIN-OD-011, project-defined effort/tail parameters remain deferred under CLIN-OD-013, and trapping calculation reconciliation remains deferred under CLIN-OD-014. CLIN-OD-004 through CLIN-OD-007 and CLIN-OD-009 resolve the clinical specifications for PC-CSV maximum-Ti breath classification, pre-breath measured-versus-predicted values, valid hold-derived measurements, delivered-VE provenance, and failed-trigger terminology; their runtime and UI repairs remain downstream work.
+
+## Successor navigation - 2026-10-06
+
+The closeout summary above remains historical. Later implemented scope, K-005 PC-CMVa expansion, limited preset provenance and shared effort/pressure contracts are linked in the [successor index](successor-index.md). Original decisions and their limits remain intact; this navigation is not a new owner decision, closure of broader morphology/alarm gates or publication authority.

@@ -1,5 +1,7 @@
 # VSM-CLIN-001 clinical contract baseline
 
+**Historical CLIN-001 baseline.** The findings, source availability, approved decisions and verification receipts in this packet describe the reviewed `b3c895c914070920d8122d3b88134d03107f1e51` implementation and their stated dates. Later implementation and scope changes are recorded in the [successor index](successor-index.md); they do not retrospectively change this evidence. Current behavior must be read from the [current model](../../model.md)/contract plus the successor receipt.
+
 ## Purpose
 
 This directory establishes traceability for clinically meaningful behavior in Vent-Sim at commit `b3c895c914070920d8122d3b88134d03107f1e51` (tree `5b5e7dfc8322b911aae1ad4c2b70bf1737262133`). It separates four kinds of truth that must not be treated as interchangeable:

@@ -40,6 +40,8 @@ active conformance ticks in 14 fixtures. Required browser groups are 44 original
 3 effort/pressure (16 total). These inventories do not assert fresh passing
 results or owner acceptance of candidate image bytes.
 
+This records the effort/pressure successor's commissioning inventory. The current browser runner additionally requires five Effort-slider groups; see [README-dev.md](../README-dev.md) for the current combined gate. Later gate additions do not rewrite historical receipts.
+
 | Decision | Approved selection |
 | --- | --- |
 | A1 | Canonical unrounded modeled inspired VT at expiration-start publication; one decision per eligible source; bounded incremental error correction. No expired-volume claim or hidden model-state inputs. |
@@ -258,7 +260,7 @@ Required checks include:
 - Independently derived error/deadband/step/bound expectations; invalid/missing versus measured-zero feedback; duplicate/stale/order/context rejection; restricted controller inputs; once-per-publication and next-start application on both trigger paths.
 - Target-only, PEEP-only and combined queues followed by reset, each destination mode and reentry; inspiration/expiration and paused transport; repeated/edit-revert requests; obsolete pending pressure. Check ownership, first-sample pressure/PEEP, prefill ordering, cleared indicators, unavailable old feedback and no unrequested resume.
 - Meaningful mutants for dropping queued PEEP on reset, stale queue replay on reentry, adaptive-to-manual pressure copying, wrong signal/units/sign/deadband, missed cap/bound, hidden truth access, duplicate/mid-breath update, source-target mismatch and removed genuine VE delivery.
-- Exact legacy matched-input traces against the recorded checkpoint for pressure/flow/volume, phases, trigger/cycle outcomes, canonical measurements, holds, Measured RR, Delivered VE and alarms. Legacy mode-pair transitions are tested separately from the new adaptive transitions. New metadata must be absent or inert for old modes.
+- **Historical VSM-ADAPT-001 gate:** exact legacy matched-input traces and absent/inert new adaptive metadata in old modes were requirements of the original adaptive introduction. The effort/pressure successor intentionally changes active pressure/trigger behavior and makes its detection metadata operative in all four modes. Its current legacy gate retains 22 fixtures and 92,500 exercised ticks: 8 passive fixtures/28,000 exact comparisons plus 14 active fixtures/64,500 conformance ticks. Original checkpoint evidence remains unchanged.
 - Identifiable retained engine/browser/visual coverage with explicit newly commissioned groups/totals and intact count guards; common asset-version/import/network validation; actual browser controls and transport, stable help nodes and prediction-unavailable states.
 - Integrated demonstrations, broader operating-range/stress traces and independent adversarial code/trace review.
 - Pinned `mcr.microsoft.com/playwright:v1.62.1-noble` comparison before visual edits with updates disabled; unchanged tolerances; isolated candidate generation/repeat results; full-resolution gallery and exact SHA-256 manifest mapping scenario/source/change reason. Candidate generation is not acceptance.
@@ -266,3 +268,7 @@ Required checks include:
 If Linux is unavailable, continue useful authorized work and report that gate unavailable; Windows output does not replace it. Do not reduce required verification to preserve dates. September 25 contract closure, October 4 integrated demonstrations, October 11 verification/visual review, October 17 freeze/backups and October 24 presentation remain planning targets. Publication is not authorized.
 
 The implementation report records fresh results, carried-forward evidence, exact changed paths, review resolutions, candidate identities and any unavailable gate. Preserve index, Phase A evidence and accepted baseline bytes. Stop at the visual-acceptance handoff; later exact-byte installation/finalization and Git actions are separate authority.
+
+## Implementation/publication successor - 2026-10-06
+
+[PR 45](https://github.com/whoisjgalt84/vent-sim-mvp/pull/45) publishes PC-CMVa; [PR 46](https://github.com/whoisjgalt84/vent-sim-mvp/pull/46), merged 2026-10-04, publishes the accepted shared effort/pressure successor. These receipts do not grant future publication authority or broader clinical approval. Dated authorization endpoints above remain historical. Current implementation and still-open claim gates are mapped in the [successor index](clinical/CLIN-001/successor-index.md). Retained scratch evidence is separate from the public Git tree; see that index for retrieval limits.

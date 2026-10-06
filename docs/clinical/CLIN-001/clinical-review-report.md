@@ -1,5 +1,7 @@
 # Clinical review report
 
+**Historical CLIN-001 baseline.** The findings, source availability, approved decisions and verification receipts in this packet describe the reviewed `b3c895c914070920d8122d3b88134d03107f1e51` implementation and their stated dates. Later implementation and scope changes are recorded in the [successor index](successor-index.md); they do not retrospectively change this evidence. Current behavior must be read from the [current model](../../model.md)/contract plus the successor receipt.
+
 ## Review boundary
 
 The review covers the required commit and tree, the A-K clinical domains, normative/design documents, live and analytical implementations, UI/Teaching Mode, alarms, cases, engine/browser/visual expectations, and the six approved Linux snapshots as rendering evidence only. Source review used only the approved local packet listed in `evidence-ledger.md`.

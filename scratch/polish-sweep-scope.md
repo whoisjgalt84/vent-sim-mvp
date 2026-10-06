@@ -1,5 +1,9 @@
 # UI Polish Sweep — Scoping Notes (READ-ONLY, no changes made)
 
+**Historical reconnaissance snapshot.** The 280-test tally, source coordinates and working-tree observations below describe the investigation when it was written, not current main or a fresh verification receipt. The source commit was not recorded in this note. Recheck any remaining proposal against current source and the owner-approved contracts before treating it as open work.
+
+Shipped scopes and open UI decisions are linked in the [feedback successor dispositions](../docs/sme-feedback-log.md#2026-10-06-successor-dispositions) and [clinical successor index](../docs/clinical/CLIN-001/successor-index.md); no blanket completion of the original proposals is asserted.
+
 State: on `main`, clean except untracked scratch/. 280 tests pass / 0 fail.
 
 ## Key source coordinates

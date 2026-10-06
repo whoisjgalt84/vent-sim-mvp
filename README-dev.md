@@ -8,21 +8,13 @@ For the full mathematical model, see [`docs/model.md`](./docs/model.md).
 
 ## 🫁 Core Idea
 
-This simulator is a **single-compartment implementation of the equation of
-motion for the respiratory system**:
+This simulator is a single-compartment implementation of the respiratory-system equation of motion. In the live integrator:
 
-> **Pmus + Pvent = E × V + R × V̇**
+> **Paw + Pmus = B + V/C + R × Q**
 
-Where:
+Paw is patient-side airway-opening gauge pressure, B is applied PEEP, V is volume above applied-PEEP equilibrium including retained volume, and Q is inward-positive flow. The elastic load V/C already includes residual gas, so intrinsic PEEP is not added a second time. R is combined airway-plus-tube resistance; the separate inward-supply resistance Rc is used by the expiratory boundary equations.
 
-* **E × V** → elastic load (lung/chest wall)
-* **R × V̇** → resistive load (airways + ETT)
-
-With gas trapping made explicit, the form the engine actually implements is:
-
-> **Pmus + Pvent = E × V + R × V̇ + PEEPauto**
-
-Everything in this project flows from this equation.
+Source formulas that add PEEPauto use a different volume reference. See [`docs/model.md`](./docs/model.md) for the phase equations and the deliberate pre-/post-integration sampling conventions.
 
 If a feature cannot be explained through this equation, it does not belong here.
 
@@ -36,11 +28,11 @@ npm install
 # Serve over HTTP — ES modules will NOT load over file://
 npm run serve                      # then open http://127.0.0.1:8899
 
-# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy + 41 effort/pressure groups
+# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
 npm test
 
 # Browser gates install Playwright's managed Chromium if the cache is empty
-npm run test:browser                 # 44 original + 12 adaptive + 4 effort/pressure groups; starts/reuses its own server
+npm run test:browser                 # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; starts/reuses its own server
 npm run test:visual:docker           # 16 authoritative pinned-Linux visual groups
 
 # Optional current-host diagnostics require host-specific snapshots first
@@ -73,6 +65,7 @@ patient (Pmus = 0).
 **Everything else is an extension**, not the foundation. Already implemented:
 
 * PC-CMV (pressure control, continuous mandatory)
+* **PC-CMVa** (pressure control, continuous mandatory, adaptive targeting): a generic breath-to-breath controller using eligible completed modeled inspired VT; see [`docs/adaptive-mode-contract.md`](./docs/adaptive-mode-contract.md)
 * **PC-CSV** (pressure control, continuous spontaneous — pressure support, with
   settable PS level and cycle %)
 * Descending ramp flow
@@ -109,8 +102,7 @@ main.js          → Integration + UI wiring (no exports; side-effect module)
 Two modules live at the repo **root**, not under `js/`: `alarms.js` and
 `alarm-audio.js`. Both are imported by `js/main.js`. `alarms.js` is *also*
 script-tagged in `index.html`, where it publishes `window.AlarmEngine` — but
-**nothing reads that global.** The tag is vestigial and removable; it is one of
-the eleven `?v=` sites currently maintained by hand (version 20).
+**nothing reads that global.** The tag is vestigial and removable; it is one of the eleven local asset/import version sites currently kept in sync. See `CLAUDE.md` §4 and the source/network checks for the current inventory.
 
 The only devDependency is `@playwright/test`, used by the visual suite and the
 `scratch/*.cjs` harnesses. (`typescript`, `tsx` and `vitest` were declared but
@@ -122,10 +114,7 @@ never used anywhere; removed 2026-08-05.)
 and plateau pressure, expiratory flow and decay, steady-state trapped volume and
 auto-PEEP. Seven presets.
 
-**Ventilator** — settings and mode logic (VC vs PC, mandatory vs spontaneous).
-Derived physiology: Ti/Te, peak flows, driving pressure, PIP, Pplat, auto-PEEP,
-minute ventilation, τ ratios. `summary()` is the monitor's whole contract.
-Also holds the analytical breath generator.
+**Ventilator** - operator settings, mode applicability, analytical predictions and the analytical breath generator. `summary()` supplies configured/derived settings, configured mechanics and applicable analytical predictions; it is only one input to the monitor. Canonical PIP/VT, hold-derived mechanics, Delivered VE, live trapped volume and adaptive source/command state come from `SimulationEngine` under the source-specific availability rules in [`docs/model.md`](./docs/model.md).
 
 **SimulationEngine** — 100 Hz tick integrator; breath phase state machine
 (INSPIRATION → HOLD → EXPIRATION); the neural (patient) oscillator; trigger
@@ -230,8 +219,8 @@ added for appearance.
 The harness is required evidence for the implemented contracts.
 
 ```bash
-npm test                              # 300 original + 22 controller + 24 integration + 22 selective legacy + 41 effort/pressure groups
-npm run test:browser                  # 44 original + 12 adaptive + 4 effort/pressure groups; self-contained
+npm test                              # 300 original + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
+npm run test:browser                  # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; self-contained
 npm run test:visual:docker            # 16 authoritative Linux visual/determinism/cache groups
 node scratch/shot.cjs <outDir> [...]  # diagnostic screenshots
 ```
@@ -256,7 +245,7 @@ comprise 40 engine groups and one renderer group with 66 subchecks. The 22 legac
 fixtures exercise 92,500 ticks: 8 passive fixtures compare 28,000 ticks exactly;
 14 active fixtures independently check corrected conformance over 64,500 ticks.
 No claim of 92,500 exact matches is made. The required browser inventory is
-44 original + 12 adaptive + 4 effort/pressure groups; visual inventory is
+44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; visual inventory is
 13 existing + 3 effort/pressure groups. These are gate requirements, not a fresh
 passing-run receipt. All gates propagate nonzero exits and browser gates retain
 Playwright diagnostics on CI failure. The original suite's historical mutation
@@ -326,8 +315,7 @@ Short version:
 To protect clarity:
 
 * ❌ No multi-compartment lung models
-* ❌ No adaptive, servo, or dual targeting schemes (PRVC, Volume Support, NAVA,
-  PAV, ATC) — everything here is set-point targeting
+* ❌ No additional adaptive schemes, servo, dual, optimal or intelligent targeting. The implemented generic PC-CMVa controller is the exception to the original set-point-only scope; it is not a commercial-device replica.
 * ❌ No IMV breath sequences (SIMV and friends)
 * ❌ No vendor-specific behaviour or brand-named modes
 * ❌ No build step, bundler, or framework
@@ -411,3 +399,7 @@ If you understand:
 …you understand this simulator.
 
 Everything else is just implementation.
+
+The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups and 5 Effort-slider groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
+
+For dated identical-tree CI evidence and remaining owner gates, see the [successor index](docs/clinical/CLIN-001/successor-index.md).

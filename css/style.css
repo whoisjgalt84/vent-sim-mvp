@@ -1391,6 +1391,32 @@ body.teaching-mode .parameters .param-row.param-row--measurement.teaching-key {
     white-space: nowrap;
 }
 
+/* Effort's variable-width readout must not resize the native drag track. */
+.pmus-effort-control {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pmus-effort-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.pmus-effort-header .control__value {
+    font-size: 14px;
+    min-width: 60px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.pmus-effort-control > .control__range {
+    width: 100%;
+    min-width: 0;
+}
+
 .trigger-control {
     margin-top: 10px;
 }

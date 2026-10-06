@@ -485,7 +485,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'VSM effort/pressure asset release').toEqual(['20']);
+        expect(versions, 'VSM effort/pressure asset release').toEqual(['21']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);
@@ -560,6 +560,70 @@ async function adaptiveShot(page, name) {
     await expect(page).toHaveScreenshot(name, { fullPage: true });
 }
 
+// Focused Effort review recipes remain within the existing visual inventory.
+async function effortSliderSnapshots(page) {
+    const root = fileURLToPath(new URL('../..', import.meta.url));
+    const output = process.env.EFFORT_SLIDER_VISUAL_EVIDENCE
+        || path.join(root, 'scratch/shots-vsm-ui-effort-slider-phase-b/effort-visual-scenarios.json');
+    const sources = ['index.html', 'css/style.css', 'js/main.js', 'js/simulation.js',
+        'js/ventilator.js', 'tests/visual/waveforms.spec.js', 'tests/visual/helpers.js'];
+    const sourceSha256 = Object.fromEntries(sources.map(file => [file,
+        crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex')]));
+    const ledger = { schemaVersion: 1, candidates: {} };
+    async function capture(name, receiver, recipe, options = {}) {
+        ledger.candidates[name] = { name, snapshotPath: test.info().snapshotPath(name),
+            testTitle: test.info().title, recipe, viewport: page.viewportSize(),
+            platform: process.platform, sourceSha256, state: await h.state(page),
+            timing: 'Determinism hook freezes rAF; UI transport state is recorded. Timed native behavior is a separate browser gate.' };
+        fs.mkdirSync(path.dirname(output), { recursive: true });
+        fs.writeFileSync(output, JSON.stringify(ledger, null, 2) + '\n');
+        await expect(receiver).toHaveScreenshot(name, options);
+    }
+    async function setup(mode, width = 1440) {
+        const errors = await h.open(page);
+        await page.setViewportSize({ width, height: 900 });
+        await h.setMode(page, mode);
+        await h.enableEffort(page, { patientRR: 12, pmus: mode === 'pc-cmva' ? 0 : 8 });
+        await h.seek(page, 0);
+        await page.locator('#btn-pause').click();
+        await page.locator('#pmus-max').scrollIntoViewIfNeeded();
+        expect((await h.state(page)).running).toBe(false);
+        await expect(page.getByRole('slider', { name: 'Effort', exact: true })).toBeVisible();
+        return errors;
+    }
+    const errors = await setup('pc-cmva');
+    let stableWidth;
+    for (const value of [0, 8, 9, 9.25, 10, 10.25, 11.75, 12]) {
+        await h.setRange(page, '#pmus-max', value);
+        await page.evaluate(() => window.__vsim.redraw());
+        const range = page.locator('#pmus-max'), rect = await range.boundingBox();
+        stableWidth ??= rect.width;
+        expect(Math.abs(rect.width - stableWidth)).toBeLessThanOrEqual(0.5);
+        await expect(range).toHaveValue(String(value));
+        expect((await h.state(page)).operatorSettings.pMusMax).toBe(value);
+        const token = String(value).replace('.', '-');
+        const recipe = 'PC-CMVa; Active; RR12; zero simulated time; UI Pause; Effort ' + value + '; Standard1440x900; Patient expanded; existing input fixture and redraw.';
+        await capture('effort-slider-value-' + token + '-full.png', page, recipe, { fullPage: true });
+        await capture('effort-slider-value-' + token + '-crop.png', page.locator('#pmus-sliders'), recipe + ' Effort/neural crop.');
+    }
+    await h.setRange(page, '#pmus-max', 8);
+    await page.locator('#btn-pause').click();
+    expect((await h.state(page)).running).toBe(true);
+    await capture('effort-slider-running-full.png', page, 'Same PC-CMVa fixture; Effort8; actual UI Play; rAF remains deterministically frozen; full view.', { fullPage: true });
+    await capture('effort-slider-running-crop.png', page.locator('#pmus-sliders'), 'Same UI Play fixture; Effort/neural crop.');
+    for (const mode of ['vc-cmv', 'pc-cmv', 'PC-CSV']) {
+        errors.push(...await setup(mode));
+        await expect(page.locator('#pmus-max')).toHaveAttribute('min', '0.25');
+        await capture('effort-slider-mode-' + mode + '-full.png', page, 'Fresh ' + mode + '; Active Effort8/RR12; UI Pause; seek0; Standard1440x900.', { fullPage: true });
+        await capture('effort-slider-mode-' + mode + '-crop.png', page.locator('#pmus-sliders'), 'Same ' + mode + ' fixture; Effort/neural crop.');
+    }
+    errors.push(...await setup('pc-cmva', 1100));
+    await h.setRange(page, '#pmus-max', 11.75);
+    await capture('effort-slider-narrow-full.png', page, 'Fresh PC-CMVa; Active Effort11.75/RR12; UI Pause; zero time; Standard1100x900.', { fullPage: true });
+    await capture('effort-slider-narrow-crop.png', page.locator('#pmus-sliders'), 'Same1100x900 fixture; Effort/neural crop.');
+    expect(errors).toEqual([]);
+}
+
 test.describe('PC-CMVa adaptive visual contract', () => {
     test('adaptive startup, settled measurements, pending context and pause', async ({ page }) => {
         const errors = await openAdaptive(page);
@@ -600,6 +664,7 @@ test.describe('PC-CMVa adaptive visual contract', () => {
         await expect(page.locator('#adaptive-paused')).toBeVisible();
         await adaptiveShot(page, 'adaptive-paused-context-teaching.png');
         expect(errors).toEqual([]);
+        await effortSliderSnapshots(page);
     });
 
     test('adaptive compliance and prescribed-effort demonstrations', async ({ page }) => {

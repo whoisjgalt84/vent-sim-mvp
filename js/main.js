@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=20';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=20';
-import { SimulationEngine }  from './simulation.js?v=20';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=20';
-import AlarmEngine from '../alarms.js?v=20';
+import { LungModel }        from './lung-model.js?v=21';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=21';
+import { SimulationEngine }  from './simulation.js?v=21';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=21';
+import AlarmEngine from '../alarms.js?v=21';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=20';
+} from '../alarm-audio.js?v=21';
 
 
 // =============================================================================

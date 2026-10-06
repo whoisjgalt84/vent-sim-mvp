@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=20">
+    <link rel="stylesheet" href="css/style.css?v=21">
 </head>
 <body>
 
@@ -406,12 +406,14 @@
                             <span id="pmus-btn-label">Passive</span>
                         </button>
                         <div class="pmus-sliders" id="pmus-sliders" style="display:none">
-                            <div class="pmus-slider-row">
-                                <span class="pmus-slider-label">Effort</span>
+                            <div class="pmus-effort-control">
+                                <div class="pmus-effort-header">
+                                    <label class="pmus-slider-label" for="pmus-max">Effort</label>
+                                    <span class="control__value" id="pmus-max-display">2 cmH₂O</span>
+                                </div>
                                 <input type="range" class="control__range" id="pmus-max"
                                        min="0.25" max="12" step="0.25" value="2"
                                        title="Peak inspiratory muscle pressure (Pmus), 0.25–12 cmH₂O">
-                                <span class="control__value" id="pmus-max-display">2 cmH₂O</span>
                             </div>
                             <div class="pmus-slider-row">
                                 <span class="pmus-slider-label">T<sub>neural</sub></span>
@@ -697,8 +699,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=20"></script>
-<script type="module" src="js/main.js?v=20"></script>
+<script type="module" src="alarms.js?v=21"></script>
+<script type="module" src="js/main.js?v=21"></script>
 
 </body>
 </html>

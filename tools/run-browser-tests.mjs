@@ -231,10 +231,11 @@ async function ensureServer() {
     );
 }
 
-async function runHarness(adaptive = false) {
+async function runHarness(adaptive = false, effortSlider = false) {
     const target = visualMode
         ? [playwrightCli, 'test', ...process.argv.slice(3)]
-        : [adaptive ? fileURLToPath(new URL('../scratch/verify-adaptive.cjs', import.meta.url)) : harnessFile];
+        : [effortSlider ? fileURLToPath(new URL('../scratch/verify-effort-slider.cjs', import.meta.url))
+            : adaptive ? fileURLToPath(new URL('../scratch/verify-adaptive.cjs', import.meta.url)) : harnessFile];
     testProcess = spawn(process.execPath, target, {
         cwd: root,
         env: process.env,
@@ -280,6 +281,14 @@ try {
         const effort=JSON.parse(effortMatches[0][1]);
         if(effort.groups!==4||effort.passed!==4||effort.failed!==0)throw new Error('Commissioned effort-pressure browser tally must be4/0');
         console.log('Commissioned effort-pressure browser tally verified: 4 passed, 0 failed.');
+        const slider = await runHarness(false, true);
+        const sliderMatches = [...stripAnsi(slider.output).matchAll(/^EFFORT_SLIDER_BROWSER_TALLY (.+)$/gm)];
+        if (sliderMatches.length !== 1) throw new Error('Expected exactly one Effort slider browser tally');
+        const sliderTally = JSON.parse(sliderMatches[0][1]);
+        if (slider.code !== 0 || sliderTally.groups !== 5 || sliderTally.passed !== 5 || sliderTally.failed !== 0) {
+            throw new Error('Commissioned Effort slider browser tally must be 5 passed / 0 failed; received ' + sliderMatches[0][1]);
+        }
+        console.log('Commissioned Effort slider browser tally verified: 5 passed, 0 failed.');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

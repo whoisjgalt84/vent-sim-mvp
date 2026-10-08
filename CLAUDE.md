@@ -29,13 +29,13 @@ physiology sloppier is a regression, even if every test passes.
 # Serve. ES modules will NOT load over file:// — you need HTTP.
 npm run serve                      # node tools/serve.mjs — then http://127.0.0.1:8899
 
-# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
+# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure + 28 reset groups
 npm test
 
-# Authoritative visual regression + determinism + cache-busting (16: 13 existing + 3 effort/pressure), pinned Linux
+# Authoritative visual regression + determinism + cache-busting (18: 16 existing + 2 shared reset), pinned Linux
 npm run test:visual:docker
 
-# Browser behaviour (44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider), self-contained server lifecycle
+# Browser behaviour (44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider + 8 reset), self-contained server lifecycle
 npm run test:browser
 
 # Screenshots — the only reliable UI verification
@@ -140,7 +140,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=21`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=22`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -239,6 +239,15 @@ Each of these encodes a bug that already shipped once.
     corrected live signal. See docs/model.md for the accepted successor contract.
 
 New invariants belong in this list, with the failure they prevent.
+
+18. **Demonstration reset starts a fresh run with retained selections.** Both
+    header Reset and the adaptive Reset demonstration share one lifecycle. Resolve
+    pending adaptive target/PEEP and selected maximum before initialization;
+    preserve transport and wall-clock mute/Silence semantics. Clear old measured
+    outputs, traces/loops and alarm presentation synchronously without adding an
+    alarm evaluation. A CMV prefill machine event is new startup history; CSV
+    waits for a new trigger. Help must distinguish a new run from a treatment
+    effect. See [the approved reset contract](docs/demonstration-reset-contract.md).
 
 ---
 

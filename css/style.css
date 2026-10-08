@@ -97,6 +97,18 @@ html, body {
     min-width: 0;
 }
 
+/* Keep the shared reset and native selectors separate at narrower widths. */
+@media (max-width: 1350px) {
+    .header { grid-template-columns: minmax(0, 1fr) auto; }
+    .header__status { grid-column: 1 / -1; flex-wrap: wrap; }
+    .header__transport { justify-self: start; }
+}
+
+@media (max-width: 650px) {
+    .header { grid-template-columns: minmax(0, 1fr); }
+    .header__transport, .header__alerts { justify-self: start; }
+}
+
 .header__mode {
     font-family: 'Courier New', monospace;
     font-size: 15px;

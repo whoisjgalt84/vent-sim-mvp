@@ -150,3 +150,11 @@ Vocabulary and physiology follow:
   Care* 2014;59(11):1773.
 - Arnal J-M, Garnero A, Saoli M, Chatburn RL. Parameters for simulation of adult
   subjects during mechanical ventilation. *Respir Care* 2018;63(2):158–168.
+
+## Shared reset verification (2026-10-07)
+
+The current aggregate gates additionally require 28 demonstration-reset engine
+groups and eight demonstration-reset browser groups. The pinned-Linux visual
+inventory is now 18 groups (the existing 16 plus two shared-reset groups).
+Prior inventories above describe their existing groups or historical checkpoints.
+See [the shared reset contract](docs/demonstration-reset-contract.md).

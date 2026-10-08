@@ -115,6 +115,15 @@ function recipeFor(id) {
     if (index < 0 && id.startsWith('pc-disclosure-')) {
         index = specLines.findIndex(line => line.includes('async function pcDisclosureSnapshots('));
         locator = 'pcDisclosureSnapshots(page): mode/effort/layout/viewport loop; filename encodes selected branch.';
+    } else if (index < 0 && id.startsWith('effort-active-')) {
+        index = specLines.findIndex(line => line.includes("await effortShot(page,`effort-active-${mode}.png`"));
+        locator = 'Mode loop in the closed patient-side PC pressure/active prediction test; exact mode is encoded in filename and effort scenario ledger.';
+    } else if (index < 0 && id.startsWith('effort-slider-')) {
+        index = specLines.findIndex(line => line.includes('async function effortSliderSnapshots('));
+        locator = 'effortSliderSnapshots(page): value/mode/full/crop branches encoded in filename; native effort-slider capture ledger records exact selected state.';
+    } else if (index < 0 && id.startsWith('shared-reset-')) {
+        index = specLines.findIndex(line => line.includes('async function sharedResetSnapshots('));
+        locator = 'sharedResetSnapshots(page): native reset after1400ticks; mode, viewport and display style are encoded in filename; retained Pmus8/patientRR12.';
     } else if (index < 0 && /^examples-.+-(selected|help)$/.test(id)) {
         index = specLines.findIndex(line => line.includes('async function mechanicsExampleSnapshots('));
         locator = 'mechanicsExampleSnapshots(page): preset selection/help loop; Playwright normalizes preset underscores to filename hyphens.';

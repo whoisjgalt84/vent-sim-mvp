@@ -246,4 +246,12 @@ substituting current HEAD as its reference. Independent review and meaningful
 fault detection supplement these gates; owner acceptance of exact image bytes,
 baseline installation, staging and commits are separate subsequent actions.
 
-The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups and 5 Effort-slider groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
+The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups, 5 Effort-slider groups and 8 demonstration-reset groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
+
+## Shared reset verification (2026-10-07)
+
+The current aggregate gates additionally require 28 demonstration-reset engine
+groups and eight demonstration-reset browser groups. The pinned-Linux visual
+inventory is now 18 groups (the existing 16 plus two shared-reset groups).
+Prior inventories above describe their existing groups or historical checkpoints.
+See [the shared reset contract](demonstration-reset-contract.md).

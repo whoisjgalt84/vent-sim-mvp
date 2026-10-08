@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=21">
+    <link rel="stylesheet" href="css/style.css?v=22">
 </head>
 <body>
 
@@ -35,6 +35,8 @@
             </div>
         </div>
         <div class="header__transport">
+            <button class="transport-btn transport-btn--label" id="btn-reset" type="button" title="Start a fresh demonstration with current settings; keep paused/running state">Reset</button>
+            <button class="measurement-help-trigger" type="button" data-measurement-help="demonstration-reset" aria-label="About resetting the demonstration">?</button>
             <button class="transport-btn" id="btn-pause" title="Pause/Play">⏸</button>
             <button class="transport-btn transport-btn--label" id="btn-loops" title="Toggle P-V / F-V Loops">Loops</button>
             <button class="transport-btn transport-btn--label" id="btn-teaching-mode" type="button" aria-pressed="false" title="Toggle Teaching Mode">Teach</button>
@@ -699,8 +701,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=21"></script>
-<script type="module" src="js/main.js?v=21"></script>
+<script type="module" src="alarms.js?v=22"></script>
+<script type="module" src="js/main.js?v=22"></script>
 
 </body>
 </html>

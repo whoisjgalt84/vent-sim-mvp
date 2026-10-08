@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const gates = [
+    ['tests/demonstration-reset.test.mjs', output => /^DEMONSTRATION_RESET_ENGINE_TALLY \{"groups":28,"passed":28,"failed":0\}$/m.test(output), 'demonstration reset28/0'],
     ['tests/test-engine.js', output => /Passed:\s*300\b/.test(output) && /Failed:\s*0\b/.test(output), 'legacy engine 300/0'],
     ['tests/adaptive-controller.test.mjs', output => /^ADAPTIVE_CONTROLLER_TALLY 22 passed, 0 failed$/m.test(output), 'adaptive controller 22/0'],
     ['tests/adaptive-integration.test.mjs', output => /^ADAPTIVE_INTEGRATION_TALLY 24 passed, 0 failed$/m.test(output), 'adaptive integration 24/0'],

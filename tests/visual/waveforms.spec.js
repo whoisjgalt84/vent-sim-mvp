@@ -23,6 +23,51 @@ const expect = process.env.VISUAL_REPEAT_CAPTURE ? baseExpect.extend({
 // layer, which otherwise overrides the documented 1440x900 suite viewport.
 test.use({ viewport: { width: 1440, height: 900 } });
 
+async function sharedResetSnapshots(page, headerOnly = false) {
+    const modes = headerOnly ? ['pc-cmva'] : ['vc-cmv', 'pc-cmv', 'PC-CSV', 'pc-cmva'];
+    for (const mode of modes) {
+        await page.evaluate(mode => __vsim.setupEffort({ mode, pMusMax: 8, patientRR: 12 }), mode);
+        await h.stepTicks(page, 1400);
+        expect((await h.state(page)).completed).not.toBeNull();
+        await page.locator('#btn-reset').click();
+        const fresh = await h.state(page);
+        expect(fresh.globalTime).toBe(0);
+        expect(fresh.completed).toBeNull();
+        expect(fresh.liveTrapped_mL).toBe(0);
+        expect(fresh.deliveredVentilation.status).toBe('warming');
+        expect(fresh.operatorSettings.pMusMax).toBe(8);
+        for (const width of headerOnly ? [1100, 800] : [1440]) {
+            await page.setViewportSize({ width, height: 900 });
+            for (const teaching of [false, true]) {
+                if ((await h.state(page)).teachingMode !== teaching) await h.teachingMode(page);
+                const boxes = await page.locator('.header__status, .header__transport, .header__alerts').evaluateAll(els => els.map(el => {
+                    const boxes = [el, ...el.querySelectorAll('button, .header__mode, .header__status-chip')].map(el => el.getBoundingClientRect());
+                    return { left: Math.min(...boxes.map(r => r.left)), right: Math.max(...boxes.map(r => r.right)), top: Math.min(...boxes.map(r => r.top)), bottom: Math.max(...boxes.map(r => r.bottom)) };
+                }));
+                for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+                    const a = boxes[i], b = boxes[j];
+                    expect(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top, 'separate header clusters').toBe(true);
+                }
+                await expect(page).toHaveScreenshot(`shared-reset-${mode}-${width}-${teaching ? 'teaching' : 'standard'}.png`, { fullPage: true });
+            }
+        }
+        if ((await h.state(page)).teachingMode) await h.teachingMode(page);
+    }
+}
+
+test.describe('shared demonstration reset visual contract', () => {
+    test('all four modes show a fresh run and retained effort in both display styles', async ({ page }) => {
+        const errors = await h.open(page);
+        await sharedResetSnapshots(page);
+        expect(errors).toEqual([]);
+    });
+    test('shared reset header keeps native controls separate at narrower widths', async ({ page }) => {
+        const errors = await h.open(page);
+        await sharedResetSnapshots(page, true);
+        expect(errors).toEqual([]);
+    });
+});
+
 /**
  * Visual regression for the waveform display.
  *
@@ -485,7 +530,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'VSM effort/pressure asset release').toEqual(['21']);
+        expect(versions, 'Shared demonstration reset asset release').toEqual(['22']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);

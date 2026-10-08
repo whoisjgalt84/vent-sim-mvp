@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=21';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=21';
-import { SimulationEngine }  from './simulation.js?v=21';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=21';
-import AlarmEngine from '../alarms.js?v=21';
+import { LungModel }        from './lung-model.js?v=22';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=22';
+import { SimulationEngine }  from './simulation.js?v=22';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=22';
+import AlarmEngine from '../alarms.js?v=22';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=21';
+} from '../alarm-audio.js?v=22';
 
 
 // =============================================================================
@@ -325,17 +325,35 @@ function syncOperatorControls() {
 }
 
 function bindAdaptiveSetup() {
-    document.getElementById('adaptive-reset').addEventListener('click', () => {
-        if (!vent.isAdaptiveMode()) return;
+    document.getElementById('adaptive-reset').addEventListener('click', resetDemonstration);
+}
+
+/** Start a fresh run with retained operator intent and transport/audio state. */
+function resetDemonstration() {
+    if (vent.isAdaptiveMode()) {
         const maximum = Number(document.getElementById('adaptive-maximum').value);
         // This is an explicit validated setup/reset, never an in-breath adjustment.
         sim.configureAdaptive({ ...sim.adaptiveState.config, maximumPressure_cmH2O: maximum });
-        syncOperatorControls();
-        applyModeUI(vent.mode);
-        updateMonitorValues(vent.summary());
-        updateHoldResults();
-        updateBreathInfo();
-    });
+    } else {
+        sim.reset();
+    }
+    lastFrameTs = performance.now();
+    syncOperatorControls();
+    // Display-only refresh: the normal frame remains the sole alarm evaluation
+    // path. Clear old run presentation without changing wall-clock audio timers.
+    activeAlarms = [];
+    evaluatedDelivery = null;
+    renderAlarms(activeAlarms);
+    updateAlarmAudioControls(activeAlarms, getAlarmNowSec());
+    display.renderFromSim(sim);
+    renderLoops();
+    const unknown = document.getElementById('unknown-patient-trigger');
+    if (unknown) unknown.hidden = true;
+    const summary = vent.summary();
+    updateMonitorValues(summary);
+    updateAlerts(summary, sim.breathSummary);
+    updateHoldResults();
+    updateBreathInfo();
 }
 
 function adaptivePresentation(state) {
@@ -989,6 +1007,7 @@ function onPressureTriggerChange(slider) {
 // =============================================================================
 
 function bindTransportControls() {
+    document.getElementById('btn-reset').addEventListener('click', resetDemonstration);
     const pauseBtn = document.getElementById('btn-pause');
     pauseBtn.addEventListener('click', () => {
         sim.toggle();
@@ -1944,6 +1963,7 @@ function detailedResistanceStatusCopy(result) {
 }
 
 function measurementHelpText(key) {
+    if (key === 'demonstration-reset') return 'Reset starts a new run with the currently selected settings and keeps the current paused or running state. It clears simulated time, accumulated trapped volume, traces, loops, breath and trigger history, and measured outputs. Delivered VE collects a new 30 s window. In PC-CMVa, queued target and PEEP edits and the selected maximum are applied, and the controller restarts at its configured initial pressure. Sound and Silence keep their current state. Clearing trapped volume represents a new run, not a treatment effect.';
     if (key === 'waveform-legend') return `${WAVEFORM_HELP}\n\n${SIGNED_PRESSURE_HELP}`;
     if (key === 'trigger-signal') return TRIGGER_SIGNAL_HELP;
     if (key === 'active-predictions') return ACTIVE_PREDICTIONS_HELP;
@@ -2445,6 +2465,25 @@ function installTestHooks() {
                 operatorSettings: { targetVT_mL: vent.tidalVolume * 1000, peep_cmH2O: vent.peep,
                     inspiratoryPressure_cmH2O: vent.inspiratoryPressure, pressureSupport_cmH2O: vent.psPressure,
                     pMusMax: vent.pMusMax, patientRR: sim.patientRR, neuralTi_s: vent.neuralTi },
+                // Read-only reset receipts: retained configuration and cleared histories.
+                resetDiagnostics: {
+                    configuration: Object.fromEntries(['mode', 'flowPattern', 'holdTime',
+                        'respiratoryRate', 'ieRatio', 'peep', 'fio2', 'triggerType',
+                        'flowTriggerLpm', 'pressureTriggerCmH2O', 'tidalVolume',
+                        'inspiratoryPressure', 'psPressure', 'cyclePercent', 'pMusMax',
+                        'neuralTi'].map(key => [key, vent[key]])),
+                    resistance: lung.resistance, compliance: lung.compliance,
+                    alarmLimits: { ...alarmLimits }, speed: sim.speed,
+                    displaySeconds: sim.displaySeconds, loopsVisible, customMechanics,
+                    volumeAboveEq: sim.volumeAboveEq,
+                    scheduledBreathTrigger: sim.scheduledBreathTrigger,
+                    pendingTriggerDetection: sim._pendingTriggerDetection,
+                    neuralTimer: sim.neuralTimer, phaseTime: sim.phaseTime,
+                    loopCurrent: sim.loopCurrent, loopCompleted: sim.loopCompleted,
+                    loopDataStatus: { pv: pvLoop.sampleDataStatus, fv: fvLoop.sampleDataStatus },
+                    traceExtent: Object.fromEntries(Object.entries(sim.buffers).map(([key, buffer]) =>
+                        [key, { minimum: Math.min(...buffer.toArray()), maximum: Math.max(...buffer.toArray()) }])),
+                },
                 teachingMode:    document.body.classList.contains('teaching-mode'),
                 breathCount:     s.breathCount,
                 machineBreaths:  s.machineBreathCount,
@@ -2463,6 +2502,7 @@ function installTestHooks() {
                         markers: renderer.renderedTriggerMarkers } : null];
                 })),
                 pvGeometry: pvLoop.lastGeometry,
+                fvGeometry: fvLoop.lastGeometry,
                 activeAlarms,
                 alarmAudio: { enabled: alarmAudioState.enabled, armed: alarmAudioState.armed,
                     silencedUntilSec: alarmAudioState.silencedUntilSec,

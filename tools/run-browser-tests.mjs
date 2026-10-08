@@ -66,7 +66,7 @@ function requireCommissionedTally(output) {
         ? /^COMMISSIONED_VISUAL_TALLY (\d+) passed, (\d+) failed$/gm
         : /^\s*(\d+) passed, (\d+) failed\s*$/gm;
     const matches = [...cleanOutput.matchAll(pattern)];
-    const expectedPassed = visualMode ? 16 : 44;
+    const expectedPassed = visualMode ? 18 : 44;
     const label = visualMode ? 'visual/determinism' : 'browser';
 
     if (matches.length !== 1) {
@@ -231,10 +231,11 @@ async function ensureServer() {
     );
 }
 
-async function runHarness(adaptive = false, effortSlider = false) {
+async function runHarness(adaptive = false, effortSlider = false, demonstrationReset = false) {
     const target = visualMode
         ? [playwrightCli, 'test', ...process.argv.slice(3)]
-        : [effortSlider ? fileURLToPath(new URL('../scratch/verify-effort-slider.cjs', import.meta.url))
+        : [demonstrationReset ? fileURLToPath(new URL('../scratch/verify-demonstration-reset.cjs', import.meta.url))
+            : effortSlider ? fileURLToPath(new URL('../scratch/verify-effort-slider.cjs', import.meta.url))
             : adaptive ? fileURLToPath(new URL('../scratch/verify-adaptive.cjs', import.meta.url)) : harnessFile];
     testProcess = spawn(process.execPath, target, {
         cwd: root,
@@ -289,6 +290,14 @@ try {
             throw new Error('Commissioned Effort slider browser tally must be 5 passed / 0 failed; received ' + sliderMatches[0][1]);
         }
         console.log('Commissioned Effort slider browser tally verified: 5 passed, 0 failed.');
+        const reset = await runHarness(false, false, true);
+        const resetMatches = [...stripAnsi(reset.output).matchAll(/^DEMONSTRATION_RESET_BROWSER_TALLY (.+)$/gm)];
+        if (resetMatches.length !== 1) throw new Error('Expected exactly one demonstration reset browser tally');
+        const resetTally = JSON.parse(resetMatches[0][1]);
+        if (reset.code !== 0 || resetTally.groups !== 8 || resetTally.passed !== 8 || resetTally.failed !== 0) {
+            throw new Error('Commissioned demonstration reset browser tally must be 8 passed / 0 failed; received ' + resetMatches[0][1]);
+        }
+        console.log('Commissioned demonstration reset browser tally verified: 8 passed, 0 failed.');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

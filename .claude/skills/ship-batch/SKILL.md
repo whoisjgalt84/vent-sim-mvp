@@ -179,6 +179,14 @@ Give Christian, in this order:
 
 Do not end with "tests pass." End with numbers.
 
-The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups and 5 Effort-slider groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
+The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups, 5 Effort-slider groups and 8 demonstration-reset groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
 
 Legacy fixture accounting is 92,500 exercised ticks: 28,000 exact passive ticks in 8 fixtures and 64,500 active conformance ticks in 14 fixtures. Review the [current model](../../../docs/model.md) and [successor index](../../../docs/clinical/CLIN-001/successor-index.md) for provenance and open owner gates.
+
+## Shared reset verification (2026-10-07)
+
+The current aggregate gates additionally require 28 demonstration-reset engine
+groups and eight demonstration-reset browser groups. The pinned-Linux visual
+inventory is now 18 groups (the existing 16 plus two shared-reset groups).
+Prior inventories above describe their existing groups or historical checkpoints.
+See [the shared reset contract](../../../docs/demonstration-reset-contract.md).

@@ -530,7 +530,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'Shared demonstration reset asset release').toEqual(['22']);
+        expect(versions, 'Shared demonstration reset asset release').toEqual(['23']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);
@@ -589,7 +589,7 @@ async function adaptiveShot(page, name) {
         'adaptive-bound-release-teaching.png': 'Same upper-bound fixture after15publications; Standard actual compliance input50;1new publication; Teaching; source pressure20,next18.',
         'adaptive-lower-bound-teaching.png': 'Fresh setup C.1,prescribed effort12,patientRR12;18publications; applied minimum5 with excess inspiredVT; Teaching.',
         'adaptive-pending-transition-help-standard.png': 'Default fixture;10publications; actual Pause; VT650 and PEEP9 inputs; focus pending target help; Standard.',
-        'adaptive-reset-retained-standard.png': 'Dismiss pending help; actual Reset demonstration; retain target650/PEEP9 and paused transport; achievedVT unavailable; Standard.',
+        'adaptive-reset-retained-standard.png': 'Dismiss pending help; actual header Reset; retain target650/PEEP9 and paused transport; achievedVT unavailable; Standard.',
         'adaptive-achieved-help-teaching.png': 'Same retained-reset fixture;2new publications; Teaching; focus Achieved VT help.',
         'adaptive-destination-vc-retained-standard.png': 'Same fixture; dismiss help and select Standard; queue VT640/PEEP12; actual VC-CMV mode button; preserve manual pressure settings and pause.',
         'adaptive-reentry-startup-teaching.png': 'Same VC destination fixture; actual PC-CMVa button then Teaching; target640/PEEP12 retained,initialpressure10,no eligible feedback.',
@@ -799,7 +799,7 @@ test.describe('PC-CMVa adaptive visual contract', () => {
         await expect(page.locator('#measurement-help-text')).toHaveText('Your new VT target takes effect at the start of the next breath. The simulator will not use the breath affected by this change to calculate the next pressure adjustment.\n\nResetting or changing modes keeps your latest selected settings. After a mode change, only the settings used by that mode affect breath delivery.');
         await adaptiveShot(page, 'adaptive-pending-transition-help-standard.png');
         await page.keyboard.press('Escape');
-        await page.locator('#adaptive-reset').click();
+        await page.locator('#btn-reset').click();
         let state = await h.state(page);
         expect(state.operatorSettings.targetVT_mL).toBe(650);
         expect(state.operatorSettings.peep_cmH2O).toBe(9);

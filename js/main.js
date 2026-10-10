@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=22';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=22';
-import { SimulationEngine }  from './simulation.js?v=22';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=22';
-import AlarmEngine from '../alarms.js?v=22';
+import { LungModel }        from './lung-model.js?v=23';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=23';
+import { SimulationEngine }  from './simulation.js?v=23';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=23';
+import AlarmEngine from '../alarms.js?v=23';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=22';
+} from '../alarm-audio.js?v=23';
 
 
 // =============================================================================
@@ -67,7 +67,7 @@ const ADAPTIVE_HELP = Object.freeze({
     "adaptive-achieved": "Unrounded modeled inspired volume from the last completed inspiration drives adaptation. This display rounds to whole milliliters. The record is finalized when expiration starts; it is not a separate exhaled-volume measurement.",
     "adaptive-pressure": "Pressure command applied to the current or most recently started breath, above set PEEP. It is separate from measured peak airway pressure and from total PEEP. Patient contribution and mechanics can change achieved volume.",
     "adaptive-next": "Command calculated from the identified completed inspiration. It applies only when the next breath starts and may be canceled by an input change.",
-    "adaptive-bounds": "Educational controller bounds above set PEEP. These are not alarm thresholds, clinical safety limits, or pressure above total PEEP. Configure bounds before resetting a demonstration.",
+    "adaptive-bounds": "Educational controller bounds above set PEEP. These are not alarm thresholds, clinical safety limits, or pressure above total PEEP. Configure bounds before using Reset in the header.",
     "adaptive-normal": "Achieved VT is within 10 mL of target on the last eligible inspiration. No pressure adjustment is requested. This is a teaching tolerance, not a clinical assessment.",
     "adaptive-adjusting": "Achieved VT differs from target. The next pressure command changes by at most 2 cmH2O for this eligible inspiration.",
     "adaptive-upper": "The current command is at the configured maximum and achieved VT is more than 10 mL below target. This controller cannot add pressure beyond that bound. Volume is not guaranteed.",
@@ -217,7 +217,6 @@ function init() {
     bindLoopToggle();
     bindTeachingModeToggle();
     bindCollapsibles();
-    bindAdaptiveSetup();
     bindMeasurementHelp();
 
     // --- Handle window resize ---
@@ -322,10 +321,6 @@ function syncOperatorControls() {
         document.getElementById('adaptive-maximum').value = adaptive.config.maximumPressure_cmH2O;
         setText('adaptive-minimum', `${adaptive.config.minimumPressure_cmH2O}`);
     }
-}
-
-function bindAdaptiveSetup() {
-    document.getElementById('adaptive-reset').addEventListener('click', resetDemonstration);
 }
 
 /** Start a fresh run with retained operator intent and transport/audio state. */

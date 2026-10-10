@@ -15,7 +15,7 @@ const HELP = {
     achieved: 'Unrounded modeled inspired volume from the last completed inspiration drives adaptation. This display rounds to whole milliliters. The record is finalized when expiration starts; it is not a separate exhaled-volume measurement.',
     pressure: 'Pressure command applied to the current or most recently started breath, above set PEEP. It is separate from measured peak airway pressure and from total PEEP. Patient contribution and mechanics can change achieved volume.',
     next: 'Command calculated from the identified completed inspiration. It applies only when the next breath starts and may be canceled by an input change.',
-    bounds: 'Educational controller bounds above set PEEP. These are not alarm thresholds, clinical safety limits, or pressure above total PEEP. Configure bounds before resetting a demonstration.',
+    bounds: 'Educational controller bounds above set PEEP. These are not alarm thresholds, clinical safety limits, or pressure above total PEEP. Configure bounds before using Reset in the header.',
     effort: "Instructor-selected peak amplitude of this model's periodic inspiratory muscle-pressure waveform. Effort does not respond physiologically to changing assistance. This amplitude is not measured work of breathing.",
     hold: 'Inspiratory hold is excluded from this initial adaptive demonstration. Hold-derived measurements remain unavailable in this mode.',
     predictions: 'Fixed-pressure steady-state predictions are unavailable while pressure adapts between breaths.',
@@ -86,7 +86,7 @@ const groups = [
             await setup(page); await running(page, false); await step(page, 50);
             if (combination !== 'peep') await range(page, '#vt', 620);
             if (combination !== 'target') await range(page, '#peep', 8);
-            await page.locator('#adaptive-reset').click(); const s = await state(page);
+            await page.locator('#btn-reset').click(); const s = await state(page);
             assert.equal(s.running, false); assert.equal(s.completed, null); assert.equal(s.adaptiveState.pendingSettings, null);
             assert.equal(s.operatorSettings.targetVT_mL, combination === 'peep' ? 500 : 620);
             assert.equal(s.operatorSettings.peep_cmH2O, combination === 'target' ? 5 : 8);
@@ -121,7 +121,7 @@ const groups = [
         assert.equal(s.adaptiveState.pending, null); assert.equal(s.adaptiveState.contextMatches, false);
         await page.locator('#adaptive-maximum').selectOption('20');
         assert.equal((await state(page)).adaptiveState.config.maximumPressure_cmH2O, 25);
-        await running(page, false); await page.locator('#adaptive-reset').click(); s = await state(page);
+        await running(page, false); await page.locator('#btn-reset').click(); s = await state(page);
         assert.equal(s.adaptiveState.config.maximumPressure_cmH2O, 20); assert.equal(s.running, false);
         assert.equal(s.adaptiveState.targetVT_mL, 500); assert.equal(s.adaptiveState.appliedPeep_cmH2O, 5);
         assert.equal(s.adaptiveState.pendingSettings, null);

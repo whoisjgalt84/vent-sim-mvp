@@ -12,6 +12,13 @@ const state = page => page.evaluate(() => window.__vsim.state());
 const step = (page, ticks) => page.evaluate(n => window.__vsim.stepTicks(n), ticks);
 const text = (page, selector) => page.locator(selector).innerText();
 async function rail(page) { await page.locator('.controls [data-collapsible][data-collapsed]').evaluateAll(els => els.forEach(el => el.click())); }
+async function singleResetControl(page) {
+    assert.equal(await page.locator('#adaptive-reset').count(), 0, 'legacy adaptive reset removed from DOM');
+    const controls = page.getByRole('button', { name: /^Reset(?: demonstration)?$/ });
+    assert.equal(await controls.count(), 1, 'exactly one visible reset control');
+    assert.equal(await controls.getAttribute('id'), 'btn-reset', 'shared header reset is the sole control');
+    assert.equal(await controls.isDisabled(), false, 'shared reset remains enabled');
+}
 async function range(page, id, value) {
     await page.locator(id).evaluate((el, value) => { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }, String(value));
 }
@@ -21,6 +28,7 @@ async function setup(page, mode, active = false, holdTime = 0) {
         patientRR: active ? 12 : 0, neuralTi: 0.8, resistance: 20, compliance: 0.07,
         respiratoryRate: 25, ieRatio: [1, 1], holdTime, triggerType: 'flow', flowTriggerLpm: 2 });
     await rail(page);
+    await singleResetControl(page);
     await page.locator('#speed-group [data-speed="1"]').click(); // ordinary gesture arms existing audio policy
 }
 async function running(page, on) { if ((await state(page)).running !== on) await page.locator('#btn-pause').click(); }
@@ -79,6 +87,7 @@ const groups = ['vc-cmv', 'pc-cmv', 'PC-CSV', 'pc-cmva'].map(mode => [mode + '-p
         await page.locator('#speed-group [data-speed="2"]').click();
         await page.locator('#window-group [data-window="20"]').click();
         await page.locator('#btn-loops').click(); await page.locator('#btn-teaching-mode').click();
+        await singleResetControl(page);
         await running(page, playing); const before = await state(page);
         const effortBefore = await page.evaluate(() => ({ effortInput: document.getElementById('pmus-max').value, effortReadout: document.getElementById('pmus-max-display').textContent.trim() }));
         const s = await reset(page);
@@ -106,6 +115,7 @@ const groups = ['vc-cmv', 'pc-cmv', 'PC-CSV', 'pc-cmva'].map(mode => [mode + '-p
     }
     for (const teaching of [false, true]) {
         if ((await state(page)).teachingMode !== teaching) await page.locator('#btn-teaching-mode').click();
+        await singleResetControl(page);
         await image(page, `${mode}-${teaching ? 'teaching' : 'standard'}-reset`);
     }
     // Resume the actual animation loop for both transport states. Deterministic
@@ -118,22 +128,23 @@ const groups = ['vc-cmv', 'pc-cmv', 'PC-CSV', 'pc-cmva'].map(mode => [mode + '-p
     await page.waitForTimeout(150); assert.equal((await state(page)).globalTime, 0); assert.equal((await state(page)).running, false);
     receipts.push({ group: mode, rows, livePausedReset: live });
 }]);
-groups.push(['adaptive-pending-maximum-and-local-reset-equivalence', async page => {
+groups.push(['adaptive-pending-maximum-and-header-reset', async page => {
     const rows = [];
-    for (const control of ['#btn-reset', '#adaptive-reset']) for (const queue of ['target', 'peep', 'both']) {
+    for (const maximum of [20, 25]) for (const playing of [false, true]) for (const queue of ['target', 'peep', 'both']) {
         await setup(page, 'pc-cmva', true); await step(page, 1400);
         assert((await state(page)).adaptiveState.lastFeedback, 'obsolete feedback fixture');
         if (queue !== 'peep') await range(page, '#vt', 650);
         if (queue !== 'target') await range(page, '#peep', 9);
-        await page.locator('#adaptive-maximum').selectOption('20');
-        const before = await state(page), s = await reset(page, control);
+        await page.locator('#adaptive-maximum').selectOption(String(maximum));
+        await running(page, playing);
+        const before = await state(page), s = await reset(page);
         clear(s.state, before); retained(s.state, before, { tidalVolume: queue === 'peep' ? before.resetDiagnostics.configuration.tidalVolume : 0.65, peep: queue === 'target' ? before.resetDiagnostics.configuration.peep : 9 });
-        assert.equal(s.state.adaptiveState.config.maximumPressure_cmH2O, 20);
-        assert.equal(await page.locator('#adaptive-maximum').inputValue(), '20');
+        assert.equal(s.state.adaptiveState.config.maximumPressure_cmH2O, maximum);
+        assert.equal(await page.locator('#adaptive-maximum').inputValue(), String(maximum));
         assert.equal(await page.locator('#vt').inputValue(), queue === 'peep' ? '500' : '650');
         assert.equal(await page.locator('#peep').inputValue(), queue === 'target' ? '5' : '9');
         assert.equal(await text(page, '#adaptive-achieved'), '—'); assert.equal(await text(page, '#adaptive-next'), '—');
-        rows.push({ control, queue, before, synchronous: s });
+        rows.push({ maximum, playing, queue, before, synchronous: s });
     }
     // Zero is a valid adaptive prescription; shared reset must not run the
     // destination-mode min=0.25 synchronization involved in the deferred issue.
@@ -210,7 +221,7 @@ groups.push(['native-help-controls-and-header-geometry', async page => {
             try {
                 await page.goto(APP, { waitUntil: 'networkidle' }); await page.waitForFunction(() => window.__vsim);
                 await page.evaluate(() => document.addEventListener('click', event => {
-                    if (!['btn-reset', 'adaptive-reset'].includes(event.target.id)) return;
+                    if (event.target.id !== 'btn-reset') return;
                     const content = id => document.getElementById(id).textContent.trim();
                     window.resetReceipt = { trusted: event.isTrusted, state: __vsim.state(), dom: {
                         pip: content('param-pip'), vt: content('param-vt'), ve: content('param-ve'), veStatus: content('ve-status'),

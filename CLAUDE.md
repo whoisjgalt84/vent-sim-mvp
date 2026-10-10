@@ -140,7 +140,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=22`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=23`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -240,8 +240,8 @@ Each of these encodes a bug that already shipped once.
 
 New invariants belong in this list, with the failure they prevent.
 
-18. **Demonstration reset starts a fresh run with retained selections.** Both
-    header Reset and the adaptive Reset demonstration share one lifecycle. Resolve
+18. **Demonstration reset starts a fresh run with retained selections.** The
+    header Reset is the single reset control in all four modes. Resolve
     pending adaptive target/PEEP and selected maximum before initialization;
     preserve transport and wall-clock mute/Silence semantics. Clear old measured
     outputs, traces/loops and alarm presentation synchronously without adding an

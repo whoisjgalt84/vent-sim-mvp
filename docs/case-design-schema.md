@@ -341,7 +341,7 @@ Low/high VE also require a valid full 30-simulation-second delivery window. High
 | Enabled Effort (cmH2O) | 0.25 | 12 | 0.25 | 2 | prescribed peak inspiratory Pmus |
 | Neural Ti (s) | 0.4 | 2.0 | 0.1 | 1.0 | raw slider 4-20 divided by 10 |
 | Patient RR (/min) | 6 | 35 | 1 | 16 | no zero slider setting |
-| Adaptive maximum above set PEEP (cmH2O) | 20 | 25 | selector | 25 | exactly 20 or 25; setup-only, then Reset demonstration |
+| Adaptive maximum above set PEEP (cmH2O) | 20 | 25 | selector | 25 | exactly 20 or 25; setup-only, then header Reset |
 | Alarm: High Pressure (cmH2O) | 20 | 60 | 1 | 40 | |
 | Alarm: High RR (/min) | 10 | 60 | 1 | 35 | |
 | Alarm: Apnea (s) | 5 | 60 | 1 | 20 | |
@@ -354,7 +354,7 @@ Inspected implementation reference: main `c80da4a3736d9313bcaaf8a15e4d129efc216b
 
 Passive state is established with the effort control, not a nonexistent zero setting on the Patient RR or enabled Effort sliders. Verify modeled Pmus is zero. The zero-effort PC-CMVa exit input discrepancy and duplicate Pmus readouts remain deferred; the Effort-slider geometry fix does not close them. Stop rehearsal if the prescribed state is ambiguous.
 
-Adaptive minimum is 5 cmH2O above set PEEP, initial command after reset is 10, default maximum is 25 (explicit alternative 20) and target default is 500 mL. The selected maximum is setup-only and requires **Reset demonstration**. These are educational engineering constants, not patient recommendations. Target and PEEP requests queue to a normal next adaptive breath boundary; source values and applied values remain distinct. See the [approved adaptive contract](adaptive-mode-contract.md).
+Adaptive minimum is 5 cmH2O above set PEEP, initial command after reset is 10, default maximum is 25 (explicit alternative 20) and target default is 500 mL. The selected maximum is setup-only and requires the **header Reset**. These are educational engineering constants, not patient recommendations. Target and PEEP requests queue to a normal next adaptive breath boundary; source values and applied values remain distinct. See the [approved adaptive contract](adaptive-mode-contract.md).
 
 A requested short hold does not guarantee a valid measurement. Measured Pplat requires an actual completed 0.5-2.0 s interval and the full [validity criteria](model.md#33-inspiratory-hold). HOLD is inapplicable in PC-CSV and PC-CMVa; measured resistance requires passive square-flow VC. There is no expiratory-occlusion maneuver.
 

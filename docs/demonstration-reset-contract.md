@@ -2,7 +2,9 @@
 
 Owner-authorized implementation contract, 2026-10-07. The header **Reset** is
 available in VC-CMV, PC-CMV, PC-CSV and PC-CMVa, in Standard and Teaching Mode.
-The PC-CMVa **Reset demonstration** button calls the same operation.
+It is the single reset control in all four modes. The redundant PC-CMVa
+**Reset demonstration** button was removed with owner approval on 2026-10-10;
+adaptive maximum changes still apply through the header **Reset**.
 
 Reset starts a fresh run with the current operator selections: mode, ventilator
 settings, R/C, prescribed effort amplitude and timing, trigger configuration,

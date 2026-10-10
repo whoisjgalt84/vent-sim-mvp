@@ -530,7 +530,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'Shared demonstration reset asset release').toEqual(['23']);
+        expect(versions, 'UI cleanup batch A asset release').toEqual(['25']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);

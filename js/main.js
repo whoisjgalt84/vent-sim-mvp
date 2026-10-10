@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=23';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=23';
-import { SimulationEngine }  from './simulation.js?v=23';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=23';
-import AlarmEngine from '../alarms.js?v=23';
+import { LungModel }        from './lung-model.js?v=25';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=25';
+import { SimulationEngine }  from './simulation.js?v=25';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=25';
+import AlarmEngine from '../alarms.js?v=25';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=23';
+} from '../alarm-audio.js?v=25';
 
 
 // =============================================================================
@@ -698,6 +698,7 @@ function bindPmusToggle() {
     const btn = document.getElementById('pmus-toggle');
     btn.addEventListener('click', () => {
         const wasActive = sim.patientRR > 0;
+        btn.setAttribute('aria-pressed', String(!wasActive));
 
         if (wasActive) {
             vent.pMusMax = 0;
@@ -705,7 +706,6 @@ function bindPmusToggle() {
             btn.classList.remove('hold-btn--active');
             document.getElementById('pmus-icon').textContent = '♿';
             document.getElementById('pmus-btn-label').textContent = 'Passive';
-            document.getElementById('pmus-display').textContent = 'Off';
             document.getElementById('pmus-sliders').style.display = 'none';
             document.getElementById('patient-rr-control').style.display = 'none';
         } else {
@@ -719,7 +719,6 @@ function bindPmusToggle() {
             btn.classList.add('hold-btn--active');
             document.getElementById('pmus-icon').textContent = '💪';
             document.getElementById('pmus-btn-label').textContent = 'Active';
-            document.getElementById('pmus-display').textContent = formatPmusValue(pmax);
             setText('pmus-max-display', formatPmusValue(pmax));
             setText('neural-ti-display', `${nti.toFixed(1)} s`);
             document.getElementById('pmus-sliders').style.display = '';
@@ -736,7 +735,6 @@ function bindPmusToggle() {
 function onPmusMaxChange(slider) {
     const pmax = parseFloat(slider.value);
     vent.pMusMax = pmax;
-    document.getElementById('pmus-display').textContent = formatPmusValue(pmax);
     // Units beside the slider itself, not only in the collapsed group header —
     // the Effort row was the one control with no inline value at all (SME-002).
     setText('pmus-max-display', formatPmusValue(pmax));
@@ -956,12 +954,7 @@ function updateTriggerDisplay() {
         pressureDisplay.textContent = formatTriggerValue(vent.pressureTriggerCmH2O, 'cmH₂O');
     }
 
-    const label = type === 'pressure'
-        ? `Pressure ${formatTriggerValue(vent.pressureTriggerCmH2O, 'cmH₂O')}`
-        : `Flow ${formatTriggerValue(vent.flowTriggerLpm, 'L/min')}`;
 
-    const display = document.getElementById('trigger-display');
-    if (display) display.textContent = label;
 }
 
 function bindTriggerTypeToggle() {
@@ -1211,9 +1204,11 @@ function syncMechanicsControls() {
 }
 
 function updateMechanicsExamplePresentation() {
-    const preset = LungModel.presets()[document.getElementById('preset').value];
-    document.getElementById('mechanics-example-state').textContent = customMechanics
-        ? 'Custom mechanics' : preset.label;
+    // The selector identifies the last loaded example, not modified mechanics.
+    // Show only the custom-state warning; a second preset name is redundant.
+    const state = document.getElementById('mechanics-example-state');
+    state.textContent = customMechanics ? 'Custom mechanics' : '';
+    state.hidden = !customMechanics;
     refreshOpenMeasurementHelp();
 }
 
@@ -1967,7 +1962,8 @@ function measurementHelpText(key) {
     if (ADAPTIVE_HELP[key]) return ADAPTIVE_HELP[key];
     if (key === 'mechanics-examples') {
         const preset = LungModel.presets()[document.getElementById('preset').value];
-        return [customMechanics ? CUSTOM_MECHANICS_HELP : preset.note,
+        return [document.getElementById('mechanics-example-disclosure').textContent,
+            customMechanics ? CUSTOM_MECHANICS_HELP : preset.note,
             MECHANICS_EXAMPLES_HELP, MECHANICS_UNITS_HELP, CALCULATED_TAU_HELP].join('\n\n');
     }
     if (key === 'pc-idealization') {
@@ -2350,9 +2346,9 @@ function installTestHooks() {
             document.getElementById('neural-ti').value = neuralTi * 10;
             document.getElementById('patient-rr').value = patientRR || 12;
             document.getElementById('pmus-toggle').classList.toggle('hold-btn--active', patientRR > 0);
+            document.getElementById('pmus-toggle').setAttribute('aria-pressed', String(patientRR > 0));
             setText('pmus-icon', patientRR > 0 ? '💪' : '♿');
             setText('pmus-btn-label', patientRR > 0 ? 'Active' : 'Passive');
-            setText('pmus-display', patientRR > 0 ? formatPmusValue(pMusMax) : 'Off');
             setText('pmus-max-display', formatPmusValue(pMusMax));
             setText('patient-rr-display', `${patientRR || 12} /min`);
             setText('neural-ti-display', `${neuralTi.toFixed(1)} s`);

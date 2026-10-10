@@ -231,10 +231,11 @@ async function ensureServer() {
     );
 }
 
-async function runHarness(adaptive = false, effortSlider = false, demonstrationReset = false) {
+async function runHarness(adaptive = false, effortSlider = false, demonstrationReset = false, uiCleanup = false) {
     const target = visualMode
         ? [playwrightCli, 'test', ...process.argv.slice(3)]
-        : [demonstrationReset ? fileURLToPath(new URL('../scratch/verify-demonstration-reset.cjs', import.meta.url))
+        : [uiCleanup ? fileURLToPath(new URL('../scratch/verify-ui-cleanup.cjs', import.meta.url))
+            : demonstrationReset ? fileURLToPath(new URL('../scratch/verify-demonstration-reset.cjs', import.meta.url))
             : effortSlider ? fileURLToPath(new URL('../scratch/verify-effort-slider.cjs', import.meta.url))
             : adaptive ? fileURLToPath(new URL('../scratch/verify-adaptive.cjs', import.meta.url)) : harnessFile];
     testProcess = spawn(process.execPath, target, {
@@ -298,6 +299,14 @@ try {
             throw new Error('Commissioned demonstration reset browser tally must be 8 passed / 0 failed; received ' + resetMatches[0][1]);
         }
         console.log('Commissioned demonstration reset browser tally verified: 8 passed, 0 failed.');
+        const cleanup = await runHarness(false, false, false, true);
+        const cleanupMatches = [...stripAnsi(cleanup.output).matchAll(/^UI_CLEANUP_BROWSER_TALLY (.+)$/gm)];
+        if (cleanupMatches.length !== 1) throw new Error('Expected exactly one UI cleanup browser tally');
+        const cleanupTally = JSON.parse(cleanupMatches[0][1]);
+        if (cleanup.code !== 0 || cleanupTally.groups !== 7 || cleanupTally.passed !== 7 || cleanupTally.failed !== 0) {
+            throw new Error('Commissioned UI cleanup browser tally must be 7 passed / 0 failed; received ' + cleanupMatches[0][1]);
+        }
+        console.log('Commissioned UI cleanup browser tally verified: 7 passed, 0 failed.');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

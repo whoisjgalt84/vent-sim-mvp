@@ -30,7 +30,7 @@ async function snapshot(page) {
             const r = node.getBoundingClientRect(); return { x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom };
         }, s = window.__vsim.state();
         return { value:+el.value, display:document.querySelector('#pmus-max-display').textContent,
-            top:document.querySelector('#pmus-display').textContent, min:+el.min,max:+el.max,step:+el.step,
+            top:document.querySelector('#pmus-display')?.textContent ?? null, min:+el.min,max:+el.max,step:+el.step,
             time:s.globalTime,running:s.running,mode:s.mode,settings:s.operatorSettings,
             completed:s.completed,adaptive:s.adaptiveState,breathCount:s.breathCount,
             identity:el===window.effortNode,range:rect(el),row:rect(el.parentElement),
@@ -39,7 +39,8 @@ async function snapshot(page) {
 }
 function agreement(s, value) {
     assert.equal(s.value,value,'native value'); assert.equal(s.settings.pMusMax,value,'read-only configured Pmus');
-    assert.equal(s.display,format(value),'inline formatting'); assert.equal(s.top,format(value),'upper formatting');
+    assert.equal(s.display,format(value),'inline formatting'); if (LAYOUT === 'implemented') assert.equal(s.top,null,'redundant upper readout removed');
+    else assert.equal(s.top,format(value),'historical upper formatting');
     assert(s.identity,'native input node identity changed');
 }
 function unrelated(settings) { const copy={...settings}; delete copy.pMusMax; return copy; }

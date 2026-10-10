@@ -63,7 +63,7 @@ const {chromium} = require('playwright');
         if(want('startup')) {
             const s=await current();eq('D11.startup-model-C',s.C,.060);eq('D11.startup-control-C',s.controls.compliance,'60');
             eq('D11.startup-display-C',await page.locator('#compliance-display').textContent(),'60 mL/cmH₂O');
-            eq('D11.startup-R',s.R,10);eq('D11.startup-label',s.label,'Normal example');
+            eq('D11.startup-R',s.R,10);eq('D11.startup-label',s.label,'');eq('batchA.startup-no-duplicate',await page.locator('#mechanics-example-state').isVisible(),false);
             eq('D10.selector-label',await page.locator('#load-mechanics-example').textContent(),'Load example');
             eq('D10.selector-label-association',await page.locator('#preset').getAttribute('aria-labelledby'),'load-mechanics-example');
             eq('D10.disclosure',await page.locator('#mechanics-example-disclosure').textContent(),COPY.disclosure);
@@ -79,13 +79,13 @@ const {chromium} = require('playwright');
             eq('row.'+row.key+'.display-C',await page.locator('#compliance-display').textContent(),Math.round(row.compliance*1000)+' mL/cmH₂O');
             eq('row.'+row.key+'.display-R',await page.locator('#resistance-display').textContent(),row.resistance+' cmH₂O·s/L');
             eq('row.'+row.key+'.option',await page.locator('#preset option:checked').textContent(),row.label);
-            eq('row.'+row.key+'.identity',s.label,row.label);
+            eq('row.'+row.key+'.identity',s.label,'');eq('batchA.'+row.key+'.no-duplicate',await page.locator('#mechanics-example-state').isVisible(),false);
             eq('row.'+row.key+'.tau',s.tau,row.resistance*row.compliance);
             eq('row.'+row.key+'.tau-description',await page.locator('#mechanics-bar .mechanics-chip').first().getAttribute('aria-description'),COPY.tau);
             await shot(row.key+'-selected');
             await page.locator('#mechanics-example-help').click();
             check('row.'+row.key+'.help-visible',await page.locator('#measurement-help').isVisible());
-            eq('row.'+row.key+'.help',await page.locator('#measurement-help-text').textContent(),[row.note,COPY.common,COPY.units,COPY.tau].join('\n\n'));
+            eq('row.'+row.key+'.help',await page.locator('#measurement-help-text').textContent(),[COPY.disclosure,row.note,COPY.common,COPY.units,COPY.tau].join('\n\n'));
             eq('row.'+row.key+'.source-visible',await page.locator('#mechanics-example-source').isVisible(),row.key==='copd');
             if(row.key==='copd')eq('COPD.source-link',await page.locator('#mechanics-example-source').getAttribute('href'),'https://doi.org/10.4187/respcare.05775');
             await shot(row.key+'-help');await page.keyboard.press('Escape');
@@ -106,7 +106,7 @@ const {chromium} = require('playwright');
             await h.setRange(page,'#resistance',17);eq('D12.R-edit-label',(await current()).label,'Custom mechanics');
             eq('D12.last-example',await page.locator('#preset').inputValue(),'copd');
             await page.locator('#mechanics-example-help').click();
-            eq('D12.custom-help',await page.locator('#measurement-help-text').textContent(),[COPY.custom,COPY.common,COPY.units,COPY.tau].join('\n\n'));
+            eq('D12.custom-help',await page.locator('#measurement-help-text').textContent(),[COPY.disclosure,COPY.custom,COPY.common,COPY.units,COPY.tau].join('\n\n'));
             eq('D12.no-current-COPD-source',await page.locator('#mechanics-example-source').isVisible(),false);
             await shot('custom-R17-C41-help');await page.keyboard.press('Escape');
             for(const mode of ['pc-cmv','PC-CSV','vc-cmv']){await h.setMode(page,mode);const s=await current();eq('D12.mode-reset-retains.'+mode,[s.R,s.C,s.label],[17,.041,'Custom mechanics']);eq('reset.canonical-cleared.'+mode,s.completed,null);}
@@ -115,10 +115,10 @@ const {chromium} = require('playwright');
             // Native selection of an already selected option fires no change.
             // The Load example button must reload it using real keyboard input.
             await page.locator('#load-mechanics-example').focus();await page.keyboard.press('Enter');
-            eq('D12.keyboard-reload-last-example',[(await current()).R,(await current()).C,(await current()).label],[25,.060,'COPD example (HME)']);
+            eq('D12.keyboard-reload-last-example',[(await current()).R,(await current()).C,(await current()).label],[25,.060,'']);
             await h.setRange(page,'#compliance',41);await page.locator('#load-mechanics-example').click();
-            eq('D12.pointer-reload-last-example',[(await current()).C,(await current()).label],[.060,'COPD example (HME)']);
-            for(const row of ORACLE){await page.selectOption('#preset',row.key);eq('D12.reload-restores.'+row.key,(await current()).label,row.label);await h.setRange(page,'#resistance',17);}
+            eq('D12.pointer-reload-last-example',[(await current()).C,(await current()).label],[.060,'']);
+            for(const row of ORACLE){await page.selectOption('#preset',row.key);eq('D12.reload-restores.'+row.key,(await current()).label,'');await h.setRange(page,'#resistance',17);}
         }
         if(want('hold')) {
             await fresh();await page.selectOption('#preset','normal');await page.click('#hold-toggle');await h.setRange(page,'#hold-duration',5);await h.seek(page,0);

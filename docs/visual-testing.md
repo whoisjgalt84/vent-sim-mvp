@@ -255,3 +255,7 @@ groups and eight demonstration-reset browser groups. The pinned-Linux visual
 inventory is now 18 groups (the existing 16 plus two shared-reset groups).
 Prior inventories above describe their existing groups or historical checkpoints.
 See [the shared reset contract](demonstration-reset-contract.md).
+
+## UI cleanup batch A verification (2026-10-10)
+
+The aggregate browser gate retains the 44 original checks, 12 adaptive, four effort/pressure, five Effort-slider and eight demonstration-reset groups, and adds seven bounded UI cleanup groups. The engine inventory and the 18 pinned-Linux visual groups are unchanged. UI cleanup changes intentionally require new candidate image bytes; generate them only in an isolated evidence checkout and compare again with updates disabled. Existing accepted images and tolerances remain unchanged until separate owner acceptance. See [the batch-A contract](ui-cleanup-batch-a.md).

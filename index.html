@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=23">
+    <link rel="stylesheet" href="css/style.css?v=25">
 </head>
 <body>
 
@@ -180,22 +180,21 @@
                 </div>
 
                 <!-- FiO2 -->
-                <div class="control control--secondary">
+                <div class="control control--primary" id="fio2-control">
                     <div class="control__header">
                         <span class="control__label">FiO₂</span>
                         <span class="control__value" id="fio2-display">40%</span>
                     </div>
-                    <input type="range" class="control__range" id="fio2"
+                    <input type="range" class="control__range" id="fio2" aria-label="FiO2" aria-describedby="fio2-display"
                            min="21" max="100" step="1" value="40">
                 </div>
 
                 <!-- Trigger Sensitivity -->
-                <div class="control trigger-control">
+                <div class="control control--primary trigger-control">
                     <div class="control__header">
                         <span class="control__label">Trigger</span>
                         <button type="button" class="measurement-help-trigger" data-measurement-help="trigger-signal"
                                 aria-label="Trigger signal help" aria-expanded="false">i</button>
-                        <span class="control__value" id="trigger-display">Flow 2.0 L/min</span>
                     </div>
 
                     <div class="ie-group" id="trigger-type-group">
@@ -205,12 +204,14 @@
 
                     <div class="trigger-sensitivity-row" id="flow-trigger-row">
                         <input type="range" class="control__range" id="flow-trigger"
+                               aria-label="Flow trigger sensitivity" aria-describedby="flow-trigger-display"
                                min="0.5" max="5" step="0.1" value="2">
                         <span class="control__value" id="flow-trigger-display">2.0 L/min</span>
                     </div>
 
                     <div class="trigger-sensitivity-row" id="pressure-trigger-row" style="display:none">
                         <input type="range" class="control__range" id="pressure-trigger"
+                               aria-label="Pressure trigger sensitivity" aria-describedby="pressure-trigger-display"
                                min="0.5" max="5" step="0.1" value="1">
                         <span class="control__value" id="pressure-trigger-display">1.0 cmH₂O</span>
                     </div>
@@ -361,19 +362,25 @@
                             data-measurement-help="mechanics-examples" aria-label="About mechanics examples"
                             aria-expanded="false" aria-controls="measurement-help" aria-haspopup="dialog">i</button>
                 </div>
-                <p class="mechanics-example-disclosure" id="mechanics-example-disclosure">Simulation examples; not disease reference values.</p>
+                <span id="mechanics-example-disclosure" hidden>Simulation examples; not disease reference values.</span>
                 <select class="preset-select" id="preset" aria-labelledby="load-mechanics-example" aria-describedby="mechanics-example-disclosure mechanics-example-description">
-                    <option value="normal">Normal example</option>
-                    <option value="ards_moderate">Low compliance (35)</option>
-                    <option value="ards_severe">Low compliance (25)</option>
-                    <option value="copd">COPD example (HME)</option>
-                    <option value="asthma">High resistance (20)</option>
-                    <option value="obesity">Reduced compliance (40)</option>
-                    <option value="fibrosis">Low compliance (30)</option>
+                    <optgroup label="Reference">
+                        <option value="normal">Normal example</option>
+                    </optgroup>
+                    <optgroup label="Compliance examples">
+                        <option value="obesity">Reduced compliance (40)</option>
+                        <option value="ards_moderate">Low compliance (35)</option>
+                        <option value="fibrosis">Low compliance (30)</option>
+                        <option value="ards_severe">Low compliance (25)</option>
+                    </optgroup>
+                    <optgroup label="Resistance examples">
+                        <option value="asthma">High resistance (20)</option>
+                        <option value="copd">COPD example (HME)</option>
+                    </optgroup>
                 </select>
 
                 <span id="mechanics-example-description" hidden>Selecting an example changes R and C and keeps the other settings and simulation history. Editing R or C creates custom mechanics. The selector retains the last loaded example.</span>
-                <p class="mechanics-example-state" id="mechanics-example-state" aria-live="polite">Normal example</p>
+                <p class="mechanics-example-state" id="mechanics-example-state" aria-live="polite" hidden></p>
 
                 <!-- Compliance -->
                 <div class="control">
@@ -397,12 +404,10 @@
 
                 <!-- Patient Effort (Pmus) -->
                 <div class="control">
-                    <div class="control__header">
-                        <span class="control__label">P<sub>mus</sub> max</span>
-                        <span class="control__value" id="pmus-display">Off</span>
-                    </div>
+                    <span id="patient-effort-description" hidden>Patient effort</span>
                     <div class="pmus-controls">
-                        <button class="hold-btn" id="pmus-toggle">
+                        <button class="hold-btn" id="pmus-toggle" type="button"
+                                aria-labelledby="patient-effort-description pmus-btn-label" aria-pressed="false">
                             <span class="hold-btn__icon" id="pmus-icon">♿</span>
                             <span id="pmus-btn-label">Passive</span>
                         </button>
@@ -700,8 +705,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=23"></script>
-<script type="module" src="js/main.js?v=23"></script>
+<script type="module" src="alarms.js?v=25"></script>
+<script type="module" src="js/main.js?v=25"></script>
 
 </body>
 </html>

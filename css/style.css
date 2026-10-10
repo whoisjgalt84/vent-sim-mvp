@@ -529,6 +529,7 @@ html, body {
 /* Preset selector */
 .preset-select {
     width: 100%;
+    margin-bottom: 8px;
     padding: 6px 8px;
     background: var(--bg-input);
     color: var(--text-bright);
@@ -1431,6 +1432,12 @@ body.teaching-mode .parameters .param-row.param-row--measurement.teaching-key {
 
 .trigger-control {
     margin-top: 10px;
+}
+
+.trigger-control > .control__header {
+    justify-content: flex-start;
+    gap: 8px;
+    align-items: center;
 }
 
 .trigger-sensitivity-row {

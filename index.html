@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=25">
+    <link rel="stylesheet" href="css/style.css?v=26">
 </head>
 <body>
 
@@ -521,6 +521,16 @@
                     aria-label="Waveform signals and trigger markers help" aria-expanded="false">
                 <span>Patient trigger: recorded event on its pressure or flow waveform. Machine trigger: timed breath.</span><span aria-hidden="true">ⓘ</span>
             </button>
+            <div class="flow-highlight-help">
+                <button type="button" class="measurement-help-trigger pc-disclosure-trigger"
+                        data-measurement-help="air-trapping" aria-label="Air trapping flow highlight help" aria-expanded="false">
+                    <span>air trapping</span><span aria-hidden="true">?</span>
+                </button>
+                <button type="button" class="measurement-help-trigger pc-disclosure-trigger"
+                        data-measurement-help="failed-trigger-highlight" aria-label="Failed trigger flow highlight help" aria-expanded="false">
+                    <span>Failed trigger</span><span aria-hidden="true">?</span>
+                </button>
+            </div>
             <div id="unknown-patient-trigger" hidden>Some earlier patient-trigger events have no recorded trigger variable; their waveform markers are omitted.</div>
         </div>
         <div class="waveform-panel">
@@ -705,8 +715,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=25"></script>
-<script type="module" src="js/main.js?v=25"></script>
+<script type="module" src="alarms.js?v=26"></script>
+<script type="module" src="js/main.js?v=26"></script>
 
 </body>
 </html>

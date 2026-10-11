@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=25';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=25';
-import { SimulationEngine }  from './simulation.js?v=25';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance }   from './waveforms.js?v=25';
-import AlarmEngine from '../alarms.js?v=25';
+import { LungModel }        from './lung-model.js?v=26';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=26';
+import { SimulationEngine }  from './simulation.js?v=26';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=26';
+import AlarmEngine from '../alarms.js?v=26';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=25';
+} from '../alarm-audio.js?v=26';
 
 
 // =============================================================================
@@ -1955,6 +1955,8 @@ function detailedResistanceStatusCopy(result) {
 function measurementHelpText(key) {
     if (key === 'demonstration-reset') return 'Reset starts a new run with the currently selected settings and keeps the current paused or running state. It clears simulated time, accumulated trapped volume, traces, loops, breath and trigger history, and measured outputs. Delivered VE collects a new 30 s window. In PC-CMVa, queued target and PEEP edits and the selected maximum are applied, and the controller restarts at its configured initial pressure. Sound and Silence keep their current state. Clearing trapped volume represents a new run, not a treatment effect.';
     if (key === 'waveform-legend') return `${WAVEFORM_HELP}\n\n${SIGNED_PRESSURE_HELP}`;
+    if (key === 'air-trapping') return AIR_TRAPPING_HELP;
+    if (key === 'failed-trigger-highlight') return FAILED_FLOW_HELP;
     if (key === 'trigger-signal') return TRIGGER_SIGNAL_HELP;
     if (key === 'active-predictions') return ACTIVE_PREDICTIONS_HELP;
     if (key === 'adaptive-mode') return `${ADAPTIVE_HELP[key]}\n\n${ADAPTIVE_HELP['adaptive-tag']}`;

@@ -86,11 +86,14 @@ async function failedTriggerTerminologyContract(page) {
             const value = row.querySelector('.rr-triple__val').getBoundingClientRect();
             require(label.right <= value.left, `${mode} compact-fit`);
             const canvas = document.getElementById('canvas-flow'), rect = canvas.getBoundingClientRect(), titles = new Set();
-            for (let x = 0; x < rect.width; x += 2) {
-                canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: rect.left + x, clientY: rect.top + rect.height / 2 }));
-                if (canvas.title) titles.add(canvas.title);
+            // Sample two dimensions: help must be attached to an actual cue, not an x band.
+            search: for (let y = 8; y < rect.height - 24; y += 2) {
+                for (let x = 56; x < rect.width - 12; x += 2) {
+                    canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: rect.left + x, clientY: rect.top + y }));
+                    if (canvas.title.includes('Earlier trigger settings are not stored')) { titles.add(canvas.title); break search; }
+                }
             }
-            require(titles.size > 0 && [...titles].every(t => t.startsWith('Failed trigger —') && t.includes('Earlier trigger settings are not stored') && !t.includes('ineffective effort')), `${mode} canonical-flow-title`);
+            require(titles.size > 0 && [...titles].every(t => t.includes('Failed trigger —') && t.includes('Earlier trigger settings are not stored') && !t.includes('ineffective effort')), `${mode} canonical-flow-title`);
             canvas.dispatchEvent(new MouseEvent('mouseleave'));
             require(canvas.title === '', `${mode} hover-leave`);
         }
@@ -1028,7 +1031,7 @@ if (require.main === module) (async () => {
         const allVersions = [...(html + mainJs + ventJs + simJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 11 && allVersions.every(v => v === '25'),
+                && allVersions.length === 11 && allVersions.every(v => v === '26'),
             `imports=${imp.join(',')} html=${versions.join(',')} all eleven=${allVersions.join(',')}`);
     }
 

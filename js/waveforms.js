@@ -15,6 +15,9 @@
  * ============================================================================
  */
 
+export const AIR_TRAPPING_HELP = "Flow baseline cue: modeled expiratory flow in this highlighted interval did not come within 0.5 L/min of zero before flow turned positive. This cue does not measure intrinsic PEEP or identify a unique cause. Predicted auto-PEEP and live modeled trapped volume are separate outputs.";
+export const FAILED_FLOW_HELP = "Failed trigger — this effort did not meet an active trigger criterion during its eligible expiratory samples. The flow trace shows signed net lung flow, not a separate effort signal. No delivered breath was recorded for this effort. Earlier trigger settings are not stored for this failed event.";
+
 /** The pressure axis includes atmospheric zero and every finite modeled sample. */
 export function signedPressureRange(dataMin, dataMax) {
     if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
@@ -106,6 +109,9 @@ export class WaveformRenderer {
 
         // Layout margins (pixels) — room for axis labels
         this.margin = { top: 8, right: 12, bottom: 24, left: 56 };
+
+        this._overlayCues = [];
+        this._highlightHoverRegions = this._overlayCues;
 
         // Resize canvas to match its CSS display size (for sharp rendering)
         this._resizeCanvas();
@@ -264,7 +270,7 @@ export class WaveformRenderer {
             }
             : () => false;
         // Geometry receipt for read-only browser verification; never changes data.
-        this.lastGeometry = { yMin, yMax, yStep, plot: { ...plot }, tMin, tMax, sweepSeconds };
+        this.lastGeometry = { yMin, yMax, yStep, plot: { ...plot }, tMin, tMax, sweepSeconds, penX, eraseW };
 
         // --- Draw horizontal grid lines and Y-axis labels ---
         ctx.font = gridFont;
@@ -379,6 +385,8 @@ export class WaveformRenderer {
         ctx.stroke();
         ctx.restore();
 
+        this._overlayCues = [];
+        this._highlightHidden = hidden;
         if (teachingMode && overlay?.tailWindow) {
             this._drawTailHighlight(
                 ctx,
@@ -396,7 +404,13 @@ export class WaveformRenderer {
         // Reusable trace highlights (e.g. ineffective-effort flow deflection).
         this._drawWaveformHighlights(ctx, highlights, timeData, valueData, xScale, yScale, plot, hidden);
 
+        const markerXs = (triggerEvents || []).filter(event => Number.isFinite(event?.time)
+            && (event.type === 'machine' || (event.type === 'patient' && patientTriggerVariable(event) === this.kind)))
+            .map(event => xScale(event.time)).filter(x => !hidden(x));
+        this._drawOverlayLabels(ctx, plot, teachingMode, markerXs);
         this._drawTriggerMarkers(ctx, triggerEvents, xScale, plot, hidden);
+        this._ensureHighlightHover();
+        this._syncHighlightTooltip();
 
         // --- Draw Y-axis label (rotated, left side) ---
         ctx.save();
@@ -434,43 +448,41 @@ export class WaveformRenderer {
         ctx.lineJoin = 'round';
         ctx.beginPath();
 
-        let minX = Infinity, maxX = -Infinity, topY = Infinity;
+        const runs = [];
+        let points = [];
         let prevPx = -Infinity, penDown = false;
         for (let i = start; i < end; i++) {
             if (!Number.isFinite(timeData[i]) || !Number.isFinite(valueData[i])) {
+                if (points.length) runs.push(points);
+                points = [];
                 penDown = false;
                 continue;
             }
             const px = xScale(timeData[i]);
-            if (hidden(px)) { penDown = false; continue; }
+            if (hidden(px)) {
+                if (points.length) runs.push(points);
+                points = []; penDown = false; continue;
+            }
             const py = yScale(valueData[i]);
 
             // Lift the pen at the sweep wrap (see render()).
             if (!penDown || px < prevPx) {
+                if (points.length) runs.push(points);
+                points = [];
                 ctx.moveTo(px, py);
             } else {
                 ctx.lineTo(px, py);
             }
             penDown = true;
             prevPx = px;
-            if (px < minX) minX = px;
-            if (px > maxX) maxX = px;
-            if (py < topY) topY = py;
+            points.push(px, py);
         }
 
         ctx.stroke();
 
-        // Teaching Mode label on the non-returning expiratory limb (mirrors the
-        // ineffective-effort label in _drawWaveformHighlights). The whole tail
-        // highlight is already teaching-gated at the call site, so this is
-        // teaching-only. Gas-trapping branch only — the blue branch stays unlabeled.
-        if (!baselineReached && Number.isFinite(minX)) {
-            ctx.fillStyle = GAS_TRAPPING_COLOR;
-            ctx.font = '10px system-ui, -apple-system, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText('air trapping', (minX + maxX) / 2, Math.max(plot.y + 10, topY - 4));
-        }
+        if (points.length) runs.push(points);
+        if (!baselineReached) this._queueOverlayCue({ runs, label: 'air trapping',
+            color: GAS_TRAPPING_COLOR, text: AIR_TRAPPING_HELP, lineWidth: 3.5 });
 
         ctx.restore();
     }
@@ -556,11 +568,8 @@ export class WaveformRenderer {
      */
     _drawWaveformHighlights(ctx, segments, timeData, valueData, xScale, yScale, plot, hidden = () => false) {
         const mine = (segments || []).filter((s) => s && s.trace === this.kind);
-        this._highlightHoverRegions = [];
-        this._highlightHidden = hidden;
-        if (mine.length === 0) { this._syncHighlightTooltip(); return; }
+        if (mine.length === 0) return;
 
-        const teachingMode = document.body.classList.contains('teaching-mode');
         ctx.save();
         ctx.beginPath();
         ctx.rect(plot.x, plot.y, plot.w, plot.h);
@@ -618,49 +627,139 @@ export class WaveformRenderer {
             }
             ctx.stroke();
 
-            // Teaching Mode: small label near the segment.
-            if (teachingMode && seg.label) {
-                ctx.fillStyle = seg.color;
-                ctx.font = '10px system-ui, -apple-system, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-                ctx.fillText(seg.label, (minX + maxX) / 2, Math.max(plot.y + 10, topY - 4));
-            }
-            if (seg.tooltip) {
-                for (const run of runs) this._highlightHoverRegions.push({ x0: run[0], x1: run[run.length - 2], text: seg.tooltip });
-            }
+            this._queueOverlayCue({ runs, label: seg.label, color: seg.color,
+                text: seg.tooltip, lineWidth: 1.8 + (seg.lineWidthDelta ?? 0) });
         }
         ctx.restore();
-        this._ensureHighlightHover();
-        this._syncHighlightTooltip();
     }
 
-    /** One-time hover wiring: surfaces a segment's tooltip via the canvas title. */
+    _queueOverlayCue(cue) {
+        if (cue.runs.some(run => run.length >= 4)) this._overlayCues.push(cue);
+    }
+
+    /** Layout labels against visible runs, never the midpoint across a wrap. */
+    _drawOverlayLabels(ctx, plot, teachingMode, markerXs = []) {
+        this.renderedOverlayLabels = [];
+        this._highlightHoverRegions = this._overlayCues;
+        if (!teachingMode) return;
+        ctx.save();
+        ctx.font = '10px system-ui, -apple-system, sans-serif';
+        const placed = [], gap = 2, height = 14;
+        const markerBoxes = markerXs.map(x => ({ x: x - 5, y: plot.y, width: 10, height: 18 }));
+        for (const cue of this._overlayCues) {
+            if (!cue.label) continue;
+            const visible = cue.runs.map(run => {
+                const points = [];
+                for (let i = 0; i < run.length; i += 2) {
+                    if (run[i] >= plot.x && run[i] <= plot.x + plot.w
+                        && run[i + 1] >= plot.y && run[i + 1] <= plot.y + plot.h) points.push(run[i], run[i + 1]);
+                }
+                return points;
+            }).filter(run => run.length >= 4);
+            if (!visible.length) continue;
+            const run = visible.reduce((best, next) =>
+                next[next.length - 2] - next[0] >= best[best.length - 2] - best[0] ? next : best);
+            const middle = (run[0] + run[run.length - 2]) / 2;
+            let k = 0;
+            for (let i = 2; i < run.length; i += 2) if (Math.abs(run[i] - middle) < Math.abs(run[k] - middle)) k = i;
+            const anchor = { x: run[k], y: run[k + 1] };
+            const width = ctx.measureText(cue.label).width + 4;
+            const clampX = x => Math.max(plot.x + 1, Math.min(plot.x + plot.w - width - 1, x));
+            const clampY = y => Math.max(plot.y + 1, Math.min(plot.y + plot.h - height - 1, y));
+            const preferred = { x: clampX(anchor.x - width / 2), y: clampY(Math.min(...run.filter((_, i) => i % 2)) - height - 4) };
+            const candidates = [preferred];
+            for (let y = plot.y + 1; y + height < plot.y + plot.h; y += height + gap) {
+                candidates.push({ x: preferred.x, y });
+                for (let x = plot.x + 1; x + width < plot.x + plot.w; x += width + gap) candidates.push({ x, y });
+            }
+            candidates.sort((a, b) => Math.hypot(a.x - preferred.x, 2 * (a.y - preferred.y))
+                - Math.hypot(b.x - preferred.x, 2 * (b.y - preferred.y)));
+            const free = candidates.find(box => {
+                if (box.x < plot.x || box.x + width > plot.x + plot.w
+                    || box.y < plot.y || box.y + height > plot.y + plot.h) return false;
+                if ([...placed, ...markerBoxes].some(other => box.x < other.x + other.width + gap && box.x + width + gap > other.x
+                    && box.y < other.y + other.height + gap && box.y + height + gap > other.y)) return false;
+                for (let x = box.x; x <= box.x + width; x++) if (this._highlightHidden(x)) return false;
+                return true;
+            });
+            // Supported layouts have enough room; omit no cue's help if extremely crowded.
+            if (!free) continue;
+            cue.labelRect = { ...free, width, height };
+            cue.anchor = anchor;
+            placed.push(cue.labelRect);
+            this.renderedOverlayLabels.push({ label: cue.label, rect: { ...cue.labelRect }, anchor: { ...anchor } });
+        }
+        // Clip leaders to the plot and the visible side(s) of the sweep erase strip.
+        ctx.save();
+        ctx.beginPath();
+        const { penX, eraseW } = this.lastGeometry;
+        const right = plot.x + plot.w;
+        if (!eraseW) ctx.rect(plot.x, plot.y, plot.w, plot.h);
+        else if (penX + eraseW <= right) {
+            ctx.rect(plot.x, plot.y, penX - plot.x, plot.h);
+            ctx.rect(penX + eraseW, plot.y, right - penX - eraseW, plot.h);
+        } else ctx.rect(penX + eraseW - plot.w, plot.y, plot.w - eraseW, plot.h);
+        ctx.clip();
+        // Leader lines are presentation only; sampled highlight strokes above are unchanged.
+        for (const cue of this._overlayCues) {
+            if (!cue.labelRect) continue;
+            const box = cue.labelRect, a = cue.anchor;
+            const x = Math.max(box.x, Math.min(box.x + box.width, a.x));
+            const y = Math.max(box.y, Math.min(box.y + box.height, a.y));
+            ctx.strokeStyle = cue.color; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(a.x, a.y); ctx.stroke();
+        }
+        ctx.restore();
+        ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        for (const cue of this._overlayCues) {
+            if (!cue.labelRect) continue;
+            const box = cue.labelRect;
+            ctx.fillStyle = this.bgColor; ctx.fillRect(box.x, box.y, box.width, box.height);
+            ctx.fillStyle = cue.color; ctx.fillText(cue.label, box.x + 2, box.y + box.height - 3);
+        }
+        ctx.restore();
+    }
+
+    /** One-time pointer wiring uses CSS x AND y; geometry refreshes every render. */
     _ensureHighlightHover() {
         if (this._highlightHoverBound) return;
         this._highlightHoverBound = true;
-        this._highlightHoverX = null;
-        this.canvas.addEventListener('mousemove', (e) => {
-            const rect = this.canvas.getBoundingClientRect();
-            this._highlightHoverX = e.clientX - rect.left;   // CSS px, same domain as xScale
+        this._highlightHoverClient = null;
+        this.canvas.addEventListener('mousemove', e => {
+            this._highlightHoverClient = { x: e.clientX, y: e.clientY };
             this._syncHighlightTooltip();
         });
         this.canvas.addEventListener('mouseleave', () => {
-            this._highlightHoverX = null;
+            this._highlightHoverClient = null;
             this._syncHighlightTooltip();
         });
     }
 
-    /** Set canvas.title to the tooltip of the highlighted segment under the cursor. */
+    /** Stroke-distance or visible label hit; overlapping cues retain every explanation. */
     _syncHighlightTooltip() {
-        const regions = this._highlightHoverRegions || [];
-        const x = this._highlightHoverX;
-        let text = '';
-        if (x != null && !this._highlightHidden?.(x)) {
-            for (const r of regions) {
-                if (x >= r.x0 - 3 && x <= r.x1 + 3) { text = r.text; break; }
+        const client = this._highlightHoverClient, rect = this.canvas.getBoundingClientRect();
+        const point = client && { x: client.x - rect.left, y: client.y - rect.top };
+        const plot = this.lastGeometry?.plot;
+        const texts = new Set();
+        if (point && plot && point.x >= plot.x && point.x <= plot.x + plot.w
+            && point.y >= plot.y && point.y <= plot.y + plot.h && !this._highlightHidden?.(point.x)) {
+            for (const cue of this._highlightHoverRegions || []) {
+                const box = cue.labelRect;
+                let hit = box && point.x >= box.x && point.x <= box.x + box.width
+                    && point.y >= box.y && point.y <= box.y + box.height;
+                const radius = cue.lineWidth / 2 + 2;
+                for (const run of cue.runs) {
+                    for (let i = 2; !hit && i < run.length; i += 2) {
+                        const ax = run[i - 2], ay = run[i - 1], dx = run[i] - ax, dy = run[i + 1] - ay;
+                        const length = dx * dx + dy * dy;
+                        const t = length ? Math.max(0, Math.min(1, ((point.x - ax) * dx + (point.y - ay) * dy) / length)) : 0;
+                        hit = (point.x - ax - t * dx) ** 2 + (point.y - ay - t * dy) ** 2 <= radius ** 2;
+                    }
+                }
+                if (hit && cue.text) texts.add(cue.text);
             }
         }
+        const text = [...texts].join('\n\n');
         if (this.canvas.title !== text) this.canvas.title = text;
     }
 
@@ -1160,9 +1259,7 @@ export class WaveformDisplay {
                 + 'so it could not start another breath. Its mechanical effects may continue, '
                 + 'but it is not reconsidered for triggering in the same effort.';
         }
-        return 'Failed trigger — this effort did not meet an active trigger criterion during its eligible expiratory samples. '
-            + 'The flow trace shows signed net lung flow, not a separate effort signal. '
-            + 'No delivered breath was recorded for this effort. Earlier trigger settings are not stored for this failed event.';
+        return FAILED_FLOW_HELP;
     }
 
     /**

@@ -1588,3 +1588,7 @@ body.teaching-mode .parameters .param-row.param-row--measurement.teaching-key {
     .adaptive-panel__values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .adaptive-panel__status { margin-left: 0; }
 }
+
+/* Stable native buttons share the existing keyboard/touch help popover. */
+.flow-highlight-help { display: none; }
+body.teaching-mode .flow-highlight-help { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; }

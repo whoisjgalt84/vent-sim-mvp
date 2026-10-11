@@ -43,7 +43,7 @@
  */
 
 
-import { AdaptiveController } from './adaptive-controller.js?v=25';
+import { AdaptiveController } from './adaptive-controller.js?v=26';
 
 // =============================================================================
 // RING BUFFER

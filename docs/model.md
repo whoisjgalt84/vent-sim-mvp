@@ -189,6 +189,12 @@ Source: [MC2022](https://doi.org/10.4187/respcare.09316), PDF p.4 / journal p.13
 
 ### 3.3 Inspiratory hold
 
+The owner-approved [SME-026/027 successor](manual-inspiratory-hold-contract.md)
+separates a momentary end-inspiration manual maneuver from a recurring pause.
+The manual pause is capped at 2 simulated seconds, including scheduled pause
+samples during takeover, while reserving at least 0.2 seconds expiration.
+Release and cancellation have separate completion semantics.
+
 Both valves closed, flow zero.
 
 ```
@@ -283,7 +289,9 @@ results without erasing finalized VT or PIP. The boundary sample is written
 later in the same 100 Hz tick; no waveform or integration timing is changed by
 recording it.
 
-**Hold ends** at the effective hold duration. HOLD is unavailable in PC-CSV and PC-CMVa.
+**Recurring pause ends** at its effective setting. Manual ownership ends on
+release, cancellation or the continuous timing cap; see the SME-026/027 contract.
+HOLD remains unavailable in PC-CSV and PC-CMVa.
 
 **Expiration ends** on a successful patient trigger. In VC-CMV, PC-CMV and PC-CMVa, the mandatory-breath timer can also start the next breath when Ttot = 60/RR is reached; a scheduled patient trigger wins a tie. PC-CSV does not use that timer and provides no apnea backup breath.
 
@@ -575,10 +583,10 @@ separate from the live `AlarmEngine` consumers.
 | Set PEEP | Configured PEEP, available immediately. |
 | Measured PIP | `sim.breathSummary.pipLatched`, only when `lastCompletedBreath !== null`; otherwise `—`. |
 | Measured VT | `lastCompletedBreath.measuredVT_mL`, rounded to mL; otherwise `—`. |
-| Measured Pplat | Final-20 sample mean from a valid completed hold interval in `lastCompletedBreath.holdMechanics.pplat`; otherwise `—` with visible status. |
-| Hold-derived driving pressure | Valid measured Pplat minus live modeled total PEEP frozen at breath start; otherwise `—`. |
-| Hold-derived static compliance | Same-breath delivered VT divided by valid hold-derived driving pressure; otherwise `—`. |
-| Measured inspiratory resistance | Same-breath unrounded `(PIP − Pplat) / final inspiratory flow`, only for passive constant-flow square VC; otherwise `—` with an applicability explanation. |
+| Measured Pplat | Final-20 mean from `lastValidManualHold.mechanics.pplat`; historical **Last valid hold** with source mode; initially `--`. |
+| Hold-derived driving pressure | Saved valid Pplat minus same-breath frozen modeled total PEEP; initially `--`. |
+| Hold-derived static compliance | Saved same-breath inspired VT divided by valid hold-derived driving pressure; initially `--`. |
+| Measured inspiratory resistance | Saved same-breath `(PIP - Pplat) / final inspiratory flow`, passive square VC only; otherwise `--` with source applicability. |
 | Measured RR (standard); RR / Measured (Teaching) | Existing completion-timestamp interval rate; zero until two completions, then the first interval initializes it. Later updates blend 70% prior rate and 30% rate from up to ten timestamps. It retains its last value without new completions and is not used to compute VE. |
 | Delivered VE (all modes) | Sum of canonical delivered inspiratory volumes in the last 30 simulated seconds, multiplied by 2 to L/min. Unavailable until a full valid window; a full empty window is zero. Display rounds to one decimal; VE alarms use the identical raw snapshot. |
 | Predicted VE (VE help, mandatory modes only) | Passive analytical `summary().volumes.minuteVentilation`, explicitly separate from delivery and VE alarms. Affected active-effort predictions and adaptive fixed-pressure predictions are unavailable. Omitted in CSV because configured RR does not schedule breaths there. |
@@ -588,7 +596,8 @@ separate from the live `AlarmEngine` consumers.
 | Predicted steady-state trapped volume | Passive analytical `summary().volumes.trappedVolume_mL`, in the Patient mechanics strip; unavailable with configured active effort or adaptive mode. |
 | Live modeled trapped volume | `sim.volumeAtBreathStart * 1000`, rounded to mL, separately displayed in the monitor. |
 
-Hold-mechanics rows keep only the current value, units, a compact unavailable
+Hold-mechanics rows display frozen manual history labeled Last valid hold,
+source context and a separate newest-attempt message. They retain units, a compact unavailable
 state when needed, and a readable **Modeled baseline** cue beside driving
 pressure/compliance. The valid Pplat success sentence and repeated baseline
 paragraphs are omitted from the default view. Static information buttons open
@@ -603,8 +612,10 @@ the existing single `_startExpiration` latch; the live `breathSummary.pip`
 remains the high-pressure alarm source. VT stays at the finalized value during
 the next inspiration even though provisional `measuredVT_mL` resets to zero.
 
-Initialization, reset, and mode switches clear the completed record: PIP, VT,
-and Pplat show `—`, measured RR shows zero, delivered VE shows `—` with
+Initialization, reset, and mode switches clear the canonical completed record:
+PIP and VT are unavailable, measured RR is zero, delivered VE collects anew.
+Shared Reset clears manual history to `--`; mode switches retain explicitly
+labeled old-source hold values. Delivered VE shows unavailable with
 `Collecting 30 s`, and live
 modeled trapped volume is zero. The mode/reset handlers refresh display values
 synchronously, without waiting for the next animation frame or adding an alarm

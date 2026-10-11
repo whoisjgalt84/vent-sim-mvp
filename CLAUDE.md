@@ -140,7 +140,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=26`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=27`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -164,8 +164,12 @@ Each of these encodes a bug that already shipped once.
     0.5–2.0 s, at least 50 samples, exact zero flow, passive effort, and stable
     finite pressure are established. Driving pressure, compliance, and measured
     resistance retain separate dependency-specific status and reasons. The
-    selector clears their availability on a new breath or incompatible setting
-    change without erasing the canonical prior VT/PIP record.
+    per-breath diagnostic selector clears current-generation availability without
+    erasing canonical VT/PIP. SME-026/027 display instead selects frozen manual
+    history, labeled Last valid hold with its old source mode/settings. Recurring
+    pauses never overwrite it; invalid attempts retain it; shared Reset clears it.
+    See docs/manual-inspiratory-hold-contract.md. This prevents ordinary breaths
+    or current-mode labels from silently erasing or relabeling historical results.
 11. **Hold-mechanics help uses one body-level popover and static triggers.**
     Monitor refreshes may update its text or close it when its trigger becomes
     hidden, but must not rebuild the trigger DOM. This preserves hover transfer,
@@ -380,3 +384,7 @@ When committing through the desktop bridge:
 | `docs/case-scenario-roadmap.md` | Aspirational — phases 0–4, mostly unbuilt |
 | `docs/trigger-fix-design.md` | Historical trigger-rewrite design; current signal contract is in `docs/model.md` |
 | `scratch/` | Diagnostics and one-off harnesses; not part of the app |
+
+SME-026/027 additionally require 43 manual-hold engine groups, 20 manual-hold
+browser groups and three separately tallied pinned-Linux visual groups. Keep the
+existing 18 visual groups and all earlier engine/browser inventory guards.

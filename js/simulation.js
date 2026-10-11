@@ -43,7 +43,7 @@
  */
 
 
-import { AdaptiveController } from './adaptive-controller.js?v=26';
+import { AdaptiveController } from './adaptive-controller.js?v=27';
 
 // =============================================================================
 // RING BUFFER
@@ -261,6 +261,7 @@ export class SimulationEngine {
         this.settingsGeneration = 0;
         this._lastMode = null;
         this._settingsFingerprint = null;
+        this._resetManualHold();
         this._resetDeliveredVentilation();
 
         // --- Transport Controls ---
@@ -652,9 +653,14 @@ export class SimulationEngine {
     /** Explicit transition resolves operator intent before destination-mode prefill. */
     setMode(mode) {
         if (!this.vent.isSupportedMode(mode)) throw new RangeError('Unsupported ventilation mode');
+        this.cancelManualHold('mode-change');
+        const history = this.lastValidManualHold;
+        const attempt = this.lastManualHoldAttempt;
         if (this._activeAdaptiveMode || this.vent.isAdaptiveMode()) this._resolveAdaptiveSettings();
         this.vent.mode = mode;
         this.reset();
+        this.lastValidManualHold = history;
+        this.lastManualHoldAttempt = attempt;
     }
 
     /** Setup changes take effect only through a validated reset, without resuming transport. */
@@ -693,6 +699,13 @@ export class SimulationEngine {
         const inputFingerprint = JSON.stringify([this._measurementFingerprint(), this.vent.pMusMax,
             this.vent.neuralTi, this.patientRR, this._inwardSupplyResistance, this._pendingAdaptiveSettings]);
         if (this._inputFingerprint !== inputFingerprint) {
+            if (this._inputFingerprint !== null && this._manualHold?.active && this.currentBreath) {
+                this.currentBreath.settingsChanged = true;
+                this.cancelManualHold('settings-changed');
+            }
+            if (this._inputFingerprint !== null && this._manualHold?.armed) {
+                this.cancelManualHold('settings-changed');
+            }
             this.inputRevision++;
             this._inputFingerprint = inputFingerprint;
         }
@@ -700,6 +713,7 @@ export class SimulationEngine {
         if (this._lastMode === null) {
             this._lastMode = this.vent.mode;
         } else if (this.vent.mode !== this._lastMode) {
+            this.cancelManualHold('mode-change');
             this.modeGeneration++;
             this._lastMode = this.vent.mode;
         }
@@ -724,6 +738,11 @@ export class SimulationEngine {
 
     notifyMeasurementSettingsChanged() {
         // Explicit edit/revert is an input event even when values compare equal.
+        if (this._manualHold?.active && this.currentBreath) {
+            this.currentBreath.settingsChanged = true;
+            this.cancelManualHold('settings-changed');
+        }
+        if (this._manualHold?.armed) this.cancelManualHold('settings-changed');
         this.inputRevision++;
         if (this._adaptive) {
             // Explicit events also invalidate edit-then-revert and equal-value requests.
@@ -768,6 +787,92 @@ export class SimulationEngine {
             interrupted: false,
             samples: [],
         };
+    }
+
+    _resetManualHold() {
+        this._manualHold = { pressed: false, armed: false, active: false, releasePending: false,
+            duration_s: 0, outcome: null, reason: null };
+        this.lastValidManualHold = null;
+        this.lastManualHoldAttempt = null;
+    }
+
+    get manualHoldSupported() { return !this.vent.isSpontaneousMode() && !this.vent.isAdaptiveMode(); }
+
+    get manualHoldState() {
+        const state = this._manualHold;
+        return freezeRecord({ ...state, supported: this.manualHoldSupported,
+            duration_s: state.active ? (this.currentBreath?.holdCollector?.samples.length ?? 0) * this.dt
+                : state.duration_s });
+    }
+
+    /** A press owns one eligible end-inspiration; it never cycles delivery early. */
+    pressManualHold() {
+        this._syncMeasurementSettings();
+        if (!this.manualHoldSupported || !this.running || this._manualHold.pressed) return false;
+        if (this._manualHold.active && this._manualHold.releasePending) {
+            // A fresh press between release and its sampled boundary arms the
+            // next breath; it cannot rescind expiration of this one.
+            this._manualHold.pressed = true;
+            this._manualHold.armed = true;
+            return true;
+        }
+        this._manualHold = { pressed: true, armed: true, active: false, releasePending: false,
+            duration_s: 0, outcome: null, reason: null };
+        if (this.phase === Phase.HOLD) this._takeManualHold();
+        return true;
+    }
+
+    _takeManualHold() {
+        const hold = this.currentBreath?.holdCollector;
+        if (!hold) return;
+        hold.manualOwned = true;
+        // Takeover uses the original entry, not the new button-down time.
+        const entryCycleTime = hold.entryBoundaryTime_s - this.currentBreath.startedAt_s;
+        hold.manualCapTicks = Math.max(0, Math.min(Math.floor(2 / this.dt + 1e-9),
+            Math.floor((this.vent.totalCycleTime - entryCycleTime - 0.2) / this.dt + 1e-9)));
+        this._manualHold.armed = false;
+        this._manualHold.active = true;
+        if (hold.samples.length >= hold.manualCapTicks) this._startExpiration('manual-timing-limit');
+    }
+
+    releaseManualHold() {
+        this._manualHold.pressed = false;
+        if (this._manualHold.armed) {
+            this._manualHold.armed = false;
+            this._manualHold.outcome = 'armed-canceled';
+            this._manualHold.reason = 'release-before-hold';
+        } else if (this._manualHold.active) {
+            // Expiration begins at the next sampled simulation boundary.
+            this._manualHold.releasePending = true;
+        }
+    }
+
+    cancelManualHold(reason = 'canceled') {
+        if (!this._manualHold) return;
+        const active = this._manualHold.active;
+        const armed = this._manualHold.armed;
+        this._manualHold.pressed = false;
+        this._manualHold.armed = false;
+        this._manualHold.releasePending = false;
+        if (active && this.currentBreath?.holdCollector) {
+            this.currentBreath.holdCollector.interrupted = true;
+            this._manualHold.reason = reason;
+            this._startExpiration('manual-canceled');
+        } else if (armed) {
+            this._manualHold.outcome = 'armed-canceled';
+            this._manualHold.reason = reason;
+        }
+    }
+
+    /** Saved manual results are historical, never a current-settings selector. */
+    get retainedHoldMechanics() {
+        if (this.lastValidManualHold) return this.lastValidManualHold.mechanics;
+        const reason = 'NO_MANUAL_HOLD';
+        return freezeRecord({ status: 'unavailable', reasons: [reason],
+            pplat: frozenValue('unavailable', null, [reason]),
+            drivingPressure: frozenValue('unavailable', null, [reason]),
+            compliance: frozenValue('unavailable', null, [reason]),
+            resistance: frozenValue('unavailable', null, [reason]) });
     }
 
     _finalizeHoldMechanics(measuredVT_mL) {
@@ -1083,6 +1188,23 @@ export class SimulationEngine {
         this.measuredVT_mL =
             (this.volumeAboveEq - this.volumeAtBreathStart) * 1000;
         const holdMechanics = this._finalizeHoldMechanics(this.measuredVT_mL);
+        if (this.currentBreath?.holdCollector?.manualOwned) {
+            const state = this._manualHold;
+            const canceled = terminationReason === 'manual-canceled';
+            const result = freezeRecord({ mechanics: holdMechanics,
+                configuredMode: this.currentBreath.configuredMode, breathId: this.currentBreath.breathId,
+                startedAt_s: this.currentBreath.startedAt_s, completedAt_s: this.globalTime,
+                settingsFingerprint: this.currentBreath.settingsFingerprint,
+                cancellationReason: canceled ? state.reason : null,
+                simulationGeneration: this.currentBreath.simulationGeneration,
+                completion: canceled ? 'canceled' : terminationReason === 'manual-timing-limit' ? 'timing-limit' : 'released' });
+            this.lastManualHoldAttempt = result;
+            if (!canceled && holdMechanics.pplat.status === 'valid') this.lastValidManualHold = result;
+            state.duration_s = holdMechanics.actualDuration_s;
+            state.outcome = result.completion;
+            state.active = false;
+            state.releasePending = false;
+        }
         this.measuredPplat = holdMechanics?.pplat?.value ?? null;
         this.breathTimestamps.push(this.globalTime * 1000);
         if (this.breathTimestamps.length > 10) {
@@ -1275,10 +1397,11 @@ export class SimulationEngine {
                         this._startExpiration('maxTiReached');
                     }
                 } else if (this.phaseTime >= ti) {
-                    if (holdDur > 0) {
+                    if (holdDur > 0 || (this.manualHoldSupported && this._manualHold.armed)) {
                         this._setPhase(Phase.HOLD);
                         this.phaseTime = 0;
                         this._beginHold();
+                        if (this._manualHold.armed && this.manualHoldSupported) this._takeManualHold();
                         this.measuredVT_mL =
                             (this.volumeAboveEq - this.volumeAtBreathStart) * 1000;
                     } else {
@@ -1288,7 +1411,12 @@ export class SimulationEngine {
                 break;
 
             case Phase.HOLD:
-                if (this.phaseTime >= holdDur) {
+                if (this._manualHold.active) {
+                    const hold = this.currentBreath.holdCollector;
+                    if (this._manualHold.releasePending || hold.samples.length >= hold.manualCapTicks) {
+                        this._startExpiration(this._manualHold.releasePending ? 'manual-release' : 'manual-timing-limit');
+                    }
+                } else if (this.phaseTime >= holdDur) {
                     this._startExpiration();
                 }
                 break;
@@ -1547,16 +1675,22 @@ export class SimulationEngine {
     // TRANSPORT CONTROLS
     // =========================================================================
 
-    pause()  { this.running = false; }
+    pause()  { this.cancelManualHold('transport-pause'); this.running = false; }
     resume() { this.running = true; }
-    toggle() { this.running = !this.running; }
+    toggle() { if (this.running) this.pause(); else this.resume(); }
 
     setSpeed(multiplier) {
         this.speed = Math.max(0.5, Math.min(4, multiplier));
     }
 
     /** Reset simulation to initial state. */
-    reset() {
+    reset({ preserveManualHistory = false } = {}) {
+        if (preserveManualHistory) this.cancelManualHold('settings-changed');
+        const history = preserveManualHistory ? this.lastValidManualHold : null;
+        const attempt = preserveManualHistory ? this.lastManualHoldAttempt : null;
+        this._resetManualHold();
+        this.lastValidManualHold = history;
+        this.lastManualHoldAttempt = attempt;
         this._resolveAdaptiveSettings();
         this.simulationGeneration = (this.simulationGeneration ?? 0) + 1;
         this.modeGeneration = 0;

@@ -106,7 +106,9 @@ const groups = ['vc-cmv', 'pc-cmv', 'PC-CSV', 'pc-cmva'].map(mode => [mode + '-p
     }
     for (const phase of ['INSPIRATION', 'EXPIRATION', ...(['vc-cmv', 'pc-cmv'].includes(mode) ? ['HOLD'] : [])]) {
         await setup(page, mode, true);
-        if (phase === 'HOLD') await page.locator('#hold-toggle').click();
+        if (phase === 'HOLD') {
+            await page.locator('#hold-duration').evaluate(el => { el.value = '6'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+        }
         const before = await page.evaluate(phase => {
             for (let i = 0; i < 6000; i++) { const s = __vsim.stepTicks(1); if (s.phase === phase && s.resetDiagnostics.phaseTime > 0.1) return s; }
             throw Error('Requested reset phase not reached: ' + phase);

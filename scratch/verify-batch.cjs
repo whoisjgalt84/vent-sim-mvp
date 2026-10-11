@@ -135,14 +135,11 @@ async function readoutContract(page) {
             teaching(false);
             if (el('pmus-toggle').classList.contains('hold-btn--active') !== on) el('pmus-toggle').click();
         };
-        const requireHoldCleared = name => {
-            const hold = api.state().holdMechanics;
-            require(hold.reasons.includes('SETTINGS_CHANGED'), `${name}: selector not invalidated`);
-            require(text('param-pplat') === '—' && text('param-dp') === '—'
-                && text('hold-pplat') === '—' && text('hold-dp') === '—'
-                && text('hold-crs') === '—' && text('hold-raw') === '—'
-                && text('hold-status') === 'Settings changed',
-                `${name}: rendered hold values did not clear synchronously`);
+        const requireHoldRetained = name => {
+            const saved = api.state().lastValidManualHold;
+            require(saved !== null && text('hold-status') === 'Last valid hold', name + ': lost historical hold');
+            require(text('hold-pplat') === String(Number(saved.mechanics.pplat.value.toFixed(1)))
+                && text('param-pplat') === text('hold-pplat'), name + ': retained render mismatch');
         };
         const take = name => {
             const s = api.state(), p = s.predicted;
@@ -150,9 +147,9 @@ async function readoutContract(page) {
             const expected = {
                 'param-pip': done ? String(s.pipLatched) : '—',
                 'param-vt': done ? String(Math.round(s.completed.measuredVT_mL)) : '—',
-                'param-pplat': done && !csv && s.pplat !== null ? String(s.pplat) : '—',
-                'param-dp': s.holdMechanics.drivingPressure.value === null ? '—'
-                    : String(Number(s.holdMechanics.drivingPressure.value.toFixed(1))),
+                'param-pplat': s.retainedHoldMechanics.pplat.value !== null ? String(Number(s.retainedHoldMechanics.pplat.value.toFixed(1))) : '--',
+                'param-dp': s.retainedHoldMechanics.drivingPressure.value === null ? '--'
+                    : String(Number(s.retainedHoldMechanics.drivingPressure.value.toFixed(1))),
                 'param-ve': s.deliveredVentilation.status === 'available'
                     ? s.deliveredVentilation.valueLpm.toFixed(1) : '—',
                 'param-map': p.pressures.map_cmH2O === null ? '—' : String(p.pressures.map_cmH2O),
@@ -287,55 +284,36 @@ async function readoutContract(page) {
         // Include nonzero live residual and a live hold value before switching,
         // so the stale-state checks cannot pass merely because inputs were zero.
         effort(false); mode('vc-cmv'); input('resistance', 40); input('compliance', 80);
-        el('hold-toggle').click(); api.seek(20); const vc = take('VC established hold');
-        require(vc.completed !== null && vc.pplat !== null && vc.liveTrapped_mL > 0, 'VC hold/residual guard');
-        require(vc.holdMechanics.status === 'valid'
-            && text('hold-status') === ''
-            && text('pplat-status') === ''
+        api.seek(20); api.manualHoldFixture(0.6, false); const vc = take('VC established manual hold');
+        require(vc.completed !== null && vc.lastValidManualHold !== null && vc.liveTrapped_mL > 0, 'VC manual hold/residual guard');
+        require(vc.retainedHoldMechanics.status === 'valid'
+            && text('hold-status') === 'Last valid hold' && text('pplat-status').includes('Last valid hold')
             && text('hold-dp') === text('param-dp')
             && el('hold-modeled-baseline').querySelector('span').textContent === 'Modeled baseline'
             && el('dp-status').querySelector('span').textContent === 'Modeled baseline'
-            && !el('hold-results').innerText.includes('Uses measured Pplat')
-            && !el('hold-results').innerText.includes('Uses same-breath delivered VT')
-            && vc.holdMechanics.resistance.status === 'valid',
-            'valid hold-derived UI values and approved provenance copy');
-        input('peep', 6); requireHoldCleared('slider change');
-        input('peep', 5); api.seek(20); take('VC hold after slider change');
-        document.querySelector('[data-trigger-type="pressure"]').click(); requireHoldCleared('trigger-type change');
-        document.querySelector('[data-trigger-type="flow"]').click(); api.seek(20); take('VC hold after trigger change');
-        el('preset').value = 'copd'; el('preset').dispatchEvent(new Event('change', { bubbles:true }));
-        requireHoldCleared('preset change');
+            && vc.retainedHoldMechanics.resistance.status === 'valid', 'valid saved manual mechanics');
+        input('peep', 6); requireHoldRetained('slider change'); input('peep', 5);
+        document.querySelector('[data-trigger-type="pressure"]').click(); requireHoldRetained('trigger-type change');
+        document.querySelector('[data-trigger-type="flow"]').click();
+        el('preset').value = 'copd'; el('preset').dispatchEvent(new Event('change', { bubbles:true })); requireHoldRetained('preset change');
         el('preset').value = 'normal'; el('preset').dispatchEvent(new Event('change', { bubbles:true }));
-        api.seek(20); take('VC hold after preset change');
-        document.querySelector('#ie-group [data-ie="1,1"]').click(); requireHoldCleared('I:E change');
-        document.querySelector('#ie-group [data-ie="1,2"]').click(); api.seek(20); take('VC hold after I:E change');
-        teaching(true); api.redraw(); take('Teaching VC established hold');
-        require(text('pplat-status') === ''
+        document.querySelector('#ie-group [data-ie="1,1"]').click(); requireHoldRetained('I:E change');
+        document.querySelector('#ie-group [data-ie="1,2"]').click();
+        teaching(true); api.redraw(); take('Teaching VC saved hold');
+        require(text('pplat-status').includes('Last valid hold')
             && el('pplat-param-label').nextElementSibling.matches('[data-measurement-help="pplat"]')
-            && el('pplat-param-label').nextElementSibling.getClientRects().length > 0,
-            'Teaching Mode must keep concise Pplat help without a visible success sentence');
-        teaching(false); mode('pc-cmv'); const clearedModeSwitch = take('VC to PC cleared hold');
-        require(clearedModeSwitch.holdMechanics.reasons.includes('HOLD_RESULT_CLEARED')
-            && text('hold-status') === 'Awaiting hold'
-            && text('hold-pplat') === '—' && text('hold-dp') === '—'
-            && text('hold-crs') === '—' && text('hold-raw') === '—',
-            'mode switch must synchronously clear both main and expanded hold values');
-        mode('vc-cmv'); input('hold-duration', 4); api.seek(20); const shortHold = take('VC short hold');
-        require(shortHold.holdMechanics.reasons.includes('HOLD_TOO_SHORT')
-            && text('hold-status') === 'Hold too short'
-            && text('param-pplat') === '—' && text('param-dp') === '—',
-            'short hold must show approved unavailability copy and no derived values');
-        require(el('hold-pplat').title.includes('HOLD_TOO_SHORT')
-            && el('hold-pplat').title.includes('INSUFFICIENT_SAMPLES')
-            && el('hold-pplat').getAttribute('aria-label').includes('INSUFFICIENT_SAMPLES'),
-            'all detected hold reasons must be available in title and accessible description');
+            && el('pplat-param-label').nextElementSibling.getClientRects().length > 0, 'Teaching saved hold help');
+        teaching(false); mode('pc-cmv'); take('VC to PC retained hold');
+        requireHoldRetained('mode switch'); require(text('hold-source').includes('vc-cmv'), 'historical source mode');
+        mode('vc-cmv'); api.manualHoldFixture(0.6); api.manualHoldFixture(0.4, false); const shortHold = take('VC newest invalid manual hold');
+        require(shortHold.lastManualHoldAttempt.mechanics.reasons.includes('HOLD_TOO_SHORT')
+            && text('hold-attempt').includes('Newest hold invalid: Hold too short')
+            && text('hold-pplat') !== '--', 'invalid attempt retains last valid');
         document.querySelector('#flow-pattern-group [data-pattern="ramp"]').click();
-        input('hold-duration', 5); api.seek(20); const rampHold = take('VC ramp hold');
-        require(rampHold.holdMechanics.pplat.status === 'valid'
-            && rampHold.holdMechanics.resistance.status === 'inapplicable'
-            && text('hold-raw') === '—'
-            && text('hold-raw-status') === 'Unavailable for ramp VC',
-            'ramp VC keeps Pplat but explains resistance applicability');
+        api.manualHoldFixture(0.6); const rampHold = take('VC ramp manual hold');
+        require(rampHold.retainedHoldMechanics.pplat.status === 'valid'
+            && rampHold.retainedHoldMechanics.resistance.status === 'inapplicable'
+            && text('hold-raw') === '--' && text('hold-raw-status') === 'Unavailable for ramp VC', 'ramp per-value validity');
         mode('PC-CSV'); take('VC to CSV synchronous reset'); api.step(15); take('VC to no-effort CSV 15s');
         effort(true); input('pmus-max', 8); input('flow-trigger', 2); api.seek(25); take('CSV re-established');
         mode('vc-cmv'); take('CSV to VC synchronous reset');
@@ -377,11 +355,7 @@ async function presentationHelpContract(page) {
         duration: 'Hold duration criterion help',
     };
 
-    if (!await page.locator('#hold-toggle').evaluate(button => button.classList.contains('hold-btn--active'))) {
-        await page.click('#hold-toggle');
-    }
-    await setRange(page, '#hold-duration', 5);
-    await page.evaluate(() => window.__vsim.seek(20));
+    await page.evaluate(() => window.__vsim.manualHoldFixture(0.6));
     const standardType = await page.evaluate(() => ({
         pplat: getComputedStyle(document.getElementById('param-pplat')).fontSize,
         dp: getComputedStyle(document.getElementById('param-dp')).fontSize,
@@ -389,9 +363,9 @@ async function presentationHelpContract(page) {
     }));
     require(standardType.pplat === '26px' && standardType.dp === '17px' && standardType.waveformWidth > 900,
         `standard typography/space changed: ${JSON.stringify(standardType)}`);
-    require((await page.locator('#hold-status').textContent()).trim() === ''
-        && (await page.locator('#pplat-status').textContent()).trim() === '',
-        'valid success sentence remains visible');
+    require((await page.locator('#hold-status').textContent()).trim() === 'Last valid hold'
+        && (await page.locator('#pplat-status').textContent()).includes('Last valid hold'),
+        'historical measurement label missing');
     require((await page.locator('#hold-modeled-baseline > span').textContent()).trim() === 'Modeled baseline'
         && (await page.locator('#dp-status > span').textContent()).trim() === 'Modeled baseline',
         'compact modeled provenance is not independently visible');
@@ -455,8 +429,8 @@ async function presentationHelpContract(page) {
     require(await tooltip.isVisible() && await tooltip.textContent() === stableText,
         'open help did not remain stable through monitor refreshes');
     await setRange(page, '#peep', 6);
-    require(await tooltip.isVisible() && (await tooltip.textContent()).includes('Settings changed. Awaiting a new completed hold.')
-        && (await tooltip.textContent()).includes('SETTINGS_CHANGED'),
+    require(await tooltip.isVisible() && (await tooltip.textContent()).includes('Last valid manual hold:')
+        && (await tooltip.textContent()).includes('Saved values retain their original settings'),
         'open help did not update when its measurement became stale');
     await driving.click();
 
@@ -468,11 +442,11 @@ async function presentationHelpContract(page) {
     await page.evaluate(() => window.__vsim.seek(20));
     const holdPplat = page.locator('#hold-results [data-measurement-help="pplat"]');
     await holdPplat.click();
-    await page.click('#hold-toggle');
+    await page.click('#btn-teaching-mode');
     require(!await tooltip.isVisible(), 'help did not close when its hold panel became hidden');
+    await page.click('#btn-teaching-mode');
 
-    await page.click('#hold-toggle');
-    await page.evaluate(() => window.__vsim.seek(20));
+    await page.evaluate(() => window.__vsim.manualHoldFixture(0.6));
     await page.click('#btn-teaching-mode');
     const teachingType = await page.evaluate(() => ({
         pplat: getComputedStyle(document.getElementById('param-pplat')).fontSize,
@@ -602,7 +576,6 @@ async function pcDisclosureContract(page, { stopOnFailure = false } = {}) {
     await teaching(false); await mode('pc-cmv');
     // Actual HOLD and expiration, active CSV flow cycle, max Ti, weak effort and cessation.
     await input('peep', 5); await input('rr', 14);
-    await page.locator('#hold-toggle').evaluate(e => { if (!e.classList.contains('hold-btn--active')) e.click(); });
     await input('hold-duration', 5); await seek(1.5);
     check('PC.hold-presence', (await state()).phase === 'HOLD' && await cue.isVisible());
     await seek(2.1); check('PC.expiration-presence', (await state()).phase === 'EXPIRATION' && await cue.isVisible());
@@ -1031,7 +1004,7 @@ if (require.main === module) (async () => {
         const allVersions = [...(html + mainJs + ventJs + simJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 11 && allVersions.every(v => v === '26'),
+                && allVersions.length === 11 && allVersions.every(v => v === '27'),
             `imports=${imp.join(',')} html=${versions.join(',')} all eleven=${allVersions.join(',')}`);
     }
 

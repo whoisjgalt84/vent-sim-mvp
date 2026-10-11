@@ -231,10 +231,11 @@ async function ensureServer() {
     );
 }
 
-async function runHarness(adaptive = false, effortSlider = false, demonstrationReset = false, uiCleanup = false) {
+async function runHarness(adaptive = false, effortSlider = false, demonstrationReset = false, uiCleanup = false, manualHold = false) {
     const target = visualMode
         ? [playwrightCli, 'test', ...process.argv.slice(3)]
-        : [uiCleanup ? fileURLToPath(new URL('../scratch/verify-ui-cleanup.cjs', import.meta.url))
+        : [manualHold ? fileURLToPath(new URL('../scratch/verify-manual-hold.cjs', import.meta.url))
+            : uiCleanup ? fileURLToPath(new URL('../scratch/verify-ui-cleanup.cjs', import.meta.url))
             : demonstrationReset ? fileURLToPath(new URL('../scratch/verify-demonstration-reset.cjs', import.meta.url))
             : effortSlider ? fileURLToPath(new URL('../scratch/verify-effort-slider.cjs', import.meta.url))
             : adaptive ? fileURLToPath(new URL('../scratch/verify-adaptive.cjs', import.meta.url)) : harnessFile];
@@ -268,6 +269,9 @@ try {
     await ensureServer();
     const { code, output } = await runHarness();
     requireCommissionedTally(output);
+    if (visualMode && !/^MANUAL_HOLD_VISUAL_TALLY 3 passed, 0 failed$/m.test(stripAnsi(output))) {
+        throw new Error('Expected three passing manual-hold visual groups');
+    }
     if (code !== 0) process.exitCode = code;
     if (!visualMode && code === 0) {
         const adaptive = await runHarness(true);
@@ -307,6 +311,14 @@ try {
             throw new Error('Commissioned UI cleanup browser tally must be 7 passed / 0 failed; received ' + cleanupMatches[0][1]);
         }
         console.log('Commissioned UI cleanup browser tally verified: 7 passed, 0 failed.');
+        const manual = await runHarness(false, false, false, false, true);
+        const manualMatches = [...stripAnsi(manual.output).matchAll(/^MANUAL_HOLD_BROWSER_TALLY (.+)$/gm)];
+        if (manualMatches.length !== 1) throw new Error('Expected exactly one manual-hold browser tally');
+        const manualTally = JSON.parse(manualMatches[0][1]);
+        if (manual.code !== 0 || manualTally.groups !== 20 || manualTally.passed !== 20 || manualTally.failed !== 0) {
+            throw new Error('Expected manual hold browser20/0; received ' + manualMatches[0][1]);
+        }
+        console.log('Commissioned manual-hold browser tally verified: 20 passed, 0 failed.');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

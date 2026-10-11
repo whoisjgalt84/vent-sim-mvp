@@ -259,3 +259,13 @@ See [the shared reset contract](demonstration-reset-contract.md).
 ## UI cleanup batch A verification (2026-10-10)
 
 The aggregate browser gate retains the 44 original checks, 12 adaptive, four effort/pressure, five Effort-slider and eight demonstration-reset groups, and adds seven bounded UI cleanup groups. The engine inventory and the 18 pinned-Linux visual groups are unchanged. UI cleanup changes intentionally require new candidate image bytes; generate them only in an isolated evidence checkout and compare again with updates disabled. Existing accepted images and tolerances remain unchanged until separate owner acceptance. See [the batch-A contract](ui-cleanup-batch-a.md).
+
+## SME-026/027 manual hold successor (2026-10-11)
+
+The existing 18 pinned-Linux groups remain separately tallied; three manual-hold
+visual groups cover arming/actual occlusion/cap, retained valid versus invalid and
+old-mode sources, and recurring takeover/cancellation/timing-short invalidity.
+Generate candidates only in an isolated checkout and compare twice with updates
+disabled. No accepted snapshots are changed by this implementation. Required
+engine/browser additions are 43 and 20 groups respectively. See
+[the approved contract](manual-inspiratory-hold-contract.md).

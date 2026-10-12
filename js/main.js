@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=26';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=26';
-import { SimulationEngine }  from './simulation.js?v=26';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=26';
-import AlarmEngine from '../alarms.js?v=26';
+import { LungModel }        from './lung-model.js?v=27';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=27';
+import { SimulationEngine }  from './simulation.js?v=27';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=27';
+import AlarmEngine from '../alarms.js?v=27';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=26';
+} from '../alarm-audio.js?v=27';
 
 
 // =============================================================================
@@ -310,6 +310,8 @@ function ensureAdaptiveModeOption() {
 }
 
 function syncOperatorControls() {
+    document.getElementById('hold-duration').value = vent.holdTime * 10;
+    setText('hold-duration-display', vent.holdTime.toFixed(1) + ' s');
     const adaptive = sim.adaptiveState;
     const target = adaptive?.requested.targetVT_mL ?? vent.tidalVolume * 1000;
     const peep = adaptive?.requested.peep_cmH2O ?? vent.peep;
@@ -601,7 +603,7 @@ function bindFlowPatternToggle() {
         updateModeLabel();
         updateFlowLabel();
         updateHoldResultsVisibility();
-        sim.reset();
+        sim.reset({ preserveManualHistory: true });
         updateMonitorValues(vent.summary());
         updateHoldResults();
     });
@@ -614,75 +616,70 @@ function bindFlowPatternToggle() {
 
 function bindHoldToggle() {
     const btn = document.getElementById('hold-toggle');
-    btn.addEventListener('click', () => {
-        if (vent.isAdaptiveMode()) return;
-        if (vent.holdActive) {
-            vent.holdTime = 0;
-            btn.classList.remove('hold-btn--active');
-            document.getElementById('hold-icon').textContent = '▶';
-            document.getElementById('hold-btn-label').textContent = 'Activate';
-            document.getElementById('hold-display').textContent = 'Off';
-            document.getElementById('hold-duration-group').style.display = 'none';
-            document.getElementById('hold-results').style.display = 'none';
-        } else {
-            const dur = parseInt(document.getElementById('hold-duration').value) / 10;
-            vent.holdTime = dur;
-            btn.classList.add('hold-btn--active');
-            document.getElementById('hold-icon').textContent = '⏸';
-            document.getElementById('hold-btn-label').textContent = 'Release';
-            document.getElementById('hold-display').textContent = `${dur.toFixed(1)}s`;
-            document.getElementById('hold-duration-group').style.display = 'flex';
-            document.getElementById('hold-results').style.display = '';
-        }
-        sim.notifyMeasurementSettingsChanged();
-        updateModeLabel();
-        updateHoldResultsVisibility();
-        updateMonitorValues(vent.summary());
-        updateHoldResults();
+    let pointer = null;
+    let key = null;
+    const refresh = () => { updateMonitorValues(vent.summary()); updateHoldResults(); };
+    const cancel = reason => {
+        pointer = null; key = null;
+        sim.cancelManualHold(reason); refresh();
+    };
+    btn.addEventListener('pointerdown', event => {
+        if (event.button !== 0 || pointer !== null || key !== null) return;
+        if (!sim.pressManualHold()) return;
+        pointer = event.pointerId;
+        btn.setPointerCapture(pointer);
+        event.preventDefault(); refresh();
     });
+    btn.addEventListener('pointerup', event => {
+        if (event.pointerId !== pointer) return;
+        pointer = null;
+        sim.releaseManualHold(); refresh();
+    });
+    btn.addEventListener('pointercancel', event => {
+        if (event.pointerId === pointer) cancel('pointer-cancel');
+    });
+    btn.addEventListener('lostpointercapture', event => {
+        if (event.pointerId === pointer) cancel('lost-pointer-capture');
+    });
+    btn.addEventListener('keydown', event => {
+        if (![' ', 'Enter'].includes(event.key)) return;
+        event.preventDefault();
+        if (event.repeat || key !== null || pointer !== null) return;
+        if (sim.pressManualHold()) key = event.key;
+        refresh();
+    });
+    btn.addEventListener('keyup', event => {
+        if (event.key !== key) return;
+        event.preventDefault(); key = null;
+        sim.releaseManualHold(); refresh();
+    });
+    btn.addEventListener('blur', () => { if (key !== null) cancel('focus-lost'); });
+    window.addEventListener('blur', () => cancel('window-blur'));
+    document.addEventListener('visibilitychange', () => { if (document.hidden) cancel('hidden-tab'); });
+    // Native synthesized clicks must not turn a momentary maneuver into a toggle.
+    btn.addEventListener('click', event => event.preventDefault());
 }
 
 function onHoldDurationChange(slider) {
-    if (vent.isAdaptiveMode()) return;
-    const dur = parseInt(slider.value) / 10;
-    vent.holdTime = dur;
-    document.getElementById('hold-duration-display').textContent = `${dur.toFixed(1)}s`;
-    document.getElementById('hold-display').textContent = `${dur.toFixed(1)}s`;
+    if (!sim.manualHoldSupported) return;
+    vent.holdTime = Number(slider.value) / 10;
+    setText('hold-duration-display', vent.holdTime.toFixed(1) + ' s');
     updateMonitorValues(vent.summary());
     updateHoldResults();
 }
 
 function updateHoldResultsVisibility() {
-    const rawRow = document.getElementById('hold-raw-row');
-    if (rawRow) {
-        rawRow.style.display = vent.holdActive ? '' : 'none';
-    }
+    document.getElementById('hold-raw-row').style.display = '';
 }
 
-function updateHoldControlState(isSpontaneous) {
-    const btn      = document.getElementById('hold-toggle');
-    const slider   = document.getElementById('hold-duration');
-    const isAdaptive = vent.isAdaptiveMode();
-    document.getElementById('adaptive-hold-exclusion').hidden = !isAdaptive;
-    if (isSpontaneous || isAdaptive) {
-        // Engine already suppresses hold in spontaneous modes (effectiveHoldTime → 0).
-        // Reset any stale operator intent and lock the UI to match.
-        vent.holdTime = 0;
-        btn.disabled  = true;
-        btn.classList.remove('hold-btn--active');
-        document.getElementById('hold-icon').textContent      = '▶';
-        document.getElementById('hold-btn-label').textContent = 'Activate';
-        document.getElementById('hold-display').textContent   = 'Off';
-        document.getElementById('hold-duration-group').style.display = 'none';
-        document.getElementById('hold-results').style.display        = 'none';
-        if (slider) slider.disabled = true;
-        btn.title = isAdaptive ? ADAPTIVE_HELP['adaptive-hold']
-            : 'Inspiratory hold is a passive-mechanics measurement; not available in spontaneous modes';
-    } else {
-        btn.disabled = false;
-        if (slider) slider.disabled = false;
-        btn.title = '';
-    }
+function updateHoldControlState() {
+    const unavailable = !sim.manualHoldSupported;
+    document.getElementById('hold-toggle').disabled = unavailable;
+    document.getElementById('hold-duration').disabled = unavailable;
+    document.getElementById('pause-unavailable').hidden = !unavailable;
+    document.getElementById('adaptive-hold-exclusion').hidden = !vent.isAdaptiveMode();
+    document.getElementById('hold-toggle').title = unavailable ? 'Manual hold unavailable in ' + vent.mode : '';
+    updateHoldResults();
 }
 
 
@@ -724,7 +721,7 @@ function bindPmusToggle() {
             document.getElementById('pmus-sliders').style.display = '';
             document.getElementById('patient-rr-control').style.display = '';
         }
-        if (vent.isAdaptiveMode()) {
+        if (vent.isAdaptiveMode() || sim.manualHoldState.active || sim.manualHoldState.armed) {
             sim.notifyMeasurementSettingsChanged();
             updateMonitorValues(vent.summary());
         }
@@ -1008,6 +1005,8 @@ function bindTransportControls() {
             pauseBtn.classList.add('transport-btn--paused');
         }
         updateAdaptiveView();
+        updateMonitorValues(vent.summary());
+        updateHoldResults();
     });
 
     const speedGroup = document.getElementById('speed-group');
@@ -1126,7 +1125,7 @@ function bindSlider(id, callback) {
         callback(slider);
         const adaptive = vent.isAdaptiveMode();
         const effort = ['pmus-max', 'neural-ti', 'patient-rr'].includes(id);
-        if ((!effort || adaptive) && !id.startsWith('alarm-')) {
+        if ((!effort || adaptive || sim.manualHoldState.active || sim.manualHoldState.armed) && !id.startsWith('alarm-')) {
             // Adaptive target/PEEP request already invalidates once atomically.
             if (!(adaptive && ['vt', 'peep'].includes(id))) sim.notifyMeasurementSettingsChanged();
             updateMonitorValues(vent.summary());
@@ -1368,11 +1367,11 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
     // makes per-breath measurements available; neither live nor analytical
     // pressure is a monitor fallback. The live PIP alarm signal is unchanged.
     const completed = sim.lastCompletedBreath;
-    const hold = sim.holdMechanics;
+    const hold = sim.retainedHoldMechanics;
     const displayPip = completed !== null ? m.pipLatched : '—';
     setText('param-pip',     `${displayPip}`);
     setText('param-pplat', hold.pplat.value !== null ? `${formatHoldValue(hold.pplat.value)}` : '—');
-    setText('pplat-status', holdStatusCopy(hold));
+    setText('pplat-status', sim.lastValidManualHold ? 'Last valid hold · ' + sim.lastValidManualHold.configuredMode : 'No valid manual hold');
     setText('param-map', formatHoldValue(s.pressures.map_cmH2O));
     setText('param-dp', hold.drivingPressure.value !== null
         ? `${formatHoldValue(hold.drivingPressure.value)}` : '—');
@@ -1866,7 +1865,6 @@ function formatHoldValue(value) {
 }
 
 function holdStatusCopy(hold) {
-    if (vent.isAdaptiveMode()) return 'Hold unavailable in PC-CMVa';
     const reasons = hold?.reasons ?? [];
     if (hold?.status === 'valid') return '';
     if (reasons.includes('HOLD_INAPPLICABLE_MODE')) return 'Unavailable in PC-CSV';
@@ -1883,7 +1881,6 @@ function holdStatusCopy(hold) {
 }
 
 function detailedHoldStatusCopy(result) {
-    if (vent.isAdaptiveMode()) return ADAPTIVE_HELP['adaptive-hold'];
     const reasons = result?.reasons ?? [];
     if (result?.status === 'valid') return 'Valid Pplat measurement.';
     if (reasons.includes('HOLD_INAPPLICABLE_MODE')) return 'Hold measurements unavailable in PC-CSV.';
@@ -2006,13 +2003,13 @@ function measurementHelpText(key) {
     }
     const base = MEASUREMENT_HELP_COPY[key] ?? 'Measurement unavailable.';
     if (!sim || key === 'modeled-baseline' || key === 'duration') return base;
-    const hold = sim.holdMechanics;
+    const hold = sim.retainedHoldMechanics;
     const result = key === 'pplat' ? hold.pplat
         : key === 'driving-pressure' ? hold.drivingPressure
             : key === 'static-compliance' ? hold.compliance
                 : hold.resistance;
     if (result.status === 'valid') {
-        return key === 'pplat' ? `${base}\n\nValid Pplat measurement.` : base;
+        return base + '\n\nLast valid manual hold: ' + sim.lastValidManualHold.configuredMode + ', breath ' + sim.lastValidManualHold.breathId + '. Saved values retain their original settings and modeled baseline. These are educational simulator criteria, not clinical validation.';
     }
     const detail = key === 'inspiratory-resistance'
         ? detailedResistanceStatusCopy(result)
@@ -2190,28 +2187,46 @@ function bindMeasurementHelp() {
 }
 
 function updateHoldResults() {
-    const panel = document.getElementById('hold-results');
-    if (!panel) return;
-    const hold = sim.holdMechanics;
-    setHoldReasonDescription('param-pplat', hold.pplat);
-    setHoldReasonDescription('param-dp', hold.drivingPressure);
-    if (!vent.holdActive) {
-        panel.style.display = 'none';
-        refreshOpenMeasurementHelp();
-        return;
+    const hold = sim.retainedHoldMechanics;
+    const state = sim.manualHoldState;
+    const saved = sim.lastValidManualHold;
+    const attempt = sim.lastManualHoldAttempt;
+    const control = document.getElementById('hold-toggle');
+    control.classList.toggle('hold-btn--active', state.armed || state.active);
+    control.setAttribute('aria-pressed', String(state.pressed));
+    setText('hold-btn-label', state.active ? 'Release to end' : state.armed ? 'Keep pressed' : 'Press and hold');
+    setText('hold-display', !state.supported ? 'Unavailable' : state.active
+        ? 'Holding ' + state.duration_s.toFixed(2) + ' s' : state.armed ? 'Armed' : state.outcome === 'timing-limit'
+            ? 'Timing limit · ' + state.duration_s.toFixed(2) + ' s' : 'Ready');
+    setText('hold-status', saved ? 'Last valid hold' : 'No valid manual hold');
+    if (saved) {
+        const config = JSON.parse(saved.settingsFingerprint);
+        const sourceControl = saved.configuredMode === 'vc-cmv'
+            ? 'VT set ' + Math.round(config[2] * 1000) + ' mL · flow ' + config[1]
+            : 'Pinsp set ' + config[3] + ' cmH2O above PEEP · pressure-dependent flow';
+        setText('hold-source', saved.configuredMode + ' · run ' + saved.simulationGeneration + ' · breath ' + saved.breathId
+            + ' · t=' + saved.completedAt_s.toFixed(2) + ' s · occlusion ' + saved.mechanics.actualDuration_s.toFixed(2)
+            + ' s · ' + sourceControl + ' · inspired VT ' + Math.round(saved.mechanics.sources.measuredVT_mL) + ' mL · RR ' + config[5]
+            + ' · I:E ' + config[6].join(':') + ' · PEEP ' + config[7] + ' · R ' + config[14]
+            + ' · C ' + Math.round(config[15] * 1000)
+            + ' · modeled total PEEP ' + formatHoldValue(saved.mechanics.baseline.value_cmH2O));
+    } else setText('hold-source', '');
+    let message = '';
+    if (state.outcome === 'armed-canceled') message = 'Armed press canceled · no hold attempted (' + state.reason + ')';
+    else if (attempt) {
+        const prefix = attempt.configuredMode + ' breath ' + attempt.breathId + ' · ';
+        message = prefix + (attempt.completion === 'canceled' ? 'Hold canceled (' + attempt.cancellationReason + '); no measurement published'
+            : attempt.mechanics.status !== 'valid' ? 'Newest hold invalid: ' + holdStatusCopy(attempt.mechanics)
+                : attempt.completion === 'timing-limit' ? 'Timing limit reached; release before a new press' : 'Hold completed');
+        if (attempt.completion === 'timing-limit' && attempt.mechanics.status !== 'valid') message += ' · timing limit reached';
     }
-    panel.style.display = '';
-    setText('hold-status', holdStatusCopy(hold));
-    setText('hold-pplat', formatHoldValue(hold.pplat.value));
-    setText('hold-dp', formatHoldValue(hold.drivingPressure.value));
-    setText('hold-crs', formatHoldValue(hold.compliance.value));
-    setText('hold-raw', formatHoldValue(hold.resistance.value));
+    setText('hold-attempt', message);
+    for (const [id, result] of [['param-pplat', hold.pplat], ['param-dp', hold.drivingPressure],
+        ['hold-pplat', hold.pplat], ['hold-dp', hold.drivingPressure], ['hold-crs', hold.compliance], ['hold-raw', hold.resistance]]) {
+        setText(id, result.value === null ? '--' : formatHoldValue(result.value));
+        setHoldReasonDescription(id, result);
+    }
     setText('hold-raw-status', resistanceStatusCopy(hold.resistance, hold.pplat));
-    setHoldReasonDescription('hold-pplat', hold.pplat);
-    setHoldReasonDescription('hold-dp', hold.drivingPressure);
-    setHoldReasonDescription('hold-crs', hold.compliance);
-    setHoldReasonDescription('hold-raw', hold.resistance);
-    setHoldReasonDescription('hold-status', { status: hold.status, reasons: hold.reasons });
     refreshOpenMeasurementHelp();
 }
 
@@ -2303,6 +2318,20 @@ function installTestHooks() {
             for (let i = 0; i < ticks; i++) sim.tick();
             renderFrame();
             return { ticks, globalTime: sim.globalTime };
+        },
+
+        /** Deterministic manual measurement fixture; event tests exercise real inputs separately. */
+        manualHoldFixture(duration_s = 0.6, reset = true) {
+            this.pause();
+            if (reset) sim.reset();
+            if (!sim.pressManualHold()) throw new Error('Manual fixture unavailable');
+            for (let i = 0; i < 2000 && !sim.manualHoldState.active && sim.manualHoldState.armed; i++) sim.tick();
+            const ticks = Math.round(duration_s / sim.dt);
+            for (let i = 1; i < ticks && sim.manualHoldState.active; i++) sim.tick();
+            sim.releaseManualHold();
+            if (sim.manualHoldState.active) sim.tick();
+            renderFrame();
+            return this.state();
         },
 
         /** Fixture setup only; browser control tests separately exercise actual UI events. */
@@ -2504,6 +2533,10 @@ function installTestHooks() {
                 // Read-only evidence for provenance tests; no new engine state.
                 completed:       sim.lastCompletedBreath,
                 holdMechanics:   sim.holdMechanics,
+                retainedHoldMechanics: sim.retainedHoldMechanics,
+                manualHold: sim.manualHoldState,
+                lastValidManualHold: sim.lastValidManualHold,
+                lastManualHoldAttempt: sim.lastManualHoldAttempt,
                 runningPip:      s.pip,
                 pplat:           s.pplat,
                 liveTrapped_mL:  sim.volumeAtBreathStart * 1000,

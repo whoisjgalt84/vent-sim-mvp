@@ -78,7 +78,51 @@ async function reset(page, selector = '#btn-reset', keyboard = false) {
     return page.evaluate(() => window.resetReceipt);
 }
 async function image(page, name) { if (OUT) await page.screenshot({ path: path.join(OUT, name + '.png'), fullPage: true, animations: 'disabled' }); }
+async function immutableResetReceipt(page) {
+    const rows = [];
+    for (const playing of [false, true]) for (const keyboard of [false, true]) {
+        await setup(page, 'pc-cmva', true); await step(page, 20);
+        await running(page, playing);
+        const before = await state(page), captured = await reset(page, '#btn-reset', keyboard);
+        assert(captured.trusted, 'receipt uses trusted pointer/Enter activation');
+        clear(captured.state, before); retained(captured.state, before);
+        const unchanged = async label => {
+            const later = await page.evaluate(() => window.resetReceipt);
+            assert.deepEqual(later, captured, label);
+            clear(later.state, before); retained(later.state, before);
+        };
+        // Explicit diagnostic ticks execute genuine 100 Hz physics even while
+        // transport is paused. Read the browser-owned receipt after each step.
+        const first = await step(page, 1);
+        await unchanged('whole reset receipt unchanged after one genuine tick');
+        assert.equal(first.globalTime, 0.01); assert.equal(first.running, playing);
+        assert.deepEqual(first.resetDiagnostics.loopCurrent, { pressure: [15], volume: [5], flow: [30] }, 'new PC-CMVa data after reset');
+        const multiple = await step(page, 20);
+        await unchanged('whole reset receipt unchanged after multiple genuine ticks');
+        assert(multiple.globalTime > first.globalTime);
+        assert.equal(multiple.resetDiagnostics.loopCurrent.pressure.length, 21);
+        await page.evaluate(() => __vsim.resume());
+        if (playing) await page.waitForFunction(() => __vsim.state().globalTime > 0.3);
+        else await page.waitForTimeout(150);
+        const live = await state(page);
+        assert.equal(live.running, playing, 'receipt capture preserves transport');
+        if (!playing) assert.equal(live.globalTime, multiple.globalTime, 'paused transport adds no animation ticks');
+        await unchanged('whole reset receipt unchanged after normal animation frames');
+        let paused = null;
+        if (!playing) {
+            paused = await reset(page, '#btn-reset', keyboard);
+            assert(paused.trusted); clear(paused.state, live); retained(paused.state, live);
+            await page.waitForTimeout(150);
+            assert.equal((await state(page)).globalTime, 0, 'fresh paused reset stays at zero');
+            assert.deepEqual(await page.evaluate(() => window.resetReceipt), paused, 'fresh paused receipt stays unchanged');
+        }
+        await page.evaluate(() => __vsim.pause());
+        rows.push({ playing, keyboard, before, captured, first, multiple, live, paused });
+    }
+    receipts.push({ group: 'receipt-immutability', rows });
+}
 const groups = ['vc-cmv', 'pc-cmv', 'PC-CSV', 'pc-cmva'].map(mode => [mode + '-phase-effort-transport-repeat', async page => {
+    if (mode === 'pc-cmva') await immutableResetReceipt(page);
     const rows = [];
     for (const active of [false, true]) for (const playing of [false, true]) {
         await setup(page, mode, active); await step(page, 3400);
@@ -106,7 +150,9 @@ const groups = ['vc-cmv', 'pc-cmv', 'PC-CSV', 'pc-cmva'].map(mode => [mode + '-p
     }
     for (const phase of ['INSPIRATION', 'EXPIRATION', ...(['vc-cmv', 'pc-cmv'].includes(mode) ? ['HOLD'] : [])]) {
         await setup(page, mode, true);
-        if (phase === 'HOLD') await page.locator('#hold-toggle').click();
+        if (phase === 'HOLD') {
+            await page.locator('#hold-duration').evaluate(el => { el.value = '6'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+        }
         const before = await page.evaluate(phase => {
             for (let i = 0; i < 6000; i++) { const s = __vsim.stepTicks(1); if (s.phase === phase && s.resetDiagnostics.phaseTime > 0.1) return s; }
             throw Error('Requested reset phase not reached: ' + phase);
@@ -223,11 +269,13 @@ groups.push(['native-help-controls-and-header-geometry', async page => {
                 await page.evaluate(() => document.addEventListener('click', event => {
                     if (event.target.id !== 'btn-reset') return;
                     const content = id => document.getElementById(id).textContent.trim();
-                    window.resetReceipt = { trusted: event.isTrusted, state: __vsim.state(), dom: {
+                    // Freeze the entire synchronous receipt before a later frame
+                    // can append samples to the diagnostic state's live arrays.
+                    window.resetReceipt = structuredClone({ trusted: event.isTrusted, state: __vsim.state(), dom: {
                         pip: content('param-pip'), vt: content('param-vt'), ve: content('param-ve'), veStatus: content('ve-status'),
                         alarms: content('alarm-chip-list'), unknownHidden: document.getElementById('unknown-patient-trigger').hidden,
                         effortInput: document.getElementById('pmus-max').value, effortReadout: content('pmus-max-display'),
-                        breathInfo: content('breath-info') } };
+                        breathInfo: content('breath-info') } });
                 }));
                 await run(page); assert.deepEqual(errors, []); results.push({ name, passed: true }); console.log('PASS reset-browser: ' + name);
             } catch (error) { results.push({ name, passed: false, error: error.stack, errors }); console.error('FAIL reset-browser: ' + name + '\n' + error.stack); await image(page, 'failure-' + name).catch(() => {}); }

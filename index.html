@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=26">
+    <link rel="stylesheet" href="css/style.css?v=27">
 </head>
 <body>
 
@@ -189,6 +189,20 @@
                            min="21" max="100" step="1" value="40">
                 </div>
 
+                <div class="control">
+                    <div class="control__header">
+                        <label class="control__label" for="hold-duration">Recurring insp pause</label>
+                        <span class="control__value" id="hold-duration-display">0.0 s</span>
+                    </div>
+                    <div class="hold-duration" id="hold-duration-group">
+                        <input type="range" class="control__range" id="hold-duration"
+                               aria-label="Recurring inspiratory pause" min="0" max="20" step="1" value="0">
+                        <button type="button" class="measurement-help-trigger" data-measurement-help="duration"
+                                aria-label="Hold duration criterion help" aria-expanded="false">i</button>
+                    </div>
+                    <div class="hold-result-note" id="pause-unavailable" hidden>Pause unavailable in this mode</div>
+                </div>
+
                 <!-- Trigger Sensitivity -->
                 <div class="control control--primary trigger-control">
                     <div class="control__header">
@@ -227,22 +241,17 @@
                 <!-- Inspiratory Hold -->
                 <div class="control">
                     <div class="control__header">
-                        <span class="control__label">Insp Hold</span>
-                        <span class="control__value" id="hold-display">Off</span>
+                        <span class="control__label">Manual insp hold</span>
+                        <span class="control__value" id="hold-display" role="status">Ready</span>
                     </div>
                     <div class="hold-controls">
-                        <button class="hold-btn" id="hold-toggle">
+                        <button class="hold-btn" id="hold-toggle" type="button" aria-pressed="false"
+                                aria-label="Press and hold for manual inspiratory hold" aria-describedby="manual-hold-help">
                             <span class="hold-btn__icon" id="hold-icon">▶</span>
-                            <span id="hold-btn-label">Activate</span>
+                            <span id="hold-btn-label">Press and hold</span>
                         </button>
-                        <div class="hold-duration" id="hold-duration-group" style="display:none">
-                            <input type="range" class="control__range" id="hold-duration"
-                                   min="3" max="20" step="1" value="5">
-                            <span class="control__value" id="hold-duration-display">0.5s</span>
-                            <button type="button" class="measurement-help-trigger" data-measurement-help="duration"
-                                    aria-label="Hold duration criterion help" aria-expanded="false">i</button>
-                        </div>
                     </div>
+                    <div class="hold-result-note" id="manual-hold-help">Hold the button or Space / Enter to arm end-inspiration. Release to end. Up to 2 simulated seconds; timing may shorten it.</div>
                     <div class="adaptive-pending" id="adaptive-hold-exclusion" hidden>
                         <span>Hold unavailable in PC-CMVa</span>
                         <button type="button" class="measurement-help-trigger" data-measurement-help="adaptive-hold"
@@ -250,16 +259,18 @@
                     </div>
                 </div>
 
-                <!-- Hold Results (shown when hold is active) -->
-                <div class="hold-results" id="hold-results" style="display:none">
-                    <div class="hold-result-status" id="hold-status" role="status">Awaiting hold</div>
+                <!-- Historical manual measurements; recurring pauses do not publish here. -->
+                <div class="hold-results" id="hold-results">
+                    <div class="hold-result-status" id="hold-status">No valid manual hold</div>
+                    <div class="hold-result-note" id="hold-source"></div>
+                    <div class="hold-result-note" id="hold-attempt" role="status"></div>
                     <div class="hold-result-row">
                         <span class="hold-result-heading">
                             <span class="hold-result-label" id="hold-pplat-label">Measured P<sub>plat</sub></span>
                             <button type="button" class="measurement-help-trigger" data-measurement-help="pplat"
                                     aria-label="Measured Pplat help" aria-expanded="false">i</button>
                         </span>
-                        <span class="hold-result-value" id="hold-pplat">—</span>
+                        <span class="hold-result-value" id="hold-pplat">--</span>
                         <span class="hold-result-unit">cmH₂O</span>
                     </div>
                     <div class="hold-result-row">
@@ -268,7 +279,7 @@
                             <button type="button" class="measurement-help-trigger" data-measurement-help="driving-pressure"
                                     aria-label="Hold-derived driving pressure help" aria-expanded="false">i</button>
                         </span>
-                        <span class="hold-result-value" id="hold-dp">—</span>
+                        <span class="hold-result-value" id="hold-dp">--</span>
                         <span class="hold-result-unit">cmH₂O</span>
                     </div>
                     <div class="hold-result-row">
@@ -277,7 +288,7 @@
                             <button type="button" class="measurement-help-trigger" data-measurement-help="static-compliance"
                                     aria-label="Hold-derived static compliance help" aria-expanded="false">i</button>
                         </span>
-                        <span class="hold-result-value" id="hold-crs">—</span>
+                        <span class="hold-result-value" id="hold-crs">--</span>
                         <span class="hold-result-unit">mL/cmH₂O</span>
                     </div>
                     <div class="hold-result-note hold-result-note--baseline" id="hold-modeled-baseline">
@@ -291,7 +302,7 @@
                             <button type="button" class="measurement-help-trigger" data-measurement-help="inspiratory-resistance"
                                     aria-label="Measured inspiratory resistance help" aria-expanded="false">i</button>
                         </span>
-                        <span class="hold-result-value" id="hold-raw">—</span>
+                        <span class="hold-result-value" id="hold-raw">--</span>
                         <span class="hold-result-unit">cmH₂O·s/L</span>
                     </div>
                     <div class="hold-result-note" id="hold-raw-status"></div>
@@ -715,8 +726,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=26"></script>
-<script type="module" src="js/main.js?v=26"></script>
+<script type="module" src="alarms.js?v=27"></script>
+<script type="module" src="js/main.js?v=27"></script>
 
 </body>
 </html>

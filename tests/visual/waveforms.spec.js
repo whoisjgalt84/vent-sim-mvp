@@ -137,7 +137,7 @@ async function pcDisclosureSnapshots(page) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await h.open(page);
     await h.expandRail(page); await h.setMode(page, 'pc-cmv');
-    await page.click('#hold-toggle'); await h.setRange(page, '#hold-duration', 5);
+    await h.setRange(page, '#hold-duration', 5);
     await h.seek(page, 1.5);
     expect((await h.state(page)).phase).toBe('HOLD');
     await expect(page.locator('#pc-disclosure-trigger')).toBeVisible();
@@ -221,12 +221,10 @@ test.describe('waveform display', () => {
         expect(s.patientBreaths).toBe(0);
 
         await expect(page.locator('.waveforms')).toHaveScreenshot('baseline.png');
-        await page.click('#hold-toggle');
-        await h.setRange(page, '#hold-duration', 5);
-        await h.seek(page, 20);
-        expect((await h.state(page)).holdMechanics.status).toBe('valid');
-        await expect(page.locator('#hold-status')).toHaveText('');
-        await expect(page.locator('#pplat-status')).toHaveText('');
+        await page.evaluate(() => window.__vsim.manualHoldFixture(0.6));
+        expect((await h.state(page)).retainedHoldMechanics.status).toBe('valid');
+        await expect(page.locator('#hold-status')).toHaveText('Last valid hold');
+        await expect(page.locator('#pplat-status')).toContainText('Last valid hold');
         await expect(page.locator('#hold-modeled-baseline > span')).toHaveText('Modeled baseline');
         await expect(page.locator('#dp-status > span')).toHaveText('Modeled baseline');
         await expect(page).toHaveScreenshot('hold-valid-square-standard-full.png', { fullPage: true });
@@ -239,19 +237,18 @@ test.describe('waveform display', () => {
         await expect(page.locator('#measurement-help')).toContainText('Live modeled total PEEP at breath start. Calculated from set PEEP, integrated residual volume, and configured compliance; not measured by an expiratory hold.');
         await expect(page).toHaveScreenshot('hold-valid-baseline-help-standard-full.png', { fullPage: true });
         await page.keyboard.press('Escape');
-        await h.setRange(page, '#hold-duration', 4);
-        await h.seek(page, 20);
-        expect((await h.state(page)).holdMechanics.reasons).toContain('HOLD_TOO_SHORT');
-        await expect(page.locator('#hold-status')).toHaveText('Hold too short');
+        await page.evaluate(() => window.__vsim.manualHoldFixture(0.4, false));
+        expect((await h.state(page)).lastManualHoldAttempt.mechanics.reasons).toContain('HOLD_TOO_SHORT');
+        await expect(page.locator('#hold-attempt')).toContainText('Newest hold invalid: Hold too short');
+        await expect(page.locator('#hold-status')).toHaveText('Last valid hold');
         await expect(page.locator('#hold-results')).toHaveScreenshot('hold-short-panel.png');
         await page.click('[data-measurement-help="duration"]');
         await expect(page.locator('#measurement-help')).toHaveText('The 0.5–2 s range is this simulator’s measurement criterion.');
         await expect(page).toHaveScreenshot('hold-short-duration-help-standard-full.png', { fullPage: true });
         await page.keyboard.press('Escape');
         await page.click('#flow-pattern-group [data-pattern="ramp"]');
-        await h.setRange(page, '#hold-duration', 5);
-        await h.seek(page, 20);
-        expect((await h.state(page)).holdMechanics.resistance.status).toBe('inapplicable');
+        await page.evaluate(() => window.__vsim.manualHoldFixture(0.6));
+        expect((await h.state(page)).retainedHoldMechanics.resistance.status).toBe('inapplicable');
         await expect(page.locator('#hold-raw-status')).toHaveText('Unavailable for ramp VC');
         await expect(page.locator('#hold-results')).toHaveScreenshot('hold-ramp-panel.png');
         await page.click('#hold-results [data-measurement-help="inspiratory-resistance"]');
@@ -259,8 +256,8 @@ test.describe('waveform display', () => {
         await expect(page).toHaveScreenshot('hold-ramp-resistance-help-standard-full.png', { fullPage: true });
         await page.keyboard.press('Escape');
         await h.setMode(page, 'pc-cmv');
-        await h.seek(page, 20);
-        expect((await h.state(page)).holdMechanics.resistance.reasons).toContain('RESISTANCE_PRESSURE_CONTROL');
+        await page.evaluate(() => window.__vsim.manualHoldFixture(0.6));
+        expect((await h.state(page)).retainedHoldMechanics.resistance.reasons).toContain('RESISTANCE_PRESSURE_CONTROL');
         await expect(page.locator('#hold-raw-status')).toHaveText('Unavailable for pressure control');
         await expect(page.locator('#hold-results')).toHaveScreenshot('hold-pc-panel.png');
         // Same commissioned test, additional approved-scope state/screenshot.
@@ -289,7 +286,7 @@ test.describe('waveform display', () => {
         await h.setMode(page, 'vc-cmv');
         await h.setRange(page, '#compliance', 10);
         await h.seek(page, 0);
-        await expect(page.locator('#param-pplat')).toHaveText('—');
+        await expect(page.locator('#param-pplat')).toHaveText('--');
         await expect(page.locator('#alerts')).toContainText('Predicted Pplat ');
         await expect(page.locator('.header')).toHaveScreenshot('predicted-pplat-before-breath.png');
         await h.setMode(page, 'PC-CSV');
@@ -316,13 +313,12 @@ test.describe('waveform display', () => {
         await expect(page).toHaveScreenshot('teaching-full.png', { fullPage: true });
         await page.click('#btn-teaching-mode');
         await h.expandRail(page);
-        await page.click('#hold-toggle');
+        await page.evaluate(() => window.__vsim.manualHoldFixture(0.6));
         await page.click('#btn-teaching-mode');
-        await h.seek(page, 20);
-        expect((await h.state(page)).holdMechanics.status).toBe('valid');
+        expect((await h.state(page)).retainedHoldMechanics.status).toBe('valid');
         await expect(page.locator('.parameters')).toHaveScreenshot('hold-valid-square-teaching-column.png');
         await page.click('#pplat-param-label + [data-measurement-help="pplat"]');
-        await expect(page.locator('#measurement-help')).toContainText('Valid Pplat measurement.');
+        await expect(page.locator('#measurement-help')).toContainText('Last valid manual hold:');
         await expect(page).toHaveScreenshot('hold-valid-pplat-help-teaching-full.png', { fullPage: true });
         await page.keyboard.press('Escape');
         await page.click('#dp-status [data-measurement-help="modeled-baseline"]');
@@ -530,7 +526,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'UI cleanup batch A asset release').toEqual(['26']);
+        expect(versions, 'Manual hold successor asset release').toEqual(['27']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);

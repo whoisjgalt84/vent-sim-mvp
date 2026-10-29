@@ -2,9 +2,8 @@
 
 [![Smoke Tests](https://github.com/whoisjgalt84/vent-sim-mvp/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/whoisjgalt84/vent-sim-mvp/actions/workflows/smoke-test.yml)
 
-A browser-based mechanical ventilator simulator for clinical education — built
-so a learner can ask, of any moment on the screen: **what is the ventilator
-doing, what is the patient doing, and what does the waveform reveal?**
+A browser-based mechanical ventilator simulator for educator-led exploration
+of ventilator settings, prescribed patient effort and modeled waveforms.
 
 It runs entirely in the browser. No install, no account, no build step.
 
@@ -22,9 +21,9 @@ npm run serve      # then open http://127.0.0.1:8899
 Any static server works — VS Code's Live Server extension is fine too.
 
 ```bash
-npm test              # 300 original + 22 controller + 24 integration + 22 legacy fixtures + 41 effort/pressure groups
-npm run test:browser  # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups
-npm run test:visual:docker  # 16 authoritative pinned-Linux visual groups
+npm test              # 300 original + 22 controller + 24 integration + 22 legacy + 41 effort/pressure + 28 reset + 43 manual-hold
+npm run test:browser  # 44 original + 12 adaptive + 4 effort/pressure + 5 slider + 8 reset + 7 cleanup + 20 manual-hold
+npm run test:visual:docker  # 18 existing + 3 manual-hold pinned-Linux visual groups
 ```
 
 Read the printed `Passed: N / Failed: M` tally. See
@@ -88,12 +87,12 @@ existing air-trapping annotation.
 | [`docs/model.md`](./docs/model.md) | The mathematical model, published in full |
 | [`docs/visual-testing.md`](./docs/visual-testing.md) | The screenshot regression suite |
 | [`docs/case-design-schema.md`](./docs/case-design-schema.md) | Draft authoring template with a dated implementation inventory; re-verify the served build before rehearsal |
-| [`docs/case-bank-v0.1.md`](./docs/case-bank-v0.1.md) | Authored teaching cases |
+| [`docs/case-bank-v0.1.md`](./docs/case-bank-v0.1.md) | Draft case bank; no release-wide teaching-case approval |
 | [`docs/case-scenario-roadmap.md`](./docs/case-scenario-roadmap.md) | Where case-based learning is going |
 | [`docs/sme-feedback-log.md`](./docs/sme-feedback-log.md) | What practising RTs have reported |
 | [`docs/trigger-fix-design.md`](./docs/trigger-fix-design.md) | Historical trigger-rewrite design and decisions; current signal contract is in `docs/model.md` |
 | [`docs/adaptive-mode-contract.md`](./docs/adaptive-mode-contract.md) | PC-CMVa controller, operator-setting lifecycle, shared effort/pressure successor, and evidence boundaries |
-| [`docs/clinical/CLIN-001/successor-index.md`](./docs/clinical/CLIN-001/successor-index.md) | Current implementation receipts and open clinical gates, linked to the historical baseline |
+| [`docs/clinical/CLIN-001/successor-index.md`](./docs/clinical/CLIN-001/successor-index.md) | Historical October 6 snapshot, current baseline links and open claim boundaries |
 
 ---
 
@@ -102,8 +101,8 @@ existing air-trapping annotation.
 - **Physiological credibility over visual flash.** A prettier screen with
   sloppier physiology is a regression.
 - **Small, careful patches over large rewrites.**
-- **Teach concepts, not knobs.** The simulator should support reasoning about
-  what is happening — not just changing settings and watching lines move.
+- **Support educator-directed use.** Educators choose their own objectives,
+  explanations and teaching approach; the simulator does not prescribe them.
 - **Standard vocabulary.** Modes are classified, not branded. See the glossary.
 - **Publish the model.** Educational simulators are routinely and fairly
   criticised for hiding their maths. Ours is in [`docs/model.md`](./docs/model.md).
@@ -112,14 +111,16 @@ existing air-trapping annotation.
 
 ## Status and scope
 
-An MVP under active development, driven by feedback from practising respiratory
-therapists (`docs/sme-feedback-log.md`).
+The v1.0.0 release scope is the simulator itself. Educators determine how to
+use it and which learning objectives, if any, to pursue. It does not prescribe
+pedagogy or claim validated learning outcomes or an approved shipped bank of
+teaching cases. Case documents remain drafts with separate case-specific review.
 
-It is a teaching tool for **cognitive** objectives — mode classification,
-waveform interpretation, load identification, recognising patient–ventilator
-discordance. It is deliberately not aimed at psychomotor objectives (real
-knobology) or affective ones (teamwork, communication), which the simulation
-literature places with mannequins and live scenarios.
+The runtime is frozen for the October 29 and November 2 formative usability
+pilots. These sessions observe educators/operations staff operating the
+simulator while Christian supplies RT reasoning; they do not validate pedagogy.
+The package version is 1.0.0; final release approval and publication remain
+separate decisions.
 
 **It is not a medical device**, is not validated for clinical decision-making,
 and nothing in it should be used to guide the care of a real patient.
@@ -151,10 +152,21 @@ Vocabulary and physiology follow:
 - Arnal J-M, Garnero A, Saoli M, Chatburn RL. Parameters for simulation of adult
   subjects during mechanical ventilation. *Respir Care* 2018;63(2):158–168.
 
-## Shared reset verification (2026-10-07)
+## Verification inventory and carried evidence
 
-The current aggregate gates additionally require 28 demonstration-reset engine
-groups and eight demonstration-reset browser groups. The pinned-Linux visual
-inventory is now 18 groups (the existing 16 plus two shared-reset groups).
-Prior inventories above describe their existing groups or historical checkpoints.
-See [the shared reset contract](docs/demonstration-reset-contract.md).
+At main `395c0dc6e8338036e1ae46ab38572cb23a424ef8`, the commands above require
+480 engine assertions/groups, 100 browser groups and 18 existing plus three
+manual-hold visual groups (21 total). The original 300 assertions, added groups
+and 22 legacy fixtures are separate inventories; nested checks are not extra
+top-level groups. Sources: [engine runner](tools/run-engine-tests.mjs),
+[browser/visual runner](tools/run-browser-tests.mjs),
+[shared reset contract](docs/demonstration-reset-contract.md) and
+[manual-hold contract](docs/manual-inspiratory-hold-contract.md).
+
+Carried evidence from the October 12 [exact-main CI run 38201279689](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/38201279689)
+records those inventories passing with zero failures: separate
+[Node 22](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/38201279689/job/114655033660) and
+[Node 24](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/38201279689/job/114655033594) engine jobs, and the
+[pinned-Linux browser/visual job](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/38201279689/job/114655033410).
+This is historical verification of that revision, not a fresh test run for
+these documentation corrections or clinical, pedagogical or release approval.

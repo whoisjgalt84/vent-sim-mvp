@@ -1,4 +1,54 @@
-# Current documentation successor index - 2026-10-06
+# Documentation successor index
+
+## Current baseline and release status - 2026-10-29
+
+The current documentation baseline is main
+`395c0dc6e8338036e1ae46ab38572cb23a424ef8`, tree
+`0def36cbc6fa18133bf8dd8f8718f1ed29221d42`, the merged
+[PR #53](https://github.com/whoisjgalt84/vent-sim-mvp/pull/53) successor.
+[PR #51](https://github.com/whoisjgalt84/vent-sim-mvp/pull/51) published the
+bounded control cleanup; [PR #52](https://github.com/whoisjgalt84/vent-sim-mvp/pull/52)
+published the overlay-label/help repair; PR #53 published manual inspiratory
+hold and retained measurements. Consult the
+[dated SME reconciliation](../../sme-feedback-log.md#current-implementation-reconciliation---2026-10-29)
+for individual implementation statuses and remaining boundaries.
+
+Use the [current model](../../model.md),
+[manual-hold contract](../../manual-inspiratory-hold-contract.md),
+[shared reset contract](../../demonstration-reset-contract.md),
+[adaptive/shared-effort contract](../../adaptive-mode-contract.md) and
+[README scope and verification inventory](../../../README.md#status-and-scope)
+for the current baseline. Carried
+[exact-main CI run 38201279689](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/38201279689)
+records 480 engine, 100 browser and 18 existing plus three manual-hold visual
+groups with zero failures. No new behavior verification is claimed by these
+documentation edits. The narrow PR #51/#52 historical receipt-linkage gap
+remains unresolved; current image approval and implementation-review evidence
+do not retroactively fill it.
+
+The owner confirmed the gate-to-scope mapping for a simulator-only v1.0.0
+release and accepted substantiated evidence, issue dispositions and claim
+boundaries. That acceptance does not close every historical clinical gate or
+approve shipped teaching cases. Runtime is frozen for the October 29 and
+November 2 formative usability pilots, which observe simulator operation while
+Christian supplies RT reasoning; they do not validate pedagogy. Pilot-dependent
+findings, final release approval, merge/publication authority and
+release-specific verification remain separate.
+
+Alarm clinical specification, effort and morphology limits, analytical/live
+trapping reconciliation, preset provenance and per-case questions below retain
+their stated boundaries. SME-035 remains unverified/unassessed pending
+post-pilot disposition. Later implementation publication does not convert
+historical evidence gaps into clinical/device or learning-effectiveness
+validation.
+
+## Historical snapshot - 2026-10-06
+
+All remaining sections below preserve the October 6 snapshot, including its
+then-current statuses, session/case gates and unresolved questions. They are
+historical evidence rather than a checklist of unfinished simulator-only
+release work. Later baseline links and the scope statement above govern
+current release reading; no historical receipt or limitation is erased.
 
 This index reconciles the historical [CLIN-001 packet](README.md) with inspected main `c80da4a3736d9313bcaaf8a15e4d129efc216bf3`, tree `801dc5b9424c16503d99dbf8326d36186c0ee0c1`. The 129-row [clinical truth matrix](clinical-truth-matrix.csv), its dispositions, source availability, original decisions and verification receipts remain historical evidence. This index does not retrospectively replace them or grant clinical/device validation, pilot approval or future publication authority.
 

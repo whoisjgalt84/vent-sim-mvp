@@ -28,12 +28,12 @@ npm install
 # Serve over HTTP — ES modules will NOT load over file://
 npm run serve                      # then open http://127.0.0.1:8899
 
-# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
+# Engine: current verification inventory in CLAUDE.md §2
 npm test
 
 # Browser gates install Playwright's managed Chromium if the cache is empty
-npm run test:browser                 # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; starts/reuses its own server
-npm run test:visual:docker           # 16 authoritative pinned-Linux visual groups
+npm run test:browser                  # self-contained browser gate
+npm run test:visual:docker           # pinned-Linux visual gate; inventory in CLAUDE.md §2
 
 # Optional current-host diagnostics require host-specific snapshots first
 npm run test:visual:update
@@ -219,9 +219,9 @@ added for appearance.
 The harness is required evidence for the implemented contracts.
 
 ```bash
-npm test                              # 300 original + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
-npm run test:browser                  # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; self-contained
-npm run test:visual:docker            # 16 authoritative Linux visual/determinism/cache groups
+npm test                              # engine gate; current inventory linked below
+npm run test:browser                  # self-contained browser gate
+npm run test:visual:docker            # authoritative pinned-Linux visual gate
 node scratch/shot.cjs <outDir> [...]  # diagnostic screenshots
 ```
 
@@ -239,17 +239,16 @@ conformance within their tested domains, not clinical or device validation.
 
 ### The verification layers gate CI
 
-`npm test` sets a nonzero exit on any failure and retains the original 300/0
-guard alongside the 22/24/22/41 group inventories. The 41 effort/pressure groups
-comprise 40 engine groups and one renderer group with 66 subchecks. The 22 legacy
-fixtures exercise 92,500 ticks: 8 passive fixtures compare 28,000 ticks exactly;
-14 active fixtures independently check corrected conformance over 64,500 ticks.
-No claim of 92,500 exact matches is made. The required browser inventory is
-44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; visual inventory is
-13 existing + 3 effort/pressure groups. These are gate requirements, not a fresh
-passing-run receipt. All gates propagate nonzero exits and browser gates retain
-Playwright diagnostics on CI failure. The original suite's historical mutation
-check multiplied `LungModel.timeConstant` by 1.5, giving 29 failures and exit 1.
+The [single current inventory and exact-candidate receipts](CLAUDE.md#current-verification-inventory--2026-11-03)
+list required engine, browser and pinned-Linux visual groups. Gate requirements
+are not fresh passing-run receipts. All gates propagate nonzero exits and
+browser gates retain Playwright diagnostics on CI failure.
+
+The legacy fixtures exercise 92,500 ticks: 8 passive fixtures compare 28,000
+ticks exactly; 14 active fixtures independently check corrected conformance
+over 64,500 ticks. No claim of 92,500 exact matches is made. The original
+suite's historical mutation check multiplied `LungModel.timeConstant` by 1.5,
+giving 29 failures and exit 1.
 
 For most of this project's life it did not: the file had no exit code, so the CI
 badge stayed green through any number of failures. Worth knowing when reading

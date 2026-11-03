@@ -46,7 +46,27 @@ Where the change would likely live, so we can gauge review risk early:
 
 The intake rows and dated theme summaries below preserve the reports, investigations and approvals recorded at those times. Their numerical recipes, copy strings and status descriptions are not all current contracts. Use the successor dispositions below and the [current model documentation](model.md) when preparing a new demonstration. Earlier sign-offs remain evidence for their original scope; they do not approve later wording or morphology.
 
-## Current implementation reconciliation - 2026-10-29
+## Current implementation reconciliation - 2026-11-03
+
+The PR 55 candidate is `9dafc934fbe7891feee96c0d37fedb4cd7814538`.
+See the [dated successor status](clinical/CLIN-001/successor-index.md#current-baseline-and-release-status---2026-11-03),
+[R01/R11 remediation contract](review-remediation.md),
+[R02 timing contract](effort-timing-contract.md) and
+[current verification inventory](../CLAUDE.md#current-verification-inventory--2026-11-03).
+The pilots are complete and G11 is accepted for bounded operator usability,
+not clinical or learning validation. The owner accepted G17/G18 evidence and
+release dispositions; this does not close unrelated SME findings.
+
+SME-030's zero-effort mode-exit discrepancy remains deferred (R03); historical
+failed-overlay geometry/provenance remains deferred (R10). SME-035 and pilot
+alarm observations PF07/PF08 remain unverified. Post-release UI work and parked
+pilot findings retain their approved disposition. The historical PR 51/52
+receipt-linkage gap remains unresolved. No simulator tests were run for these
+documentation corrections.
+
+<a id="current-implementation-reconciliation---2026-10-29"></a>
+
+## Historical implementation reconciliation - 2026-10-29
 
 Baseline: main `395c0dc6e8338036e1ae46ab38572cb23a424ef8`. The individual
 statuses below reflect merged implementation. Original intake evidence and

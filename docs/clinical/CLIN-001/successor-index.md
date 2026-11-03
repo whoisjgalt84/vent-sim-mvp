@@ -1,6 +1,54 @@
 # Documentation successor index
 
-## Current baseline and release status - 2026-10-29
+## Current baseline and release status - 2026-11-03
+
+[PR #55](https://github.com/whoisjgalt84/vent-sim-mvp/pull/55) merged at
+`9dafc934fbe7891feee96c0d37fedb4cd7814538`, tree
+`fb9d993002b5ee3a2ab4849c39e5c7f37ebbe517`, identical to tested PR head
+`025e4070358998b7a596961cb3b7f201c853406b`. It remediates R01/R02/R11 only;
+see [R01/R11 remediation](../../review-remediation.md) and
+[R02 effort timing](../../effort-timing-contract.md).
+The [shared current inventory](../../../CLAUDE.md#current-verification-inventory--2026-11-03)
+links the exact-main CI receipt. Historical 395c0dc6 receipts below remain
+historical, not new executions for these documentation edits.
+
+The October 29 and November 2 formative usability pilots are complete. G11 is
+owner-accepted for facilitator/operator usability, retaining blank guide-version
+fields and unobserved tasks as limitations. It establishes neither clinical
+validation nor learning effectiveness. The coding pause was lifted for
+specifically authorized work; future implementation still needs approval.
+PF01–PF03 UI work follows release; PF04–PF06 and PF09 remain parked unless
+separately elevated. PF07/PF08 alarm observations and SME-035 remain unverified;
+videos/full investigation are deferred, not newly imposed automatic release gates.
+
+On November 3 the owner accepted G17's exact-main record and G18's independent
+review chain plus release dispositions. The chain links retained targeted
+reviews and 23/23 fault-detection receipts through the verified content identity;
+it is **not** a claim that one reviewer freshly reread the entire final diff.
+R01/R02/R11 are remediated; R09 is withdrawn; R08 is an accepted characterized
+numerical limitation. R04 retains the model/clinical-equivalence claim boundary.
+R07's unsupported-release-claim allegation is withdrawn while clearer in-app
+leak/circuit disclosure remains backlog. R03/R05 are early post-release work;
+R06/R10 remain subsequent display/overlay work. R05 predictions use configured
+inputs, not measured spontaneous-breath behavior. Deferred implementation is
+not a claim that those findings were fixed or freshly reproduced on main.
+
+The owner authorized G20's five documentation corrections separately. Their
+implementation does not grant merge/release authority or close other gates.
+Any later commit needs identity/affected-evidence reconciliation with G17.
+G04/G15/G22 candidate reconciliation and G19/G21 evidence/materials status still
+need checking; G23 final go/no-go, G24 publication authorization and G25
+post-publication verification remain separate. G05 stays deferred under the
+simulator-only scope. The accepted image provenance and unresolved PR 51/52
+historical receipt-linkage gap are retained, not retrospectively repaired.
+
+[Pages deployed on PR 55 merge](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/41697145180).
+This does not verify served bytes, caches or recovery and is not a formal
+release/tag approval. See [publication consequences](../../../CLAUDE.md#publication-consequence).
+
+<a id="current-baseline-and-release-status---2026-10-29"></a>
+
+## Historical baseline and release status - 2026-10-29
 
 The current documentation baseline is main
 `395c0dc6e8338036e1ae46ab38572cb23a424ef8`, tree

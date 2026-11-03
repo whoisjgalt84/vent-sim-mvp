@@ -21,12 +21,13 @@ npm run serve      # then open http://127.0.0.1:8899
 Any static server works — VS Code's Live Server extension is fine too.
 
 ```bash
-npm test              # 300 original + 22 controller + 24 integration + 22 legacy + 41 effort/pressure + 28 reset + 43 manual-hold
-npm run test:browser  # 44 original + 12 adaptive + 4 effort/pressure + 5 slider + 8 reset + 7 cleanup + 20 manual-hold
-npm run test:visual:docker  # 18 existing + 3 manual-hold pinned-Linux visual groups
+npm test                  # engine gate; current inventory linked below
+npm run test:browser       # browser gate
+npm run test:visual:docker # pinned-Linux visual gate
 ```
 
-Read the printed `Passed: N / Failed: M` tally. See
+Read the printed `Passed: N / Failed: M` tally and the
+[current verification inventory](CLAUDE.md#current-verification-inventory--2026-11-03). See
 [`README-dev.md`](./README-dev.md) for the browser and screenshot harnesses,
 including the host-specific snapshots required for Windows visual diagnostics.
 
@@ -116,11 +117,21 @@ use it and which learning objectives, if any, to pursue. It does not prescribe
 pedagogy or claim validated learning outcomes or an approved shipped bank of
 teaching cases. Case documents remain drafts with separate case-specific review.
 
-The runtime is frozen for the October 29 and November 2 formative usability
-pilots. These sessions observe educators/operations staff operating the
-simulator while Christian supplies RT reasoning; they do not validate pedagogy.
-The package version is 1.0.0; final release approval and publication remain
-separate decisions.
+As of 2026-11-03, the October 29 and November 2 formative usability pilots
+are complete. G11 is owner-accepted for bounded facilitator/operator usability,
+with blank guide-version fields and unobserved tasks retained as evidence
+limitations. This establishes neither clinical validation nor learning
+effectiveness. The pilot coding pause was lifted for specifically authorized
+work; it is not blanket permission for new development.
+
+[PR #55](https://github.com/whoisjgalt84/vent-sim-mvp/pull/55) merged the
+R01/R02/R11 fixes at `9dafc934fbe7891feee96c0d37fedb4cd7814538`. The owner accepted
+its exact-main G17 verification and G18 review chain with the recorded caveat
+and finding dispositions. See the [dated successor status](docs/clinical/CLIN-001/successor-index.md).
+The package version is 1.0.0; final go/no-go and formal release/tag authority
+remain separate. Pages already deployed on merge; deployment alone does not
+close post-publication verification. UI work follows release; unverified pilot
+alarm observations and SME-035 remain unverified.
 
 **It is not a medical device**, is not validated for clinical decision-making,
 and nothing in it should be used to guide the care of a real patient.
@@ -153,6 +164,11 @@ Vocabulary and physiology follow:
   subjects during mechanical ventilation. *Respir Care* 2018;63(2):158–168.
 
 ## Verification inventory and carried evidence
+
+Use the [single current inventory and exact-main receipt](CLAUDE.md#current-verification-inventory--2026-11-03)
+for the PR 55 candidate. The following is retained historical evidence.
+
+### Historical receipt — 2026-10-12
 
 At main `395c0dc6e8338036e1ae46ab38572cb23a424ef8`, the commands above require
 480 engine assertions/groups, 100 browser groups and 18 existing plus three

@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/style.css?v=28">
 </head>
 <body>
 
@@ -466,6 +466,7 @@
     <!-- CENTER — Waveform Displays                                       -->
     <!-- ================================================================ -->
     <main class="waveforms">
+          <div id="effort-timing-status" class="effort-timing-status" role="status" hidden></div>
         <section class="adaptive-panel" id="adaptive-panel" aria-label="PC-CMVa adaptive targeting" hidden>
             <div class="adaptive-panel__heading">
                 <span>Adaptive targeting</span>
@@ -726,8 +727,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=27"></script>
-<script type="module" src="js/main.js?v=27"></script>
+<script type="module" src="alarms.js?v=28"></script>
+<script type="module" src="js/main.js?v=28"></script>
 
 </body>
 </html>

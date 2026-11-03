@@ -43,7 +43,7 @@
  */
 
 
-import { AdaptiveController } from './adaptive-controller.js?v=27';
+import { AdaptiveController } from './adaptive-controller.js?v=28';
 
 // =============================================================================
 // RING BUFFER
@@ -146,6 +146,19 @@ function validatedSupplyResistance(value) {
     return value;
 }
 
+export function validateEffortTiming({ patientRR, neuralTi }) {
+    if (!Number.isFinite(patientRR) || patientRR < 6 || patientRR > 35) {
+        throw new RangeError('Patient RR must be 6–35/min.');
+    }
+    if (!Number.isFinite(neuralTi) || neuralTi < 0.4 || neuralTi > 2) {
+        throw new RangeError('Neural Ti must be 0.4–2.0 s.');
+    }
+    if (neuralTi > 60 / patientRR) {
+        throw new RangeError(`Neural Ti ${neuralTi} s exceeds the patient cycle (${(60 / patientRR).toFixed(3)} s at ${patientRR}/min).`);
+    }
+    return Object.freeze({ patientRR, neuralTi });
+}
+
 
 // =============================================================================
 // SIMULATION ENGINE
@@ -209,10 +222,15 @@ export class SimulationEngine {
         // --- Patient Neural Oscillator ---
         //   Independent breathing drive, separate from ventilator timing.
         //   patientRR = 0 means passive (no spontaneous effort).
-        this.patientRR = 0;               // breaths/min (0 = passive)
+        this._effortTiming = validateEffortTiming({ patientRR: 16, neuralTi: this.vent.neuralTi });
+        this._pendingEffortTiming = null;
+        this._effortEnabled = false;
+        this.effortInterruptions = [];
+        Object.defineProperty(this.vent, '_effortTimingOwner', { value: this, configurable: true });
         this.neuralTimer = 0;             // seconds within current neural cycle
         this.neuralInspActive = false;    // currently in neural inspiration?
         this.neuralCycleResolved = false; // one trigger outcome per neural inspiration (delivered OR failed)
+        this._neuralEffortSeen = false;
         this.neuralEligibleSeen = false;  // effort reached the threshold gate this neural inspiration
         this.scheduledBreathTrigger = null;
         this._pendingTriggerDetection = null;
@@ -222,7 +240,8 @@ export class SimulationEngine {
         // --- Per-Breath Measurements ---
         //   Updated each breath for the parameter display panel.
         this.measuredPIP       = 0;       // peak inspiratory pressure (running, this breath)
-        this.lastBreathPIP     = 0;       // PIP latched from the last COMPLETED breath (SME-014)
+        this._breathPIP        = null;    // signed INSPIRATION maximum; null means no finite sample
+        this.lastBreathPIP     = null;       // PIP latched from the last COMPLETED breath (SME-014)
         this.measuredPplat     = null;    // plateau pressure (hold only)
         this.measuredVT_mL     = 0;       // delivered tidal volume
         this.peakInspFlow_Lpm  = 0;       // peak inspiratory flow
@@ -266,6 +285,7 @@ export class SimulationEngine {
 
         // --- Transport Controls ---
         this.running = true;
+        this._transportCredit_s = 0;       // earned fractional simulation time
         this.speed   = 1;                  // 0.5×, 1×, 2×, 4×
 
         // Adaptive output never writes the operator's manual Pinsp/PS settings.
@@ -391,6 +411,81 @@ export class SimulationEngine {
     // NEURAL OSCILLATOR
     // =========================================================================
 
+    get patientRR() { return this._effortEnabled ? this._effortTiming.patientRR : 0; }
+    set patientRR(value) {
+        // Zero is the established explicit Off seam, not a valid active RR.
+        if (value === 0) this.setEffortEnabled(false);
+        else { this.requestEffortTiming({ patientRR: value }); this.setEffortEnabled(true); }
+    }
+
+    get effortTiming() {
+        return freezeRecord({ enabled: this._effortEnabled, applied: this._effortTiming,
+            requested: this._pendingEffortTiming ?? this._effortTiming,
+            pending: this._pendingEffortTiming,
+            lastInterruption: this.effortInterruptions.at(-1) ?? null });
+    }
+
+    requestEffortTiming(request) {
+        if (!request || typeof request !== 'object' || Array.isArray(request) ||
+            !Object.keys(request).length || Object.keys(request).some(k => !['patientRR', 'neuralTi'].includes(k))) {
+            throw new TypeError('Request patient RR and/or neural Ti.');
+        }
+        const next = validateEffortTiming({ ...(this._pendingEffortTiming ?? this._effortTiming), ...request });
+        // Validation precedes mutation; an invalid proposal retains the entire
+        // last valid selection, including a previously accepted queued pair.
+        if (this.neuralCycleId === 0 && this.neuralTimer === 0 && !this.neuralInspActive) {
+            this._applyEffortTiming(next);
+        } else {
+            this._pendingEffortTiming = next.patientRR === this._effortTiming.patientRR && next.neuralTi === this._effortTiming.neuralTi
+                ? null : next;
+        }
+        this.notifyMeasurementSettingsChanged();
+        return this.effortTiming;
+    }
+
+    _applyEffortTiming(pair) {
+        this._effortTiming = pair;
+        this.vent._setAppliedNeuralTi(pair.neuralTi);
+        this._pendingEffortTiming = null;
+    }
+
+    _resolveEffortTiming() {
+        if (this._pendingEffortTiming) this._applyEffortTiming(this._pendingEffortTiming);
+    }
+
+    /** Atomic setup/import seam: validated selections start an explicit new run. */
+    configureEffortTiming(pair, enabled = true) {
+        const next = validateEffortTiming(pair);
+        this._pendingEffortTiming = next;
+        this._effortEnabled = Boolean(enabled);
+        this.reset();
+    }
+
+    setEffortEnabled(enabled) {
+        enabled = Boolean(enabled);
+        if (enabled === this._effortEnabled) return;
+        if (this._effortEnabled && !enabled && this.neuralInspActive && this._neuralEffortSeen) {
+            // Mechanical interruption is separate from immutable patient/failed
+            // outcomes. Only an unresolved cycle gains a terminal disposition.
+            this.effortInterruptions.push(freezeRecord({ disposition: 'interrupted',
+                reason: 'effort-off', terminal: !this.neuralCycleResolved,
+                simulationGeneration: this.simulationGeneration, modeGeneration: this.modeGeneration,
+                neuralCycleId: this.neuralCycleId, time_s: this.globalTime,
+                neuralTime_s: this.neuralTimer, timing: this._effortTiming,
+                pmus_cmH2O: this.currentPmus }));
+            this.effortInterruptions = this.effortInterruptions.filter(record =>
+                record.time_s >= this.globalTime - this.triggerEventRetentionSeconds);
+            this.neuralCycleResolved = true;
+            // An already resolved detector decision keeps its queued delivery.
+            // Effort Off is not an explicit cancellation of a ventilator breath.
+        }
+        this._effortEnabled = enabled;
+        // Timer/activity and the resolved guard survive Off/On. Effort may resume
+        // mechanically at that phase, but cannot gain a second cycle outcome.
+        this.notifyMeasurementSettingsChanged();
+    }
+
+
     /**
      * Current Pmus value from the patient's neural drive.
      *
@@ -423,9 +518,7 @@ export class SimulationEngine {
      */
     _advanceNeural() {
         if (this.patientRR <= 0) {
-            // No neural drive → no per-cycle trigger state to carry.
-            this.neuralCycleResolved = false;
-            this.neuralEligibleSeen = false;
+            // Off freezes the established clock/activity and terminal guard.
             return;
         }
 
@@ -444,7 +537,9 @@ export class SimulationEngine {
         // neural inspiration begins undecided (no outcome, no eligibility yet).
         if (this.neuralTimer >= neuralCycleTime) {
             this.neuralTimer -= neuralCycleTime;  // carry remainder for timing accuracy
+            this._resolveEffortTiming(); // old effort finalized above; new pair owns the new cycle
             this.neuralCycleId++;
+            this._neuralEffortSeen = false;
             this.neuralInspActive = true;
             this.neuralCycleResolved = false;
             this.neuralEligibleSeen = false;
@@ -465,6 +560,7 @@ export class SimulationEngine {
         const effortPresent =
             this.patientRR > 0 && this.vent.pMusMax > 0 && this.neuralInspActive;
         if (!effortPresent) return;
+        this._neuralEffortSeen = true;
 
         // One outcome per neural inspiration.
         if (this.neuralCycleResolved) return;
@@ -1023,7 +1119,7 @@ export class SimulationEngine {
             drivingPressure: drivingResult,
             compliance: complianceResult,
             resistance: resistanceResult,
-            sources: freezeRecord({ measuredVT_mL, measuredPIP_cmH2O: this.measuredPIP,
+            sources: freezeRecord({ measuredVT_mL, measuredPIP_cmH2O: this._breathPIP,
                 endInspiratoryFlow_Lps: breath.endInspiratoryFlow_Lps,
                 endInspiratoryFlowSampleIndex: breath.endInspiratoryFlowSampleIndex,
                 identity: freezeRecord({ ...breath.sourceIdentity }) }),
@@ -1211,8 +1307,8 @@ export class SimulationEngine {
             this.breathTimestamps.shift();
         }
         this._updateMeasuredRR();
-        // Latch the peak THIS breath reached, at the moment inspiration ends —
-        // NOT at the start of the next breath. measuredPIP is written only in
+        // Latch the signed peak THIS breath reached at expiration start —
+        // NOT at the start of the next breath. _breathPIP is written only in
         // _computeInspiration, so it is already final here and cannot change
         // before the next _startNewBreath. Latching here is what makes the
         // monitor show the breath that just finished for the whole expiratory
@@ -1222,9 +1318,9 @@ export class SimulationEngine {
         // Every inspiration exit funnels through here: mandatory, post-HOLD,
         // and the PC-CSV flow-cycled path. measuredPIP itself is untouched —
         // the alarm must still see pressure the instant it rises (SME-014).
-        if (this.measuredPIP > 0) {
-            this.lastBreathPIP = this.measuredPIP;
-        }
+        // The monitor/canonical record use the same signed finite-sample peak.
+        // Keep measuredPIP and breathSummary.pip on their existing live alarm path.
+        this.lastBreathPIP = this._breathPIP;
 
         if (this.currentBreath) {
             const cycleAgent = terminationReason === 'flowCycle'
@@ -1253,7 +1349,7 @@ export class SimulationEngine {
                 inspiratoryTime_s: this.phaseTime,
                 boundarySampleIndex: this._sampleCount,
                 measuredVT_mL: this.measuredVT_mL,
-                measuredPIP_cmH2O: this.measuredPIP,
+                measuredPIP_cmH2O: this._breathPIP,
                 flowAtTermination_Lpm: this.currentFlow * 60,
                 flowCycleThreshold_Lpm,
                 settingsFingerprint: this.currentBreath.settingsFingerprint,
@@ -1365,6 +1461,7 @@ export class SimulationEngine {
         //   (lastBreathPIP is latched in _startExpiration, where the peak is
         //   final — deliberately NOT here. One latch site only.)
         this.measuredPIP       = 0;
+        this._breathPIP        = null;
         this.measuredPplat     = null;
         this.measuredVT_mL     = 0;
         this.peakInspFlow_Lpm  = 0;
@@ -1528,7 +1625,13 @@ export class SimulationEngine {
             this.currentPressure = flow >= 0 ? peep + pinsp : peep + this.volumeAboveEq / C - pmus;
         }
 
-        // Track peak values for this breath
+        // Preserve the existing INSPIRATION-only sampling extent, including
+        // the final physics sample before transition; HOLD samples stay excluded.
+        if (Number.isFinite(this.currentPressure)) {
+            this._breathPIP = this._breathPIP === null ? this.currentPressure
+                : Math.max(this._breathPIP, this.currentPressure);
+        }
+        // Track the legacy live peak separately for the alarm path.
         if (this.currentPressure > this.measuredPIP) {
             this.measuredPIP = this.currentPressure;
         }
@@ -1663,8 +1766,13 @@ export class SimulationEngine {
      */
     advance(realDt) {
         if (!this.running) return;
-        const simTime = realDt * this.speed;
-        const steps = Math.min(Math.round(simTime / this.dt), 300);
+        if (!Number.isFinite(realDt) || realDt < 0) return;
+        const simTime = this._transportCredit_s + realDt * this.speed;
+        // Tolerance only absorbs floating-point error at an exact tick boundary.
+        const wholeTicks = Math.floor(simTime / this.dt + 1e-10);
+        const steps = Math.min(wholeTicks, 300);
+        // Discard whole excess ticks at the frame cap; never accumulate catch-up debt.
+        this._transportCredit_s = Math.max(0, simTime - wholeTicks * this.dt);
         for (let i = 0; i < steps; i++) {
             this.tick();
         }
@@ -1685,6 +1793,7 @@ export class SimulationEngine {
 
     /** Reset simulation to initial state. */
     reset({ preserveManualHistory = false } = {}) {
+        this._resolveEffortTiming();
         if (preserveManualHistory) this.cancelManualHold('settings-changed');
         const history = preserveManualHistory ? this.lastValidManualHold : null;
         const attempt = preserveManualHistory ? this.lastManualHoldAttempt : null;
@@ -1701,6 +1810,7 @@ export class SimulationEngine {
         this.inputRevision++;
         this.physicsSample = null;
         this.globalTime        = 0;
+        this._transportCredit_s = 0;
         this._resetDeliveredVentilation();
         this.phase             = Phase.EXPIRATION;
         this.currentPhase      = 'expiration';
@@ -1719,6 +1829,8 @@ export class SimulationEngine {
         this._pendingTriggerDetection = null;
         this.lastCanceledTrigger = null;
         this.neuralCycleId = 0;
+        this.effortInterruptions = [];
+        this._neuralEffortSeen = false;
         this.breathCount       = 0;
         this.machineBreathCount = 0;
         this.patientBreathCount = 0;
@@ -1727,7 +1839,8 @@ export class SimulationEngine {
         this.currentBreath     = null;
         this.lastCompletedBreath = null;
         this.measuredPIP       = 0;
-        this.lastBreathPIP     = 0;
+        this._breathPIP        = null;    // signed INSPIRATION maximum; null means no finite sample
+        this.lastBreathPIP     = null;
         this.measuredPplat     = null;
         this.measuredVT_mL     = 0;
         this.peakInspFlow_Lpm  = 0;
@@ -1852,7 +1965,7 @@ export class SimulationEngine {
             pip:          Math.round(this.measuredPIP * 10) / 10,
             // Latched peak of the last completed breath — what the monitor shows
             // (SME-014). `pip` above stays live for alarm evaluation.
-            pipLatched:   Math.round(this.lastBreathPIP * 10) / 10,
+            pipLatched:   this.lastBreathPIP === null ? null : Math.round(this.lastBreathPIP * 10) / 10,
             pplat:        this.holdMechanics.pplat.value !== null
                               ? Math.round(this.holdMechanics.pplat.value * 10) / 10 : null,
             vt_mL:        Math.round(this.measuredVT_mL),

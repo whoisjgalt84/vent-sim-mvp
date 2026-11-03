@@ -732,7 +732,7 @@ const passiveCsv = new SimulationEngine(new Ventilator(
 // VSM-CLIN-004 strengthens the existing composite without removing its
 // no-breath/classification predicates or changing the commissioned tally.
 const passiveCsvInitialized = passiveCsv.lastCompletedBreath === null
-    && passiveCsv.breathSummary.pipLatched === 0
+    && passiveCsv.breathSummary.pipLatched === null
     && passiveCsv.breathSummary.pplat === null
     && passiveCsv.volumeAtBreathStart === 0;
 runSimForSeconds(passiveCsv, 15);
@@ -741,7 +741,7 @@ assertTrue('VSM-CLIN-003 passive PC-CSV completes no breath and measured RR stay
     && passiveCsv.measuredRR === 0
     && passiveCsv.lastCompletedBreath === null
     && passiveCsvInitialized
-    && passiveCsv.breathSummary.pipLatched === 0
+    && passiveCsv.breathSummary.pipLatched === null
     && passiveCsv.breathSummary.pplat === null
     && passiveCsv.volumeAtBreathStart === 0
     && passiveCsv.vent.summary().pressures.map_cmH2O > 0);
@@ -814,7 +814,7 @@ assertTrue('VSM-CLIN-003 consecutive breaths replace classification and reset cl
     && postMaxTiRecord.breathType === 'spontaneous'
     && flowCycleTrace.sim.currentBreath === null
     && flowCycleTrace.sim.lastCompletedBreath === null
-    && flowCycleTrace.sim.breathSummary.pipLatched === 0
+    && flowCycleTrace.sim.breathSummary.pipLatched === null
     && flowCycleTrace.sim.breathSummary.pplat === null
     && flowCycleTrace.sim.measuredRR === 0
     && flowCycleTrace.sim.volumeAtBreathStart === 0);
@@ -822,7 +822,7 @@ assertTrue('VSM-CLIN-003 consecutive breaths replace classification and reset cl
 maxTiTrace.vent.mode = MODE_PC_CMV;
 maxTiTrace.sim.reset();
 const modeResetUnavailable = maxTiTrace.sim.lastCompletedBreath === null
-    && maxTiTrace.sim.breathSummary.pipLatched === 0
+    && maxTiTrace.sim.breathSummary.pipLatched === null
     && maxTiTrace.sim.breathSummary.pplat === null
     && maxTiTrace.sim.measuredRR === 0
     && maxTiTrace.sim.volumeAtBreathStart === 0;
@@ -3014,10 +3014,12 @@ section('NT3 [FIXED to §2] — Sub-threshold effort fails visibly (mirror 28E/2
 
 section('NT4 [FIXED to §2] — Full accounting identity + measured-RR honesty (high rate)');
 {
-    // VC I:E 1:2 at patRR 42 (well above cliff). Every neural onset must resolve
+    // R-02 limits active RR to the native maximum, 35. The old 42/min
+    // diagnostic is now a rejection fixture in effort-timing.test.mjs.
+    // VC I:E 1:2 at patRR 35. Every neural onset must resolve
     // to a delivered patient breath, a failed event, OR an effort still in its
     // neural inspiration at the run boundary — no silent loss.
-    const sim = ntBuildSim({}, 42);
+    const sim = ntBuildSim({}, 35);
     const ins = ntInstrument(sim, 60);
     const failedAll = ntFailedCount(sim);
     const inProgress = (sim.neuralInspActive && !sim.neuralCycleResolved) ? 1 : 0;
@@ -3113,7 +3115,7 @@ section('SME-014 — latched per-breath PIP (display) vs live PIP (alarms)');
     });
     const simP = new SimulationEngine(ventP, { sampleRate: 100, displaySeconds: 10 });
 
-    assert('pipLatched starts at 0 (nothing completed yet)', simP.breathSummary.pipLatched, 0, 0);
+    assertTrue('pipLatched starts unavailable (nothing completed yet)', simP.breathSummary.pipLatched === null);
 
     // Settle for several breaths.
     const ticksPerBreath = Math.round(ventP.totalCycleTime * 100);
@@ -3172,7 +3174,7 @@ section('SME-014 — latched per-breath PIP (display) vs live PIP (alarms)');
 
     // reset() must clear the latch, or a mode switch would show a stale peak.
     simP.reset();
-    assert('reset() clears pipLatched', simP.breathSummary.pipLatched, 0, 0);
+    assertTrue('reset() clears pipLatched to unavailable', simP.breathSummary.pipLatched === null);
 }
 
 section('Ineffective-effort counter — window semantics');

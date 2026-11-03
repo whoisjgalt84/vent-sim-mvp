@@ -3,6 +3,8 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const gates = [
+    ['tests/effort-timing.test.mjs', output => /^EFFORT_TIMING_TALLY \{"groups":17,"passed":17,"failed":0\}$/m.test(output), 'R-02 effort timing17/0'],
+    ['tests/review-remediation.test.mjs', output => /^REVIEW_REMEDIATION_TALLY \{"groups":15,"passed":15,"failed":0\}$/m.test(output), 'R-01/R-11 review remediation15/0'],
     ['tests/manual-hold.test.mjs', output => /^MANUAL_HOLD_ENGINE_TALLY \{"groups":43,"passed":43,"failed":0\}$/m.test(output), 'manual hold43/0'],
     ['tests/demonstration-reset.test.mjs', output => /^DEMONSTRATION_RESET_ENGINE_TALLY \{"groups":28,"passed":28,"failed":0\}$/m.test(output), 'demonstration reset28/0'],
     ['tests/test-engine.js', output => /Passed:\s*300\b/.test(output) && /Failed:\s*0\b/.test(output), 'legacy engine 300/0'],

@@ -140,7 +140,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=27`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=28`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -256,6 +256,20 @@ New invariants belong in this list, with the failure they prevent.
 ---
 
 ## 5. Traps that have already cost time
+
+R-01/R-11 remediation adds 15 engine groups and four browser groups to the
+existing inventories. Signed finalized PIP is tracked separately from the
+unchanged running alarm peak: canonical/latched PIP and nested hold-source PIP
+use the finite INSPIRATION-only maximum, or null if absent. Zero/negative peaks
+are measurements. Fractional transport credit survives pause/speed changes,
+clears on reset, and never stores whole-tick cap debt. Browser transport time
+must not move backward when a rAF timestamp predates a control settlement.
+R-02 adds 17 engine groups and three more browser groups. Valid RR/Ti selections
+queue until the next full patient-cycle boundary; keep the starting pair and
+finalize an ending effort first, including equality. Off freezes the established
+clock/activity and preserves terminal guards, with separate interrupted records
+rather than failed triggers. Reset/mode change resolve accepted queued selections
+before starting a fresh run. See docs/effort-timing-contract.md.
 
 **The left rail.** Effort controls live inside a **collapsed "Patient" group**,
 and the entire left rail is `display:none` in Teaching Mode. Any script that

@@ -45,7 +45,7 @@
  * ============================================================================
  */
 
-import { LungModel } from './lung-model.js?v=27';
+import { LungModel } from './lung-model.js?v=28';
 
 export const MODE_VC_CMV = 'vc-cmv';
 export const MODE_PC_CMV = 'pc-cmv';
@@ -190,7 +190,16 @@ export class Ventilator {
         //   — Mireles-Cabodevila et al. (2022), Equation 1
         //
         this.pMusMax  = settings.pMusMax  ?? 0;    // cmH2O (0 = passive)
-        this.neuralTi = settings.neuralTi ?? 1.0;  // seconds
+        // The engine owns paired RR/Ti validation and boundary application once
+        // attached. Keep this public setting enumerable for existing snapshots.
+        let neuralTi = settings.neuralTi ?? 1.0;
+        Object.defineProperty(this, 'neuralTi', { enumerable: true,
+            get: () => neuralTi,
+            set: value => {
+                if (this._effortTimingOwner) this._effortTimingOwner.requestEffortTiming({ neuralTi: value });
+                else neuralTi = value;
+            } });
+        Object.defineProperty(this, '_setAppliedNeuralTi', { value: value => { neuralTi = value; } });
     }
 
 

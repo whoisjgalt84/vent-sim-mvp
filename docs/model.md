@@ -289,6 +289,14 @@ results without erasing finalized VT or PIP. The boundary sample is written
 later in the same 100 Hz tick; no waveform or integration timing is changed by
 recording it.
 
+R-11 finalized PIP is the signed maximum of finite INSPIRATION-physics Paw
+samples belonging to that breath, including its final inspiration transition
+sample and excluding HOLD/EXPIRATION physics. It is latched at expiration start,
+after any hold, and is null/unavailable if no included finite sample exists.
+Zero and negative peaks are valid measurements. The nested hold-source PIP uses
+that same measurement; hold estimators retain their existing rules. The separate
+legacy running peak remains the live alarm input and is not the display latch.
+
 **Recurring pause ends** at its effective setting. Manual ownership ends on
 release, cancellation or the continuous timing cap; see the SME-026/027 contract.
 HOLD remains unavailable in PC-CSV and PC-CMVa.
@@ -296,6 +304,13 @@ HOLD remains unavailable in PC-CSV and PC-CMVa.
 **Expiration ends** on a successful patient trigger. In VC-CMV, PC-CMV and PC-CMVa, the mandatory-breath timer can also start the next breath when Ttot = 60/RR is reached; a scheduled patient trigger wins a tie. PC-CSV does not use that timer and provides no apnea backup breath.
 
 Most legacy settings are re-read every tick and may take effect mid-breath. PC-CMVa is the explicit exception for pressure command and applied PEEP, which latch at breath start; target/PEEP requests queue and follow the atomic reset/exit rules in [adaptive-mode-contract.md](adaptive-mode-contract.md). Immediate mechanics/effort edits invalidate mixed adaptive feedback.
+
+R-02 is the further owner-approved timing exception: valid patient RR/neural Ti
+edits queue until the next full patient-cycle boundary. The current cycle retains
+its starting pair; end an effort before starting the next, including equality.
+The active pair is bounded to RR6–35/min and Ti0.4–2.0 s with Ti<=60/RR.
+Applied and queued values are displayed separately. Relevant input events still
+immediately invalidate/release manual holds. See the [effort timing contract](effort-timing-contract.md).
 
 ---
 
@@ -331,6 +346,12 @@ Evaluated every tick during a neural inspiration. **At most one outcome is
 recorded per neural inspiration** — a delivered patient breath, a failed-trigger
 event, or (when the effort is absent, or lives entirely inside the lockout)
 nothing at all.
+
+Under R-02, effort Off can instead end an unfinished effort with a separate
+administrative interrupted disposition. It adds no failed-trigger count or
+delivered marker. Already resolved outcomes and detection provenance remain
+immutable; the Off/On clock and terminal guard are retained. See the successor
+[effort timing and interruption contract](effort-timing-contract.md).
 
 ```
 gate 0   effort is real:  patientRR > 0 AND Pmus_max > 0 AND neural inspiration active
@@ -485,7 +506,11 @@ See [the owner-approved provenance record](clinical/CLIN-009/preset-provenance.m
   behavior.
 - **Frame budget:** at most 300 ticks (3 s of sim time) per animation frame. At
   4× speed with frame gaps beyond 0.75 s, the simulation silently falls behind
-  wall-clock.
+  wall-clock. R-01 carries fractional simulation-second credit across accepted
+  intervals, pause and speed changes without rescaling it. Whole ticks beyond
+  the cap are discarded; only sub-tick credit remains, with no catch-up debt.
+  Pause accrues no time; resume rebases the browser clock. Reset/mode reset clears
+  credit and rebases the caller clock. Physics remains fixed at 100 Hz.
 - **Volume floor:** expiratory volume is clamped at zero, so the lung never
   integrates below equilibrium.
 

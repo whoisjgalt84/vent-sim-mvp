@@ -547,6 +547,18 @@ html, body {
 
 /* --- Waveform Display (Center) --- */
 
+.effort-timing-status {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    border: 1px solid var(--border-panel);
+    border-radius: var(--radius);
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    font-size: 11px;
+    line-height: 1.4;
+}
+.effort-timing-status[hidden] { display: none; }
+
 .waveforms {
     display: flex;
     flex-direction: column;

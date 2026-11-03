@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=27';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=27';
-import { SimulationEngine }  from './simulation.js?v=27';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=27';
-import AlarmEngine from '../alarms.js?v=27';
+import { LungModel }        from './lung-model.js?v=28';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=28';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=28';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=28';
+import AlarmEngine from '../alarms.js?v=28';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=27';
+} from '../alarm-audio.js?v=28';
 
 
 // =============================================================================
@@ -101,6 +101,7 @@ let displayedDelivery = null;
 let evaluatedDelivery = null;
 let lastFrameTs = null;
 let animFrame   = null;
+let effortTimingError = null;
 const alarmLimits = {
     ...AlarmEngine.DEFAULT_ALARM_LIMITS,
 };
@@ -240,11 +241,22 @@ function init() {
 // ANIMATION LOOP
 // =============================================================================
 
-function animate(timestamp) {
+// Settle each elapsed interval before changing its speed or running state.
+function advanceTransportTo(timestamp) {
+    // The deterministic test surface can stop animation while retaining the
+    // engine's running state for direct ticks. Its frozen interval earns no
+    // wall-time credit; __vsim.resume() rebases before restarting animation.
+    if (animFrame === null) return;
+    // A rAF timestamp can precede a control event settled in the same frame.
+    // Never move the transport clock backward or count that interval twice.
+    if (timestamp < lastFrameTs) return;
     const realDt = (timestamp - lastFrameTs) / 1000;
     lastFrameTs = timestamp;
-
     sim.advance(realDt);
+}
+
+function animate(timestamp) {
+    advanceTransportTo(timestamp);
     renderFrame();
 
     animFrame = requestAnimationFrame(animate);
@@ -258,6 +270,7 @@ function renderFrame() {
     if (loopsVisible) renderLoops();
     updateParams();
     updateBreathInfo();
+    updateEffortTimingUI();
 }
 
 /**
@@ -310,6 +323,8 @@ function ensureAdaptiveModeOption() {
 }
 
 function syncOperatorControls() {
+    effortTimingError = null;
+    updateEffortTimingUI();
     document.getElementById('hold-duration').value = vent.holdTime * 10;
     setText('hold-duration-display', vent.holdTime.toFixed(1) + ' s');
     const adaptive = sim.adaptiveState;
@@ -477,6 +492,7 @@ function bindModeToggle() {
 
         const mode = btn.dataset.mode;
         sim.setMode(mode);
+        lastFrameTs = performance.now();
 
         group.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('mode-btn--active'));
         btn.classList.add('mode-btn--active');
@@ -604,6 +620,7 @@ function bindFlowPatternToggle() {
         updateFlowLabel();
         updateHoldResultsVisibility();
         sim.reset({ preserveManualHistory: true });
+        lastFrameTs = performance.now();
         updateMonitorValues(vent.summary());
         updateHoldResults();
     });
@@ -691,15 +708,46 @@ function formatPmusValue(value) {
     return `${Number(value).toFixed(2).replace(/\.?0+$/, '')} cmH₂O`;
 }
 
+function updateEffortTimingUI() {
+    const timing = sim.effortTiming;
+    const selected = timing.requested;
+    document.getElementById('patient-rr').value = selected.patientRR;
+    document.getElementById('neural-ti').value = selected.neuralTi * 10;
+    setText('patient-rr-display', `${selected.patientRR} /min`);
+    setText('neural-ti-display', `${selected.neuralTi.toFixed(1)} s`);
+    const notice = document.getElementById('effort-timing-status');
+    const describe = pair => `RR ${pair.patientRR}/min, neural Ti ${Number(pair.neuralTi.toFixed(3))} s`;
+    let text = effortTimingError ? `Timing change rejected: ${effortTimingError} ` : '';
+    if (effortTimingError || timing.pending) {
+        text += `Applied: ${describe(timing.applied)}${timing.enabled ? '.' : ' (effort off).'} `;
+        if (timing.pending) text += `Waiting: ${describe(timing.pending)}; takes effect at the next patient-cycle boundary${timing.enabled ? '.' : ' after effort is switched on.'}`;
+    } else if (!timing.enabled && timing.lastInterruption) {
+        text = timing.lastInterruption.terminal ? 'Effort interrupted: no failed trigger was added.'
+            : 'Effort interrupted: its earlier outcome is retained.';
+    }
+    notice.hidden = !text;
+    notice.textContent = text;
+}
+
+function requestEffortTimingFromUI(change) {
+    try { sim.requestEffortTiming(change); effortTimingError = null; }
+    catch (error) {
+        if (!(error instanceof RangeError || error instanceof TypeError)) throw error;
+        effortTimingError = error.message;
+        // A relevant input event still invalidates/releases a manual hold,
+        // including rejection or edit/revert; no unsupported pressure is applied.
+        sim.notifyMeasurementSettingsChanged();
+    }
+    updateEffortTimingUI();
+}
+
 function bindPmusToggle() {
     const btn = document.getElementById('pmus-toggle');
     btn.addEventListener('click', () => {
         const wasActive = sim.patientRR > 0;
-        btn.setAttribute('aria-pressed', String(!wasActive));
-
         if (wasActive) {
+            sim.setEffortEnabled(false);
             vent.pMusMax = 0;
-            sim.patientRR = 0;
             btn.classList.remove('hold-btn--active');
             document.getElementById('pmus-icon').textContent = '♿';
             document.getElementById('pmus-btn-label').textContent = 'Passive';
@@ -709,9 +757,15 @@ function bindPmusToggle() {
             const pmax = parseFloat(document.getElementById('pmus-max').value);
             const nti  = parseInt(document.getElementById('neural-ti').value) / 10;
             const prr  = parseInt(document.getElementById('patient-rr').value);
-            vent.pMusMax  = pmax;
-            vent.neuralTi = nti;
-            sim.patientRR = prr;
+            try { sim.requestEffortTiming({ patientRR: prr, neuralTi: nti }); }
+            catch (error) {
+                effortTimingError = error.message;
+                sim.notifyMeasurementSettingsChanged();
+                updateEffortTimingUI(); return;
+            }
+            effortTimingError = null;
+            vent.pMusMax = pmax;
+            sim.setEffortEnabled(true);
 
             btn.classList.add('hold-btn--active');
             document.getElementById('pmus-icon').textContent = '💪';
@@ -721,10 +775,9 @@ function bindPmusToggle() {
             document.getElementById('pmus-sliders').style.display = '';
             document.getElementById('patient-rr-control').style.display = '';
         }
-        if (vent.isAdaptiveMode() || sim.manualHoldState.active || sim.manualHoldState.armed) {
-            sim.notifyMeasurementSettingsChanged();
-            updateMonitorValues(vent.summary());
-        }
+        btn.setAttribute('aria-pressed', String(!wasActive));
+        updateEffortTimingUI();
+        updateMonitorValues(vent.summary());
         updateModeLabel();
     });
 }
@@ -738,15 +791,11 @@ function onPmusMaxChange(slider) {
 }
 
 function onNeuralTiChange(slider) {
-    const nti = parseInt(slider.value) / 10;
-    vent.neuralTi = nti;
-    document.getElementById('neural-ti-display').textContent = `${nti.toFixed(1)} s`;
+    requestEffortTimingFromUI({ neuralTi: Number(slider.value) / 10 });
 }
 
 function onPatientRRChange(slider) {
-    const prr = parseInt(slider.value);
-    sim.patientRR = prr;
-    document.getElementById('patient-rr-display').textContent = `${prr} /min`;
+    requestEffortTimingFromUI({ patientRR: Number(slider.value) });
 }
 
 function onAlarmHighPressureChange(slider) {
@@ -995,6 +1044,7 @@ function bindTransportControls() {
     document.getElementById('btn-reset').addEventListener('click', resetDemonstration);
     const pauseBtn = document.getElementById('btn-pause');
     pauseBtn.addEventListener('click', () => {
+        advanceTransportTo(performance.now());
         sim.toggle();
         if (sim.running) {
             pauseBtn.textContent = '⏸';
@@ -1013,7 +1063,8 @@ function bindTransportControls() {
     speedGroup.addEventListener('click', (e) => {
         const btn = e.target.closest('.speed-btn');
         if (!btn) return;
-        sim.setSpeed(parseInt(btn.dataset.speed));
+        advanceTransportTo(performance.now());
+        sim.setSpeed(parseFloat(btn.dataset.speed));
         speedGroup.querySelectorAll('.speed-btn').forEach(b =>
             b.classList.remove('speed-btn--active'));
         btn.classList.add('speed-btn--active');
@@ -1123,6 +1174,9 @@ function bindSlider(id, callback) {
     if (!slider) return;
     slider.addEventListener('input', () => {
         callback(slider);
+        if (['neural-ti', 'patient-rr'].includes(id)) {
+            updateMonitorValues(vent.summary()); updateHoldResults(); return;
+        }
         const adaptive = vent.isAdaptiveMode();
         const effort = ['pmus-max', 'neural-ti', 'patient-rr'].includes(id);
         if ((!effort || adaptive || sim.manualHoldState.active || sim.manualHoldState.armed) && !id.startsWith('alarm-')) {
@@ -1368,7 +1422,7 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
     // pressure is a monitor fallback. The live PIP alarm signal is unchanged.
     const completed = sim.lastCompletedBreath;
     const hold = sim.retainedHoldMechanics;
-    const displayPip = completed !== null ? m.pipLatched : '—';
+    const displayPip = completed !== null && m.pipLatched !== null ? m.pipLatched : '—';
     setText('param-pip',     `${displayPip}`);
     setText('param-pplat', hold.pplat.value !== null ? `${formatHoldValue(hold.pplat.value)}` : '—');
     setText('pplat-status', sim.lastValidManualHold ? 'Last valid hold · ' + sim.lastValidManualHold.configuredMode : 'No valid manual hold');
@@ -2338,6 +2392,7 @@ function installTestHooks() {
         setupAdaptive({ resistance = 10, compliance = 0.05, respiratoryRate = 12,
             ieRatio = [1, 4], targetVT_mL = 500, peep_cmH2O = 5, pMusMax = 0,
             patientRR = 0, neuralTi = 1, maximumPressure_cmH2O = 25 } = {}) {
+            validateEffortTiming({ patientRR: patientRR === 0 ? sim.effortTiming.requested.patientRR : patientRR, neuralTi });
             this.pause();
             // Resolve any previous scenario's operator queue before replacing fixture inputs.
             if (vent.isAdaptiveMode()) sim.setMode('vc-cmv');
@@ -2355,8 +2410,7 @@ function installTestHooks() {
             vent.flowTriggerLpm = 2;
             vent.pressureTriggerCmH2O = 1;
             vent.pMusMax = pMusMax;
-            vent.neuralTi = neuralTi;
-            sim.patientRR = patientRR;
+            sim.configureEffortTiming({ patientRR: patientRR === 0 ? sim.effortTiming.requested.patientRR : patientRR, neuralTi }, patientRR !== 0);
             sim.configureAdaptive({ maximumPressure_cmH2O });
             sim.setMode(MODE_PC_CMVA);
             customMechanics = true;
@@ -2487,6 +2541,8 @@ function installTestHooks() {
                 operatorSettings: { targetVT_mL: vent.tidalVolume * 1000, peep_cmH2O: vent.peep,
                     inspiratoryPressure_cmH2O: vent.inspiratoryPressure, pressureSupport_cmH2O: vent.psPressure,
                     pMusMax: vent.pMusMax, patientRR: sim.patientRR, neuralTi_s: vent.neuralTi },
+                effortTiming: sim.effortTiming,
+                effortInterruptions: sim.effortInterruptions,
                 // Read-only reset receipts: retained configuration and cleared histories.
                 resetDiagnostics: {
                     configuration: Object.fromEntries(['mode', 'flowPattern', 'holdTime',
@@ -2510,7 +2566,7 @@ function installTestHooks() {
                 breathCount:     s.breathCount,
                 machineBreaths:  s.machineBreathCount,
                 patientBreaths:  s.patientBreathCount,
-                pipLatched:      +s.pipLatched.toFixed(2),
+                pipLatched:      s.pipLatched === null ? null : +s.pipLatched.toFixed(2),
                 vt_mL:           +s.vt_mL.toFixed(1),
                 measuredRR:      +sim.measuredRR.toFixed(1),
                 measuredRRRaw:   sim.measuredRR,

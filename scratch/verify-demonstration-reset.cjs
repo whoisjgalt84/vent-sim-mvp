@@ -37,7 +37,7 @@ function clear(s, before) {
     assert.equal(s.running, before.running, 'transport'); assert.equal(s.mode, before.mode, 'mode');
     const d = s.resetDiagnostics;
     for (const key of ['volumeAboveEq', 'neuralTimer', 'phaseTime']) assert.equal(d[key], 0, key);
-    assert.equal(s.liveTrapped_mL, 0); assert.equal(s.completed, null); assert.equal(s.pipLatched, 0);
+    assert.equal(s.liveTrapped_mL, 0); assert.equal(s.completed, null); assert.equal(s.pipLatched, null);
     assert.equal(s.measuredRRRaw, 0); assert.equal(s.failedTriggers, 0);
     assert.equal(d.scheduledBreathTrigger, null); assert.equal(d.pendingTriggerDetection, null);
     for (const loop of [d.loopCurrent, d.loopCompleted]) assert.deepEqual(loop, { pressure: [], volume: [], flow: [] });

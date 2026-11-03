@@ -63,7 +63,11 @@ async function setup(page, mode='pc-cmva', value=0) {
     if (await patient.getAttribute('data-collapsed')!==null) await patient.click();
     if ((await state(page)).operatorSettings.patientRR===0) await page.locator('#pmus-toggle').click();
     await keyboard(page,12,'#patient-rr'); await keyboard(page,value);
-    await transport(page,false); await page.locator('#pmus-max').scrollIntoViewIfNeeded();
+    await transport(page,false);
+    // R-02 queues RR changes. Start the amplitude-only fixture with those
+    // accepted selections applied, rather than assuming an immediate edit.
+    await page.locator('#btn-reset').click();
+    await page.locator('#pmus-max').scrollIntoViewIfNeeded();
     const s=await snapshot(page); assert.equal(s.mode,mode); assert.equal(s.settings.patientRR,12); agreement(s,value);
     return s;
 }

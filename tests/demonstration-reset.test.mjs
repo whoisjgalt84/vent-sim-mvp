@@ -29,10 +29,10 @@ function settings(x) {
 function cleared(x, generation, delivery) {
     const { sim, vent } = x, csv = vent.mode === MODE_PC_CSV;
     for (const key of ['globalTime', 'phaseTime', 'machineTimer', 'neuralTimer', 'volumeAboveEq',
-        'volumeAtBreathStart', 'currentFlow', 'lastBreathPIP', 'measuredVT_mL', 'measuredRR',
+        'volumeAtBreathStart', 'currentFlow', 'measuredVT_mL', 'measuredRR',
         'patientBreathCount']) assert.equal(sim[key], 0, key);
     for (const key of ['lastCompletedBreath', 'scheduledBreathTrigger', '_pendingTriggerDetection',
-        'lastCanceledTrigger', 'physicsSample']) assert.equal(sim[key], null, key);
+        'lastCanceledTrigger', 'physicsSample', 'lastBreathPIP']) assert.equal(sim[key], null, key);
     assert.equal(sim.simulationGeneration, generation + 1);
     assert.equal(sim.phaseName, csv ? 'EXPIRATION' : 'INSPIRATION');
     assert.equal(sim.breathCount, csv ? 0 : 1);

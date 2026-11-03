@@ -375,12 +375,28 @@ function runFixture(fixture, before, after) {
         // Recompute the old schema in case a legacy property is created lazily.
         schema.sim = Object.keys(reference.sim).filter(k => !['vent', 'lung', 'buffers', 'loopCurrent', 'loopCompleted'].includes(k));
         const a = capture(reference, schema), b = capture(current, schema);
+        // R-11 adjudication: the checkpoint encoded pre-completion absence as 0.
+        // Only those two absent-value fields change to null; every physics tick,
+        // completed PIP, live alarm input, buffer and hold result remains exact.
+        if (a.state.lastCompletedBreath === null) {
+            assert.equal(a.state.lastBreathPIP, 0, 'checkpoint missing-PIP encoding');
+            assert.equal(a.selectors.breath.pipLatched, 0, 'checkpoint missing-PIP selector');
+            assert.equal(b.state.lastBreathPIP, null, 'R-11 missing-PIP encoding');
+            assert.equal(b.selectors.breath.pipLatched, null, 'R-11 missing-PIP selector');
+            a.state.lastBreathPIP = null;
+            a.selectors.breath.pipLatched = null;
+        }
         if (exactPassive) exact(legacyProjection(a), legacyProjection(b), `${fixture.name}.${label}`);
         else {
-            exact(a.settings, b.settings, `${fixture.name}.${label}.operator-settings`);
+            // R-02: the checkpoint applied timing immediately. Compare its
+            // operator selection to the new requested pair, not the still-applied
+            // cycle pair. New timing tests independently check boundary physics.
+            exact(a.settings, { ...b.settings, neuralTi: current.sim.effortTiming.requested.neuralTi }, `${fixture.name}.${label}.operator-settings`);
             exact(a.lung, b.lung, `${fixture.name}.${label}.configured-mechanics`);
-            const oscillator = ['globalTime', 'sampleRate', 'dt', 'patientRR', 'neuralTimer',
-                'neuralInspActive', 'triggerLockoutSeconds', 'running', 'speed', 'displaySeconds'];
+            const oscillator = ['globalTime', 'sampleRate', 'dt',
+                'triggerLockoutSeconds', 'running', 'speed', 'displaySeconds'];
+            assert.equal(current.sim.effortTiming.enabled ? current.sim.effortTiming.requested.patientRR : 0,
+                reference.sim.patientRR, `${fixture.name}.${label}.selected-patient-rate`);
             exact(owned(reference.sim, oscillator), owned(current.sim, oscillator), `${fixture.name}.${label}.unchanged-oscillator-transport`);
             observer.check({ ...b, preBreathId }, physics, `${fixture.name}.${label}`);
         }

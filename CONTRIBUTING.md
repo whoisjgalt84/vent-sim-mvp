@@ -15,14 +15,14 @@ cd vent-sim-mvp
 npm ci
 
 npm run serve                      # serve; open http://127.0.0.1:8899
-npm test                           # 300 original assertions + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
+npm test                           # current inventory: CLAUDE.md §2
 ```
 
 The browser commands use Playwright's managed Chromium and install it
 automatically if the local cache is empty:
 
 ```bash
-npm run test:browser               # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; starts/reuses its own server
+npm run test:browser               # self-contained browser gate
 npm run test:visual:docker         # authoritative Linux visual gate
 
 # Optional host diagnostics (not an authoritative comparison):
@@ -46,11 +46,11 @@ been created with `npm run test:visual:update`.
 
 ## Before you open a PR
 
-- [ ] `npm test` — 300 original assertions + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups; exits nonzero on failure.
-- [ ] `npm run test:browser` — 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups.
-- [ ] `npm run test:visual:docker` — 16 authoritative pinned-Linux visual,
-      determinism, and cache-busting checks. A host-specific diagnostic run is
-      not a substitute for this pinned-Linux comparison.
+- [ ] Identify affected checks within the approved task scope. Use the
+      [current inventory and receipts](CLAUDE.md#current-verification-inventory--2026-11-03)
+      for engine, browser and pinned-Linux visual gates. Report the checked
+      revision, fresh/carried evidence and any unavailable checks separately.
+      A host-specific visual diagnostic is not the authoritative comparison.
 - [ ] Screenshots — **mandatory for any UI change.** Compare before and after.
       Two shipped defects were invisible in the diff and obvious in a screenshot.
 - [ ] New assertions mutation-checked: break the code, confirm the test goes red.
@@ -63,19 +63,16 @@ been created with `npm run test:visual:update`.
 
 ## Who does what
 
-| Step | Who |
-| --- | --- |
-| Write the code | Agent |
-| Run tests + screenshot checks | Agent |
-| Create the branch | Agent |
-| Make the commit, with the full message | Agent |
-| **Push to GitHub** | **Owner** |
-| **Open, review and merge the PR** | **Owner** |
-| **`git checkout main && git pull`** | **Owner** |
+Follow the [shared approval boundaries](CLAUDE.md#3-approval-boundaries-and-clinical-risk).
+The owner agrees scope and acceptance criteria and authorizes implementation.
+Agents may create branches, edit, verify and commit only within that authority.
+Push/PR creation needs explicit authority; owner acceptance and separate
+merge/release/deployment authority are not implied by successful checks.
+Clinical decisions remain Christian's. Inspect actual environment capabilities;
+a historical shell's missing network access is not a universal rule.
 
-The push is the owner's because the shell agents use on his machine has no
-network access. Reviewing the diff is the owner's because that is where the
-clinical judgment lives.
+**Before merge, read the [publication consequence](CLAUDE.md#publication-consequence):
+merging main publishes Pages, including documentation merges.**
 
 ---
 
@@ -90,10 +87,10 @@ git status
 git log --oneline -3
 ```
 
-`git status` should say *nothing to commit, working tree clean* — apart from the
-three OneDrive files noted below, which always look modified. `git log` should
-show the agent's new commit on top. If the branch name isn't the one you were
-told, stop and ask.
+Inspect every modified or untracked path; preserve unexplained changes and
+resolve them before proceeding. There is no permanent OneDrive exception.
+`git log` should show the reviewed commit. If the branch or candidate differs
+from the approved one, stop and reconcile.
 
 **2. Push the branch**
 
@@ -106,12 +103,14 @@ git push                             # every push after that
 
 Go to the repo on github.com. The yellow *"had recent pushes — Compare & pull
 request"* banner is the fast path; otherwise **Pull requests → New pull request**
-with `base: main`, `compare: <branch-name>`.
+with `base: main`, `compare: <branch-name>`. Agents use a draft PR unless the
+owner explicitly requests otherwise, and only after PR creation is authorized.
 
 **Read the diff.** This is the real value of the step — every changed line, file
 by file. Then **Create pull request**. Smoke tests start automatically. Wait for
-the green check, then **Merge pull request → Confirm merge**. **Delete branch**
-is safe to click.
+the exact-candidate checks and owner acceptance. Only with separate merge
+authority proceed to **Merge pull request → Confirm merge**; this publishes
+Pages. A formal release/tag and branch deletion remain separate actions.
 
 **4. Sync your local copy — don't skip this**
 
@@ -142,28 +141,23 @@ it exactly.
 **`Updates were rejected because the remote contains work you do not have`** —
 `git pull`, then push again.
 
-**`Another git process seems to be running` / `index.lock` exists** — left over
-from an agent committing through the desktop bridge, which can't delete its own
-lock files. Agents normally move them into `.git/_stale-locks/`. If one slips
-through, delete `.git/index.lock` in File Explorer and retry. (`.git` is hidden:
-View → Show → Hidden items.)
+**`Another git process seems to be running` / `index.lock` exists** — inspect
+whether an active Git process owns the lock. Do not delete or move a live or
+uncertain lock. Follow [the shared Git guidance](CLAUDE.md#8-git); agents need
+authorization for stale-lock cleanup and must not automate it after operations.
 
 **Asked to sign in to GitHub** — normal on a new machine or after credentials
 expire. Follow the browser prompt.
 
 ---
 
-## The three files that always look modified
+## OneDrive or unreadable-file diagnostics
 
-`README-dev.md`, `package-lock.json` and `.github/workflows/smoke-test.yml` show
-as modified even when nothing changed. They are **OneDrive online-only
-placeholders** — the file isn't fully stored on disk, so git can't read it.
-
-Harmless. To clear it: in File Explorer, right-click each → **Always keep on
-this device**.
-
-This is also why agents stage explicit paths rather than `git add -A`, which
-would fail on these three.
+A historical bridge checkout had online-only placeholders at `README-dev.md`,
+`package-lock.json` and `.github/workflows/smoke-test.yml`. Inspect current status,
+diffs and readability; do not assume those files are unchanged or harmless.
+If hydration is needed, the owner can use File Explorer's **Always keep on this
+device**. Preserve unknown modifications and stage only explicit approved paths.
 
 ---
 
@@ -176,18 +170,9 @@ verified** — the test tally, the browser checks, the screenshots.
 
 Author is `Chris <christian.striggow@outlook.com>` to match repo convention.
 
-The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups, 5 Effort-slider groups and 8 demonstration-reset groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
-
-Legacy fixture accounting is 92,500 exercised ticks: 28,000 exact passive ticks in 8 fixtures and 64,500 active conformance ticks in 14 fixtures. Review the [current model](./docs/model.md) and [successor index](./docs/clinical/CLIN-001/successor-index.md) for provenance and open owner gates.
-
-## Shared reset verification (2026-10-07)
-
-The current aggregate gates additionally require 28 demonstration-reset engine
-groups and eight demonstration-reset browser groups. The pinned-Linux visual
-inventory is now 18 groups (the existing 16 plus two shared-reset groups).
-Prior inventories above describe their existing groups or historical checkpoints.
-See [the shared reset contract](docs/demonstration-reset-contract.md).
-
-## UI cleanup batch A verification (2026-10-10)
-
-The aggregate browser gate retains the 44 original checks, 12 adaptive, four effort/pressure, five Effort-slider and eight demonstration-reset groups, and adds seven bounded UI cleanup groups. The engine inventory and the 18 pinned-Linux visual groups are unchanged. UI cleanup changes intentionally require new candidate image bytes; generate them only in an isolated evidence checkout and compare again with updates disabled. Existing accepted images and tolerances remain unchanged until separate owner acceptance. See [the batch-A contract](docs/ui-cleanup-batch-a.md).
+For current gate counts, runners, receipts and legacy tick distinctions, use
+[CLAUDE.md §2](CLAUDE.md#current-verification-inventory--2026-11-03).
+The [shared reset contract](docs/demonstration-reset-contract.md) and
+[UI cleanup contract](docs/ui-cleanup-batch-a.md) retain their original scope
+and image-acceptance requirements; this process reconciliation does not
+reapprove or regenerate baselines.

@@ -1,6 +1,6 @@
 ---
 name: ship-batch
-description: Verify, self-review, commit and report a batch of work on vent-sim-mvp. Use when a batch of changes is complete and ready to hand to Christian for push — or when asked to "ship", "ship this", "ship the batch", or "wrap up this batch". Runs the full verification recipe, mutation-checks new assertions, commits through the desktop bridge with the OneDrive/lock landmines handled, and reports a tally rather than a vibe.
+description: Verify, self-review, commit and report a batch of work on vent-sim-mvp. Use when a batch of changes is complete and ready to hand to Christian for push — or when asked to "ship", "ship this", "ship the batch", or "wrap up this batch". Uses the authorized verification scope, reviews new assertions, prepares an authorized commit and reports exact-candidate evidence. Does not grant push, merge or release authority.
 ---
 
 # ship-batch
@@ -15,23 +15,34 @@ invariants) and §8 (git). This skill assumes them.
 
 ---
 
-## 0. Stop if the batch touched a Red-lane thing
+## 0. Confirm authority and clinical decisions
 
-Asynchrony/discordance morphology, alarm thresholds or behaviour, teaching-mode
-copy, what a scenario teaches. If so, **do not ship** — present the change and
-get Christian's sign-off first. Yellow-lane items (anything with a testable
-physiological assertion) ship with a checkpoint note in the report.
+Follow [CLAUDE.md §3](../../../CLAUDE.md#3-approval-boundaries-and-clinical-risk).
+All work needs the applicable owner authorization; Green/Yellow/Red classify
+clinical risk, not unattended permission. Resolve required clinical decisions
+before implementation and obtain owner acceptance before merge. This recipe
+does not authorize a coding task, repository write, external message, push,
+merge, release or deployment.
+
+Read the [publication consequence](../../../CLAUDE.md#publication-consequence):
+merging main publishes Pages even for documentation-only work. A release/tag
+is a separate decision. Include candidate, destination, timing and fallback
+when seeking publication authority.
 
 ---
 
 ## 1. Verify
 
-Run all four. Do not skip one because the change "obviously" doesn't touch it.
+Identify applicable checks within the approved task scope. Runtime/UI work
+uses the complete gates below; documentation-only work may use static checks
+and carried evidence when that is the authorized scope. Report what was and
+was not executed rather than silently widening into a simulator test campaign.
+Use the [single current inventory](../../../CLAUDE.md#current-verification-inventory--2026-11-03).
 
 ```bash
-npm test                          # 300 original assertions + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure groups
-npm run test:browser              # 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; self-contained
-npm run test:visual:docker        # 16 authoritative pinned-Linux visual/determinism/cache checks
+npm test                          # engine gate; inventory in CLAUDE.md §2
+npm run test:browser              # self-contained browser gate
+npm run test:visual:docker        # authoritative pinned-Linux visual/determinism/cache checks
 node scratch/shot.cjs scratch/shots-<batch> baseline teaching effort effort-teaching
 ```
 
@@ -93,56 +104,35 @@ If you bumped `?v=`, update every local asset/import site in the current `CLAUDE
 
 ---
 
-## 4. Commit through the desktop bridge
+## 4. Prepare an authorized commit in the selected environment
 
-The repo lives at `C:\Users\chris\OneDrive\Desktop\vent-sim-mvp`, mounted under
-`/sessions/<session-id>/mnt/vent-sim-mvp`. Find it with `device_list_dir` — do
-not `find /sessions` broadly, the other entries are permission-denied.
+Follow [CLAUDE.md §8](../../../CLAUDE.md#8-git). Locate the actual authorized
+checkout; do not assume historical desktop paths, bridge mounts, connectivity,
+Git identity or OneDrive state apply to this executor.
 
-**Before anything:** confirm his tree matches what you tested.
-
-```bash
-git rev-parse HEAD^{tree}      # on his machine
-git rev-parse HEAD^{tree}      # in the cloud clone
-```
-
-Equal hashes mean branching from HEAD is safe and the PR diff will be clean.
-Unequal means stop and reconcile — his local refs have been stale before.
-
-Then:
+Before an authorized branch or commit, inspect status and preserve unknown
+changes. Reconcile the checkout with the tested candidate. Complete tree hashes
+may be compared across complete checkouts; a partial manifest must disclose its
+coverage and cannot be represented as complete tree equality.
 
 ```bash
+git status
+git rev-parse HEAD^{tree}
+# Only within the owner's authorized scope:
 git checkout -b <type>/<short-description>
-git add <explicit paths>       # NEVER git add -A
+git add <explicit approved paths>  # never git add -A
 git -c user.name='Chris' \
     -c user.email='christian.striggow@outlook.com' \
     -c commit.gpgsign=false \
     commit -F <msgfile>
 ```
 
-### The landmines
-
-1. **Never `git add -A`.** `README-dev.md`, `package-lock.json` and
-   `.github/workflows/smoke-test.yml` may be OneDrive online-only placeholders
-   that the VM can neither read nor write — they error `Invalid argument` and
-   git cannot hash them. Check with `git hash-object <path>` before staging one.
-   If it fails, ask Christian to right-click → **Always keep on this device**.
-   Also skip untracked `.claude/settings.local.json` and any `~$*` Office lock
-   files.
-2. **No git identity on the VM.** Pass it inline as above. Never set global or
-   local config.
-3. **Clean the locks afterwards, every time.** Git leaves lock and temp files
-   the bridge cannot delete (`rm` → "Operation not permitted"). Move them:
-
-   ```bash
-   mkdir -p .git/_stale-locks
-   mv .git/index.lock .git/HEAD.lock .git/objects/maintenance.lock \
-      .git/objects/*/tmp_obj_* .git/_stale-locks/ 2>/dev/null
-   ```
-
-   Then verify with `git status` and `git fsck --no-dangling`. One run left 37
-   of these; the next git command blocks until they are moved.
-4. **The VM has no network.** The push is Christian's. Never attempt it.
+Recheck committed-versus-tested identity and status. If files cannot be read,
+inspect and report the actual environment issue. If a lock blocks work, first
+confirm no active Git process owns it and obtain authorization for stale-lock
+cleanup. Do not move/delete locks or temporary objects after every operation.
+Push and PR creation require separate explicit authority; network capability
+alone is not permission.
 
 ---
 
@@ -163,30 +153,15 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Give Christian, in this order:
 
-1. **The tallies.** original `300 passed / 0 failed`; controller 22/0; integration 24/0; selective legacy 22/0; effort/pressure 41/0; browser 44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider groups; 16 pinned-Linux visual groups, each with the checked revision and receipt, and where
-   the screenshots are.
-2. **Anything found by self-review**, including in your own work.
-3. **Any Yellow-lane checkpoint** he needs to rule on before merge.
-4. **The tree hash**, and confirmation it matches the tested clone.
-5. **His command**, exactly:
+1. **Exact-candidate evidence:** each applicable gate's tally and receipt using
+   [the current inventory](../../../CLAUDE.md#current-verification-inventory--2026-11-03).
+   Separate fresh results, carried evidence, failures and checks not run.
+2. **Self-review findings**, including anything still unresolved.
+3. **Clinical or scope decisions** needing owner acceptance.
+4. **Candidate identity** and tested-versus-committed comparison, with coverage
+   limits if only a partial manifest was available.
+5. **The next action requiring approval**, if any. Do not turn a ready-for-review
+   report into an instruction to merge or publish without authority.
 
-   ```
-   git push -u origin <branch-name>
-   ```
-
-   Then the PR per `CONTRIBUTING.md` — read the diff, merge, and
-   `git checkout main && git pull`.
-
-Do not end with "tests pass." End with numbers.
-
-The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups, 5 Effort-slider groups and 8 demonstration-reset groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
-
-Legacy fixture accounting is 92,500 exercised ticks: 28,000 exact passive ticks in 8 fixtures and 64,500 active conformance ticks in 14 fixtures. Review the [current model](../../../docs/model.md) and [successor index](../../../docs/clinical/CLIN-001/successor-index.md) for provenance and open owner gates.
-
-## Shared reset verification (2026-10-07)
-
-The current aggregate gates additionally require 28 demonstration-reset engine
-groups and eight demonstration-reset browser groups. The pinned-Linux visual
-inventory is now 18 groups (the existing 16 plus two shared-reset groups).
-Prior inventories above describe their existing groups or historical checkpoints.
-See [the shared reset contract](../../../docs/demonstration-reset-contract.md).
+A successful check is evidence, not permission. Preserve historical receipts;
+do not report new simulator results for documentation-only validation.

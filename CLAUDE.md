@@ -29,13 +29,13 @@ physiology sloppier is a regression, even if every test passes.
 # Serve. ES modules will NOT load over file:// — you need HTTP.
 npm run serve                      # node tools/serve.mjs — then http://127.0.0.1:8899
 
-# Engine: 300 original + 22 controller + 24 integration + 22 selective legacy fixtures + 41 effort/pressure + 28 reset groups
+# Engine: see the current verification inventory below
 npm test
 
-# Authoritative visual regression + determinism + cache-busting (18: 16 existing + 2 shared reset), pinned Linux
+# Authoritative visual regression + determinism + cache-busting, pinned Linux
 npm run test:visual:docker
 
-# Browser behaviour (44 original + 12 adaptive + 4 effort/pressure + 5 Effort-slider + 8 reset + 7 UI cleanup), self-contained server lifecycle
+# Browser behaviour; self-contained server lifecycle
 npm run test:browser
 
 # Screenshots — the only reliable UI verification
@@ -66,22 +66,41 @@ is not directly usable for comparison on Windows. Optional Windows diagnostics
 require generating host-specific, non-authoritative snapshots first with
 `npm run test:visual:update`; only then can `npm run test:visual` compare them.
 
-### Read the tally anyway
+### Current verification inventory — 2026-11-03
 
-`npm test` exits nonzero on any assertion failure and also enforces the
-commissioned original `300 passed / 0 failed` tally plus the separate 22 controller,
-24 integration, 22 selective legacy and 41 effort/pressure group inventories, so
-an accidental test-count drop is a failure. The 41 groups comprise 40 engine
-groups and one renderer group with 66 subchecks. Selective legacy preservation
-retains 92,500 exercised ticks: 28,000 exact passive ticks across 8 fixtures and
-64,500 active conformance ticks across 14 fixtures; these are not 92,500 exact
-matches. These inventories specify the required gate; passing results require
-fresh run receipts. Mutation-verified on the original suite: multiplying `LungModel.timeConstant` by 1.5 gives
-29 failures and exit 1.
+The inventory is defined by the [engine runner](tools/run-engine-tests.mjs)
+and [browser/visual runner](tools/run-browser-tests.mjs), not workflow job titles.
+At candidate `9dafc934fbe7891feee96c0d37fedb4cd7814538`:
 
-Before 2026-08-05 it had no exit code at all and CI stayed green through any
-number of failures. Keep reading the printed `Passed: N / Failed: M` — a count
-that moves unexpectedly is information even when the run is green.
+| Gate | Required inventory |
+| --- | --- |
+| Engine | 300 original assertions; 22 adaptive controller; 24 adaptive integration; 22 selective legacy fixtures; 41 effort/pressure; 28 demonstration-reset; 43 manual-hold; 15 R01/R11; 17 R02 groups. Total: 512 mixed top-level assertions/groups/fixtures, not 512 equivalent tests. |
+| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Total: 107. |
+| Pinned-Linux visual | 18 existing groups plus 3 manual-hold groups. Total: 21, including determinism and cache-busting. |
+
+[Exact-main CI run 41697146820](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/41697146820)
+records zero failures for these inventories on Node 22.23.4 and 24.22.1 and
+Playwright v1.62.1-noble. The separate CLIN-006 focused tally is 884/0 in each
+engine log; nested checks are not additional top-level groups. The 41
+effort/pressure groups include 40 engine groups and one renderer group with
+66 subchecks. Selective legacy preservation exercises 92,500 ticks: 28,000
+exact passive ticks across 8 fixtures and 64,500 active conformance ticks across
+14 fixtures, not 92,500 exact matches. The separate retained PR 55 preservation
+receipt covers 24 fixtures and 144,000 ticks; do not combine these counts.
+
+These are receipts for the named candidate, not fresh results for later edits.
+For a changed candidate, identify affected verification, preserve earlier
+receipts as historical, and distinguish fresh, carried-forward and unavailable
+checks. Documentation-only work must not imply new simulator execution.
+See the [release status](docs/clinical/CLIN-001/successor-index.md) and
+[R01/R11](docs/review-remediation.md) and [R02](docs/effort-timing-contract.md)
+contracts for scope and evidence boundaries.
+
+`npm test` exits nonzero on failure and rejects a reduced commissioned tally.
+Still read the printed `Passed: N / Failed: M`; an unexpected count change is
+information even when the run is green. Before 2026-08-05 the original suite
+had no failure exit code. Multiplying `LungModel.timeConstant` by 1.5 was shown
+to produce 29 failures and exit 1 in the original suite.
 
 ### Screenshot-verify all UI work
 
@@ -92,21 +111,38 @@ and became uncancellable.
 
 ---
 
-## 3. Autonomy lanes
+## 3. Approval boundaries and clinical risk
 
-Christian is a respiratory therapist. He is **out of the mechanical loop, in on
-the clinical loop.** His RT judgment is the scarce input; his time as a
-copy-paste relay is not a resource to spend.
+Christian's prior approval is required before repository writes, starting new
+coding tasks, sending messages to others, merging, releasing or deploying.
+Approval is specific to the action and scope. A plan, successful check or risk
+category does not grant implementation or publication authority.
 
-| Lane | Scope | Rule |
+Use this sequence: agree scope and acceptance criteria; obtain implementation
+authority; verify and independently review the exact candidate within the
+approved scope; obtain owner acceptance; then obtain separate authority for
+publication. Record any changed candidate identity and affected evidence.
+
+Clinical risk categories guide review depth, not permission:
+
+| Category | Scope | Review emphasis |
 | --- | --- | --- |
-| 🟢 **Green** | Rendering, performance, state management, refactors, accessibility, UI polish, test harness, docs, tooling | Run unattended. Verify and report. |
-| 🟡 **Yellow** | Anything with a physiological assertion that can be tested — τ = R×C decay, VT accuracy, PIP/Pplat, auto-PEEP, trigger thresholds | Build it, assert it, **then checkpoint** before merge. |
-| 🔴 **Red** | Asynchrony/discordance morphology, alarm thresholds and behaviour, teaching-mode copy, what a scenario should teach, learner assessment logic | **Never unattended.** Propose; do not decide. |
+| Green | Rendering, performance, state management, refactors, accessibility, UI polish, test harness, docs, tooling | Verify the authorized change and report. |
+| Yellow | Testable physiological assertions: decay, VT, PIP/Pplat, auto-PEEP, trigger thresholds | Verify assertions and obtain clinical acceptance before merge. |
+| Red | Asynchrony/discordance morphology, alarms, teaching copy, scenario intent, learner assessment | Propose clinical decisions for Christian; do not decide them independently. |
 
-The lane is set by what the change *means clinically*, not by how many lines it
-touches. A one-character change to an alarm threshold is Red. A 400-line
-renderer refactor is Green.
+Risk follows what a change means clinically, not its line count. A one-character
+alarm-threshold change is Red; a renderer refactor may be Green but still needs
+authorization.
+
+### Publication consequence
+
+Under the established configuration, **merging to `main` publishes GitHub
+Pages**. This includes documentation merges. Name the exact candidate,
+destination, timing and fallback when requesting publication authority. A
+successful merge or Pages run is not separate approval for a release or tag.
+The [PR 55 Pages run](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/41697145180)
+is evidence of deployment, not served-byte, cache or recovery verification.
 
 ---
 
@@ -342,24 +378,31 @@ An agent reading only the design doc would build the first two. Don't.
 
 ## 8. Git
 
-**Agents do not push.** Christian pushes and opens the PR — see
-`CONTRIBUTING.md`. This is not a policy preference; the shell available to
-agents on his machine has no network access.
+Work only within the owner's authorized scope. Pushes and PR creation require
+explicit authority; merges, releases and deployments require their own
+approval. See [publication consequences](#publication-consequence) and
+[CONTRIBUTING.md](CONTRIBUTING.md). Connectivity is an environment fact, not a
+substitute for permission: inspect the selected executor rather than assuming
+it has or lacks network access.
 
-When committing through the desktop bridge:
-
-- The VM has **no git identity**. Do not set global or local config — pass it
-  inline: `git -c user.name='Chris' -c user.email='christian.striggow@outlook.com' -c commit.gpgsign=false commit -F <msgfile>`
-- **Never `git add -A`.** Three files are OneDrive online-only placeholders the
-  VM cannot read — `README-dev.md`, `package-lock.json`,
-  `.github/workflows/smoke-test.yml`. They show as permanently modified and
-  error on hash. Stage explicit paths only.
-- Git leaves lock and temp files the bridge cannot delete. `rm` returns
-  "Operation not permitted". **`mv` them into `.git/_stale-locks/`** after every
-  git operation, then verify with `git status` and `git fsck --no-dangling`.
-- Prove what landed: compare `git rev-parse HEAD^{tree}` on his machine against
-  the tested clone. Equal hashes prove the committed bytes are exactly what the
-  suites ran against.
+- Inspect status and diffs before changes; preserve unknown modifications.
+  Never dismiss a modified file as a permanent placeholder exception.
+- Stage explicit paths only, never `git add -A`. On a OneDrive-backed checkout,
+  inspect readability if a file cannot be hashed. `README-dev.md`,
+  `package-lock.json` and `.github/workflows/smoke-test.yml` were affected in a
+  historical bridge environment; that does not establish their current state.
+  Ask the owner to hydrate an inaccessible file when needed.
+- Use the established author identity for an authorized commit. If identity is
+  absent, pass it per command rather than changing global/local configuration:
+  `git -c user.name='Chris' -c user.email='christian.striggow@outlook.com' -c commit.gpgsign=false commit -F <msgfile>`.
+- If a Git lock blocks work, identify it and establish that no active Git
+  process owns it. Do not move or delete locks or temporary objects routinely.
+  Obtain authorization for any stale-lock removal/movement; preserve uncertain
+  state and report an access failure rather than bypassing it.
+- Prove tested-versus-committed identity. Compare tree hashes where complete
+  checkouts exist; otherwise use an explicit changed-file/source manifest and
+  disclose its limits. Equal complete tree hashes establish content identity,
+  not clinical or release approval. Recheck status after an authorized commit.
 
 ---
 
@@ -399,6 +442,5 @@ When committing through the desktop bridge:
 | `docs/trigger-fix-design.md` | Historical trigger-rewrite design; current signal contract is in `docs/model.md` |
 | `scratch/` | Diagnostics and one-off harnesses; not part of the app |
 
-SME-026/027 additionally require 43 manual-hold engine groups, 20 manual-hold
-browser groups and three separately tallied pinned-Linux visual groups. Keep the
-existing 18 visual groups and all earlier engine/browser inventory guards.
+The current complete gate inventory is in §2 above; do not maintain a second
+competing inventory here.

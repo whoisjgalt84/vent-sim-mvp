@@ -172,6 +172,15 @@ async function expectAvailableDelivery(page, zero = false) {
     }
 }
 
+// R05 presentation only: analytical getters and alarm inputs stay engine-owned.
+async function expectCsvPredictionsUnavailable(page) {
+    await expect(page.getByRole('group', { name: 'Predicted MAP', exact: true })).toBeVisible();
+    await expect(page.locator('#param-map')).toHaveText('\u2014');
+    await expect(page.locator('#map-status')).toContainText('Unavailable in PC-CSV');
+    await expect(page.locator('.mechanics-chip--prediction')).toHaveCount(0);
+    await expect(page.locator('#alerts')).not.toContainText('Predicted steady-state auto-PEEP');
+}
+
 async function expectFailedTriggerCopy(page) {
     const counter = page.getByRole('group', { name: 'Failed triggers in the last 60 seconds', exact: true });
     await expect(counter.locator('.rr-triple__lbl')).toHaveText('Failed triggers');
@@ -270,18 +279,23 @@ test.describe('waveform display', () => {
         await expect(page.locator('#param-vt')).toHaveText('—');
         await expect(page.locator('#param-ve')).toHaveText('—');
         await expect(page.locator('#ve-status')).toHaveText('Collecting 30 s');
-        await expect(page.getByRole('group', { name: 'Predicted breath MAP', exact: true })).toBeVisible();
+        await expectCsvPredictionsUnavailable(page);
+        await expect(page.locator('#additional-outputs')).toHaveJSProperty('open', false);
+        await expect(page.getByRole('group', { name: 'Live modeled trapped volume', exact: true })).toBeHidden();
+        await page.locator('#additional-outputs-summary').click();
         await expect(page.getByRole('group', { name: 'Live modeled trapped volume', exact: true })).toBeVisible();
         await expect(page).toHaveScreenshot('csv-no-breath-standard-full.png', { fullPage: true });
-        await expect(page.locator('.mechanics-chip--prediction')).toHaveScreenshot('csv-predicted-trapping.png');
+        await expect(page.locator('#csv-backstop')).toBeVisible();
+        await expect(page.locator('#csv-backstop-source')).toContainText('Configured RR');
+        await expect(page.locator('#csv-backstop')).toHaveScreenshot('csv-configured-backstop.png');
         await h.setRange(page, '#ps-pressure', 20);
         await h.seek(page, 15);
-        await expect(page.locator('#alerts')).toContainText('Predicted steady-state auto-PEEP 4');
-        await expect(page.locator('.header')).toHaveScreenshot('csv-predicted-header-standard.png');
+        await expectCsvPredictionsUnavailable(page);
+        await expect(page.locator('.header')).toHaveScreenshot('csv-unavailable-header-standard.png');
         await h.teachingMode(page);
         await page.evaluate(() => window.__vsim.redraw());
-        await expect(page.locator('#alerts')).toContainText('Predicted steady-state auto-PEEP 4');
-        await expect(page.locator('.header')).toHaveScreenshot('csv-predicted-header-teaching.png');
+        await expectCsvPredictionsUnavailable(page);
+        await expect(page.locator('.header')).toHaveScreenshot('csv-unavailable-header-teaching.png');
         await page.click('#btn-teaching-mode');
         await h.setMode(page, 'vc-cmv');
         await h.setRange(page, '#compliance', 10);
@@ -294,7 +308,7 @@ test.describe('waveform display', () => {
         await expectAvailableDelivery(page, true);
         await page.click('[data-measurement-help="delivered-ve"]');
         await expect(page.locator('#measurement-help')).toContainText('Zero is an available value; VE alarms can evaluate it.');
-        await expect(page.locator('#measurement-help')).not.toContainText('Predicted VE:');
+        await expect(page.locator('#measurement-help')).toContainText('Predicted VE: unavailable in PC-CSV. Configured machine timing is not a delivered-breath prediction.');
         await expect(page).toHaveScreenshot('ve-zero-help-standard-full.png', { fullPage: true });
         expect(errors, 'no console errors').toEqual([]);
         await mechanicsExampleSnapshots(page);
@@ -394,7 +408,7 @@ test.describe('waveform display', () => {
         await expectAvailableDelivery(page);
         await expect(page).toHaveScreenshot('ve-established-csv-teaching-full.png', { fullPage: true });
         await page.click('[data-measurement-help="delivered-ve"]');
-        await expect(page.locator('#measurement-help')).toContainText('Predicted VE: unavailable.');
+        await expect(page.locator('#measurement-help')).toContainText('Predicted VE: unavailable in PC-CSV.');
         await expect(page).toHaveScreenshot('ve-established-csv-help-teaching-full.png', { fullPage: true });
     });
 
@@ -443,6 +457,10 @@ test.describe('waveform display', () => {
         await page.setViewportSize({ width: 1440, height: 1100 });
         for (const teaching of [true, false]) {
             if (!teaching) await page.click('#btn-teaching-mode');
+            if (!(await page.locator('#additional-outputs').evaluate(el => el.open))) {
+                await page.locator('#additional-outputs-summary').click();
+            }
+            await expect(page.locator('#param-live-trapped')).toBeVisible();
             await page.evaluate(() => window.__vsim.redraw());
             const clipped = await page.locator('.parameters').evaluate(panel => {
                 const p = panel.getBoundingClientRect();
@@ -526,7 +544,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'R-01/R-11 remediation asset release').toEqual(['28']);
+        expect(versions, 'teaching slice asset release').toEqual(['31']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);
@@ -626,7 +644,9 @@ async function effortSliderSnapshots(page) {
         await h.setMode(page, mode);
         await h.enableEffort(page, { patientRR: 12, pmus: mode === 'pc-cmva' ? 0 : 8 });
         await h.seek(page, 0);
+        if(width<1300&&await page.locator('#patient-panel').isVisible())await page.locator('#patient-close').click();
         await page.locator('#btn-pause').click();
+        if(!(await page.locator('#patient-panel').isVisible()))await page.locator('#btn-patient').click();
         await page.locator('#pmus-max').scrollIntoViewIfNeeded();
         expect((await h.state(page)).running).toBe(false);
         await expect(page.getByRole('slider', { name: 'Effort', exact: true })).toBeVisible();
@@ -654,7 +674,7 @@ async function effortSliderSnapshots(page) {
     await capture('effort-slider-running-crop.png', page.locator('#pmus-sliders'), 'Same UI Play fixture; Effort/neural crop.');
     for (const mode of ['vc-cmv', 'pc-cmv', 'PC-CSV']) {
         errors.push(...await setup(mode));
-        await expect(page.locator('#pmus-max')).toHaveAttribute('min', '0.25');
+        await expect(page.locator('#pmus-max')).toHaveAttribute('min', '0');
         await capture('effort-slider-mode-' + mode + '-full.png', page, 'Fresh ' + mode + '; Active Effort8/RR12; UI Pause; seek0; Standard1440x900.', { fullPage: true });
         await capture('effort-slider-mode-' + mode + '-crop.png', page.locator('#pmus-sliders'), 'Same ' + mode + ' fixture; Effort/neural crop.');
     }
@@ -852,6 +872,7 @@ async function effortShot(page, name, recipe, screenshotOptions = {}) {
 test.describe('effort pressure finite-boundary visual contract', () => {
     test('signed pressure and P-V geometry retain mixed trigger-variable history', async ({ page }) => {
         const errors = await h.open(page); await h.expandRail(page);
+        await page.locator('#btn-loops').click(); // Loop geometry requires the explicit optional view.
         const signed = { mode:'vc-cmv',resistance:5,compliance:.1,respiratoryRate:6,ieRatio:[1,4],
             peep_cmH2O:0,pMusMax:12,patientRR:12,neuralTi:1,triggerType:'flow' };
         await h.setupEffort(page,signed); let state = await h.stepTicks(page,1400);

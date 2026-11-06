@@ -66,21 +66,42 @@ is not directly usable for comparison on Windows. Optional Windows diagnostics
 require generating host-specific, non-authoritative snapshots first with
 `npm run test:visual:update`; only then can `npm run test:visual` compare them.
 
-### Current verification inventory — 2026-11-03
+<a id="verification-inventory"></a>
+<a id="current-verification-inventory--2026-11-03"></a>
+
+### Current verification inventory - 2026-11-06
 
 The inventory is defined by the [engine runner](tools/run-engine-tests.mjs)
 and [browser/visual runner](tools/run-browser-tests.mjs), not workflow job titles.
-At candidate `9dafc934fbe7891feee96c0d37fedb4cd7814538`:
+The following inventory includes the bounded desktop teaching slice. It is not
+the inventory of the historical release CI run below.
 
 | Gate | Required inventory |
 | --- | --- |
-| Engine | 300 original assertions; 22 adaptive controller; 24 adaptive integration; 22 selective legacy fixtures; 41 effort/pressure; 28 demonstration-reset; 43 manual-hold; 15 R01/R11; 17 R02 groups. Total: 512 mixed top-level assertions/groups/fixtures, not 512 equivalent tests. |
-| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Total: 107. |
+| Engine | 300 original assertions; 22 adaptive controller; 24 adaptive integration; 22 selective legacy fixtures; 41 effort/pressure; 28 demonstration-reset; 43 manual-hold; 15 R01/R11; 17 R02 groups. Plus 8 teaching-slice groups. Total: 520 mixed top-level assertions/groups/fixtures, not 520 equivalent tests. |
+| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice and 5 hierarchy groups. Total: 120. |
 | Pinned-Linux visual | 18 existing groups plus 3 manual-hold groups. Total: 21, including determinism and cache-busting. |
 
-[Exact-main CI run 41697146820](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/41697146820)
-records zero failures for these inventories on Node 22.23.4 and 24.22.1 and
-Playwright v1.62.1-noble. The separate CLIN-006 focused tally is 884/0 in each
+**Local slice evidence, 6 November:** owner-approved references were installed
+and the full pinned-Linux gate passed 21/21 groups and 162/162 screenshot
+comparisons at source SHA256
+`67e53a5baac4a12bc5b9b4ce1c14118651c5d9a3549da569262f03e3c7c3a03b`.
+Updates were disabled, snapshots enabled, and tolerances unchanged. Engine
+520/0 and browser 120/0 receipts are carried forward from Patient-default source
+`c2af5bb0e4e79d46ea021f85327011405aaff370c994c921a569153a19d42bfe`:
+their runtime, test and runner inputs remain byte-identical. Later changes were
+visual assertions and reviewed PNGs. This documentation closeout changes only
+documentation; it runs no simulator gate and does not establish new CI results.
+See [the slice closeout](docs/desktop-teaching-slice.md#accepted-local-candidate-and-evidence)
+for identities, acceptance, installation and evidence limits.
+
+**Historical release evidence:** candidate
+`9dafc934fbe7891feee96c0d37fedb4cd7814538` and
+[exact-main CI run 41697146820](https://github.com/whoisjgalt84/vent-sim-mvp/actions/runs/41697146820)
+recorded zero failures for the pre-slice inventory: 512 mixed engine
+assertions/groups/fixtures, 107 browser groups and 21 pinned-Linux visual groups,
+on Node 22.23.4 and 24.22.1 and Playwright v1.62.1-noble. Those results do not
+cover the later slice additions. The separate CLIN-006 focused tally is 884/0 in each
 engine log; nested checks are not additional top-level groups. The 41
 effort/pressure groups include 40 engine groups and one renderer group with
 66 subchecks. Selective legacy preservation exercises 92,500 ticks: 28,000
@@ -176,7 +197,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=28`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=31`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's
@@ -289,6 +310,27 @@ New invariants belong in this list, with the failure they prevent.
     waits for a new trigger. Help must distinguish a new run from a treatment
     effect. See [the approved reset contract](docs/demonstration-reset-contract.md).
 
+19. **Hold age counts executed physics ticks across retained-history runs.**
+    `_elapsedPhysicsTicks` is metadata only. The saved manual result owns its
+    completion tick; invalid attempts never replace it. Mode/flow transitions
+    retain that source and age, pause earns no age, and capped transport counts
+    only executed ticks. Main Reset clears the saved result and exposes null age.
+    Do not subtract per-run `globalTime` from a hold saved in a previous run.
+
+20. **Visibility and effort selection are separate from physiology.** Patient,
+    Teach and loops retain independent visibility; visibility/resize repaints add
+    no alarm evaluations. Selected effort amplitude survives Off and mode changes;
+    Off immediately disables effort and sets actual amplitude to zero. Enabled
+    zero is distinct from Off in the native control and Teaching Patient RR.
+    Preserve R-02's engine-owned requested/applied timing pair and interruption rules.
+
+21. **PC-CSV presentation gates configured-cycle predictions without changing
+    analytics or alarm inputs.** Use the presentation selector for monitor
+    predictions, mechanics chips and advisory badges. Keep genuine completed,
+    live and historical values. The visible maximum Ti is read-only and uses
+    the existing `max(vent.inspiratoryTime, 2*dt)` backstop; I:E remains editable.
+    See [the bounded teaching slice](docs/desktop-teaching-slice.md).
+
 ---
 
 ## 5. Traps that have already cost time
@@ -307,13 +349,19 @@ clock/activity and preserves terminal guards, with separate interrupted records
 rather than failed triggers. Reset/mode change resolve accepted queued selections
 before starting a fresh run. See docs/effort-timing-contract.md.
 
-**The left rail.** Effort controls live inside a **collapsed "Patient" group**,
-and the entire left rail is `display:none` in Teaching Mode. Any script that
-touches the rail must leave Teaching Mode first, then expand the group.
+**Patient visibility.** Effort and mechanics live in the separate `#patient-panel`,
+closed initially at every width. Patient opens a persistent panel at >=1300 CSS
+px and a nonmodal drawer below that width. Reset/Teach/resize retain the choice;
+a reload starts closed again.
+Patient and Teach are independent. Header actions can light-dismiss the narrow
+drawer through focus leaving it; reopen Patient before driving its inputs.
+Teach hides ventilator settings; Patient remains independent. Additional outputs
+start collapsed with native keyboard disclosure. Loops start off and must be enabled
+explicitly before asserting loop geometry.
 
 **Runtime-injected DOM.** The PC-CSV mode button and the `#ps-control` /
 `#cycle-percent-control` elements do **not** exist in `index.html` — `js/main.js`
-injects them. `syncMonitorLayout()` reparents the RR and VE rows at init, so DOM
+injects them. `syncMonitorLayout()` moves seven existing readout rows and the recurring-pause control at init, so DOM
 order in the HTML is not runtime order. Grepping the HTML and concluding a
 feature is missing is a false negative.
 

@@ -1607,3 +1607,136 @@ body.teaching-mode .flow-highlight-help { display: flex; flex-wrap: wrap; gap: 6
 /* Manual hold must keep touch ownership without scrolling the rail. */
 #hold-toggle { touch-action: none; user-select: none; }
 #hold-source, #hold-attempt, #manual-hold-help { white-space: normal; overflow-wrap: anywhere; }
+
+/* Approved desktop teaching slice: the same controls and measurements in both views. */
+.app, body.teaching-mode .app {
+    grid-template-columns: 228px minmax(0, 1fr) 264px;
+    grid-template-rows: auto minmax(0, 1fr);
+}
+body.patient-open .app { grid-template-columns: 228px minmax(0, 1fr) 264px 248px; }
+.header { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+.header__status { grid-column: 1; flex-wrap: wrap; }
+.header__transport { grid-column: 2; grid-row: 1; flex-wrap: wrap; justify-self: end; gap: 5px; }
+.header__alerts { grid-column: 1 / -1; grid-row: 2; }
+.header__alerts-list:empty { display: none; }
+.controls, body.teaching-mode .controls {
+    display: flex; grid-column: 1; grid-row: 2;
+    min-width: 0; min-height: 0; padding: 10px; gap: 10px;
+}
+.control-group { padding: 10px; }
+.controls .control-group__title { margin-bottom: 8px; }
+.controls .control { margin-bottom: 12px; }
+.controls .control__header { gap: 4px; flex-wrap: wrap; }
+.controls .trigger-control .control__header { gap: 8px; }
+.mode-toggle { flex-wrap: wrap; }
+.mode-btn { flex: 1 1 44%; }
+.ie-group { flex-wrap: wrap; }
+.waveforms, body.teaching-mode .waveforms { grid-column: 2; grid-row: 2; padding: 10px; gap: 5px; }
+.parameters, body.teaching-mode .parameters {
+    grid-column: 3; grid-row: 2; min-width: 0; min-height: 0; padding: 10px; gap: 10px;
+}
+.patient-panel {
+    grid-column: 4; grid-row: 2; min-width: 0; min-height: 0; overflow-y: auto;
+    padding: 10px; border-left: 1px solid var(--border-panel); background: var(--bg-panel);
+}
+.patient-panel[hidden] { display: none; }
+.patient-panel .control-group { padding: 0; border: 0; background: none; box-shadow: none; }
+.patient-panel .control-group__body { display: flex; flex-direction: column; gap: 10px; }
+.patient-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.patient-heading h2 { font-size: 14px; margin: 0; }
+.patient-panel .control { margin: 0; }
+.patient-panel .control__header { flex-wrap: wrap; gap: 5px; }
+.patient-panel .control__range { width: 100%; min-width: 0; }
+.patient-panel .pmus-slider-row { flex-wrap: wrap; }
+.patient-panel .pmus-slider-row .control__range { flex-basis: 100%; }
+.csv-backstop { padding: 8px; border: 1px solid var(--border-panel); border-radius: 4px; font-size: 11px; }
+.csv-backstop[hidden] { display: none; }
+.csv-backstop p { margin: 5px 0 0; color: var(--text-dim); }
+.key-outputs, body.teaching-mode .parameters .key-outputs { padding: 10px; flex-shrink: 0; }
+.key-outputs h2 { margin: 0 0 4px; }
+.parameters .key-output, body.teaching-mode .parameters .key-output {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 5px;
+    padding: 7px 0; border-bottom: 1px solid var(--border-panel);
+}
+body.teaching-mode .parameters .param-row.param-row--measurement.key-output { display: flex; }
+.parameters .key-output:last-child { border-bottom: 0; }
+.parameters .key-output .param-row__label,
+body.teaching-mode .parameters .key-output .param-row__label { font-size: 12px; flex: 1; min-width: 80px; }
+.parameters .key-output .param-row__value,
+body.teaching-mode .parameters .key-output .param-row__value { font-size: 25px; line-height: 1.1; }
+.parameters .key-output .param-row__status,
+body.teaching-mode .parameters .key-output .param-row__status {
+    flex-basis: 100%; min-width: 0; font-size: 10px; white-space: normal; line-height: 1.3;
+}
+.key-output-unit { flex-basis: 100%; text-align: right; color: var(--text-dim); font-size: 10px; }
+.key-output #param-rr { font-size: 25px; }
+body.teaching-mode .key-output #param-rr { flex-basis: 100%; }
+body.teaching-mode .key-output .rr-triple__num { font-size: 20px; }
+.parameters .param-group:not(.key-outputs) { padding: 8px 10px; }
+.parameters .param-group:not(.key-outputs) .param-group__title { margin-bottom: 4px; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+@media (max-width: 1299px) {
+    body.patient-open .app { grid-template-columns: 228px minmax(0, 1fr) 264px; }
+    .patient-panel {
+        position: fixed; z-index: 15; right: 0; top: 0; bottom: 0;
+        width: min(320px, 100vw); padding: 16px;
+        box-shadow: -12px 0 36px rgba(0, 0, 0, .55);
+    }
+}
+@media (max-width: 850px) {
+    html, body { height: auto; overflow: auto; }
+    .app, body.teaching-mode .app, body.patient-open .app {
+        display: flex; flex-direction: column; height: auto; min-height: 100vh;
+    }
+    .header { display: flex; flex-wrap: wrap; }
+    .header__status, .header__transport, .header__alerts { flex-wrap: wrap; justify-content: flex-start; }
+    .controls, body.teaching-mode .controls { overflow: visible; }
+    .controls .control-group { min-width: 0; }
+    .waveforms, body.teaching-mode .waveforms { min-height: 750px; }
+    .waveform-panel { min-height: 150px; }
+    .parameters, body.teaching-mode .parameters { overflow: visible; }
+    .adaptive-panel__values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Owner-approved hierarchy revision: current palette and reviewed primary emphasis. */
+.app, body.patient-open .app { grid-template-columns: 256px minmax(0, 1fr) 264px; }
+body.patient-open .app { grid-template-columns: 256px minmax(0, 1fr) 264px 248px; }
+.setting-section-label {
+    margin: 3px 0 7px; color: #6daeff; font-size: 10px;
+    font-weight: 650; letter-spacing: .08em; text-transform: uppercase;
+}
+.setting-primary { border: 2px solid #6daeff; background: #192c42; border-radius: 6px; padding: 8px; }
+.controls .setting-primary > .control {
+    margin: 0; padding: 7px 2px; background: transparent; border: 0; border-radius: 0;
+}
+.controls .setting-primary > .control + .control { border-top: 1px solid rgba(255,255,255,.12); }
+.setting-primary .control__label { font-size: 13px; font-weight: 700; }
+.setting-primary .control__value { font-size: 15px; }
+.controls .setting-primary .control__header { gap: 2px 6px; margin-bottom: 5px; }
+.setting-secondary { margin-top: 7px; }
+.controls .setting-secondary > .control {
+    margin: 0; padding: 6px 1px; background: transparent; border: 0; border-radius: 0; opacity: 1;
+}
+.setting-secondary .control__label { font-weight: 500; color: var(--text-primary); }
+.setting-secondary .control__value { color: var(--text-bright); }
+.setting-secondary .ie-group { flex-wrap: nowrap; gap: 3px; }
+.setting-secondary .ie-btn { min-width: 0; padding: 4px 5px; font-size: 10px; }
+#inactive-settings[hidden] { display: none; }
+.patient-panel .control__value { flex-shrink: 0; }
+.additional-outputs { border: 1px solid var(--border-panel); border-radius: 6px; }
+.additional-outputs > summary { padding: 12px; font-size: 12px; cursor: pointer; }
+#additional-outputs-body { display: flex; flex-direction: column; gap: 10px; padding: 0 8px 8px; }
+body.teaching-mode .parameters .additional-outputs .param-group { display: block; }
+body.teaching-mode .parameters .additional-outputs .param-group__title[data-collapsible] {
+    pointer-events: auto; cursor: pointer;
+}
+body.teaching-mode .parameters .additional-outputs .param-group__title[data-collapsible]::after { display: inline; }
+body.teaching-mode .parameters .additional-outputs [data-collapsed] + .param-group__body { display: none !important; }
+body.teaching-mode .parameters .additional-outputs .param-row { display: flex; }
+body.teaching-mode .controls { display: none; }
+body.teaching-mode .app { grid-template-columns: 0 minmax(0, 1fr) 264px; }
+body.teaching-mode.patient-open .app { grid-template-columns: 0 minmax(0, 1fr) 264px 248px; }
+@media (max-width: 1299px) {
+    body.patient-open .app { grid-template-columns: 256px minmax(0, 1fr) 264px; }
+    body.teaching-mode .app, body.teaching-mode.patient-open .app { grid-template-columns: 0 minmax(0, 1fr) 264px; }
+}

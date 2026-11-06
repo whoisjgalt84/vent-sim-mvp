@@ -43,7 +43,7 @@
  */
 
 
-import { AdaptiveController } from './adaptive-controller.js?v=28';
+import { AdaptiveController } from './adaptive-controller.js?v=31';
 
 // =============================================================================
 // RING BUFFER
@@ -205,6 +205,9 @@ export class SimulationEngine {
 
         // --- Global Clock ---
         this.globalTime = 0;
+        // Metadata clock: actual physics ticks across hold-preserving fresh runs.
+        // It never changes transport, physics, or the per-run globalTime clock.
+        this._elapsedPhysicsTicks = 0;
 
         // --- Breath State Machine ---
         this.phase      = Phase.EXPIRATION;
@@ -894,6 +897,12 @@ export class SimulationEngine {
 
     get manualHoldSupported() { return !this.vent.isSpontaneousMode() && !this.vent.isAdaptiveMode(); }
 
+    get manualHoldAge_s() {
+        return this.lastValidManualHold
+            ? (this._elapsedPhysicsTicks - this.lastValidManualHold.completedAtPhysicsTick) * this.dt
+            : null;
+    }
+
     get manualHoldState() {
         const state = this._manualHold;
         return freezeRecord({ ...state, supported: this.manualHoldSupported,
@@ -1290,6 +1299,7 @@ export class SimulationEngine {
             const result = freezeRecord({ mechanics: holdMechanics,
                 configuredMode: this.currentBreath.configuredMode, breathId: this.currentBreath.breathId,
                 startedAt_s: this.currentBreath.startedAt_s, completedAt_s: this.globalTime,
+                completedAtPhysicsTick: this._elapsedPhysicsTicks,
                 settingsFingerprint: this.currentBreath.settingsFingerprint,
                 cancellationReason: canceled ? state.reason : null,
                 simulationGeneration: this.currentBreath.simulationGeneration,
@@ -1742,6 +1752,7 @@ export class SimulationEngine {
 
         // Advance all clocks
         this.globalTime   += this.dt;
+        this._elapsedPhysicsTicks++;
         if (Number.isFinite(this.globalTime) && this.globalTime >= 0) {
             this._veExpectedTick = Math.round(this.globalTime / this.dt);
         }

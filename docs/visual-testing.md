@@ -18,12 +18,14 @@ npm run test:visual              # compare against those host snapshots
 
 The verification surfaces have distinct purposes:
 
-- `npm test`: 300 original engine assertions plus 22 controller, 24 integration,
-  22 selective legacy fixtures and 41 effort/pressure groups (CI on Node 22 and 24).
-- `npm run test:browser`: 44 original checks, 12 adaptive, 4 effort/pressure and 5 Effort-slider groups; its server
-  lifecycle is self-contained (CI in the pinned Playwright image).
-- `npm run test:visual:docker`: 16 required visual/determinism/cache-busting
-  groups (13 existing plus 3 effort/pressure) in the pinned Playwright image.
+- `npm test`: engine assertions, integration, preservation and contract groups;
+  the canonical inventory and receipt boundaries are in
+  [CLAUDE.md](../CLAUDE.md#verification-inventory).
+- `npm run test:browser`: the complete commissioned browser inventory from the
+  same canonical inventory; its server lifecycle is self-contained.
+- `npm run test:visual:docker`: 21 groups (18 waveform/determinism/cache-busting
+  plus 3 manual-hold) in the pinned Playwright image. Group counts are not PNG
+  counts; the approved slice installed 146 waveform and 16 manual-hold PNGs.
 - `npm run test:visual`: the same test code against current-host diagnostic
   snapshots, usable only after snapshots for that host have been generated.
 - `node scratch/shot.cjs`: diagnostic screenshots for human investigation; not
@@ -142,18 +144,25 @@ confidence instead of information.
 
 ## 4. Writing a new scenario
 
-Use `tests/visual/helpers.js`. Two traps it exists to handle (CLAUDE.md §5):
+Use `tests/visual/helpers.js`. Account for the current layout
+([CLAUDE.md](../CLAUDE.md#5-traps-that-have-already-cost-time)):
 
-1. The effort controls live inside a **collapsed "Patient" group** — expand the
-   rail first.
-2. The entire left rail is `display:none` in Teaching Mode — **do all rail work
-   before** turning Teaching Mode on.
+1. Patient starts closed at every width. Open it explicitly before driving
+   effort/mechanics controls. It is a persistent panel at widths >=1300 CSS px
+   and a drawer below that width, independent of Teach. `h.enableEffort()` opens
+   it as part of setup; use that helper before Teach in this recipe.
+2. Teach hides ventilator settings, not Patient. Complete ventilator-setting
+   setup in Standard. Narrow header focus can dismiss the drawer; reopen Patient
+   before using its controls. `h.teachingMode()` retains the Patient choice across
+   its narrow-layout toggle. Loops start off and need explicit enabling before
+   loop assertions; additional outputs start collapsed and need explicit opening
+   before inspecting their rows.
 
 ```js
 test('my scenario', async ({ page }) => {
     await h.open(page);                                   // load + pause
-    await h.enableEffort(page, { patientRR: 30, pmus: 6 }); // rail work
-    await h.teachingMode(page);                            // rail now hidden
+    await h.enableEffort(page, { patientRR: 30, pmus: 6 }); // opens Patient
+    await h.teachingMode(page);                            // ventilator rail hidden
     await h.seek(page, 14);                                // exact timestamp
 
     // Guard the screenshot with a behavioural assertion, so a scenario that
@@ -181,8 +190,8 @@ or device validity.
 
 It also does not replace `scratch/verify-batch.cjs`, which asserts *behaviour*
 across its original 44 checks — tooltips, alarm state machines, element geometry.
-The current browser runner also requires 12 adaptive, 4 effort/pressure and 5 Effort-slider
-groups. Browser and visual gates are
+The browser runner also requires the successor groups listed in
+[the canonical inventory](../CLAUDE.md#verification-inventory). Browser and visual gates are
 complementary: verify-batch answers "does it still work", this answers "does it
 still look right".
 
@@ -225,15 +234,15 @@ legacy comparison contract without regenerating the pinned reference.
 
 ## 8. Effort/pressure successor candidates (2026-10-02)
 
-The required visual inventory adds three effort/pressure groups to the existing
-13, for 16 total. Signed pressure and pressure-volume loops, trigger-axis and
+At this historical checkpoint, the visual inventory added three effort/pressure
+groups to the existing 13, for 16 total. Signed pressure and pressure-volume loops, trigger-axis and
 historical metadata, finite expiratory supply and closed-valve patient-side
 pressure receive behavior guards and full-resolution candidate views. Candidate
 PNG totals and exact identities come from the generated review manifest; group
 counts are not PNG counts. Candidate generation and repeat comparison use the
 isolated evidence checkout and preserve all accepted baseline bytes.
 
-The current `npm test` inventory is 300 original assertions, 22 controller
+At that checkpoint, `npm test` required 300 original assertions, 22 controller
 groups, 24 integration groups, 22 selective legacy fixtures and 41 effort/pressure
 groups (40 engine groups plus one renderer group containing 66 subchecks).
 Legacy accounting retains 92,500 exercised ticks: 28,000 exact passive ticks
@@ -246,13 +255,11 @@ substituting current HEAD as its reference. Independent review and meaningful
 fault detection supplement these gates; owner acceptance of exact image bytes,
 baseline installation, staging and commits are separate subsequent actions.
 
-The current `npm run test:browser` gate requires 44 original checks, 12 adaptive groups, 4 effort/pressure groups, 5 Effort-slider groups and 8 demonstration-reset groups. These are commissioned gate inventories; a passing result requires a receipt for the checked revision.
-
 ## Shared reset verification (2026-10-07)
 
-The current aggregate gates additionally require 28 demonstration-reset engine
-groups and eight demonstration-reset browser groups. The pinned-Linux visual
-inventory is now 18 groups (the existing 16 plus two shared-reset groups).
+That checkpoint added 28 demonstration-reset engine groups and eight
+demonstration-reset browser groups. Its pinned-Linux visual inventory was
+18 groups (the existing 16 plus two shared-reset groups).
 Prior inventories above describe their existing groups or historical checkpoints.
 See [the shared reset contract](demonstration-reset-contract.md).
 
@@ -269,3 +276,14 @@ Generate candidates only in an isolated checkout and compare twice with updates
 disabled. No accepted snapshots are changed by this implementation. Required
 engine/browser additions are 43 and 20 groups respectively. See
 [the approved contract](manual-inspiratory-hold-contract.md).
+
+## Bounded desktop teaching slice closeout (2026-11-06)
+
+Christian accepted the complete visual package and separately authorized its
+reference-only installation. All 162 installed reference hashes match the
+reviewed manifest. The installed-reference gate passed all 21 groups and
+162 screenshot comparisons with updates disabled, snapshots enabled and
+unchanged tolerances. See [the slice evidence record](desktop-teaching-slice.md#accepted-local-candidate-and-evidence)
+for exact identities, retire/add mappings, fresh versus carried-forward results
+and evidence limits. This documentation closeout runs no simulator tests and
+authorizes no commit or publication action.

@@ -94,6 +94,19 @@ async function group(browser,name,fn) {
                 .filter(e=>e.getClientRects().length).map(e=>e.dataset.settingId)));
             assert.deepEqual(order,expected[i],mode);
             assert.equal(await p.evaluate(()=>hierarchyNodes.every(e=>document.getElementById(e.id)===e)),true);
+            const volumeMode=mode==='vc-cmv'||mode==='pc-cmva';
+            assert.equal(await p.locator('#vt').isVisible(),volumeMode,'VT visibility '+mode);
+            if(volumeMode) {
+                const name=mode==='pc-cmva'?'Target VT':'Tidal Volume';
+                assert.equal(await p.locator('#vt-control-label').innerText(),name,'visible VT label '+mode);
+                const named=p.getByRole('slider',{name,exact:true});
+                assert.equal(await named.getAttribute('id'),'vt','exact accessible VT name '+mode);
+                await named.focus();assert.equal(await named.evaluate(e=>e===document.activeElement),true);
+                const other=name==='Target VT'?'Tidal Volume':'Target VT';
+                assert.equal(await p.getByRole('slider',{name:other,exact:true}).count(),0,'no stale VT name '+mode);
+            } else {
+                assert.equal(await p.getByRole('slider',{name:/^(Tidal Volume|Target VT)$/}).count(),0,'hidden VT is not exposed '+mode);
+            }
             for(const id of expected[i][0]) {
                 const input=p.locator('#'+id);await input.focus();assert.equal(await input.evaluate(e=>e===document.activeElement),true);
                 const ax=await input.ariaSnapshot();assert.match(ax,/slider ".+"/,'named primary slider '+id);

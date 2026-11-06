@@ -140,6 +140,7 @@ const fakeClock = () => {
         await test('R02 UI rejects overlap, shows applied/queued timing and applies only at boundary in all modes', async () => {
             const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
             await page.goto(url); await page.waitForFunction(() => window.__vsim);
+            await page.locator('#btn-patient').click(); // Explicitly open the timing-control fixture.
             for (const mode of ['vc-cmv','pc-cmv','PC-CSV','pc-cmva']) {
                 const initial = await page.evaluate(mode => {
                     __vsim.setupEffort({ mode, pMusMax:4, patientRR:12, neuralTi:1, respiratoryRate:6,

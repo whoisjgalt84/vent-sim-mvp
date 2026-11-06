@@ -40,6 +40,7 @@ const fresh = async page => {
         document.querySelectorAll('.controls [data-collapsed]').forEach(e => e.click());
         window.__vsim.seek(14);
     });
+    if(!(await page.locator('#patient-panel').isVisible()))await page.locator('#btn-patient').click();
 };
 const range = async (page,id,value) => {
     await page.locator('#'+id).fill(String(value));
@@ -64,8 +65,12 @@ async function ax(page,selector) {
 const groups = [
     ['trigger-presentation',async page=>{
         assert.equal(await page.locator('#trigger-display').count(),0,'upper trigger readout removed');
-        const cardStyle=selector=>page.locator(selector).evaluate(e=>{const s=getComputedStyle(e);return {background:s.backgroundColor,border:s.border,padding:s.padding,radius:s.borderRadius,opacity:s.opacity};});
-        for(const selector of ['#fio2-control','.trigger-control'])assert.deepEqual(await cardStyle(selector),await cardStyle('#vt-control'),'matching existing setting card '+selector);
+        const cardStyle=selector=>page.locator(selector).evaluate(e=>{const s=getComputedStyle(e);return {background:s.backgroundColor,left:s.borderLeftWidth,right:s.borderRightWidth,bottom:s.borderBottomWidth,padding:s.padding,radius:s.borderRadius,opacity:s.opacity};});
+        assert.deepEqual(await cardStyle('#fio2-control'),await cardStyle('#vt-control'),'primary rows share the approved surface and spacing');
+        assert.equal(await page.locator('#vt-control').evaluate(e=>getComputedStyle(e).borderTopWidth),'0px','first primary row has no separator');
+        assert.equal(await page.locator('#fio2-control').evaluate(e=>getComputedStyle(e).borderTopWidth),'1px','later primary row has the approved separator');
+        assert.equal(await page.locator('.trigger-control').evaluate(e=>e.parentElement.id),'secondary-settings','Trigger uses secondary emphasis');
+        assert.deepEqual(await cardStyle('.trigger-control'),{background:'rgba(0, 0, 0, 0)',left:'0px',right:'0px',bottom:'0px',padding:'6px 1px',radius:'0px',opacity:'1'},'secondary Trigger row remains unboxed');
         const fio2AX=await ax(page,'#fio2');assert.equal(fio2AX.role.value,'slider');assert.equal(fio2AX.name.value,'FiO2');assert.equal(fio2AX.description.value,'40%');
         const gap=await page.locator('.trigger-control .control__header').evaluate(e=>{
             const label=e.querySelector('.control__label').getBoundingClientRect();
@@ -177,14 +182,14 @@ const groups = [
         await range(page,'resistance',17);await help.click();
         assert((await page.locator('#measurement-help-text').textContent()).includes('R or C has been edited.'));
         assert.equal(await page.locator('#mechanics-example-source').isVisible(),false,'custom mechanics has no current COPD attribution');
-        await page.click('#btn-teaching-mode');assert.equal(await popover.isVisible(),false,'hidden rail trigger dismisses help');
+        await page.click('#btn-teaching-mode');assert.equal(await popover.isVisible(),false,'outside header click dismisses help');
         await page.click('#btn-teaching-mode');await help.click();assert(await popover.isVisible(),'help works after returning from Teaching');
     }],
     ['effort-single-state',async page=>{
         assert.equal(await page.locator('#pmus-display').count(),0,'upper Pmus/Off row removed');
         const toggle=page.locator('#pmus-toggle');
         for(const mode of modes) {
-            // Exit adaptive with nonzero effort; known zero-effort exit remains deferred.
+            // Amplitude-zero mode transitions have their own R03 matrix in the slice checks.
             await page.click(`.mode-btn[data-mode="${mode}"]`);
             if((await state(page)).operatorSettings.patientRR>0)await toggle.click();
             assert.equal(await page.locator('#pmus-btn-label').textContent(),'Passive');
@@ -222,18 +227,23 @@ const groups = [
             await range(page,'pmus-max',11.75);await range(page,'resistance',17);
             assert.equal(await page.locator('#preset').evaluate(e=>parseFloat(getComputedStyle(e).marginBottom)),8,'custom mechanics dropdown spacing '+width);
             for(const selector of ['#fio2-control','.trigger-control','#preset','#mechanics-example-state','#pmus-sliders']) {
+                const belongsToPatient=await page.locator(selector).evaluate(e=>!!e.closest('#patient-panel'));
+                if(width<1300 && await page.locator('#patient-panel').isVisible()!==belongsToPatient)
+                    await page.locator(belongsToPatient?'#btn-patient':'#patient-close').click();
                 await page.locator(selector).scrollIntoViewIfNeeded();
                 const geometry=await page.locator(selector).evaluate(e=>{
-                    const r=e.getBoundingClientRect(),rail=document.querySelector('.controls').getBoundingClientRect();
+                    const r=e.getBoundingClientRect(),rail=e.closest('.controls,.patient-panel').getBoundingClientRect();
                     return {left:r.left,right:r.right,railLeft:rail.left,railRight:rail.right,overflow:e.scrollWidth>e.clientWidth+1};
                 });
                 assert(geometry.left>=geometry.railLeft-.5 && geometry.right<=geometry.railRight+.5,'rail containment '+width+' '+selector);
                 assert.equal(geometry.overflow,false,'no clipped content '+width+' '+selector);
             }
+            if(width<1300 && await page.locator('#patient-panel').isVisible())await page.locator('#patient-close').click();
             await page.click('[data-measurement-help="trigger-signal"]');
             assert(await page.locator('#measurement-help').isVisible());await page.keyboard.press('Escape');
-            await page.click('#btn-teaching-mode');assert.equal(await page.locator('.controls').isVisible(),false);
+            await page.click('#btn-teaching-mode');assert.equal(await page.locator('.controls').isVisible(),false,'approved waveform focus hides settings in Teach');
             await page.evaluate(()=>window.__vsim.redraw());await page.click('#btn-teaching-mode');
+            if(!(await page.locator('#patient-panel').isVisible()))await page.locator('#btn-patient').click();
             assert(await page.locator('#mechanics-example-state').isVisible(),'custom warning returns in Standard');
             assert.equal(await page.locator('#pmus-max').inputValue(),'11.75');
         }

@@ -34,7 +34,7 @@ const browser=await chromium.launch(browserOptions);
 await test(browser,'default unmeasured values and separate recurring setting',async page=>{
     for(const id of ['hold-pplat','hold-dp','hold-crs','hold-raw','param-pplat','param-dp']) assert.equal(await page.locator('#'+id).textContent(),'--');
     assert.equal(await page.locator('#hold-duration').inputValue(),'0');
-    assert.equal(await page.locator('#hold-duration').evaluate(e=>e.closest('.control-group').querySelector('.control-group__title').textContent),'Ventilator Settings');
+    assert.equal(await page.locator('#hold-duration').evaluate(e=>e.closest('.control-group').querySelector('.control-group__title').textContent),'Maneuvers');
     assert.equal((await state(page)).lastValidManualHold,null);
 });
 await test(browser,'native mouse arms without premature cycling and displays simulated duration',async page=>{

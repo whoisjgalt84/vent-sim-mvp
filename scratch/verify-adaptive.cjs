@@ -257,6 +257,7 @@ const groups = [
 // Separate commissioned Phase B groups. Original adaptive inventory remains12.
 const effortGroups = [
     ['finite-boundary-history-and-signed-geometry', async page => {
+        if (!(await state(page)).resetDiagnostics.loopsVisible) await page.locator('#btn-loops').click();
         await page.evaluate(() => window.__vsim.setupEffort({mode:'PC-CSV',resistance:5,compliance:.06,pMusMax:12,patientRR:12,neuralTi:1,triggerType:'pressure',peep_cmH2O:5}));
         await rail(page); await step(page, 1200);
         const old = await state(page), events = old.triggerEvents.filter(e=>e.type==='patient');

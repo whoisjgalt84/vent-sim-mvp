@@ -25,6 +25,8 @@ async function fresh(browser, tag) {
     page.on('pageerror', (e) => errs.push(String(e)));
     page.on('console', (m) => { if (m.type() === 'error' && !/404|Failed to load resource/.test(m.text())) errs.push(m.text()); });
     await page.goto(`${URL}?t=${tag}`, { waitUntil: 'networkidle' });
+    // These legacy fixtures inspect Patient and retain their prior panel geometry.
+    await page.locator('#btn-patient').click();
     page._errs = errs;
     return { ctx, page };
 }
@@ -114,6 +116,7 @@ async function failedTriggerTerminologyContract(page) {
 // real-engine stepping; the hook only exposes independent source evidence.
 async function readoutContract(page) {
     return page.evaluate(() => {
+        document.getElementById('additional-outputs').open = true;
         const api = window.__vsim;
         api.pause();
         const errors = [], geometry = [], states = [];
@@ -152,8 +155,8 @@ async function readoutContract(page) {
                     : String(Number(s.retainedHoldMechanics.drivingPressure.value.toFixed(1))),
                 'param-ve': s.deliveredVentilation.status === 'available'
                     ? s.deliveredVentilation.valueLpm.toFixed(1) : '—',
-                'param-map': p.pressures.map_cmH2O === null ? '—' : String(p.pressures.map_cmH2O),
-                'param-total-peep': p.pressures.totalPeep_cmH2O === null ? '—' : String(p.pressures.totalPeep_cmH2O),
+                'param-map': csv || p.pressures.map_cmH2O === null ? '—' : String(p.pressures.map_cmH2O),
+                'param-total-peep': csv || p.pressures.totalPeep_cmH2O === null ? '—' : String(p.pressures.totalPeep_cmH2O),
                 'param-live-trapped': String(Math.round(s.liveTrapped_mL)),
             };
             for (const [id, value] of Object.entries(expected)) {
@@ -162,8 +165,8 @@ async function readoutContract(page) {
             const labels = {
                 'param-pip': 'Measured PIP', 'param-pplat': 'Measured Pplat',
                 'param-dp': 'Hold-derived driving pressure',
-                'param-vt': 'Measured VT', 'param-ve': 'Delivered VE',
-                'param-map': 'Predicted breath MAP', 'param-total-peep': 'Predicted total PEEP',
+                'param-vt': 'Inspired VT', 'param-ve': 'Delivered VE',
+                'param-map': 'Predicted MAP', 'param-total-peep': 'Predicted total PEEP',
                 'param-live-trapped': 'Live modeled trapped volume',
                 'param-auto-peep': s.teachingMode ? 'Flow Baseline' : 'Predicted steady-state auto-PEEP',
             };
@@ -177,7 +180,7 @@ async function readoutContract(page) {
                     `${name} ${id}: accessible group must use visible provenance`);
             }
             if (!s.teachingMode) {
-                require(text('param-auto-peep') === (p.pressures.autoPeep_cmH2O === null ? '—' : String(p.pressures.autoPeep_cmH2O)), `${name} predicted auto-PEEP`);
+                require(text('param-auto-peep') === (csv || p.pressures.autoPeep_cmH2O === null ? '—' : String(p.pressures.autoPeep_cmH2O)), `${name} predicted auto-PEEP presentation`);
                 require(text('rr-param-label') === 'Measured RR', `${name} measured RR label`);
                 require(el('param-rr').title.includes('zero until two completions'), `${name} measured RR help`);
                 require(el('param-rr').closest('.param-row').getAttribute('aria-labelledby') === 'rr-param-label',
@@ -187,7 +190,7 @@ async function readoutContract(page) {
                 // Patient rail; expand that group to test its actual visibility.
                 document.querySelectorAll('.controls [data-collapsible][data-collapsed]').forEach(e => e.click());
                 const trap = [...document.querySelectorAll('.mechanics-chip')].at(-1);
-                const trapMl = p.volumes.trappedVolume_mL;
+                const trapMl = csv ? null : p.volumes.trappedVolume_mL;
                 require(trapMl === null
                     ? ![...document.querySelectorAll('.mechanics-chip')].some(e => e.textContent.includes('Predicted steady-state trapped volume'))
                     : trap.innerText.replace(/\s+/g, ' ').trim() ===
@@ -249,10 +252,10 @@ async function readoutContract(page) {
             && passive.liveTrapped_mL === 0 && passive.predicted.volumes.trappedVolume_mL > 20,
             'zero-effort live state must stay independent of nonzero prediction');
         const oldMap = text('param-map'); input('ps-pressure', 20); api.redraw();
-        take('CSV changed predictions'); require(text('param-map') !== oldMap, 'MAP prediction changes with settings');
-        require(el('alerts').innerText.includes('Predicted steady-state auto-PEEP 4'), 'active predicted auto-PEEP header badge');
+        take('CSV changed predictions'); require(text('param-map') === oldMap && text('param-map') === '—', 'CSV MAP remains unavailable after settings change');
+        require(!el('alerts').innerText.includes('Predicted steady-state auto-PEEP'), 'CSV suppresses configured-cycle auto-PEEP badge');
         teaching(true); api.redraw(); take('Teaching CSV no breath');
-        require(el('alerts').innerText.includes('Predicted steady-state auto-PEEP 4'), 'Teaching predicted auto-PEEP header badge');
+        require(!el('alerts').innerText.includes('Predicted steady-state auto-PEEP'), 'Teaching CSV suppresses configured-cycle auto-PEEP badge');
         effort(true); input('pmus-max', 0.5); input('patient-rr', 20); input('flow-trigger', 5);
         api.seek(15); const weak = take('CSV failed efforts 15s');
         require(weak.completed === null && weak.breathCount === 0 && weak.failedTriggers > 0,
@@ -361,7 +364,7 @@ async function presentationHelpContract(page) {
         dp: getComputedStyle(document.getElementById('param-dp')).fontSize,
         waveformWidth: document.querySelector('.waveforms').getBoundingClientRect().width,
     }));
-    require(standardType.pplat === '26px' && standardType.dp === '17px' && standardType.waveformWidth > 900,
+    require(standardType.pplat === '25px' && standardType.dp === '25px' && standardType.waveformWidth === 672,
         `standard typography/space changed: ${JSON.stringify(standardType)}`);
     require((await page.locator('#hold-status').textContent()).trim() === 'Last valid hold'
         && (await page.locator('#pplat-status').textContent()).includes('Last valid hold'),
@@ -453,7 +456,7 @@ async function presentationHelpContract(page) {
         dp: getComputedStyle(document.getElementById('param-dp')).fontSize,
         waveformWidth: document.querySelector('.waveforms').getBoundingClientRect().width,
     }));
-    require(teachingType.pplat === '28px' && teachingType.dp === '20px' && teachingType.waveformWidth > 1100,
+    require(teachingType.pplat === '25px' && teachingType.dp === '25px' && teachingType.waveformWidth === 928,
         `Teaching typography/space changed: ${JSON.stringify(teachingType)}`);
     const teachingBaseline = await firstVisible('#dp-status [data-measurement-help="modeled-baseline"]');
     await teachingBaseline.click();
@@ -707,15 +710,16 @@ if (require.main === module) (async () => {
         const { ctx, page } = await fresh(browser, 'a12');
         const vis = () => page.$eval('#loop-row', (r) => !r.classList.contains('loop-row--hidden'));
 
-        check('loops start visible', await vis());
+        check('loops start off', !(await vis()));
         await page.click('#btn-teaching-mode');
         await page.waitForTimeout(400);
-        check('loops SURVIVE entering Teaching Mode', await vis());
+        check('loops stay off entering Teaching Mode', !(await vis()));
         await page.click('#btn-teaching-mode');
         await page.waitForTimeout(400);
-        check('loops still visible after leaving Teaching Mode', await vis());
+        check('loops stay off after leaving Teaching Mode', !(await vis()));
 
-        // The user's explicit "off" must also be respected across the toggle.
+        // The user's explicit selection must also be respected across the toggle.
+        await page.click('#btn-loops');
         await page.click('#btn-loops');
         await page.waitForTimeout(200);
         check('loops off when the user turns them off', !(await vis()));
@@ -1008,7 +1012,7 @@ if (require.main === module) (async () => {
         const allVersions = [...(html + mainJs + ventJs + simJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 11 && allVersions.every(v => v === '28'),
+                && allVersions.length === 11 && allVersions.every(v => v === '31'),
             `imports=${imp.join(',')} html=${versions.join(',')} all eleven=${allVersions.join(',')}`);
     }
 

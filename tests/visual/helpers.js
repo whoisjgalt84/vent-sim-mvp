@@ -2,10 +2,8 @@
 /**
  * Shared setup for visual tests.
  *
- * Two traps these helpers exist to handle (see CLAUDE.md §5):
- *   1. The effort controls live inside a COLLAPSED "Patient" group.
- *   2. The entire left rail is `display:none` in Teaching Mode — so anything
- *      that touches the rail must run BEFORE Teaching Mode is turned on.
+ * Patient controls occupy an independent panel/drawer (CLAUDE.md §5).
+ * Open it explicitly before driving effort; narrow header actions require closing it.
  */
 
 // The browser requests /favicon.ico on its own and the static server 404s it.
@@ -57,6 +55,7 @@ export function trackLocalRequests(page) {
 export async function expandRail(page) {
     await page.$$eval('.controls [data-collapsible][data-collapsed]',
         (els) => els.forEach((el) => el.click()));
+    if (!(await page.locator('#patient-panel').isVisible())) await page.locator('#btn-patient').click();
 }
 
 /** Set a range input and fire the input event the app listens for. */
@@ -77,11 +76,15 @@ export async function enableEffort(page, { patientRR = 30, pmus = 6, neuralTi = 
 }
 
 export async function setMode(page, mode) {
+    if ((await state(page)).teachingMode) await teachingMode(page);
     await page.click(`.mode-btn[data-mode="${mode}"]`);
 }
 
 export async function teachingMode(page) {
+    const drawerOpen=page.viewportSize().width<1300 && await page.locator('#patient-panel').isVisible();
+    if(drawerOpen)await page.locator('#patient-close').click();
     await page.click('#btn-teaching-mode');
+    if(drawerOpen)await page.locator('#btn-patient').click();
 }
 
 /**

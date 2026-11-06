@@ -321,6 +321,10 @@ try {
         console.log('Commissioned manual-hold browser tally verified: 20 passed, 0 failed.');
         const reviewCode = await runChild([fileURLToPath(new URL('../tests/review-remediation.browser.cjs', import.meta.url))]);
         if (reviewCode !== 0) throw new Error('R-01/R-11 browser regression gate failed');
+        const sliceCode = await runChild([fileURLToPath(new URL('../tests/teaching-slice.browser.cjs', import.meta.url))]);
+        if (sliceCode !== 0) throw new Error('Teaching slice browser acceptance gate failed');
+        const hierarchyCode = await runChild([fileURLToPath(new URL('../tests/setting-hierarchy.browser.cjs', import.meta.url))]);
+        if (hierarchyCode !== 0) throw new Error('Approved setting hierarchy browser acceptance gate failed');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

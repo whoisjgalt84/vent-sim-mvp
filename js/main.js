@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=28';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=28';
-import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=28';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=28';
-import AlarmEngine from '../alarms.js?v=28';
+import { LungModel }        from './lung-model.js?v=31';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=31';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=31';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=31';
+import AlarmEngine from '../alarms.js?v=31';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=28';
+} from '../alarm-audio.js?v=31';
 
 
 // =============================================================================
@@ -47,7 +47,16 @@ let sim;
 let display;
 let pvLoop;
 let fvLoop;
-let loopsVisible = true;
+let loopsVisible = false;
+// Operator selection survives Off and visibility changes; engine amplitude stays zero while Off.
+let selectedEffortAmplitude = 2;
+// Presentation order only; settings and queued intent remain owned by vent/sim.
+const SETTING_HIERARCHY = Object.freeze({
+    'vc-cmv': { primary: ['vt', 'rr', 'peep', 'fio2'], secondary: ['flow-pattern-control', 'ie-group', 'trigger-type-group'] },
+    'pc-cmv': { primary: ['pinsp', 'rr', 'peep', 'fio2'], secondary: ['ie-group', 'trigger-type-group'] },
+    'PC-CSV': { primary: ['ps-pressure', 'peep', 'fio2'], secondary: ['ie-group', 'cycle-percent', 'trigger-type-group'] },
+    'pc-cmva': { primary: ['vt', 'rr', 'peep', 'fio2'], secondary: ['adaptive-setup', 'ie-group', 'trigger-type-group'] },
+});
 let currentIE   = [1, 2];
 // Presentation only: resets retain custom R/C, so they also retain this state.
 let customMechanics = false;
@@ -217,6 +226,7 @@ function init() {
     bindTransportControls();
     bindLoopToggle();
     bindTeachingModeToggle();
+    bindPatientPanel();
     bindCollapsibles();
     bindMeasurementHelp();
 
@@ -224,7 +234,7 @@ function init() {
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => renderFrame(), 100);
+        resizeTimer = setTimeout(() => refreshPresentation(), 100);
     });
 
     applyModeUI(vent.mode);
@@ -263,14 +273,29 @@ function animate(timestamp) {
 }
 
 function renderFrame() {
+    updateParams();
+    updateBreathInfo();
+    updateEffortTimingUI();
+    paintWaveforms();
+}
+
+// Visibility and resize events repaint without evaluating detectors or audio policy.
+function refreshPresentation() {
+    const summary = vent.summary();
+    updateMonitorValues(summary);
+    updateAlerts(summary, sim.breathSummary);
+    updateHoldResults();
+    updateBreathInfo();
+    updateEffortTimingUI();
+    paintWaveforms();
+}
+
+function paintWaveforms() {
     display.renderFromSim(sim);
     const unknown = document.getElementById('unknown-patient-trigger');
     if (unknown) unknown.hidden = !hasUnknownPatientTriggerProvenance(
         sim.getTriggerEvents(sim.globalTime - sim.displaySeconds, sim.globalTime));
     if (loopsVisible) renderLoops();
-    updateParams();
-    updateBreathInfo();
-    updateEffortTimingUI();
 }
 
 /**
@@ -325,6 +350,7 @@ function ensureAdaptiveModeOption() {
 function syncOperatorControls() {
     effortTimingError = null;
     updateEffortTimingUI();
+    syncEffortControl();
     document.getElementById('hold-duration').value = vent.holdTime * 10;
     setText('hold-duration-display', vent.holdTime.toFixed(1) + ' s');
     const adaptive = sim.adaptiveState;
@@ -510,9 +536,10 @@ function applyModeUI(mode) {
     const isAdaptive = mode === MODE_PC_CMVA;
     document.body.classList.toggle('adaptive-mode', isAdaptive);
     const effortSlider = document.getElementById('pmus-max');
-    effortSlider.min = isAdaptive ? '0' : '0.25';
+    effortSlider.min = '0';
     effortSlider.title = isAdaptive ? ADAPTIVE_HELP['adaptive-effort']
-        : 'Peak inspiratory muscle pressure (Pmus), 0.25–12 cmH₂O';
+        : 'Peak inspiratory muscle pressure (Pmus), 0–12 cmH₂O in 0.25 increments';
+    syncEffortControl();
     updateModeLabel();
     updatePcDisclosure();
 
@@ -547,7 +574,7 @@ function applyModeUI(mode) {
         pinspParamLabel.innerHTML = isCsv ? 'P<sub>sup</sub>' : 'P<sub>insp</sub>';
     }
 
-    setText('vt-param-label', 'Measured VT');
+    setText('vt-param-label', 'Inspired VT');
 
     updateFlowLabel();
 
@@ -557,6 +584,45 @@ function applyModeUI(mode) {
     updateHoldResultsVisibility();
     updateHoldControlState(isCsv);
     updateAdaptiveView();
+    syncSettingHierarchy(mode);
+}
+
+function syncSettingHierarchy(mode) {
+    const body = document.getElementById('vt-control').closest('.control-group').querySelector('.control-group__body');
+    if (!document.getElementById('primary-settings')) {
+        body.insertAdjacentHTML('beforeend', `
+            <div class="setting-section-label" id="primary-settings-label">Primary settings</div>
+            <div class="setting-primary" id="primary-settings" role="group" aria-labelledby="primary-settings-label"></div>
+            <div class="setting-section-label" id="secondary-settings-label">More settings</div>
+            <div class="setting-secondary" id="secondary-settings" role="group" aria-labelledby="secondary-settings-label"></div>
+            <div id="inactive-settings" hidden></div>`);
+    }
+    const inactive = document.getElementById('inactive-settings');
+    // Move stable nodes, never rebuild inputs or dispatch setting edits.
+    for (const control of body.querySelectorAll('.control')) {
+        delete control.dataset.settingRole;
+        inactive.appendChild(control);
+    }
+    for (const role of ['primary', 'secondary']) {
+        const group = document.getElementById(role + '-settings');
+        for (const id of SETTING_HIERARCHY[mode][role]) {
+            const node = document.getElementById(id);
+            const control = node.classList.contains('control') ? node : node.closest('.control');
+            control.dataset.settingId = id;
+            control.dataset.settingRole = role;
+            group.appendChild(control);
+            const label = control.querySelector('.control__label');
+            if (!label.id) label.id = 'setting-label-' + id;
+            for (const range of control.querySelectorAll('input[type="range"]')) {
+                if (!range.hasAttribute('aria-label') && !range.hasAttribute('aria-labelledby')) {
+                    range.setAttribute('aria-labelledby', label.id);
+                }
+                const value = control.querySelector('.control__value[id]');
+                if (value && !range.hasAttribute('aria-describedby')) range.setAttribute('aria-describedby', value.id);
+            }
+        }
+    }
+    body.appendChild(document.getElementById('csv-backstop'));
 }
 
 function updateModeLabel() {
@@ -741,6 +807,24 @@ function requestEffortTimingFromUI(change) {
     updateEffortTimingUI();
 }
 
+function syncEffortControl() {
+    const enabled = sim.effortTiming.enabled;
+    if (enabled) selectedEffortAmplitude = vent.pMusMax;
+    const slider = document.getElementById('pmus-max');
+    slider.value = selectedEffortAmplitude;
+    slider.setAttribute('aria-valuetext', formatPmusValue(selectedEffortAmplitude));
+    setText('pmus-max-display', formatPmusValue(selectedEffortAmplitude));
+    const btn = document.getElementById('pmus-toggle');
+    btn.classList.toggle('hold-btn--active', enabled);
+    btn.setAttribute('aria-pressed', String(enabled));
+    setText('pmus-btn-label', enabled ? 'Active' : 'Passive');
+    setText('effort-state', enabled
+        ? `Effort On${selectedEffortAmplitude === 0 ? ' · zero amplitude' : ''}`
+        : `Effort Off · selected ${formatPmusValue(selectedEffortAmplitude)}`);
+    document.getElementById('pmus-sliders').style.display = enabled ? '' : 'none';
+    document.getElementById('patient-rr-control').style.display = enabled ? '' : 'none';
+}
+
 function bindPmusToggle() {
     const btn = document.getElementById('pmus-toggle');
     btn.addEventListener('click', () => {
@@ -754,9 +838,8 @@ function bindPmusToggle() {
             document.getElementById('pmus-sliders').style.display = 'none';
             document.getElementById('patient-rr-control').style.display = 'none';
         } else {
-            const pmax = parseFloat(document.getElementById('pmus-max').value);
-            const nti  = parseInt(document.getElementById('neural-ti').value) / 10;
-            const prr  = parseInt(document.getElementById('patient-rr').value);
+            const pmax = selectedEffortAmplitude;
+            const { neuralTi: nti, patientRR: prr } = sim.effortTiming.requested;
             try { sim.requestEffortTiming({ patientRR: prr, neuralTi: nti }); }
             catch (error) {
                 effortTimingError = error.message;
@@ -776,6 +859,7 @@ function bindPmusToggle() {
             document.getElementById('patient-rr-control').style.display = '';
         }
         btn.setAttribute('aria-pressed', String(!wasActive));
+        syncEffortControl();
         updateEffortTimingUI();
         updateMonitorValues(vent.summary());
         updateModeLabel();
@@ -784,7 +868,9 @@ function bindPmusToggle() {
 
 function onPmusMaxChange(slider) {
     const pmax = parseFloat(slider.value);
-    vent.pMusMax = pmax;
+    selectedEffortAmplitude = pmax;
+    if (sim.effortTiming.enabled) vent.pMusMax = pmax;
+    syncEffortControl();
     // Units beside the slider itself, not only in the collapsed group header —
     // the Effort row was the one control with no inline value at all (SME-002).
     setText('pmus-max-display', formatPmusValue(pmax));
@@ -1099,6 +1185,7 @@ function bindLoopToggle() {
 
     btn.addEventListener('click', () => {
         loopsVisible = !loopsVisible;
+        btn.setAttribute('aria-pressed', String(loopsVisible));
         if (loopsVisible) {
             row.classList.remove('loop-row--hidden');
             btn.classList.add('transport-btn--active');
@@ -1106,10 +1193,43 @@ function bindLoopToggle() {
             row.classList.add('loop-row--hidden');
             btn.classList.remove('transport-btn--active');
         }
+        refreshPresentation();
     });
 
-    // Start visible
-    btn.classList.add('transport-btn--active');
+    row.classList.add('loop-row--hidden');
+    btn.setAttribute('aria-pressed', 'false');
+}
+
+function bindPatientPanel() {
+    const button = document.getElementById('btn-patient');
+    const panel = document.getElementById('patient-panel');
+    const setOpen = (open, restore = false) => {
+        if (!open && (restore || panel.contains(document.activeElement))) button.focus();
+        panel.hidden = !open;
+        document.body.classList.toggle('patient-open', open);
+        button.setAttribute('aria-expanded', String(open));
+        button.classList.toggle('transport-btn--active', open);
+        refreshOpenMeasurementHelp();
+        refreshPresentation();
+        if (open && restore && window.matchMedia('(max-width: 1299px)').matches) {
+            document.getElementById('patient-close').focus();
+        }
+    };
+    // Initial presentation only. Reset, Teach and resize retain the user's choice.
+    setOpen(false);
+    button.addEventListener('click', () => setOpen(panel.hidden, true));
+    document.getElementById('patient-close').addEventListener('click', () => setOpen(false, true));
+    panel.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !openMeasurementHelpTrigger) {
+            event.preventDefault(); setOpen(false, true);
+        }
+    });
+    document.addEventListener('focusin', event => {
+        if (!panel.hidden && window.matchMedia('(max-width: 1299px)').matches
+            && !panel.contains(event.target) && event.target !== button
+            && event.target !== document.getElementById('btn-teaching-mode')
+            && !document.getElementById('measurement-help').contains(event.target)) setOpen(false);
+    });
 }
 
 function bindTeachingModeToggle() {
@@ -1121,12 +1241,13 @@ function bindTeachingModeToggle() {
         btn.classList.toggle('transport-btn--teaching-active', enabled);
         btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
         btn.textContent = enabled ? 'Teach On' : 'Teach Off';
+        // Patient visibility, settings and all disclosure selections are independent of Teach.
         // Loops are NOT forced off on entering Teaching Mode any more (SME-012).
         // The old behaviour silently discarded the user's loop choice on the way
         // in and never restored it on the way out, so loops read as unavailable
         // in Teaching Mode even though the button still worked. Loop visibility
         // is now purely the user's, in both modes.
-        renderFrame();
+        refreshPresentation();
     };
 
     setTeachingMode(false);
@@ -1141,11 +1262,20 @@ function bindTeachingModeToggle() {
 
 function bindCollapsibles() {
     document.querySelectorAll('[data-collapsible]').forEach(title => {
+        title.setAttribute('role', 'button');
+        title.tabIndex = 0;
+        title.setAttribute('aria-expanded', String(!title.hasAttribute('data-collapsed')));
+        title.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault(); title.click();
+            }
+        });
         title.addEventListener('click', () => {
             const body = title.nextElementSibling;
             if (!body) return;
 
             const isCollapsed = title.hasAttribute('data-collapsed');
+            title.setAttribute('aria-expanded', String(isCollapsed));
 
             if (isCollapsed) {
                 // Expand
@@ -1170,6 +1300,11 @@ function bindCollapsibles() {
 // =============================================================================
 
 function bindSlider(id, callback) {
+    const input = document.getElementById(id);
+    if (input && !input.labels?.length && !input.hasAttribute('aria-label')) {
+        const label = input.closest('.control')?.querySelector('.control__label');
+        input.setAttribute('aria-label', label?.textContent.trim() || input.title || id);
+    }
     const slider = document.getElementById(id);
     if (!slider) return;
     slider.addEventListener('input', () => {
@@ -1325,8 +1460,7 @@ function updateRRDisplay() {
         // PR4b — dual-rate readout (display only; reads values the engine already
         // computes). Set = configured machine rate; Measured = sim.measuredRR;
         // Patient = sim.patientRR (— when effort is off, so it reads "no effort").
-        const effortOn = Number.isFinite(sim?.patientRR) && sim.patientRR > 0
-            && Number.isFinite(vent?.pMusMax) && vent.pMusMax > 0;
+        const effortOn = sim.effortTiming.enabled;
         const rrPatient = effortOn ? Math.round(sim.patientRR) : '—';
         const patientClass = effortOn ? 'rr-triple__num--patient' : 'rr-triple__num--off';
         // Failed-trigger counter (PR4). The Patient-vs-Measured gap is only
@@ -1411,8 +1545,26 @@ function countIneffectiveEfforts() {
 
 // Display-only refresh: mode/reset handlers call this synchronously without
 // adding alarm evaluations or advancing the engine (VSM-CLIN-004).
+// Presentation gate only. Shared analytical getters and alarm metrics keep their raw inputs.
+function monitorSummary(summary) {
+    if (!vent.isSpontaneousMode()) return summary;
+    const blank = object => Object.fromEntries(Object.keys(object).map(key => [key, null]));
+    return { ...summary,
+        pressures: { ...blank(summary.pressures), peep_cmH2O: summary.pressures.peep_cmH2O,
+            inspiratoryPressure: summary.pressures.inspiratoryPressure },
+        timing: blank(summary.timing), safety: blank(summary.safety),
+        volumes: blank(summary.volumes) };
+}
+
+function mapUnavailableReason() {
+    if (vent.isSpontaneousMode()) return 'Unavailable in PC-CSV: configured-cycle estimate.';
+    if (vent.isAdaptiveMode()) return 'Unavailable while pressure adapts.';
+    if (vent.pMusActive) return 'Unavailable with active effort.';
+    return 'Configured-cycle prediction';
+}
+
 function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentilation) {
-    const s = summary;
+    const s = monitorSummary(summary);
     const m = sim.breathSummary;
     const isCsv = vent.isSpontaneousMode();
     const currentDelivery = sim.isCurrentDeliveredVentilation(deliveredVentilation);
@@ -1427,6 +1579,11 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
     setText('param-pplat', hold.pplat.value !== null ? `${formatHoldValue(hold.pplat.value)}` : '—');
     setText('pplat-status', sim.lastValidManualHold ? 'Last valid hold · ' + sim.lastValidManualHold.configuredMode : 'No valid manual hold');
     setText('param-map', formatHoldValue(s.pressures.map_cmH2O));
+    setText('map-status', mapUnavailableReason());
+    const backstop = document.getElementById('csv-backstop');
+    backstop.hidden = !isCsv;
+    setText('csv-backstop-value', `${Math.max(vent.inspiratoryTime, sim.dt * 2).toFixed(2)} s`);
+    setText('csv-backstop-source', `Configured RR ${vent.respiratoryRate}/min · I:E ${vent.ieRatioString}. Max Ti = max((60/RR) × I/(I+E), ${(sim.dt * 2).toFixed(2)} s). Flow cycling takes precedence. No backup ventilation.`);
     setText('param-dp', hold.drivingPressure.value !== null
         ? `${formatHoldValue(hold.drivingPressure.value)}` : '—');
     setText('param-pr', formatHoldValue(s.pressures.resistivePressure));
@@ -1456,8 +1613,8 @@ function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentil
     setText('param-live-trapped', `${Math.round(sim.volumeAtBreathStart * 1000)}`);
     setText('param-flow', Number.isFinite(displayFlow) ? `${displayFlow}` : '—');
 
-    setText('param-ti',     `${s.timing.inspiratoryTime_s}s`);
-    setText('param-te',     `${s.timing.expiratoryTime_s}s`);
+    setText('param-ti', Number.isFinite(s.timing.inspiratoryTime_s) ? `${s.timing.inspiratoryTime_s}s` : '—');
+    setText('param-te', Number.isFinite(s.timing.expiratoryTime_s) ? `${s.timing.expiratoryTime_s}s` : '—');
     setText('param-te-tau', s.safety.teOverTau === null ? '—' : `${s.safety.teOverTau}`);
     setText('param-exp-completion', s.safety.expiratoryCompletionPercent === null ? '—' : `${Math.round(s.safety.expiratoryCompletionPercent)}%`);
 
@@ -1759,40 +1916,36 @@ function setText(id, text) {
 }
 
 function syncMonitorLayout() {
-    const timingGroup = document.getElementById('timing-vent-group');
-    const timingBody = timingGroup?.querySelector('.param-group__body');
-    const peepGroup = document.getElementById('peep-group');
-    const rrEl = document.getElementById('param-rr');
-    if (!rrEl) {
-        console.warn('RR element not found in DOM');
-        return;
+    const pause = document.getElementById('hold-duration').closest('.control');
+    document.getElementById('hold-toggle').closest('.control-group__body').prepend(pause);
+    // Move the existing authoritative readouts once; no second monitor state or duplicate IDs.
+    const body = document.getElementById('key-output-body');
+    for (const [id, unit] of [['pip', 'cmH₂O'], ['pplat', 'cmH₂O'], ['map', 'cmH₂O'],
+        ['vt', 'mL'], ['rr', '/min'], ['ve', 'L/min'], ['dp', 'cmH₂O']]) {
+        const row = document.getElementById('param-' + id).closest('.param-row');
+        row.classList.remove('teaching-only');
+        row.classList.add('teaching-key', 'key-output');
+        const units = document.createElement('span');
+        units.className = 'key-output-unit'; units.textContent = unit;
+        row.appendChild(units); body.appendChild(row);
     }
-
-    const rrRow = rrEl.closest('.param-row');
-    const veRow = document.getElementById('param-ve')?.closest('.param-row');
-    const vtRow = document.getElementById('param-vt')?.closest('.param-row');
-
-    if (timingGroup && peepGroup && peepGroup.previousElementSibling !== timingGroup) {
-        peepGroup.parentNode.insertBefore(timingGroup, peepGroup);
+    const parameters = document.querySelector('.parameters');
+    const extra = document.createElement('details');
+    extra.id = 'additional-outputs';
+    extra.className = 'additional-outputs';
+    extra.innerHTML = '<summary id="additional-outputs-summary">Additional outputs</summary><div id="additional-outputs-body"></div>';
+    const extraBody = extra.querySelector('div');
+    for (const child of [...parameters.children]) {
+        if (child.matches('.param-group:not(.key-outputs), #param-mode-row')) extraBody.appendChild(child);
     }
-
-    if (!timingBody) return;
-
-    if (rrRow && rrRow.parentElement !== timingBody) {
-        timingBody.insertBefore(rrRow, timingBody.firstChild);
-    }
-
-    if (rrRow) {
-        rrRow.classList.remove('teaching-only');
-    }
-
-    if (veRow) {
-        veRow.classList.add('teaching-key');
-    }
-
-    if (veRow && vtRow && veRow.nextElementSibling !== vtRow) {
-        timingBody.insertBefore(veRow, vtRow);
-    }
+    parameters.appendChild(extra);
+    extra.addEventListener('toggle', () => {
+        if (!extra.open) {
+            if (extra.contains(document.activeElement)) extra.querySelector('summary').focus();
+            if (extra.contains(openMeasurementHelpTrigger)) closeMeasurementHelp();
+        }
+        refreshPresentation();
+    });
 }
 
 function updateTeachingIndicators() {
@@ -1899,7 +2052,7 @@ function updateAlerts(summary, measured) {
     if (!container) return;
 
     const badges = [];
-    const s = summary;
+    const s = monitorSummary(summary);
 
     if (!s.isAdaptive && s.safety.pplatAbove30) badges.push(makeBadge('danger', `Predicted Pplat ${s.pressures.pplat_cmH2O} > 30`));
     if (!s.isAdaptive && s.safety.drivingPressureAbove15) badges.push(makeBadge('warning', `ΔP ${s.pressures.drivingPressure} > 15`));
@@ -2004,6 +2157,8 @@ function detailedResistanceStatusCopy(result) {
 }
 
 function measurementHelpText(key) {
+    if (key === 'inspired-vt') return 'Net modeled volume gained during the completed inspiration, from its finalized breath record. It remains available through the next inspiration. This is not a separate exhaled-volume measurement.';
+    if (key === 'predicted-map') return mapUnavailableReason() + '\n\nMAP is an analytical configured-cycle prediction, not a current-breath measurement. It uses configured timing and mechanics. No live MAP or fallback value is substituted when unavailable.';
     if (key === 'demonstration-reset') return 'Reset starts a new run with the currently selected settings and keeps the current paused or running state. It clears simulated time, accumulated trapped volume, traces, loops, breath and trigger history, and measured outputs. Delivered VE collects a new 30 s window. In PC-CMVa, queued target and PEEP edits and the selected maximum are applied, and the controller restarts at its configured initial pressure. Sound and Silence keep their current state. Clearing trapped volume represents a new run, not a treatment effect.';
     if (key === 'waveform-legend') return `${WAVEFORM_HELP}\n\n${SIGNED_PRESSURE_HELP}`;
     if (key === 'air-trapping') return AIR_TRAPPING_HELP;
@@ -2043,7 +2198,9 @@ function measurementHelpText(key) {
         } else if (delivery.valueLpm === 0) {
             parts.push('No delivered volume from completed breaths in this 30 s window. Zero is an available value; VE alarms can evaluate it.');
         }
-        if (vent.isAdaptiveMode()) {
+        if (vent.isSpontaneousMode()) {
+            parts.push('Predicted VE: unavailable in PC-CSV. Configured machine timing is not a delivered-breath prediction.');
+        } else if (vent.isAdaptiveMode()) {
             parts.push(ADAPTIVE_HELP['adaptive-predictions']);
         } else if (vent.pMusActive && vent.isPressureMode()) {
             parts.push('Predicted VE: unavailable. ' + ACTIVE_PREDICTIONS_HELP);
@@ -2253,6 +2410,11 @@ function updateHoldResults() {
         ? 'Holding ' + state.duration_s.toFixed(2) + ' s' : state.armed ? 'Armed' : state.outcome === 'timing-limit'
             ? 'Timing limit · ' + state.duration_s.toFixed(2) + ' s' : 'Ready');
     setText('hold-status', saved ? 'Last valid hold' : 'No valid manual hold');
+    const holdAge = sim.manualHoldAge_s;
+    const previousRun = saved && saved.simulationGeneration !== sim.simulationGeneration;
+    const ageText = saved ? `${holdAge.toFixed(1)} simulated s ago · ${previousRun ? 'previous run' : 'current run'}` : '';
+    setText('hold-age', ageText);
+    setText('pplat-status', saved ? 'Last valid hold · ' + saved.configuredMode + ' · ' + ageText : 'No valid manual hold');
     if (saved) {
         const config = JSON.parse(saved.settingsFingerprint);
         const sourceControl = saved.configuredMode === 'vc-cmv'
@@ -2410,6 +2572,7 @@ function installTestHooks() {
             vent.flowTriggerLpm = 2;
             vent.pressureTriggerCmH2O = 1;
             vent.pMusMax = pMusMax;
+            selectedEffortAmplitude = pMusMax;
             sim.configureEffortTiming({ patientRR: patientRR === 0 ? sim.effortTiming.requested.patientRR : patientRR, neuralTi }, patientRR !== 0);
             sim.configureAdaptive({ maximumPressure_cmH2O });
             sim.setMode(MODE_PC_CMVA);
@@ -2592,6 +2755,8 @@ function installTestHooks() {
                 retainedHoldMechanics: sim.retainedHoldMechanics,
                 manualHold: sim.manualHoldState,
                 lastValidManualHold: sim.lastValidManualHold,
+                manualHoldAge_s: sim.manualHoldAge_s,
+                selectedEffortAmplitude,
                 lastManualHoldAttempt: sim.lastManualHoldAttempt,
                 runningPip:      s.pip,
                 pplat:           s.pplat,

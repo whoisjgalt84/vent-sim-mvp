@@ -234,6 +234,8 @@ groups.push(['native-help-controls-and-header-geometry', async page => {
     await page.keyboard.press('Escape'); assert(!(await page.locator('#measurement-help').isVisible())); assert(await trigger.evaluate(el => document.activeElement === el));
     for (const width of [1440, 1100, 800]) {
         await page.setViewportSize({ width, height: 900 });
+        // Inspect native header controls with the independent overlay drawer closed.
+        if(width<1300&&await page.locator('#patient-panel').isVisible())await page.locator('#patient-close').click();
         for (const teaching of [false, true]) {
             if ((await state(page)).teachingMode !== teaching) await page.locator('#btn-teaching-mode').click();
             const boxes = await page.locator('.header__transport > button').evaluateAll(els => els.map(el => { const r = el.getBoundingClientRect(); return { id: el.id, left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, clipped: el.scrollWidth > el.clientWidth }; }));

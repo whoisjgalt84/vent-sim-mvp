@@ -17,9 +17,9 @@ const OUT = process.env.EFFORT_SLIDER_EVIDENCE && path.resolve(process.env.EFFOR
 const TRAJECTORY = process.env.EFFORT_SLIDER_TRAJECTORY && path.resolve(process.env.EFFORT_SLIDER_TRAJECTORY);
 const PROTOTYPE = '.pmus-slider-row:has(#pmus-max){display:grid;grid-template-columns:1fr auto;row-gap:10px}.pmus-slider-row #pmus-max{grid-column:1 / -1;grid-row:2;width:100%;box-sizing:border-box}.pmus-slider-row #pmus-max-display{grid-column:2;grid-row:1}';
 const INLINE_DIAGNOSTIC = '.pmus-effort-control{flex-direction:row;align-items:center;gap:6px}.pmus-effort-header{display:contents}.pmus-effort-header #pmus-max-display{order:2}.pmus-effort-control>#pmus-max{width:auto;flex:1;order:1}';
-const HELP = 'Peak inspiratory muscle pressure (Pmus), 0.25–12 cmH₂O';
+const HELP = 'Peak inspiratory muscle pressure (Pmus), 0–12 cmH₂O in 0.25 increments';
 const ADAPTIVE_HELP = "Instructor-selected peak amplitude of this model's periodic inspiratory muscle-pressure waveform. Effort does not respond physiologically to changing assistance. This amplitude is not measured work of breathing.";
-const EXCLUDED = 'PC-CMVa Pmus 0 -> PC-CMV mode-exit synchronization is excluded. Mode tests explicitly set 8 before exiting adaptive; no normalization or runtime repair is performed. Other zero-effort destinations remain unconfirmed.';
+const EXCLUDED = 'Zero-amplitude mode transitions are separately covered by tests/teaching-slice.browser.cjs.';
 const receipts = [], sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const state = page => page.evaluate(() => window.__vsim.state());
 const format = value => `${Number(value).toFixed(2).replace(/\.?0+$/, '')} cmH₂O`;
@@ -59,14 +59,17 @@ async function keyboard(page, value, selector='#pmus-max') {
 async function setup(page, mode='pc-cmva', value=0) {
     if ((await state(page)).teachingMode) await page.locator('#btn-teaching-mode').click();
     await page.locator(`.mode-btn[data-mode="${mode}"]`).click();
-    const patient=page.locator('.controls [data-collapsible]').filter({hasText:'Patient'});
-    if (await patient.getAttribute('data-collapsed')!==null) await patient.click();
+    await transport(page,false);
+    const patient=page.locator('#patient-panel');
+    if (!(await patient.isVisible())) await page.locator('#btn-patient').click();
     if ((await state(page)).operatorSettings.patientRR===0) await page.locator('#pmus-toggle').click();
     await keyboard(page,12,'#patient-rr'); await keyboard(page,value);
-    await transport(page,false);
     // R-02 queues RR changes. Start the amplitude-only fixture with those
     // accepted selections applied, rather than assuming an immediate edit.
+    if(page.viewportSize().width<1300)await page.locator('#patient-close').click();
     await page.locator('#btn-reset').click();
+    // Header actions light-dismiss the nonmodal drawer on narrow viewports.
+    if (!(await patient.isVisible())) await page.locator('#btn-patient').click();
     await page.locator('#pmus-max').scrollIntoViewIfNeeded();
     const s=await snapshot(page); assert.equal(s.mode,mode); assert.equal(s.settings.patientRR,12); agreement(s,value);
     return s;
@@ -137,7 +140,9 @@ async function image(page,name,selector) {
 const groups = [
     ['native-drags-and-geometry',async page=>{
         await setup(page); const before=await snapshot(page);
-        let shared=TRAJECTORY&&fs.existsSync(TRAJECTORY)?JSON.parse(fs.readFileSync(TRAJECTORY,'utf8')):trajectory(71+7,71+73-7,180);
+        // Preserve the 59 px/181-point pointer excursion, translated to the separate Patient panel.
+        const origin=LAYOUT==='implemented'?before.range.x:71;
+        let shared=TRAJECTORY&&fs.existsSync(TRAJECTORY)?JSON.parse(fs.readFileSync(TRAJECTORY,'utf8')):trajectory(origin+7,origin+66,180);
         assert(Array.isArray(shared)&&shared.length===181&&shared.every(Number.isFinite),'shared horizontal trajectory inventory');
         if(TRAJECTORY&&!fs.existsSync(TRAJECTORY)) { fs.mkdirSync(path.dirname(TRAJECTORY),{recursive:true}); fs.writeFileSync(TRAJECTORY,JSON.stringify(shared,null,2)+'\n'); }
         const y=before.range.y+before.range.height/2;
@@ -218,7 +223,7 @@ const groups = [
     ['modes-and-keyboard',async page=>{
         const modes=[];await setup(page,'pc-cmva',8);
         for(const mode of ['vc-cmv','pc-cmv','PC-CSV','pc-cmva']) {
-            const initial=await setup(page,mode,8),min=mode==='pc-cmva'?0:0.25;
+            const initial=await setup(page,mode,8),min=0;
             assert.equal(initial.min,min);assert.equal(initial.max,12);assert.equal(initial.step,0.25);
             assert.equal(await page.locator('#pmus-max').getAttribute('title'),mode==='pc-cmva'?ADAPTIVE_HELP:HELP,'retained mode-specific title');
             const values=[];for(const value of [min,5.5,7.75,8,9.25,11.75,12]) {await keyboard(page,value);const s=await snapshot(page);agreement(s,value);values.push(s);}

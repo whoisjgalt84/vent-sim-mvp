@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=28">
+    <link rel="stylesheet" href="css/style.css?v=31">
 </head>
 <body>
 
@@ -40,6 +40,7 @@
             <button class="transport-btn" id="btn-pause" title="Pause/Play">⏸</button>
             <button class="transport-btn transport-btn--label" id="btn-loops" title="Toggle P-V / F-V Loops">Loops</button>
             <button class="transport-btn transport-btn--label" id="btn-teaching-mode" type="button" aria-pressed="false" title="Toggle Teaching Mode">Teach</button>
+            <button class="transport-btn transport-btn--label" id="btn-patient" type="button" aria-controls="patient-panel" aria-expanded="false">Patient</button>
         </div>
         <div class="header__alerts">
             <div id="alarm-banner" class="alarm-banner alarm-banner--ok">
@@ -65,7 +66,7 @@
     <!-- ================================================================ -->
     <!-- LEFT PANEL — Operator Controls                                   -->
     <!-- ================================================================ -->
-    <aside class="controls">
+    <aside class="controls" aria-label="Ventilator controls">
 
         <!-- Mode Selector -->
         <div class="control-group">
@@ -80,9 +81,13 @@
 
         <!-- Ventilator Settings -->
         <div class="control-group">
-            <div class="control-group__title" data-collapsible data-collapsed>Ventilator Settings</div>
-            <div class="control-group__body" style="display:none">
+            <div class="control-group__title">Ventilator settings</div>
+            <div class="control-group__body">
 
+<div class="csv-backstop" id="csv-backstop" hidden>
+                    <strong>Maximum Ti backstop: <span id="csv-backstop-value"></span></strong>
+                    <p id="csv-backstop-source"></p>
+                </div>
                 <!-- Tidal Volume (VC only) -->
                 <div class="control control--primary" id="vt-control">
                     <div class="control__header">
@@ -90,6 +95,7 @@
                         <span class="control__value" id="vt-display">500 mL</span>
                     </div>
                     <input type="range" class="control__range" id="vt"
+                           aria-labelledby="vt-control-label"
                            min="200" max="800" step="10" value="500">
                     <div class="adaptive-pending" id="adaptive-target-pending" hidden>
                         <span>Target change pending</span>
@@ -262,7 +268,7 @@
                 <!-- Historical manual measurements; recurring pauses do not publish here. -->
                 <div class="hold-results" id="hold-results">
                     <div class="hold-result-status" id="hold-status">No valid manual hold</div>
-                    <div class="hold-result-note" id="hold-source"></div>
+                    <p class="hold-result-note" id="hold-age"></p><div class="hold-result-note" id="hold-source"></div>
                     <div class="hold-result-note" id="hold-attempt" role="status"></div>
                     <div class="hold-result-row">
                         <span class="hold-result-heading">
@@ -361,10 +367,16 @@
             </div>
         </div>
 
+    </aside>
+
+    <!-- ================================================================ -->
+    <!-- CENTER — Waveform Displays                                       -->
+    <!-- ================================================================ -->
+<aside class="patient-panel" id="patient-panel" aria-labelledby="patient-title" hidden>
         <!-- Patient (combined: preset, effort, mechanics) (collapsed by default) -->
         <div class="control-group">
-            <div class="control-group__title" data-collapsible data-collapsed>Patient</div>
-            <div class="control-group__body" style="display:none">
+            <div class="patient-heading"><h2 id="patient-title">Patient</h2><button id="patient-close" type="button" class="transport-btn" aria-label="Close Patient panel">×</button></div>
+            <div class="control-group__body">
 
                 <!-- Preset -->
                 <div class="control__header">
@@ -429,8 +441,8 @@
                                     <span class="control__value" id="pmus-max-display">2 cmH₂O</span>
                                 </div>
                                 <input type="range" class="control__range" id="pmus-max"
-                                       min="0.25" max="12" step="0.25" value="2"
-                                       title="Peak inspiratory muscle pressure (Pmus), 0.25–12 cmH₂O">
+                                       min="0" max="12" step="0.25" value="2"
+                                       title="Peak inspiratory muscle pressure (Pmus), 0–12 cmH₂O">
                             </div>
                             <div class="pmus-slider-row">
                                 <span class="pmus-slider-label">T<sub>neural</sub></span>
@@ -443,6 +455,7 @@
                     </div>
                 </div>
 
+                <p class="hold-result-note" id="effort-state">Effort Off · selected 2 cmH₂O</p>
                 <!-- Patient Respiratory Rate -->
                 <div class="control" id="patient-rr-control" style="display:none">
                     <div class="control__header">
@@ -460,11 +473,7 @@
             </div>
         </div>
 
-    </aside>
-
-    <!-- ================================================================ -->
-    <!-- CENTER — Waveform Displays                                       -->
-    <!-- ================================================================ -->
+</aside>
     <main class="waveforms">
           <div id="effort-timing-status" class="effort-timing-status" role="status" hidden></div>
         <section class="adaptive-panel" id="adaptive-panel" aria-label="PC-CMVa adaptive targeting" hidden>
@@ -554,7 +563,7 @@
         <div class="waveform-panel">
             <canvas id="canvas-flow"></canvas>
         </div>
-        <div class="loop-row" id="loop-row">
+        <div class="loop-row loop-row--hidden" id="loop-row">
             <div class="loop-panel">
                 <canvas id="canvas-pv-loop"></canvas>
             </div>
@@ -567,7 +576,11 @@
     <!-- ================================================================ -->
     <!-- RIGHT PANEL — Monitored Parameters                               -->
     <!-- ================================================================ -->
-    <aside class="parameters">
+    <aside class="parameters" aria-label="Monitored outputs">
+        <section class="param-group param-group--teaching key-outputs" aria-labelledby="key-output-title">
+            <h2 class="param-group__title" id="key-output-title">Key outputs</h2>
+            <div class="param-group__body" id="key-output-body"></div>
+        </section>
 
         <!-- SME-013 — active mode at the head of the monitored-value column, so
              Teaching Mode reads top-to-bottom as a vent/patient system check:
@@ -599,10 +612,13 @@
                     <span class="param-row__value param-row__value--pressure" id="param-pinsp">—</span>
                 </div>
                 <div class="param-row param-row--provenance teaching-key" role="group" aria-labelledby="map-param-label">
-                    <span class="param-row__label" id="map-param-label">Predicted breath MAP</span>
+                    <span class="param-row__label" id="map-param-label">Predicted MAP</span>
+                    <button type="button" class="measurement-help-trigger" data-measurement-help="predicted-map"
+                            aria-label="Predicted MAP help" aria-expanded="false">i</button>
                     <button type="button" class="measurement-help-trigger" id="active-predictions-help" data-measurement-help="active-predictions"
                             aria-label="Active effort predictions unavailable help" aria-expanded="false" hidden>i</button>
                     <span class="param-row__value param-row__value--pressure" id="param-map">—</span>
+                    <span class="param-row__status" id="map-status">Configured-cycle prediction</span>
                 </div>
                 <div class="param-row param-row--large param-row--rr teaching-key teaching-only" role="group" aria-labelledby="rr-param-label">
                     <span class="param-row__label" id="rr-param-label">Measured RR</span>
@@ -657,7 +673,7 @@
             <div class="param-group__title" data-collapsible>Timing / Ventilation</div>
             <div class="param-group__body">
                 <div class="param-row param-row--large param-row--provenance teaching-key" role="group" aria-labelledby="vt-param-label">
-                    <span class="param-row__label" id="vt-param-label">Measured VT</span>
+                    <span class="param-row__label" id="vt-param-label">Inspired VT</span><button type="button" class="measurement-help-trigger" data-measurement-help="inspired-vt" aria-label="Inspired VT help" aria-expanded="false">i</button>
                     <span class="param-row__value param-row__value--volume" id="param-vt">—</span>
                 </div>
                 <div class="param-row param-row--large param-row--provenance param-row--measurement" role="group" aria-labelledby="ve-param-label">
@@ -727,8 +743,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=28"></script>
-<script type="module" src="js/main.js?v=28"></script>
+<script type="module" src="alarms.js?v=31"></script>
+<script type="module" src="js/main.js?v=31"></script>
 
 </body>
 </html>

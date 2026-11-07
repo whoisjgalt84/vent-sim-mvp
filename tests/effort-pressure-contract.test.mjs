@@ -457,7 +457,7 @@ function runRendererContractChecks(api) {
     function canvas() {
         let current=[];
         const c={ widthCss:700,heightCss:220,title:'',strokes:[],texts:[],clips:0,
-            addEventListener(){},getBoundingClientRect(){return{width:this.widthCss,height:this.heightCss,left:0,top:0}},getContext(){return ctx} };
+            addEventListener(){},removeAttribute(){},getBoundingClientRect(){return{width:this.widthCss,height:this.heightCss,left:0,top:0}},getContext(){return ctx} };
         const ctx={ beginPath(){current=[]},moveTo(x,y){current.push(['M',x,y])},lineTo(x,y){current.push(['L',x,y])},
             stroke(){c.strokes.push({color:this.strokeStyle,path:current.slice(),dash:this.dash?.slice()??[]})},fill(){},arc(x,y){current.push(['arc',x,y])},closePath(){},rect(){},clip(){c.clips++},save(){},restore(){},scale(){},fillRect(){},strokeRect(){},setLineDash(value){this.dash=value},measureText(text){return {width:text.length*6}},fillText(text,x,y){c.texts.push({text,x,y})},translate(){},rotate(){},createLinearGradient(){return {gradient:true,addColorStop(){}}} };
         return c;
@@ -542,9 +542,9 @@ function runRendererContractChecks(api) {
         check('highlight gap pen lifts',eq(highlightStroke.path.map(p=>p[0]),['M','M','L']));
         highlight.lastGeometry={plot:{x:0,y:0,w:10,h:200}};
         highlight._highlightHidden=()=>false;highlight._highlightHoverClient={x:3.5,y:100.5};highlight._syncHighlightTooltip();
-        const hitBeforeErase=highlightCanvas.title==='fixture';
+        const hitBeforeErase=highlight._highlightHelpText==='fixture';
         highlight._highlightHidden=x=>x>=3;highlight._syncHighlightTooltip();
-        check('erased highlight has no stale tooltip',hitBeforeErase && highlightCanvas.title==='');
+        check('erased highlight has no stale tooltip',hitBeforeErase && highlight._highlightHelpText==='');
         highlight._drawWaveformHighlights(highlight.ctx,[{...segments[0],tStart:8,tEnd:12}],[8,9,10,11,12],[1,2,3,4,5],t=>t%10,v=>v,plot);
         check('highlight wrap splits hover regions',highlight._overlayCues.at(-1).runs.length===2 && eq(highlight._overlayCues.at(-1).runs.map(run=>run.filter((_,i)=>i%2===0)),[[8,9],[0,1,2]]));
         const tailCanvas=canvas(),tail=new WaveformRenderer(tailCanvas,{kind:'flow'});

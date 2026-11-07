@@ -1,5 +1,7 @@
 # Teaching Mode overlay presentation and help repair
 
+**Later successor:** the [accepted overlay help panel](overlay-help-panel.md) replaces native waveform hover help with an app-controlled panel. This record retains its historical scope, identities, acceptance state and results.
+
 Owner approval: Sentinel_8892e58174d08191bb86621eacdebfab, 2026-10-10. Local implementation 2026-10-11 addresses SME-033/034. The original feedback intake and historical dispositions remain intact; the new repair is unstaged and uncommitted, with visual acceptance pending.
 
 Labels anchor to a sampled point in a visible highlighted run, including sweep wrap. One shared allocator separates label boxes and avoids trigger-marker bounds. A thin leader connects each label to its own trace; leaders are clipped to the plot and visible sweep region. Existing sampled highlight polylines, colors, widths, event producers and trigger marker definitions are unchanged. The supported 800/1000/1440 px layouts and 5/10/20/30 s windows are verified for label coverage and collisions, including the crowded 40/min recipe.

@@ -40,19 +40,19 @@ const fs=require('node:fs');
   const tail={tailWindow:{start:70,end:110},baselineReached:false};
   const fail=[{trace:'flow',tStart:3.9,tEnd:4.3,color:'#d4a23c',label:'Failed trigger',tooltip:FAILED_FLOW_HELP}];
   const render=(a=tail,b=fail)=>r.render(time,flow,[{type:'machine',time:2}],a,b,10,expiration);
-  const hover=t=>{const g=r.lastGeometry,box=canvas.getBoundingClientRect();const x=g.plot.x+(t%10)/10*g.plot.w,y=g.plot.y+g.plot.h-(-8-g.yMin)/(g.yMax-g.yMin)*g.plot.h;canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:box.left+x,clientY:box.top+y}));return canvas.title;};
-  render();const both=hover(6.6);const stable=[];for(let i=0;i<20;i++){r.render([...time,10+i/100],[...flow,-8],[],tail,fail,10,[...expiration,1]);stable.push(canvas.title===both);}
+  const hover=t=>{const g=r.lastGeometry,box=canvas.getBoundingClientRect();const x=g.plot.x+(t%10)/10*g.plot.w,y=g.plot.y+g.plot.h-(-8-g.yMin)/(g.yMax-g.yMin)*g.plot.h;canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:box.left+x,clientY:box.top+y}));return r._highlightHelpText;};
+  render();const both=hover(6.6);const stable=[];for(let i=0;i<20;i++){r.render([...time,10+i/100],[...flow,-8],[],tail,fail,10,[...expiration,1]);stable.push(r._highlightHelpText===both);}
   const patientDataKept=r.renderedTriggerMarkers.length===0;
   render(tail,[]);const air=hover(6.6);render(null,fail);const failed=hover(6.6);
-  render(null,[]);const cleared=canvas.title;
+  render(null,[]);const cleared=r._highlightHelpText;
   render();document.body.classList.remove('teaching-mode');render();const standard=hover(6.6);
   document.body.classList.add('teaching-mode');render();
-  const g=r.lastGeometry,box=canvas.getBoundingClientRect();canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:box.left+g.plot.x+1,clientY:box.top+g.plot.y+1}));const empty=canvas.title;
+  const g=r.lastGeometry,box=canvas.getBoundingClientRect();canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:box.left+g.plot.x+1,clientY:box.top+g.plot.y+1}));const empty=r._highlightHelpText;
   // A sweep wrap and nonfinite gap must not become hoverable connecting strokes.
   const breaks=r._expiratoryHoverRuns.every(run=>run.every((x,i)=>i%2||i<2||x>=run[i-2]));
   flow[660]=NaN;render();const noNaN=r._expiratoryHoverRuns.every(run=>run.every(Number.isFinite));
   // Inspiratory positive limbs, erase strip and an aged-out overlay must not claim broad help.
-  const at=(x,y)=>{const b=canvas.getBoundingClientRect();canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:b.left+x,clientY:b.top+y}));return canvas.title;};
+  const at=(x,y)=>{const b=canvas.getBoundingClientRect();canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:b.left+x,clientY:b.top+y}));return r._highlightHelpText;};
   render();let q=r.lastGeometry;
   const positive=at(q.plot.x+6.1/10*q.plot.w,q.plot.y+q.plot.h-(20-q.yMin)/(q.yMax-q.yMin)*q.plot.h);
   expiration[610]=1;expiration[611]=1;render();q=r.lastGeometry;
@@ -67,7 +67,7 @@ const fs=require('node:fs');
   const zero=at(q.plot.x+6.505/10*q.plot.w,q.plot.y+q.plot.h-(0-q.yMin)/(q.yMax-q.yMin)*q.plot.h);
   r.render(time,flow,[],tail,fail,10,expiration.map(()=>0));q=r.lastGeometry;
   const zeroNonExpiration=at(q.plot.x+6.505/10*q.plot.w,q.plot.y+q.plot.h-(0-q.yMin)/(q.yMax-q.yMin)*q.plot.h);
-  hover(6.6);r.render(time,flow,[],{tailWindow:{start:-100,end:-1},baselineReached:false},[],10,expiration);const aged=canvas.title;
+  hover(6.6);r.render(time,flow,[],{tailWindow:{start:-100,end:-1},baselineReached:false},[],10,expiration);const aged=r._highlightHelpText;
   const wrappedTime=time.map(t=>t+5),wrappedFlow=time.map(()=>-8);
   r.render(wrappedTime,wrappedFlow,[],tail,[],10,time.map(()=>1));
   const wrapSplit=r._expiratoryHoverRuns.length===2 && r._expiratoryHoverRuns.every(run=>run.every((x,i)=>i%2||i<2||x>=run[i-2]));
@@ -106,11 +106,11 @@ const fs=require('node:fs');
    const c=document.getElementById('canvas-flow'),b=c.getBoundingClientRect(),g=__vsim.state().renderers.flow.geometry;
    for(let x=g.plot.x+g.plot.w/2;x<g.plot.x+g.plot.w-12;x+=4)for(let y=g.plot.y+8;y<g.plot.y+g.plot.h-(0-g.yMin)/(g.yMax-g.yMin)*g.plot.h-4;y+=4){
      c.dispatchEvent(new MouseEvent('mousemove',{clientX:b.left+x,clientY:b.top+y}));
-     if(c.title.startsWith('Visible flow overlays:'))return {x:b.left+x,y:b.top+y,text:c.title};
+     if(__vsim.state().renderers.flow.overlayHelpHit.startsWith('Visible flow overlays:'))return {x:b.left+x,y:b.top+y,text:__vsim.state().renderers.flow.overlayHelpHit};
    }return null;
  });assert.ok(target,'positive-flow broad hover is reachable in the real app');
- await page.mouse.move(target.x,target.y);assert.equal(await page.locator('#canvas-flow').getAttribute('title'),target.text);
- await page.evaluate(()=>__vsim.stepTicks(10));assert.equal(await page.locator('#canvas-flow').getAttribute('title'),target.text);
+ await page.mouse.move(target.x,target.y);assert.equal(await page.evaluate(()=>__vsim.state().renderers.flow.overlayHelpHit),target.text);
+ await page.evaluate(()=>__vsim.stepTicks(10));assert.equal(await page.evaluate(()=>__vsim.state().renderers.flow.overlayHelpHit),target.text);
  await page.screenshot({path:'scratch/shots-usability/positive-expiration-native-hover.png'});
  assert.deepEqual(errors,[]);passed++;
  const phaseResult=await page.evaluate(async()=>{
@@ -128,10 +128,10 @@ const fs=require('node:fs');
        const index=t.findIndex((time,i)=>time>g.tMin+.2&&f[i]>0.5&&i+1<t.length&&f[i+1]>0.5&&!r._highlightHidden(x(time))&&!r._highlightHidden(x(time)-10)&&!r._highlightHidden(x(time)+10));
        if(index<0)throw new Error('No genuine positive expiration target');
        canvases.flow.dispatchEvent(new MouseEvent('mousemove',{clientX:box.left+x(t[index]),clientY:box.top+g.plot.y+g.plot.h-(f[index]-g.yMin)/(g.yMax-g.yMin)*g.plot.h}));
-       checks.push({triggerType,window,text:canvases.flow.title,passed:canvases.flow.title.startsWith('Visible flow overlays:')&&canvases.flow.title.includes('Failed trigger')});
+       checks.push({triggerType,window,text:r._highlightHelpText,passed:r._highlightHelpText.startsWith('Visible flow overlays:')&&r._highlightHelpText.includes('Failed trigger')});
      }
-     sim.reset();display.renderFromSim(sim);checks.push({triggerType,text:canvases.flow.title,passed:canvases.flow.title===''});
-     sim.setMode('pc-cmv');display.renderFromSim(sim);checks.push({triggerType,text:canvases.flow.title,passed:canvases.flow.title===''});
+     sim.reset();display.renderFromSim(sim);checks.push({triggerType,text:display.flowRenderer._highlightHelpText,passed:display.flowRenderer._highlightHelpText===''});
+     sim.setMode('pc-cmv');display.renderFromSim(sim);checks.push({triggerType,text:display.flowRenderer._highlightHelpText,passed:display.flowRenderer._highlightHelpText===''});
    }
    for(const mode of ['vc-cmv','pc-cmv','PC-CSV','pc-cmva']){
      const sim=new SimulationEngine(new Ventilator(new LungModel({resistance:10,compliance:.05}),{mode,pMusMax:2}));sim.configureEffortTiming({patientRR:12,neuralTi:1},true);

@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=32';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=32';
-import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=32';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=32';
-import AlarmEngine from '../alarms.js?v=32';
+import { LungModel }        from './lung-model.js?v=33';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=33';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=33';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=33';
+import AlarmEngine from '../alarms.js?v=33';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=32';
+} from '../alarm-audio.js?v=33';
 
 
 // =============================================================================
@@ -291,6 +291,7 @@ function refreshPresentation() {
 }
 
 function paintWaveforms() {
+    syncOverlayHelpContext();
     display.renderFromSim(sim);
     const unknown = document.getElementById('unknown-patient-trigger');
     if (unknown) unknown.hidden = !hasUnknownPatientTriggerProvenance(
@@ -2136,6 +2137,48 @@ let openMeasurementHelpTrigger = null;
 let measurementHelpClickPinned = false;
 let measurementHelpCloseTimer = null;
 let measurementHelpRestoringFocus = false;
+let overlayHelpVisible = new Set();
+let overlayHelpRead = new Set();
+let overlayHelpCopies = new Set();
+let overlayHelpVisibleCopies = new Set();
+let overlayHelpSuppressed = false;
+let overlayHelpGeneration = null;
+const isOverlayHelp = key => ['air-trapping', 'failed-trigger-highlight', 'flow-overlays'].includes(key);
+const overlayHelpKey = cue => cue.text === AIR_TRAPPING_HELP ? 'air-trapping' : 'failed-trigger-highlight';
+function syncOverlayHelpContext() {
+    const generation = sim.simulationGeneration + ':' + sim.modeGeneration;
+    if (overlayHelpGeneration !== generation || !document.body.classList.contains('teaching-mode')) {
+        if (isOverlayHelp(openMeasurementHelpTrigger?.dataset.measurementHelp)) {
+            const focused = document.getElementById('measurement-help').contains(document.activeElement);
+            closeMeasurementHelp(focused);
+        }
+        overlayHelpGeneration = generation;
+        overlayHelpVisible.clear();
+    }
+}
+function overlayHelpText() {
+    return 'These explanations describe highlighted intervals, not necessarily the breath under the pointer.\n\n' +
+        [...overlayHelpCopies].join('\n\n');
+}
+function updateOverlayHelpDetails(key) {
+    const active = isOverlayHelp(key);
+    document.getElementById('overlay-help-controls').hidden = !active;
+    const status = document.getElementById('overlay-help-status');
+    document.getElementById('overlay-help-heading').textContent = active ? 'Flow overlay explanations' : '';
+    document.getElementById('overlay-help-close').textContent = active ? 'Close' : '';
+    if (!active) { status.hidden = true; status.textContent = ''; document.getElementById('overlay-help-pin').textContent = ''; return; }
+    const missing = [...overlayHelpRead].filter(k => !overlayHelpVisible.has(k))
+        .map(k => k === 'air-trapping' ? 'air trapping' : 'Failed trigger');
+    const copy = missing.length ? `Not currently visible: ${missing.join(' and ')}.` : '';
+    status.hidden = !missing.length;
+    if (status.textContent !== copy) status.textContent = copy;
+    document.getElementById('overlay-help-pin').textContent = measurementHelpClickPinned ? 'Kept open' : 'Keep open';
+    document.getElementById('overlay-help-pin').setAttribute('aria-pressed', String(measurementHelpClickPinned));
+    const panel = document.getElementById('measurement-help');
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Flow overlay explanations');
+}
+
 
 function updatePcDisclosure() {
     const row = document.getElementById('pc-disclosure');
@@ -2164,6 +2207,7 @@ function detailedResistanceStatusCopy(result) {
 }
 
 function measurementHelpText(key) {
+    if (isOverlayHelp(key)) return overlayHelpText();
     if (key === 'inspired-vt') return 'Net modeled volume gained during the completed inspiration, from its finalized breath record. It remains available through the next inspiration. This is not a separate exhaled-volume measurement.';
     if (key === 'predicted-map') return mapUnavailableReason() + '\n\nMAP is an analytical configured-cycle prediction, not a current-breath measurement. It uses configured timing and mechanics. No live MAP or fallback value is substituted when unavailable.';
     if (key === 'demonstration-reset') return 'Reset starts a new run with the currently selected settings and keeps the current paused or running state. It clears simulated time, accumulated trapped volume, traces, loops, breath and trigger history, and measured outputs. Delivered VE collects a new 30 s window. In PC-CMVa, queued target and PEEP edits and the selected maximum are applied, and the controller restarts at its configured initial pressure. Sound and Silence keep their current state. Clearing trapped volume represents a new run, not a treatment effect.';
@@ -2241,18 +2285,21 @@ function positionMeasurementHelp() {
     const trigger = openMeasurementHelpTrigger;
     if (!popover || !trigger || popover.hidden) return;
     const triggerBox = trigger.getBoundingClientRect();
+    // CSS zoom and browser zoom must both leave controls inside the viewport.
+    const scale = Number(getComputedStyle(document.body).zoom) || 1;
+    popover.style.maxWidth = `${(window.innerWidth - 16) / scale}px`;
     const gap = 6;
     const below = window.innerHeight - triggerBox.bottom - gap - 8;
     const above = triggerBox.top - gap - 8;
-    popover.style.maxHeight = `${Math.max(0, Math.min(window.innerHeight - 16, Math.max(below, above)))}px`;
+    popover.style.maxHeight = `${Math.max(0, Math.min(window.innerHeight - 16, Math.max(below, above))) / scale}px`;
     const helpBox = popover.getBoundingClientRect();
     let left = Math.min(triggerBox.left, window.innerWidth - helpBox.width - 8);
     left = Math.max(8, left);
     let top = triggerBox.bottom + gap;
     if (top + helpBox.height > window.innerHeight - 8) top = triggerBox.top - helpBox.height - gap;
     top = Math.max(8, Math.min(top, window.innerHeight - helpBox.height - 8));
-    popover.style.left = `${Math.round(left)}px`;
-    popover.style.top = `${Math.round(top)}px`;
+    popover.style.left = `${Math.round(left) / scale}px`;
+    popover.style.top = `${Math.round(top) / scale}px`;
 }
 
 function updateMechanicsHelpDetails(key) {
@@ -2280,6 +2327,16 @@ function openMeasurementHelp(trigger, clickPinned = false) {
     }
     clearTimeout(measurementHelpCloseTimer);
     const keepPin = openMeasurementHelpTrigger === trigger && measurementHelpClickPinned;
+    if (isOverlayHelp(trigger.dataset.measurementHelp)) {
+        if (openMeasurementHelpTrigger !== trigger) { overlayHelpRead = new Set(); overlayHelpCopies = new Set(); }
+        if (trigger.dataset.measurementHelp !== 'flow-overlays') overlayHelpRead.add(trigger.dataset.measurementHelp);
+        for (const key of overlayHelpVisible) overlayHelpRead.add(key);
+        for (const copy of overlayHelpVisibleCopies) overlayHelpCopies.add(copy);
+        if (!overlayHelpVisible.has(trigger.dataset.measurementHelp)) {
+            if (trigger.dataset.measurementHelp === 'air-trapping') overlayHelpCopies.add(AIR_TRAPPING_HELP);
+            if (trigger.dataset.measurementHelp === 'failed-trigger-highlight') overlayHelpCopies.add(FAILED_FLOW_HELP);
+        }
+    }
     if (openMeasurementHelpTrigger !== trigger) popover.scrollTop = 0;
     openMeasurementHelpTrigger = trigger;
     measurementHelpClickPinned = clickPinned || keepPin;
@@ -2287,6 +2344,7 @@ function openMeasurementHelp(trigger, clickPinned = false) {
     trigger.setAttribute('aria-describedby', 'measurement-help');
     text.textContent = measurementHelpText(trigger.dataset.measurementHelp);
     updateMechanicsHelpDetails(trigger.dataset.measurementHelp);
+    updateOverlayHelpDetails(trigger.dataset.measurementHelp);
     popover.hidden = false;
     positionMeasurementHelp();
 }
@@ -2295,13 +2353,15 @@ function closeMeasurementHelp(restoreFocus = false) {
     const popover = document.getElementById('measurement-help');
     const trigger = openMeasurementHelpTrigger;
     clearTimeout(measurementHelpCloseTimer);
+    if (isOverlayHelp(trigger?.dataset.measurementHelp)) overlayHelpSuppressed = true;
     if (popover) popover.hidden = true;
     if (trigger) {
         trigger.setAttribute('aria-expanded', 'false');
         trigger.removeAttribute('aria-describedby');
         if (restoreFocus) {
+            const destination = trigger.getClientRects().length ? trigger : document.getElementById('btn-teaching-mode');
             measurementHelpRestoringFocus = true;
-            try { trigger.focus(); } finally { measurementHelpRestoringFocus = false; }
+            try { destination.focus(); } finally { measurementHelpRestoringFocus = false; }
         }
     }
     openMeasurementHelpTrigger = null;
@@ -2313,27 +2373,67 @@ function scheduleMeasurementHelpClose() {
     measurementHelpCloseTimer = setTimeout(() => {
         const popover = document.getElementById('measurement-help');
         if (!measurementHelpClickPinned && document.activeElement !== openMeasurementHelpTrigger
-            && !(openMeasurementHelpTrigger?.dataset.measurementHelp === 'mechanics-examples'
-                && popover?.contains(document.activeElement))
+            && !popover?.contains(document.activeElement)
             && !popover?.matches(':hover')) closeMeasurementHelp();
     }, 160);
 }
 
 function refreshOpenMeasurementHelp() {
+    syncOverlayHelpContext();
     if (!openMeasurementHelpTrigger) return;
     if (!openMeasurementHelpTrigger.getClientRects().length) {
         closeMeasurementHelp();
         return;
     }
     const text = document.getElementById('measurement-help-text');
-    if (text) text.textContent = measurementHelpText(openMeasurementHelpTrigger.dataset.measurementHelp);
+    const copy = measurementHelpText(openMeasurementHelpTrigger.dataset.measurementHelp);
+    if (text && text.textContent !== copy) text.textContent = copy;
     updateMechanicsHelpDetails(openMeasurementHelpTrigger.dataset.measurementHelp);
+    updateOverlayHelpDetails(openMeasurementHelpTrigger.dataset.measurementHelp);
     positionMeasurementHelp();
 }
 
 function bindMeasurementHelp() {
     const popover = document.getElementById('measurement-help');
     if (!popover) return;
+    const canvas = document.getElementById('canvas-flow');
+    canvas.dataset.measurementHelp = 'flow-overlays';
+    canvas.tabIndex = 0;
+    canvas.setAttribute('aria-label', 'Flow waveform. Activate for overlay explanations.');
+    canvas.setAttribute('aria-controls', 'measurement-help');
+    canvas.setAttribute('aria-expanded', 'false');
+    display.flowRenderer.onOverlayHelp = ({ text, visibleCues, pointerMoved }) => {
+        overlayHelpVisible = new Set(visibleCues.map(overlayHelpKey));
+        overlayHelpVisibleCopies = new Set(visibleCues.map(cue => cue.text).filter(Boolean));
+        if (pointerMoved && text && !overlayHelpSuppressed && !measurementHelpClickPinned) openMeasurementHelp(canvas);
+        if (isOverlayHelp(openMeasurementHelpTrigger?.dataset.measurementHelp)) {
+            for (const key of overlayHelpVisible) overlayHelpRead.add(key);
+            for (const copy of overlayHelpVisibleCopies) overlayHelpCopies.add(copy);
+            refreshOpenMeasurementHelp();
+        }
+    };
+    canvas.addEventListener('pointerenter', () => { overlayHelpSuppressed = false; clearTimeout(measurementHelpCloseTimer); });
+    canvas.addEventListener('pointerleave', () => { overlayHelpSuppressed = false; scheduleMeasurementHelpClose(); });
+    canvas.addEventListener('click', event => {
+        display.flowRenderer._highlightHoverClient = { x: event.clientX, y: event.clientY };
+        display.flowRenderer._syncHighlightTooltip();
+        if (display.flowRenderer._highlightHelpText) openMeasurementHelp(canvas, true);
+    });
+    canvas.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openMeasurementHelp(canvas, true);
+            overlayHelpRead = new Set(['air-trapping', 'failed-trigger-highlight']);
+            if (!overlayHelpVisible.has('air-trapping')) overlayHelpCopies.add(AIR_TRAPPING_HELP);
+            if (!overlayHelpVisible.has('failed-trigger-highlight')) overlayHelpCopies.add(FAILED_FLOW_HELP);
+            refreshOpenMeasurementHelp();
+        }
+    });
+    document.getElementById('overlay-help-pin').addEventListener('click', () => {
+        measurementHelpClickPinned = true;
+        updateOverlayHelpDetails(openMeasurementHelpTrigger.dataset.measurementHelp);
+    });
+    document.getElementById('overlay-help-close').addEventListener('click', () => closeMeasurementHelp(true));
     for (const trigger of document.querySelectorAll('.measurement-help-trigger')) {
         trigger.setAttribute('aria-controls', 'measurement-help');
         trigger.addEventListener('pointerenter', () => openMeasurementHelp(trigger));
@@ -2353,7 +2453,7 @@ function bindMeasurementHelp() {
     popover.addEventListener('pointerenter', () => clearTimeout(measurementHelpCloseTimer));
     popover.addEventListener('pointerleave', scheduleMeasurementHelpClose);
     popover.addEventListener('focusout', () => {
-        if (openMeasurementHelpTrigger?.dataset.measurementHelp === 'mechanics-examples') {
+        if (openMeasurementHelpTrigger?.dataset.measurementHelp === 'mechanics-examples' || isOverlayHelp(openMeasurementHelpTrigger?.dataset.measurementHelp)) {
             scheduleMeasurementHelpClose();
         }
     });
@@ -2362,6 +2462,27 @@ function bindMeasurementHelp() {
             && !openMeasurementHelpTrigger.contains(event.target)) closeMeasurementHelp();
     });
     document.addEventListener('keydown', event => {
+        if (event.key === 'Tab' && isOverlayHelp(openMeasurementHelpTrigger?.dataset.measurementHelp)
+            && document.activeElement === openMeasurementHelpTrigger && !event.shiftKey) {
+            event.preventDefault();
+            document.getElementById('overlay-help-pin').focus();
+            return;
+        }
+        if (event.key === 'Tab' && isOverlayHelp(openMeasurementHelpTrigger?.dataset.measurementHelp)) {
+            if (event.shiftKey && document.activeElement.id === 'overlay-help-pin') {
+                event.preventDefault();
+                measurementHelpRestoringFocus = true;
+                try { openMeasurementHelpTrigger.focus(); } finally { measurementHelpRestoringFocus = false; }
+                return;
+            }
+            if (!event.shiftKey && document.activeElement.id === 'overlay-help-close') {
+                const trigger = openMeasurementHelpTrigger;
+                const stops = [...document.querySelectorAll('button, a[href], input, select, [tabindex]')]
+                    .filter(e => e.tabIndex >= 0 && !e.disabled && e.getClientRects().length && !popover.contains(e));
+                const next = stops[stops.indexOf(trigger) + 1];
+                if (next) { event.preventDefault(); closeMeasurementHelp(); next.focus(); }
+            }
+        }
         // The scoped example dialog lives at body level. Put its optional source
         // link next in the keyboard sequence without changing other help triggers.
         if (event.key === 'Tab' && openMeasurementHelpTrigger?.dataset.measurementHelp === 'mechanics-examples') {
@@ -2747,6 +2868,8 @@ function installTestHooks() {
                     const renderer = display[`${key}Renderer`];
                     return [key, renderer ? { geometry: renderer.lastGeometry,
                         sampleDataStatus: renderer.sampleDataStatus,
+                        overlayHelpHit: renderer._highlightHelpText,
+                        overlayLabels: renderer.renderedOverlayLabels,
                         markers: renderer.renderedTriggerMarkers } : null];
                 })),
                 pvGeometry: pvLoop.lastGeometry,

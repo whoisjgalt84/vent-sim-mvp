@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=32">
+    <link rel="stylesheet" href="css/style.css?v=33">
 </head>
 <body>
 
@@ -739,12 +739,12 @@
 </div>
 
 <div class="measurement-help" id="measurement-help" role="tooltip" hidden>
-    <strong id="mechanics-example-help-heading" hidden></strong><div id="measurement-help-text"></div><a id="mechanics-example-source" href="https://doi.org/10.4187/respcare.05775" target="_blank" rel="noopener noreferrer" hidden></a>
+    <div id="overlay-help-controls" hidden><strong id="overlay-help-heading"></strong><button type="button" id="overlay-help-pin"></button><button type="button" id="overlay-help-close"></button></div><p id="overlay-help-status" role="status" hidden></p><strong id="mechanics-example-help-heading" hidden></strong><div id="measurement-help-text"></div><a id="mechanics-example-source" href="https://doi.org/10.4187/respcare.05775" target="_blank" rel="noopener noreferrer" hidden></a>
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=32"></script>
-<script type="module" src="js/main.js?v=32"></script>
+<script type="module" src="alarms.js?v=33"></script>
+<script type="module" src="js/main.js?v=33"></script>
 
 </body>
 </html>

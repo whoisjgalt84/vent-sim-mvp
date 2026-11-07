@@ -1,0 +1,983 @@
+{
+  "base": "19085369ceb04402a66dd3932eb628cc5e50c653",
+  "sourceIdentity": "6d26446e569ea5b1e0f72ddef78036d5f1421e55f4201705e48003dedccb3f9d",
+  "total": 162,
+  "replaced": 130,
+  "unchanged": 32,
+  "additions": [],
+  "retirements": [],
+  "files": [
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-armed-control-chromium-linux.png",
+      "priorSha256": "b6f15f7c4d4b339a7eace5378a2ef7661b202f1cec7f77831fbfa3d731bc611c",
+      "installedSha256": "b6f15f7c4d4b339a7eace5378a2ef7661b202f1cec7f77831fbfa3d731bc611c",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-canceled-panel-chromium-linux.png",
+      "priorSha256": "1e7ec56a86996d1474f8ea75ed487537deef7a1964797fa6b62f6dedaa085f4b",
+      "installedSha256": "1e7ec56a86996d1474f8ea75ed487537deef7a1964797fa6b62f6dedaa085f4b",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-history-teaching-full-chromium-linux.png",
+      "priorSha256": "492a85d459a9b8fb806bcbab1b3922c329174be66edbe682eba0e39c198bb436",
+      "installedSha256": "1ca65d9ada6ef630cf808b94f4823ddd4e0d40f00d24ecefbacc679fb80471eb",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-holding-full-chromium-linux.png",
+      "priorSha256": "36615aa116ff9ca61a99ec4be5fa36e6b2e4ec47645b6907645f733145b1f04e",
+      "installedSha256": "fee3d062243b20f2e1b241f81a420670ec5cb8d179702b0e9cfe6ff4b1342849",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-invalid-retained-panel-chromium-linux.png",
+      "priorSha256": "781e5df862db26e0b4b702afc2bdd209b4fbb60f0f5a85b8f78c7ce59b61249f",
+      "installedSha256": "781e5df862db26e0b4b702afc2bdd209b4fbb60f0f5a85b8f78c7ce59b61249f",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-last-valid-full-chromium-linux.png",
+      "priorSha256": "a90fb461d8012ac8c9183563169637eba45d26b5634eaf0b45fbbaf9da353d37",
+      "installedSha256": "f762325bd1923c702cedf4144530fe4b4ea310637e9bf91149be3e820f2dc143",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-last-valid-panel-chromium-linux.png",
+      "priorSha256": "bf4635eeda3c31a2232ce59cbb490c43a55981efedbffdfa3482dec7e858fe55",
+      "installedSha256": "bf4635eeda3c31a2232ce59cbb490c43a55981efedbffdfa3482dec7e858fe55",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-old-vc-in-adaptive-full-chromium-linux.png",
+      "priorSha256": "656b2e8d172b6807ceaf52ee1b30445c7cfa8dc6fb26cfa233925854bfe95233",
+      "installedSha256": "4c2fd3d0f37367ed6f1112a3c3b815eb42e098612b376721b089fbc55937821d",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-old-vc-in-csv-full-chromium-linux.png",
+      "priorSha256": "87917854aaed25dc8e363edff6acae8eb382cff97789f5c6b0e54cf2bba92dff",
+      "installedSha256": "12ba1263341154dabd127532190482dd1c756b86c80f005ab7351a87a642328f",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-old-vc-in-pc-full-chromium-linux.png",
+      "priorSha256": "eb891636f5f7c0af2bfbf0afdfc29b83219b3a6514620c1759d9f67c7304578b",
+      "installedSha256": "788e80acde86e10f7da318983053ad62044ddcde7f73e523631fd12bc51835a5",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-pc-source-full-chromium-linux.png",
+      "priorSha256": "0c2106c392c3363bb67add8379153f50b52b4d6149717719f63590144eb89356",
+      "installedSha256": "51defe20e911048fd87238b36a42913a5b11a7ee8a9c1d34b6f49adb03eec135",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-pc-source-panel-chromium-linux.png",
+      "priorSha256": "f5125649d76988d6dfb31349fc05bf6d4cefb4b8c3428c421ff5bf06ace53b11",
+      "installedSha256": "f5125649d76988d6dfb31349fc05bf6d4cefb4b8c3428c421ff5bf06ace53b11",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-ready-full-chromium-linux.png",
+      "priorSha256": "22866167ca41e7728aa4d5d6593f67b297fa03ca0aa334466b072677707e8247",
+      "installedSha256": "c820ad7d90765caaa14ef8be3b4e548bb103014244a814e00ba494d0b6df327a",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-recurring-takeover-full-chromium-linux.png",
+      "priorSha256": "09953acc1382fc264e6c49e811aa3d193200b310f415939d9a90fa6ac33f60b0",
+      "installedSha256": "c4000e639eb6e489beea6a5f1e3041107cae1d175ff8b6419bae86bf6035177d",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-short-timing-limit-full-chromium-linux.png",
+      "priorSha256": "9cca1998966316cb1d94bc11c6ff84891d353a06f7d05df4d3391c0543e0dd27",
+      "installedSha256": "c526b3c18a9877e970f94a33e1a088ddc4f8c05ae8559e40b2c14fa12d089314",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-timing-limit-full-chromium-linux.png",
+      "priorSha256": "26f96d253f8ae3549531668cfc54dec4118fd2dd9e0a6ba86ed5263ac5edfe5c",
+      "installedSha256": "49a8092b44146dac21d15e8a95bbe9fc38b635a8b676acfde4d62f3e5177d85e",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-achieved-help-teaching-chromium-linux.png",
+      "priorSha256": "aeb0905c43cee6aaeb3b253a6e75e64cd3567230bdd9b582056d525caf42431b",
+      "installedSha256": "aeb0905c43cee6aaeb3b253a6e75e64cd3567230bdd9b582056d525caf42431b",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-bound-release-teaching-chromium-linux.png",
+      "priorSha256": "f99e7d4881fbd25234db31c784eb2e93a1185e4766a054f325d070307feb2caf",
+      "installedSha256": "97167c2da6a0711dd53028c95a99aba28a5e3f434920b9b161decf154563c2f7",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-destination-vc-retained-standard-chromium-linux.png",
+      "priorSha256": "e9944bd9fd76b8604bbd41f96bee4ac02d19ebd70cb92d101bdc62b611fe611b",
+      "installedSha256": "4e93c8b0a683317ed2111e75e3e75b9402e425fffab778350333d09a3495968a",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-effort-first-change-teaching-chromium-linux.png",
+      "priorSha256": "23ef44aa4b0c0a9a39bd6dfa4f7d5132c7c50ba7f5d89797490c5b5e70115451",
+      "installedSha256": "2251c6260f89879bd4cd0a41564aba22423cee5c07c53c7b082e24194e4b6d67",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-effort-settled-teaching-chromium-linux.png",
+      "priorSha256": "d517abdffadf670c75af9f7b376a8a4e12662b78f128d54a54ab5f8e6bcdcd70",
+      "installedSha256": "50b9c77a0f95455037ed863ca201aaf7ab0223c8268fee86d533015678235a6d",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-lower-bound-teaching-chromium-linux.png",
+      "priorSha256": "b60c191562e73a20ee99d5b84dfbdcc6512417e113d3272b1fe3bba6fe47176d",
+      "installedSha256": "09b287849648a1968dccc45a8cf4d6e1a4ec24908e94265dce9bf33b4c986764",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-mechanics-first-change-teaching-chromium-linux.png",
+      "priorSha256": "b8c9669e18b0b5c2f631ae80fda8f37395dba5bdfa6389b142f86171dd651a69",
+      "installedSha256": "098bac47b6f03db3421f76d245497275799493aacf5b09eb598b9779e2fea179",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-mechanics-settled-teaching-chromium-linux.png",
+      "priorSha256": "697a8053e9f3be24232ee4e3ab779018ca97222f1e61fc6e4e2826fab662783b",
+      "installedSha256": "01bae6fdf4422b0da0c76b76fa8f7327fe15ea3ca88777fe34277a0a6e9ebab6",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-mixed-feedback-teaching-chromium-linux.png",
+      "priorSha256": "a8105e93b47155bdc47c2b279af503f2061f42ca39b7d56db1a741b54283e0a9",
+      "installedSha256": "68f3ada35b84691447f425f98acd8f72c123cb7806d37dac9b90fefee27320b1",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-next-maximum-standard-chromium-linux.png",
+      "priorSha256": "2e7b2e78ac9f7453c545e37ba13d2d42163398cd50ad6cc37973c769186c99a9",
+      "installedSha256": "519689a6da1d2bff2809dee188eda2cee9ff47a969f38bb8d7bdb8714bb8065f",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-paused-context-teaching-chromium-linux.png",
+      "priorSha256": "ec267c5d97da10a5f2e27e503c4b0299b04a91e2df57a403cc89e69872f7b12b",
+      "installedSha256": "abce515ee563b132d88d07abc8299a9014d1273c6fbdefe7dafa160fd29e0980",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-pending-target-peep-standard-chromium-linux.png",
+      "priorSha256": "9e06547faf3adb962763b8486a25b90bdbd01f1ca70deed2c5adf2732c4b7337",
+      "installedSha256": "92451f44732e7743da7f5ccf297ac13739221c86d5ce6edafc27af2500854160",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-pending-target-peep-teaching-chromium-linux.png",
+      "priorSha256": "1f6fad1a52e0ea00e0f538d190dd1a33aa059b7c8dfc99aefb94d883ae0f2973",
+      "installedSha256": "bab866a2a901223f7fde7128c2b8a10460a2fd7bfb57d59d004bc293d786a011",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-pending-transition-help-standard-chromium-linux.png",
+      "priorSha256": "b0ac0e5ae8e88b7c36100d6ad215a27bc60ec83697ed68047a411343674a91eb",
+      "installedSha256": "69288a22f7faf435f1eb24e97955264467229482064279bd25e5dd58e6e2c6b8",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-prescribed-effort-help-teaching-chromium-linux.png",
+      "priorSha256": "75fe38ef441b125c8ebb0237add6b20204caab0ef243bf0fff1ec7d7459004f7",
+      "installedSha256": "707f426a34f66cfc007c3f542d8ca7dbabb5bc61507b7a698bb5ad0d86027d09",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-reentry-startup-teaching-chromium-linux.png",
+      "priorSha256": "ddce49993a7e68307ebd26fd7c13c020879ac37108a5c0f62b15d96d25808cf8",
+      "installedSha256": "bb99df5ed68106b93ba15659246979b8a247720cb0a5ae412c35dfd10714f852",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-reset-retained-standard-chromium-linux.png",
+      "priorSha256": "031a837accb101ac0f7280fccec5826440955fcd804631d88bf58913aca4d856",
+      "installedSha256": "ba4e64070bf654f6b0f178987b1dd6f16d243654c32efb7436b8e02f5d0b9064",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-settled-standard-chromium-linux.png",
+      "priorSha256": "ebc8d3a53de998f8b7ede7ca67d2b770dd2acabeccb88498f0a552c0475dc0e7",
+      "installedSha256": "30345cf9d8e43cd1c95090437e1badf2e705e2d407f95f91ee44d7ad636cb788",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-settled-teaching-chromium-linux.png",
+      "priorSha256": "a15ba03d1b4dbc23e8530cfd6772babf5cc8a9c6e0eb7489e11c322f861394ef",
+      "installedSha256": "e119f76ffac06ae16d276c8f0daf833daea0ecf1d78da924fc3c9e15a3d06af4",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-startup-standard-chromium-linux.png",
+      "priorSha256": "36fb8a8d45ef55a757637d79c03d982aef594a4cf5ad19959b911bc578d2441c",
+      "installedSha256": "fcc88d609ded088900e0b269b0538e332bf0367d32dae5f798e0e8338d675ca0",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-startup-teaching-chromium-linux.png",
+      "priorSha256": "f94f556f6ecaad279cb8b7d932f59a0640ba54a92ba50fb2abc5e5f98b4dba48",
+      "installedSha256": "4b1e5599134e555d4a9d3dc709a4d69c8b2641e1f220b544ebb7619337358b23",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-upper-bound-teaching-chromium-linux.png",
+      "priorSha256": "9a1e0fc1620f268848c38dab395d1e5f6ec0844195bfe6e5089b2f02f7ae793e",
+      "installedSha256": "38d5bbf1651e66bb151b35ced5d963cc8027afd03ae3f6354711462e46baa1ee",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/baseline-chromium-linux.png",
+      "priorSha256": "574024514fd346ce28b4b7abb2e38a52d1841ce4bfe9e89b1e08108f218e0bf9",
+      "installedSha256": "fe443c109610f7be59b217336b76754f70ab9973d4648cbd4dedb0b7e9915303",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/complete-standard-column-chromium-linux.png",
+      "priorSha256": "c9123cb8240f141034a4e9b303511915e62bd3fb16b8ac56876b25f050859907",
+      "installedSha256": "c9123cb8240f141034a4e9b303511915e62bd3fb16b8ac56876b25f050859907",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/complete-teaching-column-chromium-linux.png",
+      "priorSha256": "767e3e68c628d262e741bc24f9e1f846740843282fe49e903881e3a4b3bb41ab",
+      "installedSha256": "767e3e68c628d262e741bc24f9e1f846740843282fe49e903881e3a4b3bb41ab",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-configured-backstop-chromium-linux.png",
+      "priorSha256": "bf17687b2fc0dca6d878f4475771672dffdef41c8cd9c36419ee6eabe38a1ad2",
+      "installedSha256": "bf17687b2fc0dca6d878f4475771672dffdef41c8cd9c36419ee6eabe38a1ad2",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-delivered-teaching-full-chromium-linux.png",
+      "priorSha256": "67dbe99bdb8c91f0f4ca5e88040230bf557d2ac43f1dd9a3581b458423415a07",
+      "installedSha256": "a678421346e69210e11da2492bcc2ec82ba10b50d4fa88525d89b0f6e6b110c9",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-failed-teaching-column-chromium-linux.png",
+      "priorSha256": "498f2d29e545aa9f175ef2dcd6d8d68a173c1294f605e404b4379d8cd394d9af",
+      "installedSha256": "498f2d29e545aa9f175ef2dcd6d8d68a173c1294f605e404b4379d8cd394d9af",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-no-breath-standard-full-chromium-linux.png",
+      "priorSha256": "1aceb53fdca1a37d32b1a0b665a5840f22445179f5721c5fff92bc4e38cd8887",
+      "installedSha256": "09278f08d9a86e96189788ad12f4f421513bb4c9887a8a83f07c77f7b1b0ff07",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-no-breath-teaching-full-chromium-linux.png",
+      "priorSha256": "920c601fd644762357cd01dcf199782e8b2902ec92472a43518b11e2aa6d9ce8",
+      "installedSha256": "067136d7064dfb1b9a8e9fadb0eab970a23a54f04656d6e2cc353b7cbda12f27",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-unavailable-header-standard-chromium-linux.png",
+      "priorSha256": "65f925e81680135c814afb8b5cc1aca4742855d121c711cabbce2ce97ed9937a",
+      "installedSha256": "65f925e81680135c814afb8b5cc1aca4742855d121c711cabbce2ce97ed9937a",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-unavailable-header-teaching-chromium-linux.png",
+      "priorSha256": "5a1b08c6da70981ad4ba54649cda42d80e2b909d9c4c663490068a77a55dcd9c",
+      "installedSha256": "5a1b08c6da70981ad4ba54649cda42d80e2b909d9c4c663490068a77a55dcd9c",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-PC-CSV-chromium-linux.png",
+      "priorSha256": "aba05ce1c7575392709a5943aa63fba6b44294b6ed4146cf337773a43c38577a",
+      "installedSha256": "14431ed0c848d57edd5623db3e660cb05e1970e1fdc7fc22b1529f5ed4489201",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-pc-cmv-chromium-linux.png",
+      "priorSha256": "4797720093fc6bf0f7645d5aa1e81cb57c5abf93c5ca70ff962ad7e57267aaff",
+      "installedSha256": "8fece6aeae728250f1762472fc15271db3f412cc410e3dc521fe24112ee2b2d7",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-pc-cmva-chromium-linux.png",
+      "priorSha256": "f67457ac2bb664e0d18b24070d00130c801107192f77b348b351029655447c1a",
+      "installedSha256": "a369bb79c45d167de4fccd2f307e5c3d8b865206c7659f74b760745f696e679d",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-predictions-help-chromium-linux.png",
+      "priorSha256": "a76fe002bfa95b9eefdd22f46e391f4df8707c3875442fdc68ee1c8602569fc4",
+      "installedSha256": "541cf44a30c997b6017517799b22e0f93811bed4e4a05a1050850c88599298b9",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-vc-cmv-chromium-linux.png",
+      "priorSha256": "1861d3954b70a993226c6a0fcd62720966866406b1f6ffb525afbc9df66af693",
+      "installedSha256": "eed4d1aabedb0d58783a501958a3b77d8b6181694a74fa9527fcbe0502c310f6",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-chromium-linux.png",
+      "priorSha256": "ddd7f72dc4b863cf77ce731c1214a81b37dd8340ccebfb8cbbf7a4866120848d",
+      "installedSha256": "aed01c6c0fe4ec8431b6ddf7b5847bfdbdac18e034cb33419075f8bfabd2668b",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-closed-valve-high-pressure-chromium-linux.png",
+      "priorSha256": "ba0a9d785da54577372403817a28eb7605f846448cab8d5d899e6506661a71a5",
+      "installedSha256": "b54a7a2484217467ce4d922018606c2861feab22005f214eda7e9bcc923aadab",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-mixed-trigger-history-chromium-linux.png",
+      "priorSha256": "849a89de4db08296acf034dea912f4cfb60e673d4480e1f18da02135d17619f4",
+      "installedSha256": "f73c55c9f553a1d96ac8554a7e26a4ec2dab6c5e2283fac5fff768d573126bc4",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-queued-peep-history-chromium-linux.png",
+      "priorSha256": "5609a7914cf8460b565c4060c6c4139116e3d8a954a770886d0b8138ff5fc9de",
+      "installedSha256": "96eeab8890f9e8d11323cfdd91c5ef0ab678b373839fe8fd1e07a33ef1bd025f",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-signed-highdpi-320-chromium-linux.png",
+      "priorSha256": "a05e2230dbae323d5410232d459b1c915a183ee15d958d62265962cdaa331a2a",
+      "installedSha256": "df6569eeba06c849bb327fd6f88d7453f1112d908888a794ef22ae0c75313d36",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-signed-highdpi-390-chromium-linux.png",
+      "priorSha256": "f07f1e258981dbe285f97fc219b112f19529938ea683e449e7ce56fa6306124e",
+      "installedSha256": "34b8e7608a22b1c065c04a411cfba64447e61f3dd3aadd068ac4a41fd1816f4c",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-signed-legend-help-chromium-linux.png",
+      "priorSha256": "ef304c926e168e67d0e0a136c356c5e12dc3b6e8692616a14bba6315bf250c67",
+      "installedSha256": "4584e0065c3430ac3e05eee72301cb7dbdcf806a503c678e6bb2b3d84a24d8f4",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-signed-vc-pv-chromium-linux.png",
+      "priorSha256": "cc9077341f51e84e4214fb4ecc2e04a4331c23a78cbc8b1e69ee7b32c33c684a",
+      "installedSha256": "9814912bfb4b188e4a8f1d3015681578354ba835f66ec0d690434968b332c119",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-PC-CSV-crop-chromium-linux.png",
+      "priorSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "installedSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-PC-CSV-full-chromium-linux.png",
+      "priorSha256": "eb659594cd8a796629c6d90d3664fefce10336a4195900f1170538597ab0df05",
+      "installedSha256": "26d41ae39eee672c37d235cb6471089c775a6f6434adbf8d02a9c92096e2dd63",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-pc-cmv-crop-chromium-linux.png",
+      "priorSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "installedSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-pc-cmv-full-chromium-linux.png",
+      "priorSha256": "c17e8563cde687067811cd7d5251715360bddf7a6dd3f48ded9425f6eb21724f",
+      "installedSha256": "5be0f20247e66538c462877578797c738cbf54a88bcc5e667d61f4bad9d9ca55",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-vc-cmv-crop-chromium-linux.png",
+      "priorSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "installedSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-vc-cmv-full-chromium-linux.png",
+      "priorSha256": "26e5d47078d4fba76aa67e140e66f67a8472bc91316e3f1252451bfe7f8ca519",
+      "installedSha256": "59805c00f31a747d31ac5dc975f5b6384c8da8363b4917a8cb7eca556afbba2a",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-narrow-crop-chromium-linux.png",
+      "priorSha256": "f134579866773a58d030fe63f2be80203410e46e597b37a79f82ae11de51ab7a",
+      "installedSha256": "f134579866773a58d030fe63f2be80203410e46e597b37a79f82ae11de51ab7a",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-narrow-full-chromium-linux.png",
+      "priorSha256": "0fb500ae30ae0de093d2c786a8380d355061f710009fe614a69ec222728c546c",
+      "installedSha256": "97c660b35ed2dded532733f6facfe127217f2c41f877d40d5fff35c5ce4758db",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-running-crop-chromium-linux.png",
+      "priorSha256": "ee3d64f2a8030badb7cced83aeb5cd0d9f7adabfea8fa4addc73cd938952a672",
+      "installedSha256": "ee3d64f2a8030badb7cced83aeb5cd0d9f7adabfea8fa4addc73cd938952a672",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-running-full-chromium-linux.png",
+      "priorSha256": "2275443779dc216308ace71083661a717f6fbda66d4e89f55f8e1bef9ce278fe",
+      "installedSha256": "0f98e552f6a38caa8e5fa9225a52b6b25dc776b6d86cde23b9009353c8440d96",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-0-crop-chromium-linux.png",
+      "priorSha256": "8378ed445b6de3bf602e790799f38bdea4c7ae5d734bf3d0ebf67d99e41cece5",
+      "installedSha256": "8378ed445b6de3bf602e790799f38bdea4c7ae5d734bf3d0ebf67d99e41cece5",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-0-full-chromium-linux.png",
+      "priorSha256": "bd873b54487088c0611906f620d474a5314e9f04f65cb739f5dcde5872dc4589",
+      "installedSha256": "e74002dab235e62b458418e6d45246b1845c2b5ee36ab05d19d6ddddc78bce54",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-10-25-crop-chromium-linux.png",
+      "priorSha256": "a3b575c55c7335e13142d78740cc5cc412df6716f923c75fb339054f113ab215",
+      "installedSha256": "a3b575c55c7335e13142d78740cc5cc412df6716f923c75fb339054f113ab215",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-10-25-full-chromium-linux.png",
+      "priorSha256": "008f267e28ce35aad8ff4b38b72b6708c09a278f414d1ea67e82bd3642fb555e",
+      "installedSha256": "0bebf75ddfca77c2cd3e97ce9673932199b61ab83235d49a708b963be4c9454a",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-10-crop-chromium-linux.png",
+      "priorSha256": "e8b376a7efe3c3995bbfb0f6b6e4285ca94ee26407b31810386cce7b30e9855f",
+      "installedSha256": "e8b376a7efe3c3995bbfb0f6b6e4285ca94ee26407b31810386cce7b30e9855f",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-10-full-chromium-linux.png",
+      "priorSha256": "b1889b50cc645244f5772ad225aa07fb9a725754638336f5336978de9cdf2e40",
+      "installedSha256": "b45d8f08579f9a726eb833e51f6107c88e1ad2fb064a0379160b5e9153b75f98",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-11-75-crop-chromium-linux.png",
+      "priorSha256": "b6f8a1a216bc1e444c36d11f202243f272e15cabcae3ba0598b6081f463d33ff",
+      "installedSha256": "b6f8a1a216bc1e444c36d11f202243f272e15cabcae3ba0598b6081f463d33ff",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-11-75-full-chromium-linux.png",
+      "priorSha256": "f16a776b3165d761691ebc76d0997fc157391c2d047735c2cca8da334e57c795",
+      "installedSha256": "5a02db431fc247fb59df7415973fd355e3501ff40cb199b441ac2f53b10437eb",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-12-crop-chromium-linux.png",
+      "priorSha256": "4d041d6f5e962ca79e0daee56c655e005bae83bcf154c5452d5fbe6b8841fd69",
+      "installedSha256": "4d041d6f5e962ca79e0daee56c655e005bae83bcf154c5452d5fbe6b8841fd69",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-12-full-chromium-linux.png",
+      "priorSha256": "e4548390704d15f3c5d006570d67b6d7fc2ccfc30a77993ac60590e516f9e2fc",
+      "installedSha256": "f96e982a4bdd639be3f418a26e58d5d96d18a84fe7316c78bf0cb48c138a1bc1",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-8-crop-chromium-linux.png",
+      "priorSha256": "ee3d64f2a8030badb7cced83aeb5cd0d9f7adabfea8fa4addc73cd938952a672",
+      "installedSha256": "ee3d64f2a8030badb7cced83aeb5cd0d9f7adabfea8fa4addc73cd938952a672",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-8-full-chromium-linux.png",
+      "priorSha256": "5397294823c2bfef7fc20fc87e72028fb0149a6f70b235ccef108906c4fdb64c",
+      "installedSha256": "385c352e50724021bdde1e97c23bdfe5d536a025a4fdaac52b8bfdc3b3955fc1",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-9-25-crop-chromium-linux.png",
+      "priorSha256": "97574b4694433646b053f7f763237974b9780cb257db16a5e8564d65c6bcb341",
+      "installedSha256": "97574b4694433646b053f7f763237974b9780cb257db16a5e8564d65c6bcb341",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-9-25-full-chromium-linux.png",
+      "priorSha256": "afa93bc54e781c93ace64f7ef2ac28f3bfee4a99473789f90fb1c6d86f356b2b",
+      "installedSha256": "671a403568311628b28477b4706bd5379fee570c2156ca890834c9964eb55ed7",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-9-crop-chromium-linux.png",
+      "priorSha256": "9d17b394139337275bb97c05c2c1eec5b1551d049e0e7b016ad41a3de8c42e28",
+      "installedSha256": "9d17b394139337275bb97c05c2c1eec5b1551d049e0e7b016ad41a3de8c42e28",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-9-full-chromium-linux.png",
+      "priorSha256": "92c42f3362ddc35149f16110074e0698f95672dc6f5fe93f1b3ea8973f19a38a",
+      "installedSha256": "b9051ca27fdb4f0e32cd4c902586aa9b0b0e065835ed3211d938226db4aee622",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-teaching-full-chromium-linux.png",
+      "priorSha256": "b1448f37bae5e53c0eed3da9367184eb8177c19c1add8c9338004e4ad9c830a6",
+      "installedSha256": "b2896780e84fbeeb8926571d252e782719a3d265c06b3e5c0bf9c1dae6e01bf0",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-ards-moderate-help-chromium-linux.png",
+      "priorSha256": "d5df9ca4b748f928209a14a462ec85accc2a5bbbe5105e7ea2122ff796abe72f",
+      "installedSha256": "31461f3cb9ac8b9d0c1c1356774e5638fafec2100f5893aa8e66b5080facf707",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-ards-moderate-selected-chromium-linux.png",
+      "priorSha256": "cb9b51d88641cae11288c9e6948d12eadf5f651197b12a474883fa14dd63bc31",
+      "installedSha256": "fcae6e0f0bd9079c4a87c550109f58c4795feded82dbe0f3e179af32b456d26f",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-ards-severe-help-chromium-linux.png",
+      "priorSha256": "c2dbb0a4a9976f3c83d91c17091c317a26db7d12460e4cb9a14fc7eddee4a05c",
+      "installedSha256": "0062f8e9b555babf917eb8a6eef419d881ebe7e58afb8255ce3bacd0921f5dec",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-ards-severe-selected-chromium-linux.png",
+      "priorSha256": "a340da26c69323d613cc902606047902779d71dd167442f2b88e5c81cd095aec",
+      "installedSha256": "6d8367c222046bd433f89f39d4c79c3a769bc380c4707484176e7ce77fc26299",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-asthma-help-chromium-linux.png",
+      "priorSha256": "a75ae790535dfcc28897aa8b99c2b1aed8962b22888894c9406c59d9b2708a36",
+      "installedSha256": "da7fe79850a7788d49c3d7a9795089075a1a0655ed3ae5ad2c781c0ffc86a9ff",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-asthma-selected-chromium-linux.png",
+      "priorSha256": "745f2d6a940242b68a0d6744192326d65ac8ff8a3a00bea50ff462c5425b3fa1",
+      "installedSha256": "d126c6309bab8a62812c4f7e2876e925cd1a57b247b493e1460586b90cdd1a23",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-copd-help-chromium-linux.png",
+      "priorSha256": "83092e25476c39ea47f54476f858ba621a23fe6a3317b6e1a5f91a2c9153bde8",
+      "installedSha256": "1b7d238fa984adfc625970669ead9b7040d9c53107102b725af4b31bb4488f5e",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-copd-selected-chromium-linux.png",
+      "priorSha256": "3e51330b5c66f0e65c8ad0bbc9103461f1dff348892d72c911201ee7cdf2763b",
+      "installedSha256": "84d2115835ee2b0c8067cfd049b0e6c555adb06edc76a6974cbff7fe482961bb",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-custom-after-reset-chromium-linux.png",
+      "priorSha256": "8879fb08280043c047cf73ae39681f6d4eaa08af066d62ef58d9bd5e2017ce9d",
+      "installedSha256": "4307c7b520120587e633c4d30ad5613ea67b43cb756fd6a50261e976007aa860",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-custom-help-chromium-linux.png",
+      "priorSha256": "ada9832fc73f9cede1c8d37f770cb9254cd2992bbdc14156b89171a999289b4f",
+      "installedSha256": "78ba771a895709b92595b2592cd1da43ab906962a9e09f63e0a7237d79255b6f",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-fibrosis-help-chromium-linux.png",
+      "priorSha256": "ded55f82e12d1810ac3b7057d86f1a510b47392d3313a9fc4eccc0261fb20645",
+      "installedSha256": "5afe916ad0c5ff9846c035a0e39745a8e722d102615f988e308b98f50b1f5ee6",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-fibrosis-selected-chromium-linux.png",
+      "priorSha256": "53b6dc8f49a566d3610f9fc54c77132bc3fb3d9073eb8d5f3563fd6c768d1a3d",
+      "installedSha256": "8f4e422827ebbbb0e43f84f05da182c0401f862bf653ccbc34ff068c96454f8d",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-normal-help-chromium-linux.png",
+      "priorSha256": "df44204654f1b2ff126a22f044a5a6606898dc667735691ea903850ee3bc902c",
+      "installedSha256": "e489376c0b77109169eb7608e1590d9d8218d56862635c7ba1d1e96eebf98573",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-normal-selected-chromium-linux.png",
+      "priorSha256": "fa53c1ef1aa7ad6b05ec53a7fa089f3ad0d7a5c0473feac0e14c1b0b0987cac3",
+      "installedSha256": "a551839355e27d680bcd061d39e7e29e1f7adb23e0878155693db7ce0f435d4e",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-obesity-help-chromium-linux.png",
+      "priorSha256": "000134d55c9912538ae4622d0761812a61565b8a270c875dacbaf78f014fdbb0",
+      "installedSha256": "f705de57bc2e0125a12f2de53e2232895780df8d0e1049c1214f73a2d6524998",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-obesity-selected-chromium-linux.png",
+      "priorSha256": "e1d1b48c8f5b2d3ef25447daa778acbf2a2b603f08a573d801918579b04948fb",
+      "installedSha256": "2deec85c360d51dc3bcd6f23d36feb39a6c46a0b5d9f8409830e57930652edaf",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-startup-C60-chromium-linux.png",
+      "priorSha256": "9d91b201518a46d80fc3b7dba7cbe4df7711dbc67cbc08d5a0b22be970a4dc5f",
+      "installedSha256": "e96929d8c24be48aaf7b0720c683c93cff65fa05be42833ab2c57b4f59f692f5",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-pc-panel-chromium-linux.png",
+      "priorSha256": "d43c2080daa70e12caa8f0be85dd838e90ef03ac0cb408128fa4375a9d31b28f",
+      "installedSha256": "d43c2080daa70e12caa8f0be85dd838e90ef03ac0cb408128fa4375a9d31b28f",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-ramp-panel-chromium-linux.png",
+      "priorSha256": "edaa462ae0b57b5d47c471fad7d0ea58fc0bce87baacab3bdfec68c9928e5a04",
+      "installedSha256": "edaa462ae0b57b5d47c471fad7d0ea58fc0bce87baacab3bdfec68c9928e5a04",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-ramp-resistance-help-standard-full-chromium-linux.png",
+      "priorSha256": "209e090ac8bf344949c1a5f168cb0854a090aa78ddcd83d5800ee4a319d98e21",
+      "installedSha256": "4c2ed475e568b4627ce9d45770fac3a5ff21b8c616bfadca8639170ee23a2dba",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-short-duration-help-standard-full-chromium-linux.png",
+      "priorSha256": "af4d0768f5727f573d3337ba26ef8ca7d5c7f8ccbe0da89c38a4884032b26ec1",
+      "installedSha256": "b6c1aff55f257743db5494ed79304354b7e41438bb83310cdfb3bbe99f4216cc",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-short-panel-chromium-linux.png",
+      "priorSha256": "f079da3df02d194e9f4bdf0b744f9c6bd58cce0638d8c9ab0a3e0d3b30f1855c",
+      "installedSha256": "f079da3df02d194e9f4bdf0b744f9c6bd58cce0638d8c9ab0a3e0d3b30f1855c",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-baseline-help-standard-full-chromium-linux.png",
+      "priorSha256": "0055974de3919b37df60ffa256a95ac318523566032e1fd95778ea6863696f09",
+      "installedSha256": "15e42acf1a381247c3c058f46671aa948a933a32a7c8988c93d1969ad35d3d90",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-baseline-help-teaching-full-chromium-linux.png",
+      "priorSha256": "d4e877c74e3471e65f2e5c5e0aa93243a8d638afc87544ce39febf0a2eab8498",
+      "installedSha256": "75d05d620ebee4390b35373fc91661f3a9e4ec215ba2d667aeaadf370e132115",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-pplat-help-standard-full-chromium-linux.png",
+      "priorSha256": "8a0aa7b9b5c546b7e83c4ab088093f92f25e6a92d7ffafaaf7aac76389586c67",
+      "installedSha256": "6b5115149cd1e256140527e12a81409ccb4351e467a573efeb87ae7e78deb7de",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-pplat-help-teaching-full-chromium-linux.png",
+      "priorSha256": "099d2a1b60fbf301f267df0a33f5f90ad52079e2909d89d1b2790f546b389d19",
+      "installedSha256": "340be0e2b7a26451b457d31e35428b5eeeaf678380169f7b20648a516ff2df47",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-square-panel-chromium-linux.png",
+      "priorSha256": "bf4635eeda3c31a2232ce59cbb490c43a55981efedbffdfa3482dec7e858fe55",
+      "installedSha256": "bf4635eeda3c31a2232ce59cbb490c43a55981efedbffdfa3482dec7e858fe55",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-square-standard-full-chromium-linux.png",
+      "priorSha256": "b8514bf9144da759f563c4c9f491b1b981c0f4b4647d2ef6a5801f269848ceac",
+      "installedSha256": "8f1ee7575ebf01596df11dd7454a90d18234217fd696b5a42156f4d936f21071",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-square-teaching-column-chromium-linux.png",
+      "priorSha256": "6d987d2f65e99e065731ceb20a3ee28d5f9330f3d9901821d34b53874b956c59",
+      "installedSha256": "6d987d2f65e99e065731ceb20a3ee28d5f9330f3d9901821d34b53874b956c59",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/params-teaching-effort-chromium-linux.png",
+      "priorSha256": "f4f815080e2104f091891fa62fcfbb7abb649a98b62b1d523242c756e679574e",
+      "installedSha256": "f4f815080e2104f091891fa62fcfbb7abb649a98b62b1d523242c756e679574e",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-standard-chromium-linux.png",
+      "priorSha256": "97ced1a5de88dd76b39cadbd628bc3f8aee87b0df0aaae1134ecc5d52ab250d9",
+      "installedSha256": "4dec744a499308b2e09be585c774ba83d4d615e1f1144dd73f1a1ec114ae700c",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-teaching-320-chromium-linux.png",
+      "priorSha256": "d9eb66b023e152567097aa5375322f4643ea4879b52f48f49b124fde5650fbb6",
+      "installedSha256": "62aee50348eb6d7cf4ed8f7a0b8167dd1bf98786cdb0c11a8b416553bef08170",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-teaching-390-chromium-linux.png",
+      "priorSha256": "d74601dd0eae1f5bd91200fad9b5e8ff0d363f2c983ffb8eba95d10f1a10686d",
+      "installedSha256": "3b7af9a6510e557030ef907061653d6c9557895872de7de65d0e74af4476fff8",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-teaching-chromium-linux.png",
+      "priorSha256": "6af30367b0d47a4058a3203bdc2a3be0f1b0504713871273cce40daf877ff5eb",
+      "installedSha256": "ddea7bb7bfd0490c8e0ccf0e77c951cd204ddd062036c7b3a1469efe099fd523",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-teaching-overflow-end-chromium-linux.png",
+      "priorSha256": "7e23201ac3e227a92d835d77daf8e2feef87e8f54ab56d555a8fa260c6184958",
+      "installedSha256": "0b7f0a28f6766dc5f3602df4de0b89b23f004a7fb53295c65ec81ddb6c435b39",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-passive-standard-chromium-linux.png",
+      "priorSha256": "9aaf722052d829e52fe94e718a3ac86608328d169acf258f505b191808568a5f",
+      "installedSha256": "b107591f917de0632780021118ed5a39f9a660b07eb319f064e8f89250a0baa7",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-passive-standard-help-chromium-linux.png",
+      "priorSha256": "6cca0619530820bfe32651bd006f30a2976a23a749c0bb21d1eef068ce439477",
+      "installedSha256": "f6450e3996112f27de7b926d63128ba13a897da5c7db050f551775d12eb08da4",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-passive-teaching-chromium-linux.png",
+      "priorSha256": "078587dae8b5e11f0a9f6549090fa26d897c6f8c9e3574ebef12e5f202bf940b",
+      "installedSha256": "b96ffc5712b7698a81f37147702a1aeb142bddc1c1dc4fb9ad9b1a918009cd47",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-passive-teaching-help-chromium-linux.png",
+      "priorSha256": "a47a95220e5cdf25c96c6c29cb1c4ded6bc44dc37903f48410e73fb6a097e83b",
+      "installedSha256": "562ed76cea33ff34d1b929ad926243332ccc4662d54f955c2a115aac028984e8",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-cmv-hold-chromium-linux.png",
+      "priorSha256": "b65d34e9b9be8053720a6363b41ae3f95dcd770376fc9e402fd4168a4f2341f8",
+      "installedSha256": "a8265b85b562bd6686042b51aa6d56baff950018c5d0fce72b7338e2f9dc3559",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-csv-max-ti-chromium-linux.png",
+      "priorSha256": "d54dd40ce6965b958fdf919b9db85073726118a9f15723d40efcf72560165d85",
+      "installedSha256": "9ef50abde0312cbf065175a0576c534a85fc1911b68ce7239395657f38f973df",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-standard-chromium-linux.png",
+      "priorSha256": "54eafe581abfd873ced5b94146e39e4666495dc3c1dd9f8cf581070ba0b1a093",
+      "installedSha256": "155439fa152da4dd5248159d93693e8970bb7a12ebb4048068eafa6d29107664",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-teaching-320-chromium-linux.png",
+      "priorSha256": "87cc67ec6833b6afce4eb93d1fbe5363530f8dec12e27d5e0ec7ce9bc8f88ea7",
+      "installedSha256": "b656fab21c0f73e9deba59b5b22a979b9a9a147bbb7d95fe3c4fe8470255fd91",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-teaching-390-chromium-linux.png",
+      "priorSha256": "973ae8bf2fd863fac049feb9299fc4e1675809b84adaa365bd490cf7bcd0e07f",
+      "installedSha256": "8f0b878ca01c2e7bec452585dfb16c51ab1d1be372efc69d16a72e8ca62d185f",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-teaching-chromium-linux.png",
+      "priorSha256": "5665b948cc526773c53786f098664ae84a4b969a32e70d2b5c839b6294b65310",
+      "installedSha256": "a10686286260191739235dc63cd3759d8858e226c2f68ca421ac9df98685f5cf",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-teaching-overflow-end-chromium-linux.png",
+      "priorSha256": "8fb0135ea20642777d062f3a7cb88e807efe4d7ed7533a08cea8699bffbedcd6",
+      "installedSha256": "1a40c5f01914a08a5b7bbcd96631f764701e5ba1931ffce5ec78e906df56d1dd",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-passive-standard-chromium-linux.png",
+      "priorSha256": "8838f47b93d5369761186782212d3b0b92432c2c8e6fbfbd75671fb191a90ea7",
+      "installedSha256": "199e03778c3597c6fc3d04293db0c20760f2c4b9ee33d2fc79e709c74ff5b3fd",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-passive-standard-help-chromium-linux.png",
+      "priorSha256": "e4c6323da0a8b7aefebd5d0365544fabc063cf8f48171cd0b81f39f63b671d7b",
+      "installedSha256": "99c77d39b638763b19dc86432d1c4217063df1e1d2bc72fc5d1af0c11f440702",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-passive-teaching-chromium-linux.png",
+      "priorSha256": "8501d9c4f077e9b8a1031d74fe1b1ff713e002056ccc2263c3d9e965a71d769e",
+      "installedSha256": "7d6325eeb8357489cd520e5e1bc88d9af25dd3fbe397eeb7797872d7582e943a",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-passive-teaching-help-chromium-linux.png",
+      "priorSha256": "548c6bbd31d638b66b3f3da445b74919837e1a245fe66f5fc025ef4c8e8c2181",
+      "installedSha256": "61aad7c300af3001b9ca867a718565b3d31d09bfe2c7d0b951e175620cbb035f",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/predicted-pplat-before-breath-chromium-linux.png",
+      "priorSha256": "5be87b08cff11e4b670bbd481900979477310c7fe391716e3498d4c53b500ece",
+      "installedSha256": "5be87b08cff11e4b670bbd481900979477310c7fe391716e3498d4c53b500ece",
+      "action": "unchanged"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-PC-CSV-1440-standard-chromium-linux.png",
+      "priorSha256": "636c489b08c1e98d929e28128cc14dc159a67d70101c68329a3df2fb3c2a7da9",
+      "installedSha256": "b5bef51a7946b6ad3398a15b5c48a21054e240c0c0a088839f4ff35dce36a37e",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-PC-CSV-1440-teaching-chromium-linux.png",
+      "priorSha256": "103128e88f8fbabfa76629b144a32f92c7d39b51823ed9628d37008b1604d5c3",
+      "installedSha256": "4942ea4a615a5fa15904e9a29505dc89dc476ee69448d5be47618e43cab1461d",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmv-1440-standard-chromium-linux.png",
+      "priorSha256": "883c6baa10309fd5c6655d735e283d700901137f95d2f18bd4c48d53edd62f37",
+      "installedSha256": "b4ce510f1b2518d9ecc86283a3cc69eff483f95b643a54522545d6688274a237",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmv-1440-teaching-chromium-linux.png",
+      "priorSha256": "1dd2d49b2f1b5bbb9b797cec6bc8034f03d7ad79adbfaef93c026ed4c3e489ff",
+      "installedSha256": "ff6cb71127fde3acadb99b89df22c4e87c40829b479ed21c187f96541efd7e8a",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-1100-standard-chromium-linux.png",
+      "priorSha256": "5641d2609889fd98ea545e402d387d8c7261fae320b9ec4a862db70d5a281cfd",
+      "installedSha256": "bd44a19db282dd5a25774ce731372f58f023816959e896d42ed8c35910aa62d6",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-1100-teaching-chromium-linux.png",
+      "priorSha256": "137fba61435cd904a7ccc68128ce54efb8e7e03897da404035143ca1c5731ed0",
+      "installedSha256": "6a6500581aee3f66959cc8480f8dba3c8745fedace708ef86123642b29667830",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-1440-standard-chromium-linux.png",
+      "priorSha256": "aff90661f79d660184fc882885c4d087a2ea88e948349f8e2f15bc79ad12a72b",
+      "installedSha256": "64164f65c6210541082151418bb79bedcba302315a9c1367d0ebd417efd90b61",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-1440-teaching-chromium-linux.png",
+      "priorSha256": "1a5d9dce11f27ca007eea5a4b8bdeaac78c81cc4b7b382b79574ea100cb3d05f",
+      "installedSha256": "eddad1478fa715a784fce4d70de1042807379d0855edc0c91a3fda3585900a04",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-800-standard-chromium-linux.png",
+      "priorSha256": "d940a8be576a3870620190849f4c0702346eadadf990a1e60dd1f19bc1e2d846",
+      "installedSha256": "9e73bb2beed3d8cea393c24868ece89552ec2f894a3c0727e68c8816287237d9",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-800-teaching-chromium-linux.png",
+      "priorSha256": "7463b2837c0718448cce4bb7e4524bb85cb8dc717ffba3aaf62a18d44a2ead09",
+      "installedSha256": "50f259af39388cc5110bd9a6d67b459c4533a6d773c6f788883b8772b213aed8",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-vc-cmv-1440-standard-chromium-linux.png",
+      "priorSha256": "9ed596a22c4e33ed5f9e3758664d522c43a689ba5a96071bd874f255cc300253",
+      "installedSha256": "d22ac5f3f9314c76b12e4a954a596f2a99330db71358f40d816495d737aaf352",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-vc-cmv-1440-teaching-chromium-linux.png",
+      "priorSha256": "1157b70ed9d30fc6aaf615330d7aca0a4c28e365fc83d2f7f3b7df2ab93181bf",
+      "installedSha256": "2681a206e90714326b16579eb2248e71bda4319ebe1e67fcec2c1dc69f937542",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/teaching-full-chromium-linux.png",
+      "priorSha256": "9342ee7867c9f79c676b91f2c7f61c97e720b81464608e36c84aa32ba70d18c1",
+      "installedSha256": "896bc9b24f3199ea7d554105e9eda97529ae38ce2eda57cbacf3c36c34a5191c",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-csv-help-teaching-full-chromium-linux.png",
+      "priorSha256": "e1553a76d621f9a466fc2a3ade72394cd10c4772cc08bbd6f89419412a398899",
+      "installedSha256": "3edd78b8cf7c1259d6fea0bac78ed891a38f248799cb47b968fc3b7a49126dfa",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-csv-teaching-full-chromium-linux.png",
+      "priorSha256": "87d909ae9f02429e01accf1e5b74a077760709f96f625ee333b296700138b825",
+      "installedSha256": "f43c13c8a33ff21900379b05a185ec10c25ac7ac099c36b18cd5d2218dba5bb8",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-vc-help-standard-full-chromium-linux.png",
+      "priorSha256": "b34b616c03fd7090da5b589e8ea79658054b6fd9df1ef854b0df010562f0f3c5",
+      "installedSha256": "e1491a5ca7b48dc50bf1d71ad98d7a07c7daed3b8091bdca531246d18d0f2dae",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-vc-help-teaching-full-chromium-linux.png",
+      "priorSha256": "cdab09b5a88818903df91fa574b55fd7b7110981e13092078ad89c33029dcacc",
+      "installedSha256": "b4a41476feb6709a59a0a14a0121f97d090b9c39eda2f9b765ba359959d4cf8f",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-vc-standard-full-chromium-linux.png",
+      "priorSha256": "ab7c586e4b916ba9b7922b07e0478ee42fe4c65d285970314a3e66e46a5a4f0a",
+      "installedSha256": "1144bdfc79871d884772d3a41f7bc84e6313ef6eab3a0917eabaca1296b65976",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-vc-teaching-full-chromium-linux.png",
+      "priorSha256": "a8b095aaa3a98fa366f3df265d990758f96760ccfc2fd6ca5c91e6b79be0724f",
+      "installedSha256": "9790de0956d0756d2e863adc3969e7f2dc9672fa596db4f2f74abb6aee532439",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-warming-help-teaching-full-chromium-linux.png",
+      "priorSha256": "17d974331ec5a523bce77cb4b71f612e12ac1ae81565f01798a75cb26e9eb34e",
+      "installedSha256": "20d70717b7cb57dcc18b86de0fc307218504f86b0558440b071c65799b31ff50",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-zero-help-standard-full-chromium-linux.png",
+      "priorSha256": "efe176f2ef21638ee7b70247d9c62b6630e2325654ae416b0cf460caea7ef224",
+      "installedSha256": "5af073dbcc4cc2eb58fac9ba854cf3da90152fede183a1d0dbc091edcf17770d",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-zero-help-teaching-full-chromium-linux.png",
+      "priorSha256": "05aa472fb4134c71d8be4d7ad41c3de21cff47c9967ed8f86b1b07d364df9b7f",
+      "installedSha256": "0d9d85a363c5cc1d25143e6b4fbd0999afef86538a02d451c525c72616015c9a",
+      "action": "replaced"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js-snapshots/weak-csv-chromium-linux.png",
+      "priorSha256": "3427a4b2e09b3697195bff735471149ed1bf89f1d8654d99dd7bf3ebb3230f70",
+      "installedSha256": "9d5a5b1a7868441983873bd374a885c8c8100159947786c94aa89d54fa35363c",
+      "action": "replaced"
+    }
+  ]
+}

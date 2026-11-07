@@ -287,3 +287,7 @@ unchanged tolerances. See [the slice evidence record](desktop-teaching-slice.md#
 for exact identities, retire/add mappings, fresh versus carried-forward results
 and evidence limits. This documentation closeout runs no simulator tests and
 authorizes no commit or publication action.
+
+## Usability follow-up reference installation
+
+Christian accepted all 162 reviewed comparisons and separately authorized installation. Exactly 130 PNGs were replaced and 32 retained unchanged, with no additions or retirements. All installed hashes match the [reference manifest](evidence/usability-followup/reference-manifest.json). The post-installation pinned-Linux gate passed 21/21 with updates disabled, snapshots enabled and unchanged tolerances. See [the closeout](usability-followup.md) for the source identity, preserved test logs, candidate execution audit and evidence limits. Documentation changes do not constitute a new simulator run or publication authorization.

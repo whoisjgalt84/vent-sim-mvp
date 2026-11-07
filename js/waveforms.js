@@ -199,8 +199,9 @@ export class WaveformRenderer {
      * @param {{ time: number, type: string }[]} triggerEvents - Overlay markers
      * @param {{ tailWindow?: { start: number, end: number }, baselineReached?: boolean } | null} overlay
      * @param {Array} highlights - Reusable highlight segments (see _drawWaveformHighlights)
+     * @param {number[] | null} expirationData - Aligned solved-sample phase flags: 1 expiration, 0 other, NaN unknown.
      */
-    render(timeData, valueData, triggerEvents = [], overlay = null, highlights = [], sweepSeconds = null) {
+    render(timeData, valueData, triggerEvents = [], overlay = null, highlights = [], sweepSeconds = null, expirationData = null) {
         // Resize in case the window changed
         this._resizeCanvas();
 
@@ -353,11 +354,17 @@ export class WaveformRenderer {
         ctx.lineJoin = 'round';
         ctx.beginPath();
 
+        this._expiratoryHoverRuns = [];
+        this._teachingFlowHelp = teachingMode && this.kind === 'flow';
+        const alignedExpiration = expirationData?.length === timeData.length
+            && valueData.length === timeData.length;
+        let expiratoryRun = null;
         let penDown = false;
         let prevPx = -Infinity;
         for (let i = 0; i < timeData.length; i++) {
             if (!Number.isFinite(timeData[i]) || !Number.isFinite(valueData[i])) {
                 penDown = false;
+                expiratoryRun = null;
                 continue;
             }
             const px = xScale(timeData[i]);
@@ -366,6 +373,7 @@ export class WaveformRenderer {
             // suppress them so the leading edge reads as blank, not as stale trace.
             if (hidden(px)) {
                 penDown = false;
+                expiratoryRun = null;
                 prevPx = px;
                 continue;
             }
@@ -379,6 +387,15 @@ export class WaveformRenderer {
             } else {
                 ctx.lineTo(px, py);
             }
+            // Phase belongs to the solved sample, independently of flow direction.
+            // Unknown history is not expiration; never bridge phase or geometry gaps.
+            if (this._teachingFlowHelp && alignedExpiration && expirationData[i] === 1) {
+                if (!expiratoryRun || !penDown || px < prevPx) {
+                    expiratoryRun = [];
+                    this._expiratoryHoverRuns.push(expiratoryRun);
+                }
+                expiratoryRun.push(px, py);
+            } else expiratoryRun = null;
             penDown = true;
             prevPx = px;
         }
@@ -405,7 +422,7 @@ export class WaveformRenderer {
         this._drawWaveformHighlights(ctx, highlights, timeData, valueData, xScale, yScale, plot, hidden);
 
         const markerXs = (triggerEvents || []).filter(event => Number.isFinite(event?.time)
-            && (event.type === 'machine' || (event.type === 'patient' && patientTriggerVariable(event) === this.kind)))
+            && event.type === 'patient' && patientTriggerVariable(event) === this.kind)
             .map(event => xScale(event.time)).filter(x => !hidden(x));
         this._drawOverlayLabels(ctx, plot, teachingMode, markerXs);
         this._drawTriggerMarkers(ctx, triggerEvents, xScale, plot, hidden);
@@ -503,7 +520,7 @@ export class WaveformRenderer {
             if (event.type === 'failed') continue;
             if (!Number.isFinite(event.time)) continue;
             if (event.type === 'patient' && patientTriggerVariable(event) !== this.kind) continue;
-            if (event.type !== 'patient' && event.type !== 'machine') continue;
+            if (event.type !== 'patient') continue;
 
             const x = xScale(event.time);
 
@@ -511,32 +528,12 @@ export class WaveformRenderer {
             // leaving it would float a stale arrow over the blank leading edge.
             if (hidden(x)) continue;
 
-            if (event.type === 'patient') {
-                this._drawPatientTriggerMarker(ctx, x, plot);
-            } else {
-                this._drawMachineTriggerMarker(ctx, x, plot);
-            }
+            this._drawPatientTriggerMarker(ctx, x, plot);
             this.renderedTriggerMarkers.push({ type: event.type, time: event.time,
                 variable: event.type === 'patient' ? event.detection?.triggerVariable ?? null : null, x });
         }
 
         ctx.restore();
-    }
-
-    _drawMachineTriggerMarker(ctx, x, plot) {
-        const top = plot.y + 2;
-
-        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(x, top);
-        ctx.lineTo(x, top + 11);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(255,255,255,0.45)';
-        ctx.beginPath();
-        ctx.arc(x, top + 3, 1.8, 0, Math.PI * 2);
-        ctx.fill();
     }
 
     _drawPatientTriggerMarker(ctx, x, plot) {
@@ -743,7 +740,17 @@ export class WaveformRenderer {
         const texts = new Set();
         if (point && plot && point.x >= plot.x && point.x <= plot.x + plot.w
             && point.y >= plot.y && point.y <= plot.y + plot.h && !this._highlightHidden?.(point.x)) {
-            for (const cue of this._highlightHoverRegions || []) {
+            const visibleCues = (this._highlightHoverRegions || []).filter(cue =>
+                cue.runs.some(run => run.filter((v, i) => i % 2 === 0
+                    && v >= plot.x && v <= plot.x + plot.w
+                    && run[i + 1] >= plot.y && run[i + 1] <= plot.y + plot.h).length >= 2));
+            const broadHit = this._teachingFlowHelp && visibleCues.length
+                && this._pointNearRuns(point, this._expiratoryHoverRuns || [], 8);
+            if (broadHit) {
+                texts.add('Visible flow overlays: these explanations describe the highlighted intervals currently on screen, not necessarily the breath under the pointer.');
+                for (const cue of visibleCues) if (cue.text) texts.add(cue.text);
+            }
+            for (const cue of broadHit ? [] : this._highlightHoverRegions || []) {
                 const box = cue.labelRect;
                 let hit = box && point.x >= box.x && point.x <= box.x + box.width
                     && point.y >= box.y && point.y <= box.y + box.height;
@@ -761,6 +768,18 @@ export class WaveformRenderer {
         }
         const text = [...texts].join('\n\n');
         if (this.canvas.title !== text) this.canvas.title = text;
+    }
+
+    _pointNearRuns(point, runs, radius) {
+        return runs.some(run => {
+            for (let i = 2; i < run.length; i += 2) {
+                const ax = run[i - 2], ay = run[i - 1], dx = run[i] - ax, dy = run[i + 1] - ay;
+                const length = dx * dx + dy * dy;
+                const t = length ? Math.max(0, Math.min(1, ((point.x - ax) * dx + (point.y - ay) * dy) / length)) : 0;
+                if ((point.x - ax - t * dx) ** 2 + (point.y - ay - t * dy) ** 2 <= radius ** 2) return true;
+            }
+            return false;
+        });
     }
 
     /**
@@ -1168,6 +1187,7 @@ export class WaveformDisplay {
         const pressure = sim.buffers.pressure.toArray().slice(offset);
         const volume   = sim.buffers.volume.toArray().slice(offset);
         const flow     = sim.buffers.flow.toArray().slice(offset);
+        const expiration = sim.buffers.expiration.toArray().slice(offset);
 
         if (time.length < 2) return;
 
@@ -1200,7 +1220,7 @@ export class WaveformDisplay {
 
         this.pressureRenderer.render(time, pressure, triggerEvents, null, highlights, sweepSeconds);
         this.volumeRenderer.render(time, volume, triggerEvents, null, highlights, sweepSeconds);
-        this.flowRenderer.render(time, flow, triggerEvents, flowOverlay, highlights, sweepSeconds);
+        this.flowRenderer.render(time, flow, triggerEvents, flowOverlay, highlights, sweepSeconds, expiration);
     }
 
     /**
@@ -1217,7 +1237,7 @@ export class WaveformDisplay {
      * PRODUCER (the only one wired now): turn 'failed' trigger events into flow
      * highlight segments. An ineffective effort recorded DURING EXPIRATION (a
      * gate-c 'threshold' miss) leaves a visible flow deflection — the expiratory
-     * trace bends toward baseline without reaching it.
+     * trace can bend toward baseline or cross it while remaining below the selected trigger criterion.
      * VU failures during mandatory inspiration have no expiratory-flow deflection and are not
      * highlighted here. Their pressure and flow response depends on the configured mode and
      * phase; see the pressure-targeted inspiration disclosure in docs/model.md §3.2.
@@ -1265,8 +1285,8 @@ export class WaveformDisplay {
     /**
      * Bound the deflection span from the FLOW DATA itself (not an arbitrary ±N ms).
      * A 'threshold' failure is recorded at the effort's neural-inspiration END, so
-     * search the one-neuralTi window ending there, take the least-negative flow
-     * LOCAL MAX (the peak of the bend toward baseline), then expand to the flow
+     * search the one-neuralTi window ending there, take the flow LOCAL MAX
+     * (which may be positive during expiration), then expand to the flow
      * minima on each side. The result is exactly the visible deflection bump.
      */
     _deflectionSpan(time, flow, eventTime, win) {

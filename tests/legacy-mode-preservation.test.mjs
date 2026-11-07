@@ -108,7 +108,8 @@ function capture(pair, schema) {
             pressureControlLevel: vent.pressureControlLevel, inspiratoryTime: vent.inspiratoryTime,
             effectiveHoldTime: vent.effectiveHoldTime, effectiveExpiratoryTime: vent.effectiveExpiratoryTime,
             pressureMode: vent.isPressureMode(), spontaneousMode: vent.isSpontaneousMode() },
-        buffers: Object.fromEntries(Object.entries(sim.buffers).map(([key, b]) =>
+        // New display-only phase metadata has its own alignment/preservation gate.
+        buffers: Object.fromEntries(Object.entries(sim.buffers).filter(([key]) => key !== 'expiration').map(([key, b]) =>
             [key, { capacity: b.capacity, head: b.head, count: b.count, last: b.last }])),
         loops: Object.fromEntries(['loopCurrent', 'loopCompleted'].map(name => [name,
             Object.fromEntries(Object.entries(sim[name]).map(([key, a]) => [key, { length: a.length, last: a.at(-1) }]))])),

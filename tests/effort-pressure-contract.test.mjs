@@ -499,7 +499,7 @@ function runRendererContractChecks(api) {
         const display=new WaveformDisplay({pressure:canvas(),volume:canvas(),flow:canvas()});
         for(const [kind,r] of [['pressure',display.pressureRenderer],['flow',display.flowRenderer],['volume',display.volumeRenderer]]) {
             r._drawTriggerMarkers(r.ctx,events,t=>t,r.plotArea);
-            const expected=kind==='volume'?[4]:[kind==='pressure'?1:2,4];
+            const expected=kind==='volume'?[]:[kind==='pressure'?1:2];
             check(`${kind} exact patient/machine/failure mapping`,eq(r.renderedTriggerMarkers.map(e=>e.time),expected));
             const history=JSON.stringify(events), markers=JSON.stringify(r.renderedTriggerMarkers);
             // Live object is deliberately unrelated to recorded history; rendering may not consult it.

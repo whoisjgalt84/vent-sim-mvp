@@ -283,6 +283,7 @@ test.describe('waveform display', () => {
         await expect(page.locator('#additional-outputs')).toHaveJSProperty('open', false);
         await expect(page.getByRole('group', { name: 'Live modeled trapped volume', exact: true })).toBeHidden();
         await page.locator('#additional-outputs-summary').click();
+            await page.locator('#additional-outputs [data-collapsible][data-collapsed]').evaluateAll(es => es.forEach(e => e.click()));
         await expect(page.getByRole('group', { name: 'Live modeled trapped volume', exact: true })).toBeVisible();
         await expect(page).toHaveScreenshot('csv-no-breath-standard-full.png', { fullPage: true });
         await expect(page.locator('#csv-backstop')).toBeVisible();
@@ -459,6 +460,7 @@ test.describe('waveform display', () => {
             if (!teaching) await page.click('#btn-teaching-mode');
             if (!(await page.locator('#additional-outputs').evaluate(el => el.open))) {
                 await page.locator('#additional-outputs-summary').click();
+            await page.locator('#additional-outputs [data-collapsible][data-collapsed]').evaluateAll(es => es.forEach(e => e.click()));
             }
             await expect(page.locator('#param-live-trapped')).toBeVisible();
             await page.evaluate(() => window.__vsim.redraw());
@@ -544,7 +546,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'teaching slice asset release').toEqual(['31']);
+        expect(versions, 'teaching slice asset release').toEqual(['32']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);

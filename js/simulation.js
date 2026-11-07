@@ -43,7 +43,7 @@
  */
 
 
-import { AdaptiveController } from './adaptive-controller.js?v=31';
+import { AdaptiveController } from './adaptive-controller.js?v=32';
 
 // =============================================================================
 // RING BUFFER
@@ -201,6 +201,8 @@ export class SimulationEngine {
             pressure: new RingBuffer(bufSize),
             volume:   new RingBuffer(bufSize),
             flow:     new RingBuffer(bufSize),
+            // Display-only solved-sample phase: 1 expiration, 0 other, NaN unknown prehistory.
+            expiration: new RingBuffer(bufSize),
         };
 
         // --- Global Clock ---
@@ -339,6 +341,7 @@ export class SimulationEngine {
             this.buffers.pressure.push(peep);
             this.buffers.volume.push(0);
             this.buffers.flow.push(0);
+            this.buffers.expiration.push(NaN);
         }
         this._sampleCount = this.buffers.flow.length;
         this._prevFlowLpm = 0;
@@ -1741,6 +1744,8 @@ export class SimulationEngine {
         this.buffers.pressure.push(this.currentPressure);
         this.buffers.volume.push(Math.max(0, displayVol));
         this.buffers.flow.push(flowLpm);  // L/s → L/min
+        // Transitions already ran: use the phase that produced this sample, not this.phase.
+        this.buffers.expiration.push(physicsPhase === Phase.EXPIRATION ? 1 : 0);
 
         // Per-breath loop data (for P-V and F-V loop displays)
         this.loopCurrent.pressure.push(this.currentPressure);

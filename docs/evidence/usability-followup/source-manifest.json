@@ -1,0 +1,66 @@
+{
+  "base": "19085369ceb04402a66dd3932eb628cc5e50c653",
+  "identity": "6d26446e569ea5b1e0f72ddef78036d5f1421e55f4201705e48003dedccb3f9d",
+  "files": [
+    {
+      "path": "index.html",
+      "sha256": "f6099e90f3cde5544a7140b60cc6381f2b768cf1acc5817c921f6b0eb2d80cb4"
+    },
+    {
+      "path": "js/main.js",
+      "sha256": "883b7e5d8208746c4a9295c4cf153a649e05bab706e30ec2f66431158af70859"
+    },
+    {
+      "path": "js/simulation.js",
+      "sha256": "f186d90ecbb506b72b1b0449071e17b81ec9e2657e4f67afc95584311d40da3d"
+    },
+    {
+      "path": "js/ventilator.js",
+      "sha256": "f361f8b9346ec2009de5404c75703e3495f46900c7b9ac9a327c4d7bb3d82bcd"
+    },
+    {
+      "path": "js/waveforms.js",
+      "sha256": "36262cd12479f0cfbcb31fbd70412e62587268217898fd61e164438d09cc36dd"
+    },
+    {
+      "path": "scratch/verify-batch.cjs",
+      "sha256": "eeac4f008b5585d9d23d3739e710f4f479c713d34e53bbeea756bbd04b2e3ea1"
+    },
+    {
+      "path": "tests/effort-pressure-contract.test.mjs",
+      "sha256": "ea12e43ee61a133bcf149be660c5659ea82521f3f1d623e7ef5b604db1f23363"
+    },
+    {
+      "path": "tests/expiration-display.test.mjs",
+      "sha256": "12641a17a793e57184aa92247866aba0b2f2ec51c137f47e59f9335270878ba8"
+    },
+    {
+      "path": "tests/legacy-mode-preservation.test.mjs",
+      "sha256": "bd13be7173c1bb150b8d6ae009e30abc27b489de068f2e4a68ddd325e2f84781"
+    },
+    {
+      "path": "tests/setting-hierarchy.browser.cjs",
+      "sha256": "ca27b2d05db7499a232c2567b9e769121539aa490c0b98f760807f58447e8362"
+    },
+    {
+      "path": "tests/teaching-slice.browser.cjs",
+      "sha256": "7799cdf1c8dfaac185483c476fe941cc9bc602438ee62e2f8dd798dd6228a56d"
+    },
+    {
+      "path": "tests/usability-followup.browser.cjs",
+      "sha256": "8e27ad69715706186122397e69955985f3c27682761077da95c9642a43551c03"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js",
+      "sha256": "a142db9062a555e6e45d8ac5389afdf6f1278a25875bd8c14079d133489f44fd"
+    },
+    {
+      "path": "tools/run-browser-tests.mjs",
+      "sha256": "d709c85bf0c7b3ef3396aec4981c53dc7bf686794733eca52d08128709e95cf2"
+    },
+    {
+      "path": "tools/run-engine-tests.mjs",
+      "sha256": "4b2a692ff610fab85e3d6a77e691dc91678de7bff790a8038269b71426599569"
+    }
+  ]
+}

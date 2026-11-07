@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=31">
+    <link rel="stylesheet" href="css/style.css?v=32">
 </head>
 <body>
 
@@ -540,7 +540,7 @@
         <div class="pc-disclosure" id="waveform-legend">
             <button type="button" class="measurement-help-trigger pc-disclosure-trigger" data-measurement-help="waveform-legend"
                     aria-label="Waveform signals and trigger markers help" aria-expanded="false">
-                <span>Patient trigger: recorded event on its pressure or flow waveform. Machine trigger: timed breath.</span><span aria-hidden="true">ⓘ</span>
+                <span>Patient trigger: recorded event on its pressure or flow waveform. Timed machine breaths have no symbol.</span><span aria-hidden="true">ⓘ</span>
             </button>
             <div class="flow-highlight-help">
                 <button type="button" class="measurement-help-trigger pc-disclosure-trigger"
@@ -743,8 +743,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=31"></script>
-<script type="module" src="js/main.js?v=31"></script>
+<script type="module" src="alarms.js?v=32"></script>
+<script type="module" src="js/main.js?v=32"></script>
 
 </body>
 </html>

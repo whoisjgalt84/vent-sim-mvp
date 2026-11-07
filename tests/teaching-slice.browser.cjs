@@ -58,7 +58,7 @@ async function test(browser,name,fn) {
         });
         await test(browser,'all Patient/Teach combinations retain state, alarms, holds and mounted controls',async page=>{
             await page.evaluate(async()=>{
-                const {default:alarms}=await import('/alarms.js?v=31');
+                const {default:alarms}=await import('/alarms.js?v=32');
                 const evaluate=alarms.evaluateAlarms;
                 window.sliceAlarmEvaluations=0;
                 alarms.evaluateAlarms=(...args)=>{window.sliceAlarmEvaluations++;return evaluate(...args);};

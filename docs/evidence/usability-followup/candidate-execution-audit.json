@@ -1,0 +1,1900 @@
+{
+  "assertions": 162,
+  "unique": 162,
+  "missing": [],
+  "extra": [],
+  "failed": [],
+  "rows": [
+    {
+      "requested": "manual-last-valid-panel.png",
+      "file": "manual-last-valid-panel-chromium-linux.png",
+      "scenario": "manual-hold-last-valid-his-3f3f5-ss-mode-source-are-distinct-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 31,
+        "column": 49
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-last-valid-full.png",
+      "file": "manual-last-valid-full-chromium-linux.png",
+      "scenario": "manual-hold-last-valid-his-3f3f5-ss-mode-source-are-distinct-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 32,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-invalid-retained-panel.png",
+      "file": "manual-invalid-retained-panel-chromium-linux.png",
+      "scenario": "manual-hold-last-valid-his-3f3f5-ss-mode-source-are-distinct-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 36,
+        "column": 49
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-old-vc-in-pc-full.png",
+      "file": "manual-old-vc-in-pc-full-chromium-linux.png",
+      "scenario": "manual-hold-last-valid-his-3f3f5-ss-mode-source-are-distinct-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 39,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-old-vc-in-csv-full.png",
+      "file": "manual-old-vc-in-csv-full-chromium-linux.png",
+      "scenario": "manual-hold-last-valid-his-3f3f5-ss-mode-source-are-distinct-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 41,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-old-vc-in-adaptive-full.png",
+      "file": "manual-old-vc-in-adaptive-full-chromium-linux.png",
+      "scenario": "manual-hold-last-valid-his-3f3f5-ss-mode-source-are-distinct-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 43,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-history-teaching-full.png",
+      "file": "manual-history-teaching-full-chromium-linux.png",
+      "scenario": "manual-hold-last-valid-his-3f3f5-ss-mode-source-are-distinct-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 46,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-pc-source-panel.png",
+      "file": "manual-pc-source-panel-chromium-linux.png",
+      "scenario": "manual-hold-last-valid-his-3f3f5-ss-mode-source-are-distinct-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 53,
+        "column": 49
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-pc-source-full.png",
+      "file": "manual-pc-source-full-chromium-linux.png",
+      "scenario": "manual-hold-last-valid-his-3f3f5-ss-mode-source-are-distinct-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 54,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-ready-full.png",
+      "file": "manual-ready-full-chromium-linux.png",
+      "scenario": "manual-hold-manual-hold-ar-21e56-usion-and-capped-completion-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 14,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-armed-control.png",
+      "file": "manual-armed-control-chromium-linux.png",
+      "scenario": "manual-hold-manual-hold-ar-21e56-usion-and-capped-completion-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 16,
+        "column": 76
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-holding-full.png",
+      "file": "manual-holding-full-chromium-linux.png",
+      "scenario": "manual-hold-manual-hold-ar-21e56-usion-and-capped-completion-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 20,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-timing-limit-full.png",
+      "file": "manual-timing-limit-full-chromium-linux.png",
+      "scenario": "manual-hold-manual-hold-ar-21e56-usion-and-capped-completion-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 24,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-recurring-takeover-full.png",
+      "file": "manual-recurring-takeover-full-chromium-linux.png",
+      "scenario": "manual-hold-recurring-take-f5ec4-iming-short-invalid-attempt-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 63,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-canceled-panel.png",
+      "file": "manual-canceled-panel-chromium-linux.png",
+      "scenario": "manual-hold-recurring-take-f5ec4-iming-short-invalid-attempt-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 67,
+        "column": 49
+      },
+      "passed": true
+    },
+    {
+      "requested": "manual-short-timing-limit-full.png",
+      "file": "manual-short-timing-limit-full-chromium-linux.png",
+      "scenario": "manual-hold-recurring-take-f5ec4-iming-short-invalid-attempt-chromium",
+      "source": {
+        "file": "/work/tests/visual/manual-hold.spec.js",
+        "line": 73,
+        "column": 24
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-signed-vc-pv.png",
+      "file": "effort-signed-vc-pv-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--2f521-ed-trigger-variable-history-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-signed-legend-help.png",
+      "file": "effort-signed-legend-help-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--2f521-ed-trigger-variable-history-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-mixed-trigger-history.png",
+      "file": "effort-mixed-trigger-history-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--2f521-ed-trigger-variable-history-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-queued-peep-history.png",
+      "file": "effort-queued-peep-history-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--2f521-ed-trigger-variable-history-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-signed-highdpi-390.png",
+      "file": "effort-signed-highdpi-390-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--d58fc-rvive-narrow-high-DPI-views-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-signed-highdpi-320.png",
+      "file": "effort-signed-highdpi-320-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--d58fc-rvive-narrow-high-DPI-views-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-active-vc-cmv.png",
+      "file": "effort-active-vc-cmv-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--fa2fc-e-analytical-unavailability-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-active-pc-cmv.png",
+      "file": "effort-active-pc-cmv-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--fa2fc-e-analytical-unavailability-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-active-PC-CSV.png",
+      "file": "effort-active-PC-CSV-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--fa2fc-e-analytical-unavailability-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-active-pc-cmva.png",
+      "file": "effort-active-pc-cmva-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--fa2fc-e-analytical-unavailability-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-closed-valve-high-pressure.png",
+      "file": "effort-closed-valve-high-pressure-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--fa2fc-e-analytical-unavailability-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-active-predictions-help.png",
+      "file": "effort-active-predictions-help-chromium-linux.png",
+      "scenario": "waveforms-effort-pressure--fa2fc-e-analytical-unavailability-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 871,
+        "column": 24,
+        "function": "effortShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-pending-transition-help-standard.png",
+      "file": "adaptive-pending-transition-help-standard-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-13602-ettings-and-contextual-help-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-reset-retained-standard.png",
+      "file": "adaptive-reset-retained-standard-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-13602-ettings-and-contextual-help-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-achieved-help-teaching.png",
+      "file": "adaptive-achieved-help-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-13602-ettings-and-contextual-help-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-destination-vc-retained-standard.png",
+      "file": "adaptive-destination-vc-retained-standard-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-13602-ettings-and-contextual-help-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-reentry-startup-teaching.png",
+      "file": "adaptive-reentry-startup-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-13602-ettings-and-contextual-help-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-prescribed-effort-help-teaching.png",
+      "file": "adaptive-prescribed-effort-help-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-13602-ettings-and-contextual-help-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-mechanics-first-change-teaching.png",
+      "file": "adaptive-mechanics-first-change-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-4f4aa-ribed-effort-demonstrations-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-mechanics-settled-teaching.png",
+      "file": "adaptive-mechanics-settled-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-4f4aa-ribed-effort-demonstrations-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-effort-first-change-teaching.png",
+      "file": "adaptive-effort-first-change-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-4f4aa-ribed-effort-demonstrations-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-effort-settled-teaching.png",
+      "file": "adaptive-effort-settled-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-4f4aa-ribed-effort-demonstrations-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-startup-standard.png",
+      "file": "adaptive-startup-standard-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-startup-teaching.png",
+      "file": "adaptive-startup-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-settled-standard.png",
+      "file": "adaptive-settled-standard-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-settled-teaching.png",
+      "file": "adaptive-settled-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-pending-target-peep-standard.png",
+      "file": "adaptive-pending-target-peep-standard-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-pending-target-peep-teaching.png",
+      "file": "adaptive-pending-target-peep-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-mixed-feedback-teaching.png",
+      "file": "adaptive-mixed-feedback-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-paused-context-teaching.png",
+      "file": "adaptive-paused-context-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-0-full.png",
+      "file": "effort-slider-value-0-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-0-crop.png",
+      "file": "effort-slider-value-0-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-8-full.png",
+      "file": "effort-slider-value-8-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-8-crop.png",
+      "file": "effort-slider-value-8-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-9-full.png",
+      "file": "effort-slider-value-9-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-9-crop.png",
+      "file": "effort-slider-value-9-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-9-25-full.png",
+      "file": "effort-slider-value-9-25-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-9-25-crop.png",
+      "file": "effort-slider-value-9-25-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-10-full.png",
+      "file": "effort-slider-value-10-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-10-crop.png",
+      "file": "effort-slider-value-10-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-10-25-full.png",
+      "file": "effort-slider-value-10-25-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-10-25-crop.png",
+      "file": "effort-slider-value-10-25-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-11-75-full.png",
+      "file": "effort-slider-value-11-75-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-11-75-crop.png",
+      "file": "effort-slider-value-11-75-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-12-full.png",
+      "file": "effort-slider-value-12-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-value-12-crop.png",
+      "file": "effort-slider-value-12-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-running-full.png",
+      "file": "effort-slider-running-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-running-crop.png",
+      "file": "effort-slider-running-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-mode-vc-cmv-full.png",
+      "file": "effort-slider-mode-vc-cmv-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-mode-vc-cmv-crop.png",
+      "file": "effort-slider-mode-vc-cmv-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-mode-pc-cmv-full.png",
+      "file": "effort-slider-mode-pc-cmv-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-mode-pc-cmv-crop.png",
+      "file": "effort-slider-mode-pc-cmv-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-mode-PC-CSV-full.png",
+      "file": "effort-slider-mode-PC-CSV-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-mode-PC-CSV-crop.png",
+      "file": "effort-slider-mode-PC-CSV-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-narrow-full.png",
+      "file": "effort-slider-narrow-full-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-slider-narrow-crop.png",
+      "file": "effort-slider-narrow-crop-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f57b0-s-pending-context-and-pause-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 641,
+        "column": 32,
+        "function": "capture"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-next-maximum-standard.png",
+      "file": "adaptive-next-maximum-standard-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f5a81-unds-and-saturation-release-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-upper-bound-teaching.png",
+      "file": "adaptive-upper-bound-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f5a81-unds-and-saturation-release-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-bound-release-teaching.png",
+      "file": "adaptive-bound-release-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f5a81-unds-and-saturation-release-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "adaptive-lower-bound-teaching.png",
+      "file": "adaptive-lower-bound-teaching-chromium-linux.png",
+      "scenario": "waveforms-PC-CMVa-adaptive-f5a81-unds-and-saturation-release-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 621,
+        "column": 24,
+        "function": "adaptiveShot"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-pc-cmva-1100-standard.png",
+      "file": "shared-reset-pc-cmva-1100-standard-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-2680a-separate-at-narrower-widths-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-pc-cmva-1100-teaching.png",
+      "file": "shared-reset-pc-cmva-1100-teaching-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-2680a-separate-at-narrower-widths-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-pc-cmva-800-standard.png",
+      "file": "shared-reset-pc-cmva-800-standard-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-2680a-separate-at-narrower-widths-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-pc-cmva-800-teaching.png",
+      "file": "shared-reset-pc-cmva-800-teaching-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-2680a-separate-at-narrower-widths-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-vc-cmv-1440-standard.png",
+      "file": "shared-reset-vc-cmv-1440-standard-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-5921c-fort-in-both-display-styles-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-vc-cmv-1440-teaching.png",
+      "file": "shared-reset-vc-cmv-1440-teaching-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-5921c-fort-in-both-display-styles-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-pc-cmv-1440-standard.png",
+      "file": "shared-reset-pc-cmv-1440-standard-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-5921c-fort-in-both-display-styles-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-pc-cmv-1440-teaching.png",
+      "file": "shared-reset-pc-cmv-1440-teaching-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-5921c-fort-in-both-display-styles-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-PC-CSV-1440-standard.png",
+      "file": "shared-reset-PC-CSV-1440-standard-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-5921c-fort-in-both-display-styles-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-PC-CSV-1440-teaching.png",
+      "file": "shared-reset-PC-CSV-1440-teaching-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-5921c-fort-in-both-display-styles-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-pc-cmva-1440-standard.png",
+      "file": "shared-reset-pc-cmva-1440-standard-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-5921c-fort-in-both-display-styles-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "shared-reset-pc-cmva-1440-teaching.png",
+      "file": "shared-reset-pc-cmva-1440-teaching-chromium-linux.png",
+      "scenario": "waveforms-shared-demonstra-5921c-fort-in-both-display-styles-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 51,
+        "column": 36,
+        "function": "sharedResetSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort-teaching-full.png",
+      "file": "effort-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-0a4a4-counter-and-amber-highlight-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 391,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "ve-established-vc-teaching-full.png",
+      "file": "ve-established-vc-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-0a4a4-counter-and-amber-highlight-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 394,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "ve-established-vc-help-teaching-full.png",
+      "file": "ve-established-vc-help-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-0a4a4-counter-and-amber-highlight-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 397,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "csv-delivered-teaching-full.png",
+      "file": "csv-delivered-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-0a4a4-counter-and-amber-highlight-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 407,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "ve-established-csv-teaching-full.png",
+      "file": "ve-established-csv-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-0a4a4-counter-and-amber-highlight-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 410,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "ve-established-csv-help-teaching-full.png",
+      "file": "ve-established-csv-help-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-0a4a4-counter-and-amber-highlight-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 413,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "weak-csv.png",
+      "file": "weak-csv-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 431,
+        "column": 50
+      },
+      "passed": true
+    },
+    {
+      "requested": "csv-failed-teaching-column.png",
+      "file": "csv-failed-teaching-column-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 437,
+        "column": 51
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-pc-cmv-passive-standard.png",
+      "file": "pc-disclosure-pc-cmv-passive-standard-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 112,
+        "column": 28,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-pc-cmv-passive-standard-help.png",
+      "file": "pc-disclosure-pc-cmv-passive-standard-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 119,
+        "column": 32,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-pc-cmv-passive-teaching.png",
+      "file": "pc-disclosure-pc-cmv-passive-teaching-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 112,
+        "column": 28,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-pc-cmv-passive-teaching-help.png",
+      "file": "pc-disclosure-pc-cmv-passive-teaching-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 119,
+        "column": 32,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-pc-cmv-active-standard.png",
+      "file": "pc-disclosure-pc-cmv-active-standard-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 112,
+        "column": 28,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-pc-cmv-active-teaching.png",
+      "file": "pc-disclosure-pc-cmv-active-teaching-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 112,
+        "column": 28,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-pc-cmv-active-teaching-390.png",
+      "file": "pc-disclosure-pc-cmv-active-teaching-390-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 126,
+        "column": 36,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-pc-cmv-active-teaching-320.png",
+      "file": "pc-disclosure-pc-cmv-active-teaching-320-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 126,
+        "column": 36,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-pc-cmv-active-teaching-overflow-end.png",
+      "file": "pc-disclosure-pc-cmv-active-teaching-overflow-end-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 133,
+        "column": 32,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-PC-CSV-passive-standard.png",
+      "file": "pc-disclosure-PC-CSV-passive-standard-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 112,
+        "column": 28,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-PC-CSV-passive-standard-help.png",
+      "file": "pc-disclosure-PC-CSV-passive-standard-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 119,
+        "column": 32,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-PC-CSV-passive-teaching.png",
+      "file": "pc-disclosure-PC-CSV-passive-teaching-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 112,
+        "column": 28,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-PC-CSV-passive-teaching-help.png",
+      "file": "pc-disclosure-PC-CSV-passive-teaching-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 119,
+        "column": 32,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-PC-CSV-active-standard.png",
+      "file": "pc-disclosure-PC-CSV-active-standard-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 112,
+        "column": 28,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-PC-CSV-active-teaching.png",
+      "file": "pc-disclosure-PC-CSV-active-teaching-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 112,
+        "column": 28,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-PC-CSV-active-teaching-390.png",
+      "file": "pc-disclosure-PC-CSV-active-teaching-390-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 126,
+        "column": 36,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-PC-CSV-active-teaching-320.png",
+      "file": "pc-disclosure-PC-CSV-active-teaching-320-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 126,
+        "column": 36,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-PC-CSV-active-teaching-overflow-end.png",
+      "file": "pc-disclosure-PC-CSV-active-teaching-overflow-end-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 133,
+        "column": 32,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-cmv-hold.png",
+      "file": "pc-disclosure-cmv-hold-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 144,
+        "column": 24,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "pc-disclosure-csv-max-ti.png",
+      "file": "pc-disclosure-csv-max-ti-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-43099-failure-morphology-SME-021--chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 149,
+        "column": 24,
+        "function": "pcDisclosureSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "effort.png",
+      "file": "effort-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-711b0-MV-produces-failed-triggers-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 370,
+        "column": 50
+      },
+      "passed": true
+    },
+    {
+      "requested": "ve-established-vc-standard-full.png",
+      "file": "ve-established-vc-standard-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-711b0-MV-produces-failed-triggers-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 373,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "ve-established-vc-help-standard-full.png",
+      "file": "ve-established-vc-help-standard-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-711b0-MV-produces-failed-triggers-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 377,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "params-teaching-effort.png",
+      "file": "params-teaching-effort-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-8ecee-s-not-clip-at-any-type-size-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 455,
+        "column": 51
+      },
+      "passed": true
+    },
+    {
+      "requested": "complete-teaching-column.png",
+      "file": "complete-teaching-column-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-8ecee-s-not-clip-at-any-type-size-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 477,
+        "column": 55
+      },
+      "passed": true
+    },
+    {
+      "requested": "complete-standard-column.png",
+      "file": "complete-standard-column-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-8ecee-s-not-clip-at-any-type-size-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 477,
+        "column": 55
+      },
+      "passed": true
+    },
+    {
+      "requested": "baseline.png",
+      "file": "baseline-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 232,
+        "column": 50
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-valid-square-standard-full.png",
+      "file": "hold-valid-square-standard-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 239,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-valid-square-panel.png",
+      "file": "hold-valid-square-panel-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 240,
+        "column": 53
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-valid-pplat-help-standard-full.png",
+      "file": "hold-valid-pplat-help-standard-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 243,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-valid-baseline-help-standard-full.png",
+      "file": "hold-valid-baseline-help-standard-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 247,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-short-panel.png",
+      "file": "hold-short-panel-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 253,
+        "column": 53
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-short-duration-help-standard-full.png",
+      "file": "hold-short-duration-help-standard-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 256,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-ramp-panel.png",
+      "file": "hold-ramp-panel-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 262,
+        "column": 53
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-ramp-resistance-help-standard-full.png",
+      "file": "hold-ramp-resistance-help-standard-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 265,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-pc-panel.png",
+      "file": "hold-pc-panel-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 271,
+        "column": 53
+      },
+      "passed": true
+    },
+    {
+      "requested": "csv-no-breath-standard-full.png",
+      "file": "csv-no-breath-standard-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 288,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "csv-configured-backstop.png",
+      "file": "csv-configured-backstop-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 291,
+        "column": 53
+      },
+      "passed": true
+    },
+    {
+      "requested": "csv-unavailable-header-standard.png",
+      "file": "csv-unavailable-header-standard-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 295,
+        "column": 47
+      },
+      "passed": true
+    },
+    {
+      "requested": "csv-unavailable-header-teaching.png",
+      "file": "csv-unavailable-header-teaching-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 299,
+        "column": 47
+      },
+      "passed": true
+    },
+    {
+      "requested": "predicted-pplat-before-breath.png",
+      "file": "predicted-pplat-before-breath-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 306,
+        "column": 47
+      },
+      "passed": true
+    },
+    {
+      "requested": "ve-zero-help-standard-full.png",
+      "file": "ve-zero-help-standard-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 313,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-startup-C60.png",
+      "file": "examples-startup-C60-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 199,
+        "column": 24,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-normal-selected.png",
+      "file": "examples-normal-selected-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 202,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-normal-help.png",
+      "file": "examples-normal-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 205,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-ards_moderate-selected.png",
+      "file": "examples-ards-moderate-selected-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 202,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-ards_moderate-help.png",
+      "file": "examples-ards-moderate-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 205,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-ards_severe-selected.png",
+      "file": "examples-ards-severe-selected-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 202,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-ards_severe-help.png",
+      "file": "examples-ards-severe-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 205,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-copd-selected.png",
+      "file": "examples-copd-selected-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 202,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-copd-help.png",
+      "file": "examples-copd-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 205,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-asthma-selected.png",
+      "file": "examples-asthma-selected-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 202,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-asthma-help.png",
+      "file": "examples-asthma-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 205,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-obesity-selected.png",
+      "file": "examples-obesity-selected-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 202,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-obesity-help.png",
+      "file": "examples-obesity-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 205,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-fibrosis-selected.png",
+      "file": "examples-fibrosis-selected-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 202,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-fibrosis-help.png",
+      "file": "examples-fibrosis-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 205,
+        "column": 28,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-custom-help.png",
+      "file": "examples-custom-help-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 211,
+        "column": 24,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "examples-custom-after-reset.png",
+      "file": "examples-custom-after-reset-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-baseline-—-VC-CMV-passive-patient-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 215,
+        "column": 24,
+        "function": "mechanicsExampleSnapshots"
+      },
+      "passed": true
+    },
+    {
+      "requested": "teaching-full.png",
+      "file": "teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-teaching-mode-—-passive-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 328,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-valid-square-teaching-column.png",
+      "file": "hold-valid-square-teaching-column-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-teaching-mode-—-passive-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 334,
+        "column": 51
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-valid-pplat-help-teaching-full.png",
+      "file": "hold-valid-pplat-help-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-teaching-mode-—-passive-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 337,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "hold-valid-baseline-help-teaching-full.png",
+      "file": "hold-valid-baseline-help-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-teaching-mode-—-passive-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 341,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "csv-no-breath-teaching-full.png",
+      "file": "csv-no-breath-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-teaching-mode-—-passive-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 350,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "ve-warming-help-teaching-full.png",
+      "file": "ve-warming-help-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-teaching-mode-—-passive-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 353,
+        "column": 28
+      },
+      "passed": true
+    },
+    {
+      "requested": "ve-zero-help-teaching-full.png",
+      "file": "ve-zero-help-teaching-full-chromium-linux.png",
+      "scenario": "waveforms-waveform-display-teaching-mode-—-passive-chromium",
+      "source": {
+        "file": "/work/tests/visual/waveforms.spec.js",
+        "line": 357,
+        "column": 28
+      },
+      "passed": true
+    }
+  ]
+}

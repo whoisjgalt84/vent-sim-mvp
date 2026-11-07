@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=31';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=31';
-import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=31';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=31';
-import AlarmEngine from '../alarms.js?v=31';
+import { LungModel }        from './lung-model.js?v=32';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=32';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=32';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=32';
+import AlarmEngine from '../alarms.js?v=32';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=31';
+} from '../alarm-audio.js?v=32';
 
 
 // =============================================================================
@@ -91,7 +91,7 @@ const ADAPTIVE_HELP = Object.freeze({
     "adaptive-idealization": "In PC-CMVa, the applied set PEEP and adaptive pressure command latch at the start of each breath. While inward flow is delivered, modeled Paw is their sum. If the delivery valve closes because inward flow would reverse, flow is zero and patient-side Paw follows recoil and prescribed muscle pressure. The adaptive command stays unchanged during that breath. A later eligible inspired volume can adjust the command for the next breath. Expiratory inward demand uses a finite supply resistance. This is an educational model, not a commercial ventilator or measured work of breathing."
 });
 
-const WAVEFORM_HELP = 'A patient-trigger symbol marks the start of a delivered breath. It appears only on the pressure or flow waveform used to detect that trigger, using the configuration recorded at detection. The trace shows the modeled signal; the symbol does not replace the signal or measure effort. No patient-trigger symbol appears on volume. Machine-trigger symbols keep their existing appearance on all three waveforms. Failed triggers have no delivered-breath symbol; their counter and applicable flow highlights remain.';
+const WAVEFORM_HELP = 'A patient-trigger symbol marks the start of a delivered breath. It appears only on the pressure or flow waveform used to detect that trigger, using the configuration recorded at detection. The trace shows the modeled signal; the symbol does not replace the signal or measure effort. No patient-trigger symbol appears on volume. Timed machine breaths have no trigger symbol. Failed triggers have no delivered-breath symbol; their counter and applicable flow highlights remain.';
 const SIGNED_PRESSURE_HELP = 'Paw is gauge pressure at the modeled airway opening. The dashed zero line is atmospheric pressure, not PEEP. A pressure drop below applied PEEP can still be above zero. Genuine negative modeled values remain visible; no pressure dip is added for appearance.';
 const TRIGGER_SIGNAL_HELP = 'Flow triggering compares positive modeled net lung flow with the selected L/min threshold. Pressure triggering compares the modeled Paw drop below current applied PEEP with the selected cmH2O threshold. Detection occurs only during eligible expiration after the 0.1 s refractory interval. An effort resolved while the ventilator is inspiring or holding cannot trigger later in that same effort.';
 const ACTIVE_PREDICTIONS_HELP = 'This prediction is unavailable when patient effort is enabled. Its calculation does not account for all effects of patient effort on airway pressure and flow.\n\nUse the live waveforms and measured values to assess the simulated breath.';
@@ -1936,7 +1936,14 @@ function syncMonitorLayout() {
     extra.innerHTML = '<summary id="additional-outputs-summary">Additional outputs</summary><div id="additional-outputs-body"></div>';
     const extraBody = extra.querySelector('div');
     for (const child of [...parameters.children]) {
-        if (child.matches('.param-group:not(.key-outputs), #param-mode-row')) extraBody.appendChild(child);
+        if (child.matches('.param-group:not(.key-outputs), #param-mode-row')) {
+            const title = child.querySelector('[data-collapsible]');
+            if (title) {
+                title.setAttribute('data-collapsed', '');
+                title.nextElementSibling.style.display = 'none';
+            }
+            extraBody.appendChild(child);
+        }
     }
     parameters.appendChild(extra);
     extra.addEventListener('toggle', () => {

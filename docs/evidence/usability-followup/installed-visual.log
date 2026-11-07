@@ -1,0 +1,49 @@
+
+> vent-sim-mvp@1.0.0 test:visual:docker
+> node tools/run-visual-docker.mjs --update-snapshots=none
+
+
+added 3 packages, and audited 4 packages in 892ms
+
+found 0 vulnerabilities
+npm notice
+npm notice New major version of npm available! 11.16.0 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice
+
+> vent-sim-mvp@1.0.0 test:visual
+> node tools/run-browser-tests.mjs --visual --update-snapshots=none
+
+Starting Vent-Sim server at http://127.0.0.1:8899 ...
+[server] Serving /work/ at http://127.0.0.1:8899/
+Vent-Sim server is healthy.
+
+Running 21 tests using 1 worker
+
+  Γ£ô   1 [chromium] ΓÇ║ tests/visual/manual-hold.spec.js:10:1 ΓÇ║ manual hold arming, actual occlusion and capped completion (1.2s)
+  Γ£ô   2 [chromium] ΓÇ║ tests/visual/manual-hold.spec.js:27:1 ΓÇ║ last valid history, invalid attempt and cross-mode source are distinct (1.5s)
+  Γ£ô   3 [chromium] ΓÇ║ tests/visual/manual-hold.spec.js:57:1 ΓÇ║ recurring takeover, cancellation and timing-short invalid attempt (862ms)
+  Γ£ô   4 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:59:5 ΓÇ║ shared demonstration reset visual contract ΓÇ║ all four modes show a fresh run and retained effort in both display styles (1.9s)
+  Γ£ô   5 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:64:5 ΓÇ║ shared demonstration reset visual contract ΓÇ║ shared reset header keeps native controls separate at narrower widths (2.3s)
+  Γ£ô   6 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:220:5 ΓÇ║ waveform display ΓÇ║ baseline ΓÇö VC-CMV, passive patient (5.3s)
+  Γ£ô   7 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:318:5 ΓÇ║ waveform display ΓÇ║ teaching mode ΓÇö passive (1.4s)
+  Γ£ô   8 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:360:5 ΓÇ║ waveform display ΓÇ║ effort ΓÇö overbreathing in VC-CMV produces failed triggers (766ms)
+  Γ£ô   9 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:380:5 ΓÇ║ waveform display ΓÇ║ effort + teaching ΓÇö the failed-trigger counter and amber highlight (1.4s)
+  Γ£ô  10 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:416:5 ΓÇ║ waveform display ΓÇ║ weak effort in PC-CSV ΓÇö sub-threshold failure morphology (SME-021) (7.9s)
+  Γ£ô  11 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:441:5 ΓÇ║ waveform display ΓÇ║ monitored-value panel does not clip at any type size (903ms)
+  Γ£ô  12 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:485:5 ΓÇ║ determinism ΓÇ║ the same seek renders the identical frame twice (503ms)
+  Γ£ô  13 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:526:5 ΓÇ║ determinism ΓÇ║ seek is a pure function of the seconds requested (183ms)
+  Γ£ô  14 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:536:5 ΓÇ║ cache-busting invariant ΓÇ║ every local js/css request carries the same ?v= (167ms)
+  Γ£ô  15 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:691:5 ΓÇ║ PC-CMVa adaptive visual contract ΓÇ║ adaptive startup, settled measurements, pending context and pause (7.9s)
+  Γ£ô  16 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:733:5 ΓÇ║ PC-CMVa adaptive visual contract ΓÇ║ adaptive compliance and prescribed-effort demonstrations (1.5s)
+  Γ£ô  17 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:773:5 ΓÇ║ PC-CMVa adaptive visual contract ΓÇ║ adaptive pending maximum, both active bounds and saturation release (1.6s)
+  Γ£ô  18 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:811:5 ΓÇ║ PC-CMVa adaptive visual contract ΓÇ║ adaptive transition help, retained settings and contextual help (1.9s)
+  Γ£ô  19 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:875:5 ΓÇ║ effort pressure finite-boundary visual contract ΓÇ║ signed pressure and P-V geometry retain mixed trigger-variable history (1.3s)
+  Γ£ô  20 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:914:5 ΓÇ║ effort pressure finite-boundary visual contract ΓÇ║ closed patient-side PC pressure and active analytical unavailability (1.5s)
+  Γ£ô  21 [chromium] ΓÇ║ tests/visual/waveforms.spec.js:939:5 ΓÇ║ effort pressure finite-boundary visual contract ΓÇ║ signed geometry and frozen history survive narrow high-DPI views (1.8s)
+
+  21 passed (46.1s)
+COMMISSIONED_VISUAL_TALLY 18 passed, 0 failed
+MANUAL_HOLD_VISUAL_TALLY 3 passed, 0 failed
+Commissioned visual/determinism tally verified: 18 passed, 0 failed.

@@ -117,6 +117,7 @@ async function failedTriggerTerminologyContract(page) {
 async function readoutContract(page) {
     return page.evaluate(() => {
         document.getElementById('additional-outputs').open = true;
+        document.querySelectorAll('#additional-outputs [data-collapsible][data-collapsed]').forEach(e => e.click());
         const api = window.__vsim;
         api.pause();
         const errors = [], geometry = [], states = [];
@@ -906,7 +907,7 @@ if (require.main === module) (async () => {
         // A separate flow-baseline highlight can share this canvas. Its tooltip
         // says nothing about trigger sensitivity and is not a failed-event tooltip.
         const failedPtitles = ptitles.flatMap(title => title.split('\n\n'))
-            .filter(section => !section.startsWith('Flow baseline cue:'));
+            .filter(section => !section.startsWith('Flow baseline cue:') && !section.startsWith('Visible flow overlays:'));
         check('tooltip follows the trigger setting (pressure)',
             failedPtitles.every(title => /Earlier trigger settings are not stored|inspiring or holding/.test(title)), pj.slice(0, 200));
         console.log('    pressure-trigger tooltip(s):');
@@ -1012,7 +1013,7 @@ if (require.main === module) (async () => {
         const allVersions = [...(html + mainJs + ventJs + simJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 11 && allVersions.every(v => v === '31'),
+                && allVersions.length === 11 && allVersions.every(v => v === '32'),
             `imports=${imp.join(',')} html=${versions.join(',')} all eleven=${allVersions.join(',')}`);
     }
 

@@ -69,20 +69,22 @@ require generating host-specific, non-authoritative snapshots first with
 <a id="verification-inventory"></a>
 <a id="current-verification-inventory--2026-11-03"></a>
 
-### Current verification inventory - 2026-11-06
+### Current verification inventory - 2026-11-07
 
 The inventory is defined by the [engine runner](tools/run-engine-tests.mjs)
 and [browser/visual runner](tools/run-browser-tests.mjs), not workflow job titles.
-The following inventory includes the bounded desktop teaching slice. It is not
+The following inventory includes the bounded desktop teaching slice and usability follow-up. It is not
 the inventory of the historical release CI run below.
 
 | Gate | Required inventory |
 | --- | --- |
-| Engine | 300 original assertions; 22 adaptive controller; 24 adaptive integration; 22 selective legacy fixtures; 41 effort/pressure; 28 demonstration-reset; 43 manual-hold; 15 R01/R11; 17 R02 groups. Plus 8 teaching-slice groups. Total: 520 mixed top-level assertions/groups/fixtures, not 520 equivalent tests. |
-| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice and 5 hierarchy groups. Total: 120. |
+| Engine | 300 original assertions; 22 adaptive controller; 24 adaptive integration; 22 selective legacy fixtures; 41 effort/pressure; 28 demonstration-reset; 43 manual-hold; 15 R01/R11; 17 R02 groups. Plus 8 teaching-slice and 6 phase-history groups. Total: 526 mixed top-level assertions/groups/fixtures, not 526 equivalent tests. |
+| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice, 5 hierarchy and 4 usability groups. Total: 124. |
 | Pinned-Linux visual | 18 existing groups plus 3 manual-hold groups. Total: 21, including determinism and cache-busting. |
 
-**Local slice evidence, 6 November:** owner-approved references were installed
+**Usability follow-up evidence:** local engine 526/0 and browser 124/0 receipts cover the reviewed source; after separately authorized reference installation, pinned-Linux visual passed 21/21. This documentation-only closeout carries those results forward without rerunning simulator gates. See [the usability closeout](docs/usability-followup.md) for exact source/reference manifests, retained logs, acceptance and limitations.
+
+**Historical local slice evidence, 6 November:** owner-approved references were installed
 and the full pinned-Linux gate passed 21/21 groups and 162/162 screenshot
 comparisons at source SHA256
 `67e53a5baac4a12bc5b9b4ce1c14118651c5d9a3549da569262f03e3c7c3a03b`.

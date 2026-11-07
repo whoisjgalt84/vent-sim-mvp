@@ -159,6 +159,7 @@ async function group(browser,name,fn) {
             await setup(p,mode);await teach(p,teaching);
             const before=stable(await state(p));
             await summary.focus();await p.keyboard.press('Space');assert.equal(await details.evaluate(e=>e.open),true);
+            await p.locator('#additional-outputs [data-collapsible][data-collapsed]').evaluateAll(es => es.forEach(e => e.click()));
             assert.equal(await p.locator('#param-live-trapped').isVisible(),true);
             const title=p.locator('#additional-outputs [data-collapsible]').first();
             await title.focus();await p.keyboard.press('Enter');assert.equal(await title.getAttribute('aria-expanded'),'false');

@@ -1,0 +1,2 @@
+PASS editor live statuses update only when their messages change
+SETTING_EDITOR_BROWSER_TALLY 1 passed, 0 failed

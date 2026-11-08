@@ -1421,6 +1421,11 @@ function changeSettingDraft(text) {
     sim.notifyMeasurementSettingsChanged();
     updateMonitorValues(vent.summary()); updateHoldResults();
 }
+// Live regions must announce changes, not identical text on every animation frame.
+function setSettingStatus(id, text) {
+    const el = document.getElementById(id);
+    if (el && el.textContent !== text) el.textContent = text;
+}
 function refreshSettingEditor() {
     refreshSettingTiles();
     if (!settingDraft) return;
@@ -1430,12 +1435,12 @@ function refreshSettingEditor() {
     const key = PRIMARY_SETTINGS[id].adaptiveKey;
     const waiting = adaptive?.pendingSettings?.[key] !== undefined;
     setText('setting-applied', 'Applied: ' + applied + ' ' + unit);
-    setText('setting-accepted', waiting ? 'Accepted: ' + acceptedSettingValue(id) + ' ' + unit + ' · waiting for next breath' : 'No accepted change waiting');
+    setSettingStatus('setting-accepted', waiting ? 'Accepted: ' + acceptedSettingValue(id) + ' ' + unit + ' · waiting for next breath' : 'No accepted change waiting');
     const input = document.getElementById('setting-draft'), valid = validatedSettingDraft() !== null;
     input.setAttribute('aria-invalid', String(!valid));
-    setText('setting-validation', valid ? 'Range ' + input.min + '–' + input.max + ' ' + unit + '; step ' + input.step + '.'
+    setSettingStatus('setting-validation', valid ? 'Range ' + input.min + '–' + input.max + ' ' + unit + '; step ' + input.step + '.'
         : 'Enter ' + input.min + '–' + input.max + ' ' + unit + ' in steps of ' + input.step + '.');
-    setText('setting-consequence', settingDraft.consequence || 'Changing this value can cancel a manual hold or invalidate adaptive feedback. Cancel discards only the unconfirmed value.');
+    setSettingStatus('setting-consequence', settingDraft.consequence || 'Changing this value can cancel a manual hold or invalidate adaptive feedback. Cancel discards only the unconfirmed value.');
     document.getElementById('setting-confirm').disabled = !valid;
     positionSettingEditor();
 }

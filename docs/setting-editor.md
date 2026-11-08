@@ -150,3 +150,40 @@ No staging, commit, push, PR creation, merge, release or deployment was performe
 or authorized by this documentation closeout. Before those separately authorized
 steps, inspect the exact Git diff/status and preserve unrelated work. Under the
 existing configuration, merging to main publishes GitHub Pages.
+
+
+## Editor live-status accessibility fix (8 November 2026)
+
+This later local fix supersedes the earlier runtime identity and browser count,
+while retaining the earlier owner visual acceptance and all 162 references.
+The base is commit e1298854466adda79930b5eea5848897a98fe8b0 (PR #60).
+The three editor status regions now replace their text only when its content
+changes. This prevents identical messages from producing live-region mutations
+on every animation frame, without changing Confirm, Cancel or edit-attempt
+safety behavior. Only main.js and the editor browser test changed at runtime.
+
+A running-loop regression observes all three statuses across 20 real animation
+frames, verifies no unchanged-text mutations, then checks invalid-to-valid
+validation, adaptive edit consequences and accepted-waiting-to-applied updates.
+Removing the exact guard produces 20 mutations in each region and correctly
+fails the regression. Actual screen-reader speech has not been tested; absence
+of redundant DOM mutations is not comprehensive assistive-technology validation.
+
+Fresh local checks on the fixed runtime passed:
+- Windows editor checks: 13/13, including the new status group.
+- [Focused live-status check](evidence/setting-editor/status-fix/focused.log): 1/1.
+- [Guard-removal mutation](evidence/setting-editor/status-fix/mutation.log): expected failure, exit 1.
+- [Full pinned-Linux browser and visual receipt](evidence/setting-editor/status-fix/browser-visual-linux.log): 145 behavior groups plus 16 layout cases; 21/21 visual groups, snapshots enabled, updates disabled and unchanged tolerances.
+- All 162 installed references still match the reviewed gallery manifest.
+
+The [fix verification record](evidence/setting-editor/status-fix/verification.json)
+identifies both runtime files and receipts with local and Git-normalized SHA256
+values. Original receipts are retained byte-for-byte; use normalized hashes for
+committed-file verification. An independent diff review found no further blocker.
+Prior engine evidence is carried forward, not rerun for this status-rendering fix.
+The previous 144-group browser receipt remains historical, not the fixed runtime's
+fresh result. The remote CI results for e129885 do not cover this uncommitted fix.
+
+This documentation-only closeout runs no simulator gates. No staging, commit,
+push, merge or deployment was performed by this pass. Physical touch-device and
+screen-reader verification limitations remain as described above.

@@ -38,6 +38,7 @@ let passed=0,failed=0;
      unchanged:["    if (value === accepted) return; // Unchanged confirmation", "    if (false) return; // Unchanged confirmation"],
      validation:["&& Number.isInteger((value - min) / step) ? value : null;", "? value : null;"],
     };
+    patches.liveStatus = ["if (el && el.textContent !== text) el.textContent = text;", "if (el) el.textContent = text;"];
     const patch=patches[process.env.VSM_EDITOR_MUTATION];assert.ok(patch&&body.includes(patch[0]),'mutation target exists');
     body=body.replace(patch[0],patch[1]);await route.fulfill({response,body});
    });
@@ -102,6 +103,26 @@ let passed=0,failed=0;
    await tile.focus();await p.keyboard.press('Enter');assert.equal(await p.locator('#setting-draft').evaluate(e=>e===document.activeElement),true);let b=await p.locator('#setting-editor').boundingBox();assert.ok(b.x>=0&&b.x+b.width<=width+.5&&b.y>=0&&b.y+b.height<=900.5);assert.deepEqual(await p.locator('.waveform-panel').evaluateAll(es=>es.map(e=>({width:e.clientWidth,height:e.clientHeight}))),waves,'editor preserves all waveform geometry');await fill(p,specs[id].max);await p.setViewportSize({width:width===1440?390:1440,height:900});await p.evaluate(()=>new Promise(requestAnimationFrame));assert.equal(await p.locator('#setting-draft').inputValue(),String(specs[id].max));b=await p.locator('#setting-editor').boundingBox();assert.ok(b.x>=0&&b.x+b.width<=p.viewportSize().width+.5,JSON.stringify({width,mode,resize:p.viewportSize(),box:b}));await p.keyboard.press('Escape');assert.equal(await tile.evaluate(e=>e===document.activeElement),true);assert.equal(await p.locator('#setting-editor').isVisible(),false);await p.setViewportSize({width,height:900});await p.evaluate(()=>new Promise(requestAnimationFrame));await tile.tap();assert.equal(await p.locator('#setting-editor').isVisible(),true);await p.locator('#setting-cancel').tap();assert.equal(await p.locator('#setting-editor').isVisible(),false);assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   }
  });
+ await group('live statuses update only when their messages change',async p=>{
+  await open(p);
+  await p.evaluate(()=>{
+   window.statusChanges={};window.statusObservers=[];
+   for(const id of ['setting-accepted','setting-validation','setting-consequence']){
+    statusChanges[id]=0;const o=new MutationObserver(ms=>statusChanges[id]+=ms.length);
+    o.observe(document.getElementById(id),{childList:true,subtree:true,characterData:true});statusObservers.push(o);
+   }
+  });
+  const changes=()=>p.evaluate(()=>({...statusChanges}));
+  await p.evaluate(async()=>{__vsim.resume();for(let i=0;i<20;i++)await new Promise(requestAnimationFrame);__vsim.pause();});
+  assert.deepEqual(await changes(),{'setting-accepted':0,'setting-validation':0,'setting-consequence':0},'unchanged live-loop statuses do not mutate');
+  await fill(p,'');assert.match(await p.locator('#setting-validation').innerText(),/^Enter /);assert.equal((await changes())['setting-validation'],1);
+  await fill(p,620);assert.match(await p.locator('#setting-validation').innerText(),/^Range /);assert.equal((await changes())['setting-validation'],2);await cancel(p);
+  await setup(p,'pc-cmva');await open(p);await fill(p,650);assert.match(await p.locator('#setting-consequence').innerText(),/invalidated adaptive feedback/);assert.ok((await changes())['setting-consequence']>0);await confirm(p);await open(p);
+  assert.match(await p.locator('#setting-accepted').innerText(),/650.*waiting/);const before=await changes();
+  await tick(p,600);assert.equal(await p.locator('#setting-accepted').innerText(),'No accepted change waiting');assert.equal((await changes())['setting-accepted'],before['setting-accepted']+1);
+  const settled=await changes();await p.evaluate(async()=>{__vsim.resume();for(let i=0;i<20;i++)await new Promise(requestAnimationFrame);__vsim.pause();});assert.deepEqual(await changes(),settled,'updated statuses stay quiet on subsequent frames');
+  await p.evaluate(()=>statusObservers.forEach(o=>o.disconnect()));
+ });
  await group('review previews and input labels',async p=>{
   // Short windows and mobile browser chrome must not strand either action.
   for(const width of [1440,390]){await p.setViewportSize({width,height:500});await p.evaluate(()=>new Promise(requestAnimationFrame));await setup(p);await open(p);await fill(p,620);await p.locator('#setting-confirm').scrollIntoViewIfNeeded();let box=await p.locator('#setting-confirm').boundingBox();assert.ok(box.y>=0&&box.y+box.height<=500.5);await confirm(p);assert.equal((await state(p)).operatorSettings.targetVT_mL,620);await open(p);await fill(p,700);await p.locator('#setting-cancel').scrollIntoViewIfNeeded();box=await p.locator('#setting-cancel').boundingBox();assert.ok(box.y>=0&&box.y+box.height<=500.5);if(width===390){await p.locator('#setting-editor').evaluate(e=>{e.scrollTop=e.scrollHeight;});assert.ok(await p.locator('#setting-editor').evaluate(e=>e.scrollTop>0),'nonvacuous scrolled short editor');}await cancel(p);assert.equal((await state(p)).operatorSettings.targetVT_mL,620);await open(p,'rr');assert.equal(await p.locator('#setting-editor').evaluate(e=>e.scrollTop),0,'new setting opens with heading visible');await cancel(p);}
@@ -109,5 +130,5 @@ let passed=0,failed=0;
   if(process.env.VSM_EDITOR_SHOTS)fs.mkdirSync(process.env.VSM_EDITOR_SHOTS,{recursive:true});for(const [id,spec] of Object.entries(specs)){await setup(p,spec.mode);const applied=await p.locator('#'+id+'-display').innerText();await open(p,id);assert.equal(await p.getByLabel('New value ('+spec.unit+')',{exact:true}).count(),1);await fill(p,spec.max);assert.equal(await p.locator('#'+id+'-display').innerText(),applied,'tile never shows unconfirmed '+id);if(process.env.VSM_EDITOR_SHOTS)await p.screenshot({path:process.env.VSM_EDITOR_SHOTS+'/draft-'+id+'.png',fullPage:true});await cancel(p);}
   await setup(p,'pc-cmva');await open(p);await fill(p,650);await confirm(p);await open(p);assert.match(await p.locator('#setting-applied').innerText(),/500/);if(process.env.VSM_EDITOR_SHOTS)await p.screenshot({path:process.env.VSM_EDITOR_SHOTS+'/adaptive-waiting.png',fullPage:true});await p.setViewportSize({width:390,height:900});if(process.env.VSM_EDITOR_SHOTS)await p.screenshot({path:process.env.VSM_EDITOR_SHOTS+'/narrow-waiting.png',fullPage:true});
  });
- await browser.close();console.log(`SETTING_EDITOR_BROWSER_TALLY ${passed} passed, ${failed} failed`);if(passed!==(process.env.VSM_EDITOR_GROUP?1:12)||failed)process.exitCode=1;
+ await browser.close();console.log(`SETTING_EDITOR_BROWSER_TALLY ${passed} passed, ${failed} failed`);if(passed!==(process.env.VSM_EDITOR_GROUP?1:13)||failed)process.exitCode=1;
 })().catch(e=>{console.error(e);process.exitCode=1;});

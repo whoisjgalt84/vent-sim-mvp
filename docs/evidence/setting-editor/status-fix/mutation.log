@@ -1,0 +1,17 @@
+FAIL editor live statuses update only when their messages change
+AssertionError [ERR_ASSERTION]: unchanged live-loop statuses do not mutate
++ actual - expected
+
+  {
++   'setting-accepted': 20,
++   'setting-consequence': 20,
++   'setting-validation': 20
+-   'setting-accepted': 0,
+-   'setting-consequence': 0,
+-   'setting-validation': 0
+  }
+
+    at C:\Users\chris\Documents\Codex\2026-11-08\vent-sim-primary-tiles\tests\setting-editor.browser.cjs:117:10
+    at async group (C:\Users\chris\Documents\Codex\2026-11-08\vent-sim-primary-tiles\tests\setting-editor.browser.cjs:45:80)
+    at async C:\Users\chris\Documents\Codex\2026-11-08\vent-sim-primary-tiles\tests\setting-editor.browser.cjs:106:2
+SETTING_EDITOR_BROWSER_TALLY 0 passed, 1 failed

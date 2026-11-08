@@ -1,5 +1,7 @@
 # Overlay help panel: accepted local candidate
 
+**Later successor:** the [premerge persistence and accessibility fixes](overlay-help-premerge.md) address two subsequently reproduced interaction defects. The original candidate was committed as `742ef20c403d622abf32339d32ead542f8dc3b7b`; this earlier closeout retains its original acceptance, identities and evidence, not a claim about the corrected candidate.
+
 ## Scope and candidate identity
 
 This focused successor to the [usability follow-up](usability-followup.md) is based on `f7cb9d84be87942390365068f38b522b8da34f8b` (PR #58). The candidate is uncommitted. The [12-file source manifest](evidence/overlay-help-panel/source-manifest.json) identifies the reviewed runtime, tests and runner inputs by SHA256; it is not a whole-repository tree or commit identity. Documentation added by this closeout is not part of that runtime manifest. The source hashes still match the tested candidate.

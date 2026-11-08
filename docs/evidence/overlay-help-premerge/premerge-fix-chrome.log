@@ -1,0 +1,9 @@
+PASS RR24/high RR hover, panel transfer, pin, retained copy, Escape and no reopen
+PASS keyboard activation, both explanations, Close and focus restoration
+PASS cross-trigger passive hover preserves pinned/focused help; explicit activation remains
+PASS Standard/Teach canvas affordance, activation and focus transitions
+PASS reset, mode and Teach-off dismissal
+PASS absent/mixed/returned cues retain text, show only missing notices, and both variants use colons
+PASS narrow and 150% zoom panel bounds and reachable controls
+PASS fresh touch cue tap pins and closes; static touch access remains
+OVERLAY_PANEL_BROWSER_TALLY 8 passed, 0 failed (chrome)

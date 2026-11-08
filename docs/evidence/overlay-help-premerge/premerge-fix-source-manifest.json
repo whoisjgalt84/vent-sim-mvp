@@ -1,0 +1,55 @@
+{
+  "base": "742ef20c403d622abf32339d32ead542f8dc3b7b",
+  "status": "uncommitted premerge persistence/accessibility fixes",
+  "files": [
+    {
+      "path": "css/style.css",
+      "sha256": "8a65cdbae979ab260528a25bc0c5ceed473190d98962cd05b99d37baf4167069"
+    },
+    {
+      "path": "index.html",
+      "sha256": "ec3ce3c7d2ea4b19a64e33718bf9251ef09c157bd64194d8c8b59ff87f80675b"
+    },
+    {
+      "path": "js/main.js",
+      "sha256": "6bad29efac6c08cbc8f4fe88cbd00be7655cd56b2ab61762e79a88ebe5773838"
+    },
+    {
+      "path": "js/simulation.js",
+      "sha256": "f3b76f641d41ef57052d2cb11306c99868bee55ae92ab4a3d87074d112f2a0fc"
+    },
+    {
+      "path": "js/ventilator.js",
+      "sha256": "3de09b51267cd82997dbb94f8b0c2e5892664bb5e2cceb5542bff692b4d91cdf"
+    },
+    {
+      "path": "js/waveforms.js",
+      "sha256": "80199b3053a79e986e4590c272cc7b2293543f61ca0872c765c6537338156a79"
+    },
+    {
+      "path": "scratch/verify-batch.cjs",
+      "sha256": "00daf66aa6031fc5243f18f9243a0f0e94595b09a52671f645b35600f31ca890"
+    },
+    {
+      "path": "tests/effort-pressure-contract.test.mjs",
+      "sha256": "af7e2ee87f47c1d427e01268e106d6edaa6a253ae4f22aa6cd3b0e3bfb009828"
+    },
+    {
+      "path": "tests/usability-followup.browser.cjs",
+      "sha256": "b911c5283217dc7f1a4329c187d59fa224d41cefe5ec3062a9e56d0b321083fb"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js",
+      "sha256": "b11d2de4edc73c276470588deac9fc54cec4bb2af6bc804b025b07c00387e80c"
+    },
+    {
+      "path": "tools/run-browser-tests.mjs",
+      "sha256": "6b485bc5fcdf8dd3a14f4d29f80fbe1e5633185e66299b793c7a6b3d964e213d"
+    },
+    {
+      "path": "tests/overlay-panel.browser.cjs",
+      "sha256": "d8f1a1a8a6ef2f6235c670370811f1c2c30fb198709b155ae31bc1476519969e"
+    }
+  ],
+  "refinement": "Protect passive hover while pinned/focused; conditional and synchronous Standard/Teach canvas affordance; asset version34; eight overlay groups"
+}

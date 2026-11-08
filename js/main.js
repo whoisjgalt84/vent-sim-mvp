@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=33';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=33';
-import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=33';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=33';
-import AlarmEngine from '../alarms.js?v=33';
+import { LungModel }        from './lung-model.js?v=34';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=34';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=34';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=34';
+import AlarmEngine from '../alarms.js?v=34';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=33';
+} from '../alarm-audio.js?v=34';
 
 
 // =============================================================================
@@ -1242,6 +1242,7 @@ function bindTeachingModeToggle() {
         btn.classList.toggle('transport-btn--teaching-active', enabled);
         btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
         btn.textContent = enabled ? 'Teach On' : 'Teach Off';
+        syncOverlayHelpContext();
         // Patient visibility, settings and all disclosure selections are independent of Teach.
         // Loops are NOT forced off on entering Teaching Mode any more (SME-012).
         // The old behaviour silently discarded the user's loop choice on the way
@@ -2145,7 +2146,16 @@ let overlayHelpSuppressed = false;
 let overlayHelpGeneration = null;
 const isOverlayHelp = key => ['air-trapping', 'failed-trigger-highlight', 'flow-overlays'].includes(key);
 const overlayHelpKey = cue => cue.text === AIR_TRAPPING_HELP ? 'air-trapping' : 'failed-trigger-highlight';
+function allowPassiveHelp() {
+    return !measurementHelpClickPinned
+        && !document.getElementById('measurement-help').contains(document.activeElement);
+}
 function syncOverlayHelpContext() {
+    const teaching = document.body.classList.contains('teaching-mode');
+    const canvas = document.getElementById('canvas-flow');
+    canvas.tabIndex = teaching ? 0 : -1;
+    canvas.setAttribute('aria-label', teaching ? 'Flow waveform. Activate for overlay explanations.' : 'Flow waveform.');
+    if (!teaching && document.activeElement === canvas) document.getElementById('btn-teaching-mode').focus();
     const generation = sim.simulationGeneration + ':' + sim.modeGeneration;
     if (overlayHelpGeneration !== generation || !document.body.classList.contains('teaching-mode')) {
         if (isOverlayHelp(openMeasurementHelpTrigger?.dataset.measurementHelp)) {
@@ -2359,7 +2369,7 @@ function closeMeasurementHelp(restoreFocus = false) {
         trigger.setAttribute('aria-expanded', 'false');
         trigger.removeAttribute('aria-describedby');
         if (restoreFocus) {
-            const destination = trigger.getClientRects().length ? trigger : document.getElementById('btn-teaching-mode');
+            const destination = trigger.getClientRects().length && !(trigger.id === 'canvas-flow' && !document.body.classList.contains('teaching-mode')) ? trigger : document.getElementById('btn-teaching-mode');
             measurementHelpRestoringFocus = true;
             try { destination.focus(); } finally { measurementHelpRestoringFocus = false; }
         }
@@ -2398,14 +2408,14 @@ function bindMeasurementHelp() {
     if (!popover) return;
     const canvas = document.getElementById('canvas-flow');
     canvas.dataset.measurementHelp = 'flow-overlays';
-    canvas.tabIndex = 0;
-    canvas.setAttribute('aria-label', 'Flow waveform. Activate for overlay explanations.');
+    canvas.tabIndex = -1;
+    canvas.setAttribute('aria-label', 'Flow waveform.');
     canvas.setAttribute('aria-controls', 'measurement-help');
     canvas.setAttribute('aria-expanded', 'false');
     display.flowRenderer.onOverlayHelp = ({ text, visibleCues, pointerMoved }) => {
         overlayHelpVisible = new Set(visibleCues.map(overlayHelpKey));
         overlayHelpVisibleCopies = new Set(visibleCues.map(cue => cue.text).filter(Boolean));
-        if (pointerMoved && text && !overlayHelpSuppressed && !measurementHelpClickPinned) openMeasurementHelp(canvas);
+        if (pointerMoved && text && !overlayHelpSuppressed && allowPassiveHelp()) openMeasurementHelp(canvas);
         if (isOverlayHelp(openMeasurementHelpTrigger?.dataset.measurementHelp)) {
             for (const key of overlayHelpVisible) overlayHelpRead.add(key);
             for (const copy of overlayHelpVisibleCopies) overlayHelpCopies.add(copy);
@@ -2420,6 +2430,7 @@ function bindMeasurementHelp() {
         if (display.flowRenderer._highlightHelpText) openMeasurementHelp(canvas, true);
     });
     canvas.addEventListener('keydown', event => {
+        if (!document.body.classList.contains('teaching-mode')) return;
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
             openMeasurementHelp(canvas, true);
@@ -2436,7 +2447,7 @@ function bindMeasurementHelp() {
     document.getElementById('overlay-help-close').addEventListener('click', () => closeMeasurementHelp(true));
     for (const trigger of document.querySelectorAll('.measurement-help-trigger')) {
         trigger.setAttribute('aria-controls', 'measurement-help');
-        trigger.addEventListener('pointerenter', () => openMeasurementHelp(trigger));
+        trigger.addEventListener('pointerenter', () => { if (allowPassiveHelp()) openMeasurementHelp(trigger); });
         trigger.addEventListener('pointerleave', scheduleMeasurementHelpClose);
         trigger.addEventListener('focus', () => {
             if (!measurementHelpRestoringFocus) openMeasurementHelp(trigger);

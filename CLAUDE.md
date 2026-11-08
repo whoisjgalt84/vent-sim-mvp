@@ -79,10 +79,12 @@ the inventory of the historical release CI run below.
 | Gate | Required inventory |
 | --- | --- |
 | Engine | 300 original assertions; 22 adaptive controller; 24 adaptive integration; 22 selective legacy fixtures; 41 effort/pressure; 28 demonstration-reset; 43 manual-hold; 15 R01/R11; 17 R02 groups. Plus 8 teaching-slice and 6 phase-history groups. Total: 526 mixed top-level assertions/groups/fixtures, not 526 equivalent tests. |
-| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice, 5 hierarchy, 4 usability and 6 overlay-panel groups. Total: 130. |
+| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice, 5 hierarchy, 4 usability and 8 overlay-panel groups. Total: 132. |
 | Pinned-Linux visual | 18 existing groups plus 3 manual-hold groups. Total: 21, including determinism and cache-busting. |
 
-**Overlay-panel evidence:** local engine 526/0, browser 130/0 and pinned-Linux visual 21/21 receipts cover the owner-accepted panel candidate. This documentation-only closeout carries those results forward without rerunning simulator gates. See [the overlay-panel closeout](docs/overlay-help-panel.md) for source identity, retained receipts, acceptance and limits.
+**Overlay-panel premerge-fix evidence:** local engine 526/0, browser 132/0 and pinned-Linux visual 21/21 receipts cover the targeted persistence/focus and Standard-mode accessibility fixes. This documentation-only update carries those results forward without rerunning gates. See [the premerge-fix closeout](docs/overlay-help-premerge.md) for exact source identity, retained receipts and limits.
+
+**Historical overlay-panel evidence:** local engine 526/0, browser 130/0 and pinned-Linux visual 21/21 receipts cover the owner-accepted panel candidate. This documentation-only closeout carries those results forward without rerunning simulator gates. See [the overlay-panel closeout](docs/overlay-help-panel.md) for source identity, retained receipts, acceptance and limits.
 
 **Historical usability follow-up evidence:** local engine 526/0 and browser 124/0 receipts cover the reviewed source; after separately authorized reference installation, pinned-Linux visual passed 21/21. This documentation-only closeout carries those results forward without rerunning simulator gates. See [the usability closeout](docs/usability-followup.md) for exact source/reference manifests, retained logs, acceptance and limitations.
 
@@ -201,7 +203,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=33`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=34`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's

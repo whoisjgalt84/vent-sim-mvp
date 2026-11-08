@@ -21,6 +21,7 @@ async function singleResetControl(page) {
 }
 async function range(page, id, value) {
     await page.locator(id).evaluate((el, value) => { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }, String(value));
+    if (['#vt','#rr','#peep','#fio2','#pinsp','#ps-pressure'].includes(id)) await page.locator('#setting-confirm').click();
 }
 async function setup(page, mode, active = false, holdTime = 0) {
     if ((await state(page)).teachingMode) await page.locator('#btn-teaching-mode').click();

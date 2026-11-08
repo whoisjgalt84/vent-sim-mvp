@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-08",
+  "baseCommit": "e1298854466adda79930b5eea5848897a98fe8b0",
+  "scope": "Local editor live-status accessibility fix; not commit or publication authority",
+  "sources": [
+    {
+      "path": "js/main.js",
+      "localSha256": "036269e73cbcd512866b9bd1393fdebf5713ec1679fe632a85f036e256034248",
+      "gitNormalizedSha256": "d2ee93bbf097cb7a560fb70e285f2528a4bb7d3a7b5b8b0c3b0afd3ed0a46bb5"
+    },
+    {
+      "path": "tests/setting-editor.browser.cjs",
+      "localSha256": "20496fefddca9b8c5c6695e1fe20938788bf79a533faf83a8ddd4e684c6ec238",
+      "gitNormalizedSha256": "ec4db1bb60dc21a52758e003e4c921bcfdedd4e686c935e3af8cfb8c001b781a"
+    }
+  ],
+  "receipts": [
+    {
+      "path": "focused.log",
+      "localSha256": "afefbb8bb5e81fbc874360e4f5d3fb390d2a0de9305e05406533c39ad75087b1",
+      "gitNormalizedSha256": "d8874d1464156547b3bae37da6f4dc4fce11ed50e8bb9e3668620742ecc15ed7"
+    },
+    {
+      "path": "mutation.log",
+      "localSha256": "20976b2b714525cc8163a417468108c69a2ad217360cb1d0a1fbbac9a44dfccb",
+      "gitNormalizedSha256": "c32daccc38e763f0d5f46ac32a45bd72179effd7ac42b19bb585d58f2c9a5838"
+    },
+    {
+      "path": "browser-visual-linux.log",
+      "localSha256": "dd8fc315f4218a40e319856e65b911fa1a28458dba80c04b1160857888c9f5db",
+      "gitNormalizedSha256": "0d7a3ed2c061706d35ae2f1bde7fdca1efd605c2bed8f47d166572dda7f4b3da"
+    }
+  ],
+  "results": {
+    "windowsEditorGroups": 13,
+    "focusedLiveStatusGroups": 1,
+    "mutationExpectedFailure": true,
+    "pinnedLinuxBrowserBehaviorGroups": 145,
+    "pinnedLinuxLayoutCases": 16,
+    "pinnedLinuxVisualGroups": 21,
+    "updatesEnabled": false,
+    "tolerancesChanged": false,
+    "referencesUnchanged": 162
+  },
+  "pinnedImage": "mcr.microsoft.com/playwright:v1.62.1-noble",
+  "engine": "Prior engine evidence carried forward; not rerun for this status-rendering fix",
+  "limits": [
+    "Actual screen-reader speech not tested",
+    "This documentation pass did not rerun simulator gates or establish remote CI for the fix"
+  ],
+  "hashSemantics": "localSha256 identifies retained working-file bytes; gitNormalizedSha256 identifies UTF-8 bytes with repository CRLF-to-LF normalization."
+}

@@ -68,10 +68,12 @@ const groups = [
         const cardStyle=selector=>page.locator(selector).evaluate(e=>{const s=getComputedStyle(e);return {background:s.backgroundColor,left:s.borderLeftWidth,right:s.borderRightWidth,bottom:s.borderBottomWidth,padding:s.padding,radius:s.borderRadius,opacity:s.opacity};});
         assert.deepEqual(await cardStyle('#fio2-control'),await cardStyle('#vt-control'),'primary rows share the approved surface and spacing');
         assert.equal(await page.locator('#vt-control').evaluate(e=>getComputedStyle(e).borderTopWidth),'0px','first primary row has no separator');
-        assert.equal(await page.locator('#fio2-control').evaluate(e=>getComputedStyle(e).borderTopWidth),'1px','later primary row has the approved separator');
+        assert.equal(await page.locator('#fio2-control').evaluate(e=>getComputedStyle(e).borderTopWidth),'0px','primary tiles replace the old row separators');
+        assert.deepEqual(await cardStyle('#fio2-tile'),await cardStyle('#vt-tile'),'primary tiles share the same surface and spacing');
         assert.equal(await page.locator('.trigger-control').evaluate(e=>e.parentElement.id),'secondary-settings','Trigger uses secondary emphasis');
         assert.deepEqual(await cardStyle('.trigger-control'),{background:'rgba(0, 0, 0, 0)',left:'0px',right:'0px',bottom:'0px',padding:'6px 1px',radius:'0px',opacity:'1'},'secondary Trigger row remains unboxed');
-        const fio2AX=await ax(page,'#fio2');assert.equal(fio2AX.role.value,'slider');assert.equal(fio2AX.name.value,'FiO2');assert.equal(fio2AX.description.value,'40%');
+        const fio2AX=await ax(page,'#fio2-tile');assert.equal(fio2AX.role.value,'button');assert.equal(fio2AX.name.value,'Edit FiO2, applied 40 %');
+        assert.equal(await page.locator('#fio2-display').textContent(),'40%');assert.equal(await page.locator('#fio2').isVisible(),false,'compatibility input is not exposed');
         const gap=await page.locator('.trigger-control .control__header').evaluate(e=>{
             const label=e.querySelector('.control__label').getBoundingClientRect();
             const icon=e.querySelector('button').getBoundingClientRect();return icon.left-label.right;
@@ -106,11 +108,11 @@ const groups = [
             assert.equal((await state(page)).resetDiagnostics.configuration[field],+(await input.inputValue()),'pointer/model agreement');
             assert.equal(await text(page.locator('#'+type+'-trigger-display')),Number(await input.inputValue()).toFixed(1)+' '+(type==='flow'?'L/min':'cmH2O'));
         }
-        const fio2=page.locator('#fio2');await fio2.focus();await page.keyboard.press('ArrowRight');
-        assert.equal(+(await fio2.inputValue()),41,'FiO2 native keyboard step');assert.equal((await state(page)).resetDiagnostics.configuration.fio2,.41,'FiO2 keyboard/model agreement');assert.equal(await page.locator('#fio2-display').textContent(),'41%','FiO2 keyboard units');
+        await page.locator('#fio2-tile').click();const fio2=page.locator('#setting-range');await fio2.focus();await page.keyboard.press('ArrowRight');
+        assert.equal(+(await fio2.inputValue()),41,'FiO2 native keyboard step');assert.equal((await state(page)).resetDiagnostics.configuration.fio2,.40,'FiO2 keyboard remains a draft');await page.locator('#setting-confirm').click();assert.equal((await state(page)).resetDiagnostics.configuration.fio2,.41,'FiO2 keyboard/model agreement after Confirm');assert.equal(await page.locator('#fio2-display').textContent(),'41%','FiO2 keyboard units');await page.locator('#fio2-tile').click();
         await fio2.scrollIntoViewIfNeeded();const fio2Box=await fio2.boundingBox();await fio2.evaluate(e=>{window.__fio2Inputs=[];e.addEventListener('input',event=>window.__fio2Inputs.push(event.isTrusted));});
         await page.mouse.move(fio2Box.x+8,fio2Box.y+fio2Box.height/2);await page.mouse.down();await page.mouse.move(fio2Box.x+fio2Box.width-8,fio2Box.y+fio2Box.height/2,{steps:20});await page.mouse.up();
-        const fio2Events=await page.evaluate(()=>window.__fio2Inputs);assert(fio2Events.length>=5 && fio2Events.every(Boolean),'FiO2 trusted native pointer input');assert.equal((await state(page)).resetDiagnostics.configuration.fio2,+(await fio2.inputValue())/100,'FiO2 pointer/model agreement');assert.equal(await page.locator('#fio2-display').textContent(),(await fio2.inputValue())+'%','FiO2 pointer units');
+        const fio2Events=await page.evaluate(()=>window.__fio2Inputs);assert(fio2Events.length>=5 && fio2Events.every(Boolean),'FiO2 trusted native pointer input');const fio2Selected=await fio2.inputValue();assert.equal((await state(page)).resetDiagnostics.configuration.fio2,.41,'FiO2 pointer remains a draft');await page.locator('#setting-confirm').click();assert.equal((await state(page)).resetDiagnostics.configuration.fio2,+fio2Selected/100,'FiO2 pointer/model agreement after Confirm');assert.equal(await page.locator('#fio2-display').textContent(),fio2Selected+'%','FiO2 pointer units');
         const before=(await state(page)).resetDiagnostics.configuration;await page.click('#btn-reset');
         const after=(await state(page)).resetDiagnostics.configuration;
         for(const field of ['triggerType','flowTriggerLpm','pressureTriggerCmH2O']) assert.equal(after[field],before[field],'reset retains trigger '+field);

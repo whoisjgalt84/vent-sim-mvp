@@ -1,0 +1,2939 @@
+{
+  "schemaVersion": 1,
+  "accepted": false,
+  "generatedAt": "2026-11-08T17:12:31.951Z",
+  "sourceManifestSha256": "780b4d81de4774b7d7d4c7e527350891b1786b48024a95f38bc86983e6f1362b",
+  "sourceScope": "Explicit 78-file evidence copy manifest; not Git tree identity",
+  "pinnedImage": "mcr.microsoft.com/playwright:v1.62.1-noble",
+  "capture": "Generation ran with copied references in an isolated evidence copy; 98 mismatching PNGs were regenerated and 64 matching reference copies were retained by Playwright. Two full comparisons passed with updates disabled and unchanged tolerances. Only the evidence copy was mounted; original candidate reference directories were never mounted or written.",
+  "counts": {
+    "total": 162,
+    "changed": 98,
+    "unchanged": 64
+  },
+  "checks": {
+    "generation": "21/21",
+    "comparisonOne": "21/21, updates disabled",
+    "comparisonTwo": "21/21, updates disabled",
+    "acceptedReferencesPreserved": true,
+    "sourcePreserved": true
+  },
+  "images": [
+    {
+      "number": 1,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-armed-control-chromium-linux.png",
+      "file": "manual-armed-control-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "b6f15f7c4d4b339a7eace5378a2ef7661b202f1cec7f77831fbfa3d731bc611c",
+      "candidateSha256": "b4412e80e47428efdc01c57b6dcc25b0580c8a9467762cd80b3883e5ca8187f3",
+      "acceptedSize": [
+        213,
+        87
+      ],
+      "candidateSize": [
+        213,
+        86
+      ],
+      "changedPixels": 2332,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 2,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-canceled-panel-chromium-linux.png",
+      "file": "manual-canceled-panel-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "1e7ec56a86996d1474f8ea75ed487537deef7a1964797fa6b62f6dedaa085f4b",
+      "candidateSha256": "0245eec35c3a15d080178d0aa5107bd5956373e730abc07ea5dd442f950fb29d",
+      "acceptedSize": [
+        213,
+        219
+      ],
+      "candidateSize": [
+        213,
+        219
+      ],
+      "changedPixels": 576,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 3,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-history-teaching-full-chromium-linux.png",
+      "file": "manual-history-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "1ca65d9ada6ef630cf808b94f4823ddd4e0d40f00d24ecefbacc679fb80471eb",
+      "candidateSha256": "1ca65d9ada6ef630cf808b94f4823ddd4e0d40f00d24ecefbacc679fb80471eb",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 4,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-holding-full-chromium-linux.png",
+      "file": "manual-holding-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "fee3d062243b20f2e1b241f81a420670ec5cb8d179702b0e9cfe6ff4b1342849",
+      "candidateSha256": "d69563adbbe0c3ecdf1a92255429f98646bd00b9843237136c683ee777a936c1",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 6041,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 5,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-invalid-retained-panel-chromium-linux.png",
+      "file": "manual-invalid-retained-panel-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "781e5df862db26e0b4b702afc2bdd209b4fbb60f0f5a85b8f78c7ce59b61249f",
+      "candidateSha256": "62cd2ce288ecc7ca5c44e01bbef05f93f727302fe2bbccf359f8c3908c92e235",
+      "acceptedSize": [
+        213,
+        285
+      ],
+      "candidateSize": [
+        213,
+        286
+      ],
+      "changedPixels": 2059,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 6,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-last-valid-full-chromium-linux.png",
+      "file": "manual-last-valid-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "f762325bd1923c702cedf4144530fe4b4ea310637e9bf91149be3e820f2dc143",
+      "candidateSha256": "46dca198c4366a1ad3122d650a6db58f7e9f3e0b323072e336c4854248273697",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 7102,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 7,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-last-valid-panel-chromium-linux.png",
+      "file": "manual-last-valid-panel-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "bf4635eeda3c31a2232ce59cbb490c43a55981efedbffdfa3482dec7e858fe55",
+      "candidateSha256": "2569f471c1351a28494128f5ba9f979c0996bef9c1fc49996b9d29b56b10aab0",
+      "acceptedSize": [
+        213,
+        274
+      ],
+      "candidateSize": [
+        213,
+        274
+      ],
+      "changedPixels": 2201,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 8,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-old-vc-in-adaptive-full-chromium-linux.png",
+      "file": "manual-old-vc-in-adaptive-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "4c2fd3d0f37367ed6f1112a3c3b815eb42e098612b376721b089fbc55937821d",
+      "candidateSha256": "502ccccf16ac8a70a5e988fe3325110b076ed3078fa22c31ea0598b57e131756",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 104880,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 9,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-old-vc-in-csv-full-chromium-linux.png",
+      "file": "manual-old-vc-in-csv-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "12ba1263341154dabd127532190482dd1c756b86c80f005ab7351a87a642328f",
+      "candidateSha256": "89ad727f2999447aa20d61fda96a641a09ecf1162ceb7400aaa7861650953e63",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 89005,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 10,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-old-vc-in-pc-full-chromium-linux.png",
+      "file": "manual-old-vc-in-pc-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "788e80acde86e10f7da318983053ad62044ddcde7f73e523631fd12bc51835a5",
+      "candidateSha256": "3cb9deb49e2cd428795ea8381d1ce289a5551efa800f7d5b2b9a4e9ee4fd5c01",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 105136,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 11,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-pc-source-full-chromium-linux.png",
+      "file": "manual-pc-source-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "51defe20e911048fd87238b36a42913a5b11a7ee8a9c1d34b6f49adb03eec135",
+      "candidateSha256": "fa0f4c26526c2175d52e182cda6a929995e8f0fae450680ceee6bdf326837746",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 11185,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 12,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-pc-source-panel-chromium-linux.png",
+      "file": "manual-pc-source-panel-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "f5125649d76988d6dfb31349fc05bf6d4cefb4b8c3428c421ff5bf06ace53b11",
+      "candidateSha256": "eac0bd690c4ab7299ba052d2a3c25e800282c42159f0a28b4c9eea6fe47e9624",
+      "acceptedSize": [
+        213,
+        301
+      ],
+      "candidateSize": [
+        213,
+        301
+      ],
+      "changedPixels": 5403,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 13,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-ready-full-chromium-linux.png",
+      "file": "manual-ready-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "c820ad7d90765caaa14ef8be3b4e548bb103014244a814e00ba494d0b6df327a",
+      "candidateSha256": "4e8055621249939603f69c40df4d72a3604e2772ea1caffd8e5f24bc64fe6f67",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 68853,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 14,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-recurring-takeover-full-chromium-linux.png",
+      "file": "manual-recurring-takeover-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "c4000e639eb6e489beea6a5f1e3041107cae1d175ff8b6419bae86bf6035177d",
+      "candidateSha256": "cb59d68fac7e89ca31df48149bab5e790135f301509983bd5f2d8d9e906e4d5a",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 6000,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 15,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-short-timing-limit-full-chromium-linux.png",
+      "file": "manual-short-timing-limit-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "c526b3c18a9877e970f94a33e1a088ddc4f8c05ae8559e40b2c14fa12d089314",
+      "candidateSha256": "46118ae85dbf228ab11d0e3a66ab598cfef809dcea676e704a37ceef31c0fbc8",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 14699,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 16,
+      "path": "tests/visual/manual-hold.spec.js-snapshots/manual-timing-limit-full-chromium-linux.png",
+      "file": "manual-timing-limit-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "49a8092b44146dac21d15e8a95bbe9fc38b635a8b676acfde4d62f3e5177d85e",
+      "candidateSha256": "3b9e084be520b530827b48ce0b637b4ae544859310cdc86d6d6b5c8c6e1fa51f",
+      "acceptedSize": [
+        1280,
+        720
+      ],
+      "candidateSize": [
+        1280,
+        720
+      ],
+      "changedPixels": 8323,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 17,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-achieved-help-teaching-chromium-linux.png",
+      "file": "adaptive-achieved-help-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "aeb0905c43cee6aaeb3b253a6e75e64cd3567230bdd9b582056d525caf42431b",
+      "candidateSha256": "aeb0905c43cee6aaeb3b253a6e75e64cd3567230bdd9b582056d525caf42431b",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 18,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-bound-release-teaching-chromium-linux.png",
+      "file": "adaptive-bound-release-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "97167c2da6a0711dd53028c95a99aba28a5e3f434920b9b161decf154563c2f7",
+      "candidateSha256": "97167c2da6a0711dd53028c95a99aba28a5e3f434920b9b161decf154563c2f7",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 19,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-destination-vc-retained-standard-chromium-linux.png",
+      "file": "adaptive-destination-vc-retained-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "4e93c8b0a683317ed2111e75e3e75b9402e425fffab778350333d09a3495968a",
+      "candidateSha256": "108394a8518c37b12c5c5798da92041354f4c407b0e08764199765c79bcdaf18",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84692,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 20,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-effort-first-change-teaching-chromium-linux.png",
+      "file": "adaptive-effort-first-change-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "2251c6260f89879bd4cd0a41564aba22423cee5c07c53c7b082e24194e4b6d67",
+      "candidateSha256": "2251c6260f89879bd4cd0a41564aba22423cee5c07c53c7b082e24194e4b6d67",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 21,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-effort-settled-teaching-chromium-linux.png",
+      "file": "adaptive-effort-settled-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "50b9c77a0f95455037ed863ca201aaf7ab0223c8268fee86d533015678235a6d",
+      "candidateSha256": "50b9c77a0f95455037ed863ca201aaf7ab0223c8268fee86d533015678235a6d",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 22,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-lower-bound-teaching-chromium-linux.png",
+      "file": "adaptive-lower-bound-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "09b287849648a1968dccc45a8cf4d6e1a4ec24908e94265dce9bf33b4c986764",
+      "candidateSha256": "09b287849648a1968dccc45a8cf4d6e1a4ec24908e94265dce9bf33b4c986764",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 23,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-mechanics-first-change-teaching-chromium-linux.png",
+      "file": "adaptive-mechanics-first-change-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "098bac47b6f03db3421f76d245497275799493aacf5b09eb598b9779e2fea179",
+      "candidateSha256": "098bac47b6f03db3421f76d245497275799493aacf5b09eb598b9779e2fea179",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 24,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-mechanics-settled-teaching-chromium-linux.png",
+      "file": "adaptive-mechanics-settled-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "01bae6fdf4422b0da0c76b76fa8f7327fe15ea3ca88777fe34277a0a6e9ebab6",
+      "candidateSha256": "01bae6fdf4422b0da0c76b76fa8f7327fe15ea3ca88777fe34277a0a6e9ebab6",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 25,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-mixed-feedback-teaching-chromium-linux.png",
+      "file": "adaptive-mixed-feedback-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "68f3ada35b84691447f425f98acd8f72c123cb7806d37dac9b90fefee27320b1",
+      "candidateSha256": "68f3ada35b84691447f425f98acd8f72c123cb7806d37dac9b90fefee27320b1",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 26,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-next-maximum-standard-chromium-linux.png",
+      "file": "adaptive-next-maximum-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "519689a6da1d2bff2809dee188eda2cee9ff47a969f38bb8d7bdb8714bb8065f",
+      "candidateSha256": "11de9114823de7977182077ca3128359834ffbc1748c5ac7e3cc6b44afee424f",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 85091,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 27,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-paused-context-teaching-chromium-linux.png",
+      "file": "adaptive-paused-context-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "abce515ee563b132d88d07abc8299a9014d1273c6fbdefe7dafa160fd29e0980",
+      "candidateSha256": "abce515ee563b132d88d07abc8299a9014d1273c6fbdefe7dafa160fd29e0980",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 28,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-pending-target-peep-standard-chromium-linux.png",
+      "file": "adaptive-pending-target-peep-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "92451f44732e7743da7f5ccf297ac13739221c86d5ce6edafc27af2500854160",
+      "candidateSha256": "08034e5d47378064d2998b0740265846845585546053bc3d578c117f9edceb06",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 93311,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 29,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-pending-target-peep-teaching-chromium-linux.png",
+      "file": "adaptive-pending-target-peep-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "bab866a2a901223f7fde7128c2b8a10460a2fd7bfb57d59d004bc293d786a011",
+      "candidateSha256": "bab866a2a901223f7fde7128c2b8a10460a2fd7bfb57d59d004bc293d786a011",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 30,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-pending-transition-help-standard-chromium-linux.png",
+      "file": "adaptive-pending-transition-help-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "69288a22f7faf435f1eb24e97955264467229482064279bd25e5dd58e6e2c6b8",
+      "candidateSha256": "c3b1f2ce9b2c8d8e3cd8001903ba1107c039df6aeb057e7387839563793cf384",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 93077,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 31,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-prescribed-effort-help-teaching-chromium-linux.png",
+      "file": "adaptive-prescribed-effort-help-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "707f426a34f66cfc007c3f542d8ca7dbabb5bc61507b7a698bb5ad0d86027d09",
+      "candidateSha256": "707f426a34f66cfc007c3f542d8ca7dbabb5bc61507b7a698bb5ad0d86027d09",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 32,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-reentry-startup-teaching-chromium-linux.png",
+      "file": "adaptive-reentry-startup-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "bb99df5ed68106b93ba15659246979b8a247720cb0a5ae412c35dfd10714f852",
+      "candidateSha256": "bb99df5ed68106b93ba15659246979b8a247720cb0a5ae412c35dfd10714f852",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 33,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-reset-retained-standard-chromium-linux.png",
+      "file": "adaptive-reset-retained-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "ba4e64070bf654f6b0f178987b1dd6f16d243654c32efb7436b8e02f5d0b9064",
+      "candidateSha256": "65f39a31e0f56ca9d25be1dd1f16241873ea73244b1195e254acb06a1cf02194",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 85011,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 34,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-settled-standard-chromium-linux.png",
+      "file": "adaptive-settled-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "30345cf9d8e43cd1c95090437e1badf2e705e2d407f95f91ee44d7ad636cb788",
+      "candidateSha256": "d0d9fd29497a655ddffefcc3eb546bcc33a55506fe986d8278e8f4487da96949",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 85091,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 35,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-settled-teaching-chromium-linux.png",
+      "file": "adaptive-settled-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "e119f76ffac06ae16d276c8f0daf833daea0ecf1d78da924fc3c9e15a3d06af4",
+      "candidateSha256": "e119f76ffac06ae16d276c8f0daf833daea0ecf1d78da924fc3c9e15a3d06af4",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 36,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-startup-standard-chromium-linux.png",
+      "file": "adaptive-startup-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "fcc88d609ded088900e0b269b0538e332bf0367d32dae5f798e0e8338d675ca0",
+      "candidateSha256": "38ceb6a03057bcb546438c9d5eeb68fce6b621c682b027fe014ed05737f36377",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 85091,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 37,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-startup-teaching-chromium-linux.png",
+      "file": "adaptive-startup-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "4b1e5599134e555d4a9d3dc709a4d69c8b2641e1f220b544ebb7619337358b23",
+      "candidateSha256": "4b1e5599134e555d4a9d3dc709a4d69c8b2641e1f220b544ebb7619337358b23",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 38,
+      "path": "tests/visual/waveforms.spec.js-snapshots/adaptive-upper-bound-teaching-chromium-linux.png",
+      "file": "adaptive-upper-bound-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "38d5bbf1651e66bb151b35ced5d963cc8027afd03ae3f6354711462e46baa1ee",
+      "candidateSha256": "38d5bbf1651e66bb151b35ced5d963cc8027afd03ae3f6354711462e46baa1ee",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 39,
+      "path": "tests/visual/waveforms.spec.js-snapshots/baseline-chromium-linux.png",
+      "file": "baseline-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "fe443c109610f7be59b217336b76754f70ab9973d4648cbd4dedb0b7e9915303",
+      "candidateSha256": "fe443c109610f7be59b217336b76754f70ab9973d4648cbd4dedb0b7e9915303",
+      "acceptedSize": [
+        672,
+        817
+      ],
+      "candidateSize": [
+        672,
+        817
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 40,
+      "path": "tests/visual/waveforms.spec.js-snapshots/complete-standard-column-chromium-linux.png",
+      "file": "complete-standard-column-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "c9123cb8240f141034a4e9b303511915e62bd3fb16b8ac56876b25f050859907",
+      "candidateSha256": "c9123cb8240f141034a4e9b303511915e62bd3fb16b8ac56876b25f050859907",
+      "acceptedSize": [
+        264,
+        1017
+      ],
+      "candidateSize": [
+        264,
+        1017
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 41,
+      "path": "tests/visual/waveforms.spec.js-snapshots/complete-teaching-column-chromium-linux.png",
+      "file": "complete-teaching-column-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "767e3e68c628d262e741bc24f9e1f846740843282fe49e903881e3a4b3bb41ab",
+      "candidateSha256": "767e3e68c628d262e741bc24f9e1f846740843282fe49e903881e3a4b3bb41ab",
+      "acceptedSize": [
+        264,
+        1017
+      ],
+      "candidateSize": [
+        264,
+        1017
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 42,
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-configured-backstop-chromium-linux.png",
+      "file": "csv-configured-backstop-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "bf17687b2fc0dca6d878f4475771672dffdef41c8cd9c36419ee6eabe38a1ad2",
+      "candidateSha256": "812ec14171744f6098dbc6f59fb660f0baa53053d9c21686279d30e4dbdc14e1",
+      "acceptedSize": [
+        213,
+        101
+      ],
+      "candidateSize": [
+        213,
+        101
+      ],
+      "changedPixels": 2368,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 43,
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-delivered-teaching-full-chromium-linux.png",
+      "file": "csv-delivered-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "a678421346e69210e11da2492bcc2ec82ba10b50d4fa88525d89b0f6e6b110c9",
+      "candidateSha256": "a678421346e69210e11da2492bcc2ec82ba10b50d4fa88525d89b0f6e6b110c9",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 44,
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-failed-teaching-column-chromium-linux.png",
+      "file": "csv-failed-teaching-column-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "498f2d29e545aa9f175ef2dcd6d8d68a173c1294f605e404b4379d8cd394d9af",
+      "candidateSha256": "498f2d29e545aa9f175ef2dcd6d8d68a173c1294f605e404b4379d8cd394d9af",
+      "acceptedSize": [
+        264,
+        1017
+      ],
+      "candidateSize": [
+        264,
+        1017
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 45,
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-no-breath-standard-full-chromium-linux.png",
+      "file": "csv-no-breath-standard-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "09278f08d9a86e96189788ad12f4f421513bb4c9887a8a83f07c77f7b1b0ff07",
+      "candidateSha256": "e49555bd497de7a9d48e06d0cda66e317a4efa1c8e88d03088ecd488316eff7e",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 69461,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 46,
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-no-breath-teaching-full-chromium-linux.png",
+      "file": "csv-no-breath-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "067136d7064dfb1b9a8e9fadb0eab970a23a54f04656d6e2cc353b7cbda12f27",
+      "candidateSha256": "067136d7064dfb1b9a8e9fadb0eab970a23a54f04656d6e2cc353b7cbda12f27",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 47,
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-unavailable-header-standard-chromium-linux.png",
+      "file": "csv-unavailable-header-standard-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "65f925e81680135c814afb8b5cc1aca4742855d121c711cabbce2ce97ed9937a",
+      "candidateSha256": "65f925e81680135c814afb8b5cc1aca4742855d121c711cabbce2ce97ed9937a",
+      "acceptedSize": [
+        1440,
+        84
+      ],
+      "candidateSize": [
+        1440,
+        84
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 48,
+      "path": "tests/visual/waveforms.spec.js-snapshots/csv-unavailable-header-teaching-chromium-linux.png",
+      "file": "csv-unavailable-header-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "5a1b08c6da70981ad4ba54649cda42d80e2b909d9c4c663490068a77a55dcd9c",
+      "candidateSha256": "5a1b08c6da70981ad4ba54649cda42d80e2b909d9c4c663490068a77a55dcd9c",
+      "acceptedSize": [
+        1440,
+        84
+      ],
+      "candidateSize": [
+        1440,
+        84
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 49,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-pc-cmv-chromium-linux.png",
+      "file": "effort-active-pc-cmv-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "8fece6aeae728250f1762472fc15271db3f412cc410e3dc521fe24112ee2b2d7",
+      "candidateSha256": "49a8544bfcbc5290fc042a29f862545d1b5ede1dbd0be5cc35b6325f9edad1b5",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 82002,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 50,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-pc-cmva-chromium-linux.png",
+      "file": "effort-active-pc-cmva-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "a369bb79c45d167de4fccd2f307e5c3d8b865206c7659f74b760745f696e679d",
+      "candidateSha256": "3b219116df901cd537c5e462c8c5f925f62a991b3b8fc8368b1b997bfaee41bb",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83704,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 51,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-PC-CSV-chromium-linux.png",
+      "file": "effort-active-PC-CSV-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "14431ed0c848d57edd5623db3e660cb05e1970e1fdc7fc22b1529f5ed4489201",
+      "candidateSha256": "0d0a0937c2fdf3f357e9b21328a14c6805a5d509b5309e42e60a8d509eefd268",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 69443,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 52,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-predictions-help-chromium-linux.png",
+      "file": "effort-active-predictions-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "541cf44a30c997b6017517799b22e0f93811bed4e4a05a1050850c88599298b9",
+      "candidateSha256": "a3cfdd1b3b84a84f28d8b71ee80b51cf62aa9a5617f942d6820c7208bc5aa7e7",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 80634,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 53,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-active-vc-cmv-chromium-linux.png",
+      "file": "effort-active-vc-cmv-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "eed4d1aabedb0d58783a501958a3b77d8b6181694a74fa9527fcbe0502c310f6",
+      "candidateSha256": "3e48ba0c6031a60fe4cc563592e952d462bf8fbfe33b3f191a003aa12ca840e2",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84486,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 54,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-chromium-linux.png",
+      "file": "effort-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "aed01c6c0fe4ec8431b6ddf7b5847bfdbdac18e034cb33419075f8bfabd2668b",
+      "candidateSha256": "aed01c6c0fe4ec8431b6ddf7b5847bfdbdac18e034cb33419075f8bfabd2668b",
+      "acceptedSize": [
+        672,
+        817
+      ],
+      "candidateSize": [
+        672,
+        817
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 55,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-closed-valve-high-pressure-chromium-linux.png",
+      "file": "effort-closed-valve-high-pressure-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "b54a7a2484217467ce4d922018606c2861feab22005f214eda7e9bcc923aadab",
+      "candidateSha256": "384d7e363e8fe55e854234bbaf1a49a063a94410dd14d2f1d652415a9a72dba9",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 80634,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 56,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-mixed-trigger-history-chromium-linux.png",
+      "file": "effort-mixed-trigger-history-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "f73c55c9f553a1d96ac8554a7e26a4ec2dab6c5e2283fac5fff768d573126bc4",
+      "candidateSha256": "6244917c68083461520f3a9740f41046d51266dd17c7f37ddfc2daf34933dde9",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 69445,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 57,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-queued-peep-history-chromium-linux.png",
+      "file": "effort-queued-peep-history-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "96eeab8890f9e8d11323cfdd91c5ef0ab678b373839fe8fd1e07a33ef1bd025f",
+      "candidateSha256": "703e692ab6c91afcc1d86ae2e2ea5c2b201f2dc7dd9609292fd6ef13c2b7c62e",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83704,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 58,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-signed-highdpi-320-chromium-linux.png",
+      "file": "effort-signed-highdpi-320-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "df6569eeba06c849bb327fd6f88d7453f1112d908888a794ef22ae0c75313d36",
+      "candidateSha256": "ef68b1ff0e4b9e14fdd79a83fcb39afe91c3670208b269a0fa668e77d1dd254a",
+      "acceptedSize": [
+        640,
+        3296
+      ],
+      "candidateSize": [
+        640,
+        3164
+      ],
+      "changedPixels": 950196,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 59,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-signed-highdpi-390-chromium-linux.png",
+      "file": "effort-signed-highdpi-390-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "34b8e7608a22b1c065c04a411cfba64447e61f3dd3aadd068ac4a41fd1816f4c",
+      "candidateSha256": "5b9719685638ae7746a5762ccff5260d2daa61d27d9965c78074411ae7795287",
+      "acceptedSize": [
+        780,
+        3170
+      ],
+      "candidateSize": [
+        780,
+        3080
+      ],
+      "changedPixels": 891836,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 60,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-signed-legend-help-chromium-linux.png",
+      "file": "effort-signed-legend-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "4584e0065c3430ac3e05eee72301cb7dbdcf806a503c678e6bb2b3d84a24d8f4",
+      "candidateSha256": "7e7bad7aa83a704dd5f3b12034f309bf4fd41ac561b018b524633862b5e9da12",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84685,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 61,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-signed-vc-pv-chromium-linux.png",
+      "file": "effort-signed-vc-pv-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "9814912bfb4b188e4a8f1d3015681578354ba835f66ec0d690434968b332c119",
+      "candidateSha256": "ef980387222d2cb40d61ddb63438a02b243467778f79c61e3bc5550567594949",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84685,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 62,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-pc-cmv-crop-chromium-linux.png",
+      "file": "effort-slider-mode-pc-cmv-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "candidateSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 63,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-pc-cmv-full-chromium-linux.png",
+      "file": "effort-slider-mode-pc-cmv-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "5be0f20247e66538c462877578797c738cbf54a88bcc5e667d61f4bad9d9ca55",
+      "candidateSha256": "af28b92bd1f47e96c6f80a017ea3767c4786b8099353cd0bd4135b3b3be2f3ae",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 82191,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 64,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-PC-CSV-crop-chromium-linux.png",
+      "file": "effort-slider-mode-PC-CSV-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "candidateSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 65,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-PC-CSV-full-chromium-linux.png",
+      "file": "effort-slider-mode-PC-CSV-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "26d41ae39eee672c37d235cb6471089c775a6f6434adbf8d02a9c92096e2dd63",
+      "candidateSha256": "9619815f2a32b93f4e1008c1d52b56eacee7cd60e4328990147dbc9c707b1064",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 69463,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 66,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-vc-cmv-crop-chromium-linux.png",
+      "file": "effort-slider-mode-vc-cmv-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "candidateSha256": "aa50b1771a8f121ce80c882cc65b05c8c61f23a9c5541d6a3aadffe56156cf51",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 67,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-mode-vc-cmv-full-chromium-linux.png",
+      "file": "effort-slider-mode-vc-cmv-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "59805c00f31a747d31ac5dc975f5b6384c8da8363b4917a8cb7eca556afbba2a",
+      "candidateSha256": "d9de8eee2917af94f075b5c923082cd3fa5838eb806e434b2a2970481c4a0fbb",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84695,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 68,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-narrow-crop-chromium-linux.png",
+      "file": "effort-slider-narrow-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "f134579866773a58d030fe63f2be80203410e46e597b37a79f82ae11de51ab7a",
+      "candidateSha256": "f134579866773a58d030fe63f2be80203410e46e597b37a79f82ae11de51ab7a",
+      "acceptedSize": [
+        287,
+        94
+      ],
+      "candidateSize": [
+        287,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 69,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-narrow-full-chromium-linux.png",
+      "file": "effort-slider-narrow-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "97c660b35ed2dded532733f6facfe127217f2c41f877d40d5fff35c5ce4758db",
+      "candidateSha256": "e0c4b94495c46a3084a4e5d90e8401e1d9093c6b2f569a07e214ccabaa8a6b8f",
+      "acceptedSize": [
+        1100,
+        900
+      ],
+      "candidateSize": [
+        1100,
+        900
+      ],
+      "changedPixels": 83896,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 70,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-running-crop-chromium-linux.png",
+      "file": "effort-slider-running-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "ee3d64f2a8030badb7cced83aeb5cd0d9f7adabfea8fa4addc73cd938952a672",
+      "candidateSha256": "ee3d64f2a8030badb7cced83aeb5cd0d9f7adabfea8fa4addc73cd938952a672",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 71,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-running-full-chromium-linux.png",
+      "file": "effort-slider-running-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "0f98e552f6a38caa8e5fa9225a52b6b25dc776b6d86cde23b9009353c8440d96",
+      "candidateSha256": "3c6fd8ea80dd08b7eb3a39e89f0a46d9f52428bf75c7bb3312bd24a2d72f49e9",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83896,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 72,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-0-crop-chromium-linux.png",
+      "file": "effort-slider-value-0-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "8378ed445b6de3bf602e790799f38bdea4c7ae5d734bf3d0ebf67d99e41cece5",
+      "candidateSha256": "8378ed445b6de3bf602e790799f38bdea4c7ae5d734bf3d0ebf67d99e41cece5",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 73,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-0-full-chromium-linux.png",
+      "file": "effort-slider-value-0-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "e74002dab235e62b458418e6d45246b1845c2b5ee36ab05d19d6ddddc78bce54",
+      "candidateSha256": "2f2a5fa11c3ed5a9a279c02b4c70945bd63982a0f2da360c88820759686ce712",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83896,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 74,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-10-25-crop-chromium-linux.png",
+      "file": "effort-slider-value-10-25-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "a3b575c55c7335e13142d78740cc5cc412df6716f923c75fb339054f113ab215",
+      "candidateSha256": "a3b575c55c7335e13142d78740cc5cc412df6716f923c75fb339054f113ab215",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 75,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-10-25-full-chromium-linux.png",
+      "file": "effort-slider-value-10-25-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "0bebf75ddfca77c2cd3e97ce9673932199b61ab83235d49a708b963be4c9454a",
+      "candidateSha256": "3a7c31424a3e5a0a191f407e062c4358081dd6955cd87dfd4cf671eddd6b7415",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83896,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 76,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-10-crop-chromium-linux.png",
+      "file": "effort-slider-value-10-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "e8b376a7efe3c3995bbfb0f6b6e4285ca94ee26407b31810386cce7b30e9855f",
+      "candidateSha256": "e8b376a7efe3c3995bbfb0f6b6e4285ca94ee26407b31810386cce7b30e9855f",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 77,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-10-full-chromium-linux.png",
+      "file": "effort-slider-value-10-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "b45d8f08579f9a726eb833e51f6107c88e1ad2fb064a0379160b5e9153b75f98",
+      "candidateSha256": "9aee12317da42088b40d4965bb8d2789d1e2599350216a2c6b329817e471361e",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83896,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 78,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-11-75-crop-chromium-linux.png",
+      "file": "effort-slider-value-11-75-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "b6f8a1a216bc1e444c36d11f202243f272e15cabcae3ba0598b6081f463d33ff",
+      "candidateSha256": "b6f8a1a216bc1e444c36d11f202243f272e15cabcae3ba0598b6081f463d33ff",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 79,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-11-75-full-chromium-linux.png",
+      "file": "effort-slider-value-11-75-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "5a02db431fc247fb59df7415973fd355e3501ff40cb199b441ac2f53b10437eb",
+      "candidateSha256": "eef2b1b182d1225f9159bb5c767c2432bcb74555f80e0a0956fb782d72005027",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83896,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 80,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-12-crop-chromium-linux.png",
+      "file": "effort-slider-value-12-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "4d041d6f5e962ca79e0daee56c655e005bae83bcf154c5452d5fbe6b8841fd69",
+      "candidateSha256": "4d041d6f5e962ca79e0daee56c655e005bae83bcf154c5452d5fbe6b8841fd69",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 81,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-12-full-chromium-linux.png",
+      "file": "effort-slider-value-12-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "f96e982a4bdd639be3f418a26e58d5d96d18a84fe7316c78bf0cb48c138a1bc1",
+      "candidateSha256": "6cc38a6dcfb080756a0585ec31cb4b00f6b6657653a09375702cd3f4ff3a3f47",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83896,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 82,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-8-crop-chromium-linux.png",
+      "file": "effort-slider-value-8-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "ee3d64f2a8030badb7cced83aeb5cd0d9f7adabfea8fa4addc73cd938952a672",
+      "candidateSha256": "ee3d64f2a8030badb7cced83aeb5cd0d9f7adabfea8fa4addc73cd938952a672",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 83,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-8-full-chromium-linux.png",
+      "file": "effort-slider-value-8-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "385c352e50724021bdde1e97c23bdfe5d536a025a4fdaac52b8bfdc3b3955fc1",
+      "candidateSha256": "3bce0e624bb303d530e12f9b5e8910163bc3a930fa2bb254af0ec13abbf10fe8",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84013,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 84,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-9-25-crop-chromium-linux.png",
+      "file": "effort-slider-value-9-25-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "97574b4694433646b053f7f763237974b9780cb257db16a5e8564d65c6bcb341",
+      "candidateSha256": "97574b4694433646b053f7f763237974b9780cb257db16a5e8564d65c6bcb341",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 85,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-9-25-full-chromium-linux.png",
+      "file": "effort-slider-value-9-25-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "671a403568311628b28477b4706bd5379fee570c2156ca890834c9964eb55ed7",
+      "candidateSha256": "a7099ba72332fd45304e4ae1d910fffec2ca1f9fba41c1cc970b945fb644ee82",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83896,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 86,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-9-crop-chromium-linux.png",
+      "file": "effort-slider-value-9-crop-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "9d17b394139337275bb97c05c2c1eec5b1551d049e0e7b016ad41a3de8c42e28",
+      "candidateSha256": "9d17b394139337275bb97c05c2c1eec5b1551d049e0e7b016ad41a3de8c42e28",
+      "acceptedSize": [
+        227,
+        94
+      ],
+      "candidateSize": [
+        227,
+        94
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 87,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-slider-value-9-full-chromium-linux.png",
+      "file": "effort-slider-value-9-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "b9051ca27fdb4f0e32cd4c902586aa9b0b0e065835ed3211d938226db4aee622",
+      "candidateSha256": "1b4ec9c4c50e91357b8b2f84633e4cde67baea13584f202b72689a7f2933c95b",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 83896,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 88,
+      "path": "tests/visual/waveforms.spec.js-snapshots/effort-teaching-full-chromium-linux.png",
+      "file": "effort-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "b2896780e84fbeeb8926571d252e782719a3d265c06b3e5c0bf9c1dae6e01bf0",
+      "candidateSha256": "b2896780e84fbeeb8926571d252e782719a3d265c06b3e5c0bf9c1dae6e01bf0",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 89,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-ards-moderate-help-chromium-linux.png",
+      "file": "examples-ards-moderate-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "31461f3cb9ac8b9d0c1c1356774e5638fafec2100f5893aa8e66b5080facf707",
+      "candidateSha256": "a58d16fbe3d99ada0e74d940098edece5f03eb14e79af185ac54399d5594c1c1",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 90,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-ards-moderate-selected-chromium-linux.png",
+      "file": "examples-ards-moderate-selected-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "fcae6e0f0bd9079c4a87c550109f58c4795feded82dbe0f3e179af32b456d26f",
+      "candidateSha256": "80e3c2c36c3875afe4e385540ae406d73d448e69ab9118aefcaab24001e31b5c",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 91,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-ards-severe-help-chromium-linux.png",
+      "file": "examples-ards-severe-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "0062f8e9b555babf917eb8a6eef419d881ebe7e58afb8255ce3bacd0921f5dec",
+      "candidateSha256": "165571232905bf6f639744c88ea7a9f1f2c3d16cae8729c4e61c045b29f8c7ea",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 92,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-ards-severe-selected-chromium-linux.png",
+      "file": "examples-ards-severe-selected-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "6d8367c222046bd433f89f39d4c79c3a769bc380c4707484176e7ce77fc26299",
+      "candidateSha256": "40119e5a1af852a687d359d035a6a76ec746ff6d728bafe543ed4c4c7d020af4",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 93,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-asthma-help-chromium-linux.png",
+      "file": "examples-asthma-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "da7fe79850a7788d49c3d7a9795089075a1a0655ed3ae5ad2c781c0ffc86a9ff",
+      "candidateSha256": "56beac36f57cb8dcacc23fec17c7f2f77844b8714caa42444ecf1f756b90d465",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84716,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 94,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-asthma-selected-chromium-linux.png",
+      "file": "examples-asthma-selected-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "d126c6309bab8a62812c4f7e2876e925cd1a57b247b493e1460586b90cdd1a23",
+      "candidateSha256": "f3f0f64e291620dfad44adfa22641f4fb5d9c68edec7a510ffb8795c3b2a3e4f",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84716,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 95,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-copd-help-chromium-linux.png",
+      "file": "examples-copd-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "1b7d238fa984adfc625970669ead9b7040d9c53107102b725af4b31bb4488f5e",
+      "candidateSha256": "51c66c77c411e6069b5061eed48130d9a703e37718dfd120593d0f464c0678fd",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 96,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-copd-selected-chromium-linux.png",
+      "file": "examples-copd-selected-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "84d2115835ee2b0c8067cfd049b0e6c555adb06edc76a6974cbff7fe482961bb",
+      "candidateSha256": "c29d86e5a9a9dad5c2a3369022b57c3f3565972d21ab198ec0dfd954f8228b88",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 97,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-custom-after-reset-chromium-linux.png",
+      "file": "examples-custom-after-reset-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "4307c7b520120587e633c4d30ad5613ea67b43cb756fd6a50261e976007aa860",
+      "candidateSha256": "5849340c8afc1929c000cf6748281f79f43839f4a1e286b7933ba93466892531",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 82191,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 98,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-custom-help-chromium-linux.png",
+      "file": "examples-custom-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "78ba771a895709b92595b2592cd1da43ab906962a9e09f63e0a7237d79255b6f",
+      "candidateSha256": "4eea0d534ab66930ed4d828b377ca81470cdfe2c19a3da22a8f0dadea80f3b97",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84724,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 99,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-fibrosis-help-chromium-linux.png",
+      "file": "examples-fibrosis-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "5afe916ad0c5ff9846c035a0e39745a8e722d102615f988e308b98f50b1f5ee6",
+      "candidateSha256": "b4e689477cb3d564f6d24cc8986c3ce5a5d298c1e7a0b6e4d49457045a85431a",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84699,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 100,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-fibrosis-selected-chromium-linux.png",
+      "file": "examples-fibrosis-selected-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "8f4e422827ebbbb0e43f84f05da182c0401f862bf653ccbc34ff068c96454f8d",
+      "candidateSha256": "fb3789c47e666f21459fc612b59984725335a191311e5e8235d3d2a53f92e6be",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84699,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 101,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-normal-help-chromium-linux.png",
+      "file": "examples-normal-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "e489376c0b77109169eb7608e1590d9d8218d56862635c7ba1d1e96eebf98573",
+      "candidateSha256": "d92c15dd87bdbaed5943bffd59a01f3b51625b0c7221b0664bdbc9b3d26244bb",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 102,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-normal-selected-chromium-linux.png",
+      "file": "examples-normal-selected-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "a551839355e27d680bcd061d39e7e29e1f7adb23e0878155693db7ce0f435d4e",
+      "candidateSha256": "0d0da3811c2413303d93f6131ab7643b12b41566b92a61fb45d904d4401f7b12",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 103,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-obesity-help-chromium-linux.png",
+      "file": "examples-obesity-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "f705de57bc2e0125a12f2de53e2232895780df8d0e1049c1214f73a2d6524998",
+      "candidateSha256": "85e1225efb9e0cf918799036d9c4d4090181868f63b807ac43080b3ddd9893ce",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 104,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-obesity-selected-chromium-linux.png",
+      "file": "examples-obesity-selected-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "2deec85c360d51dc3bcd6f23d36feb39a6c46a0b5d9f8409830e57930652edaf",
+      "candidateSha256": "360d3baa0e9bcc141802ad0b2252a70e7c6234b8e0e6072a3be8a4a4e16d6c93",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 105,
+      "path": "tests/visual/waveforms.spec.js-snapshots/examples-startup-C60-chromium-linux.png",
+      "file": "examples-startup-C60-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "e96929d8c24be48aaf7b0720c683c93cff65fa05be42833ab2c57b4f59f692f5",
+      "candidateSha256": "961b8f836ecad68994402513ed5b6899131d5347332930eafb8cfc7917545426",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 106,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-pc-panel-chromium-linux.png",
+      "file": "hold-pc-panel-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "d43c2080daa70e12caa8f0be85dd838e90ef03ac0cb408128fa4375a9d31b28f",
+      "candidateSha256": "bb32ebe9053a6a2172090890a90394528c9b34d68d3810691668914685789eef",
+      "acceptedSize": [
+        213,
+        301
+      ],
+      "candidateSize": [
+        213,
+        301
+      ],
+      "changedPixels": 5392,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 107,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-ramp-panel-chromium-linux.png",
+      "file": "hold-ramp-panel-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "edaa462ae0b57b5d47c471fad7d0ea58fc0bce87baacab3bdfec68c9928e5a04",
+      "candidateSha256": "d502e10d85af53636a76c4d150878b948af099a1e08685caff4808b02136c45d",
+      "acceptedSize": [
+        213,
+        289
+      ],
+      "candidateSize": [
+        213,
+        290
+      ],
+      "changedPixels": 2456,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 108,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-ramp-resistance-help-standard-full-chromium-linux.png",
+      "file": "hold-ramp-resistance-help-standard-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "4c2ed475e568b4627ce9d45770fac3a5ff21b8c616bfadca8639170ee23a2dba",
+      "candidateSha256": "3f0b5207685f5d608d2bf98a2c914bd13b5366a39f38e8dcb1cf360048f9f879",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 21115,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 109,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-short-duration-help-standard-full-chromium-linux.png",
+      "file": "hold-short-duration-help-standard-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "b6c1aff55f257743db5494ed79304354b7e41438bb83310cdfb3bbe99f4216cc",
+      "candidateSha256": "6563005e8d0680eb5e7d4f66e518307f53a736f702793f0c88a0e63d9d4c3a92",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 7195,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 110,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-short-panel-chromium-linux.png",
+      "file": "hold-short-panel-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "f079da3df02d194e9f4bdf0b744f9c6bd58cce0638d8c9ab0a3e0d3b30f1855c",
+      "candidateSha256": "dd4abaf9b0c52f9c8944c0f518d95a58ac2494334d0fcc24645dcf82fac50e2b",
+      "acceptedSize": [
+        213,
+        285
+      ],
+      "candidateSize": [
+        213,
+        286
+      ],
+      "changedPixels": 2059,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 111,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-baseline-help-standard-full-chromium-linux.png",
+      "file": "hold-valid-baseline-help-standard-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "15e42acf1a381247c3c058f46671aa948a933a32a7c8988c93d1969ad35d3d90",
+      "candidateSha256": "48ac0cd75b00c1ebbb0b01b763af182adc692a087be165044afc3409b3e57e75",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 20936,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 112,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-baseline-help-teaching-full-chromium-linux.png",
+      "file": "hold-valid-baseline-help-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "75d05d620ebee4390b35373fc91661f3a9e4ec215ba2d667aeaadf370e132115",
+      "candidateSha256": "75d05d620ebee4390b35373fc91661f3a9e4ec215ba2d667aeaadf370e132115",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 113,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-pplat-help-standard-full-chromium-linux.png",
+      "file": "hold-valid-pplat-help-standard-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "6b5115149cd1e256140527e12a81409ccb4351e467a573efeb87ae7e78deb7de",
+      "candidateSha256": "86377fdbb7b47238e9320ab72a5b597c0ec979d61b910df7769315fe8088741f",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 7705,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 114,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-pplat-help-teaching-full-chromium-linux.png",
+      "file": "hold-valid-pplat-help-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "340be0e2b7a26451b457d31e35428b5eeeaf678380169f7b20648a516ff2df47",
+      "candidateSha256": "340be0e2b7a26451b457d31e35428b5eeeaf678380169f7b20648a516ff2df47",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 115,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-square-panel-chromium-linux.png",
+      "file": "hold-valid-square-panel-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "bf4635eeda3c31a2232ce59cbb490c43a55981efedbffdfa3482dec7e858fe55",
+      "candidateSha256": "2569f471c1351a28494128f5ba9f979c0996bef9c1fc49996b9d29b56b10aab0",
+      "acceptedSize": [
+        213,
+        274
+      ],
+      "candidateSize": [
+        213,
+        274
+      ],
+      "changedPixels": 2201,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 116,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-square-standard-full-chromium-linux.png",
+      "file": "hold-valid-square-standard-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "8f1ee7575ebf01596df11dd7454a90d18234217fd696b5a42156f4d936f21071",
+      "candidateSha256": "2109b25f84320250a4f51db13da2b333577309bd6f151fe63cb508fee426d0c9",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84697,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 117,
+      "path": "tests/visual/waveforms.spec.js-snapshots/hold-valid-square-teaching-column-chromium-linux.png",
+      "file": "hold-valid-square-teaching-column-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "6d987d2f65e99e065731ceb20a3ee28d5f9330f3d9901821d34b53874b956c59",
+      "candidateSha256": "6d987d2f65e99e065731ceb20a3ee28d5f9330f3d9901821d34b53874b956c59",
+      "acceptedSize": [
+        264,
+        817
+      ],
+      "candidateSize": [
+        264,
+        817
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 118,
+      "path": "tests/visual/waveforms.spec.js-snapshots/params-teaching-effort-chromium-linux.png",
+      "file": "params-teaching-effort-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "f4f815080e2104f091891fa62fcfbb7abb649a98b62b1d523242c756e679574e",
+      "candidateSha256": "f4f815080e2104f091891fa62fcfbb7abb649a98b62b1d523242c756e679574e",
+      "acceptedSize": [
+        264,
+        817
+      ],
+      "candidateSize": [
+        264,
+        817
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 119,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-cmv-hold-chromium-linux.png",
+      "file": "pc-disclosure-cmv-hold-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "a8265b85b562bd6686042b51aa6d56baff950018c5d0fce72b7338e2f9dc3559",
+      "candidateSha256": "b98b80dcc8171495b66bb098efe41b87e8af16c9331ce7bd07dcacbf5f8c5ba7",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 82198,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 120,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-csv-max-ti-chromium-linux.png",
+      "file": "pc-disclosure-csv-max-ti-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "9ef50abde0312cbf065175a0576c534a85fc1911b68ce7239395657f38f973df",
+      "candidateSha256": "9ef50abde0312cbf065175a0576c534a85fc1911b68ce7239395657f38f973df",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 121,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-standard-chromium-linux.png",
+      "file": "pc-disclosure-pc-cmv-active-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "155439fa152da4dd5248159d93693e8970bb7a12ebb4048068eafa6d29107664",
+      "candidateSha256": "9215084514c0c7c8c588d8b57ceb76c81ccf2439a469f4a9358883f1a2800529",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 82191,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 122,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-teaching-320-chromium-linux.png",
+      "file": "pc-disclosure-pc-cmv-active-teaching-320-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "b656fab21c0f73e9deba59b5b22a979b9a9a147bbb7d95fe3c4fe8470255fd91",
+      "candidateSha256": "7550acf9b71553fb4c2bb07a9025abe1522eedac4018efd34bc244c3ef5c0294",
+      "acceptedSize": [
+        320,
+        1648
+      ],
+      "candidateSize": [
+        320,
+        1582
+      ],
+      "changedPixels": 124461,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 123,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-teaching-390-chromium-linux.png",
+      "file": "pc-disclosure-pc-cmv-active-teaching-390-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "8f0b878ca01c2e7bec452585dfb16c51ab1d1be372efc69d16a72e8ca62d185f",
+      "candidateSha256": "1ba91ae20a89989b6e0e16463e697fa4d85e3997e9fadc709677ed306f2792eb",
+      "acceptedSize": [
+        390,
+        1585
+      ],
+      "candidateSize": [
+        390,
+        1540
+      ],
+      "changedPixels": 159153,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 124,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-teaching-chromium-linux.png",
+      "file": "pc-disclosure-pc-cmv-active-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "a10686286260191739235dc63cd3759d8858e226c2f68ca421ac9df98685f5cf",
+      "candidateSha256": "a10686286260191739235dc63cd3759d8858e226c2f68ca421ac9df98685f5cf",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 125,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-active-teaching-overflow-end-chromium-linux.png",
+      "file": "pc-disclosure-pc-cmv-active-teaching-overflow-end-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "1a40c5f01914a08a5b7bbcd96631f764701e5ba1931ffce5ec78e906df56d1dd",
+      "candidateSha256": "f50874603be0e32b8ef181b367f9824660d52d1e765fecaa5c059b150e662899",
+      "acceptedSize": [
+        390,
+        1585
+      ],
+      "candidateSize": [
+        390,
+        1540
+      ],
+      "changedPixels": 261690,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 126,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-passive-standard-chromium-linux.png",
+      "file": "pc-disclosure-pc-cmv-passive-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "199e03778c3597c6fc3d04293db0c20760f2c4b9ee33d2fc79e709c74ff5b3fd",
+      "candidateSha256": "ddc0b1d00b8a963a129ad97f674324b1e1a4e836fd3ab3916004a49b624c4147",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 82195,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 127,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-passive-standard-help-chromium-linux.png",
+      "file": "pc-disclosure-pc-cmv-passive-standard-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "99c77d39b638763b19dc86432d1c4217063df1e1d2bc72fc5d1af0c11f440702",
+      "candidateSha256": "9f74ff95173287e96fa200aa5b87488bc68db4eed8f841d5a76288ae20b56ffc",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 82195,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 128,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-passive-teaching-chromium-linux.png",
+      "file": "pc-disclosure-pc-cmv-passive-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "7d6325eeb8357489cd520e5e1bc88d9af25dd3fbe397eeb7797872d7582e943a",
+      "candidateSha256": "7d6325eeb8357489cd520e5e1bc88d9af25dd3fbe397eeb7797872d7582e943a",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 129,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-pc-cmv-passive-teaching-help-chromium-linux.png",
+      "file": "pc-disclosure-pc-cmv-passive-teaching-help-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "61aad7c300af3001b9ca867a718565b3d31d09bfe2c7d0b951e175620cbb035f",
+      "candidateSha256": "61aad7c300af3001b9ca867a718565b3d31d09bfe2c7d0b951e175620cbb035f",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 130,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-standard-chromium-linux.png",
+      "file": "pc-disclosure-PC-CSV-active-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "4dec744a499308b2e09be585c774ba83d4d615e1f1144dd73f1a1ec114ae700c",
+      "candidateSha256": "e403e613688873597109ff3ea0f345304ff6a3b0de436cc5d90bc717d8d4c9a4",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 69463,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 131,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-teaching-320-chromium-linux.png",
+      "file": "pc-disclosure-PC-CSV-active-teaching-320-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "62aee50348eb6d7cf4ed8f7a0b8167dd1bf98786cdb0c11a8b416553bef08170",
+      "candidateSha256": "cda4eac99aa49c13a62d71491982caf139e3f2d0624de5e84ae9b7e17df5625d",
+      "acceptedSize": [
+        320,
+        1648
+      ],
+      "candidateSize": [
+        320,
+        1582
+      ],
+      "changedPixels": 126170,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 132,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-teaching-390-chromium-linux.png",
+      "file": "pc-disclosure-PC-CSV-active-teaching-390-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "3b7af9a6510e557030ef907061653d6c9557895872de7de65d0e74af4476fff8",
+      "candidateSha256": "6ff64f70052cc01858cf08d4e7e808f75110a3e447ce669da821d3a88770ea0a",
+      "acceptedSize": [
+        390,
+        1616
+      ],
+      "candidateSize": [
+        390,
+        1554
+      ],
+      "changedPixels": 170313,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 133,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-teaching-chromium-linux.png",
+      "file": "pc-disclosure-PC-CSV-active-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "ddea7bb7bfd0490c8e0ccf0e77c951cd204ddd062036c7b3a1469efe099fd523",
+      "candidateSha256": "ddea7bb7bfd0490c8e0ccf0e77c951cd204ddd062036c7b3a1469efe099fd523",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 134,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-active-teaching-overflow-end-chromium-linux.png",
+      "file": "pc-disclosure-PC-CSV-active-teaching-overflow-end-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "0b7f0a28f6766dc5f3602df4de0b89b23f004a7fb53295c65ec81ddb6c435b39",
+      "candidateSha256": "3eedab0a51feec0eb735e3c62045be87a692be6c352a9c4a925ef026477aded3",
+      "acceptedSize": [
+        390,
+        1616
+      ],
+      "candidateSize": [
+        390,
+        1554
+      ],
+      "changedPixels": 290749,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 135,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-passive-standard-chromium-linux.png",
+      "file": "pc-disclosure-PC-CSV-passive-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "b107591f917de0632780021118ed5a39f9a660b07eb319f064e8f89250a0baa7",
+      "candidateSha256": "1832b8641835f5dcce69d6201fdc4c67f57dfba653e68b0e307f90e7a66ce01b",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 69461,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 136,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-passive-standard-help-chromium-linux.png",
+      "file": "pc-disclosure-PC-CSV-passive-standard-help-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "f6450e3996112f27de7b926d63128ba13a897da5c7db050f551775d12eb08da4",
+      "candidateSha256": "56306c6becbccba6f0e17ffee4f095c3a62a39a545f037282ebca3c807900a89",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 69461,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 137,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-passive-teaching-chromium-linux.png",
+      "file": "pc-disclosure-PC-CSV-passive-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "b96ffc5712b7698a81f37147702a1aeb142bddc1c1dc4fb9ad9b1a918009cd47",
+      "candidateSha256": "b96ffc5712b7698a81f37147702a1aeb142bddc1c1dc4fb9ad9b1a918009cd47",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 138,
+      "path": "tests/visual/waveforms.spec.js-snapshots/pc-disclosure-PC-CSV-passive-teaching-help-chromium-linux.png",
+      "file": "pc-disclosure-PC-CSV-passive-teaching-help-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "562ed76cea33ff34d1b929ad926243332ccc4662d54f955c2a115aac028984e8",
+      "candidateSha256": "562ed76cea33ff34d1b929ad926243332ccc4662d54f955c2a115aac028984e8",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 139,
+      "path": "tests/visual/waveforms.spec.js-snapshots/predicted-pplat-before-breath-chromium-linux.png",
+      "file": "predicted-pplat-before-breath-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "5be87b08cff11e4b670bbd481900979477310c7fe391716e3498d4c53b500ece",
+      "candidateSha256": "5be87b08cff11e4b670bbd481900979477310c7fe391716e3498d4c53b500ece",
+      "acceptedSize": [
+        1440,
+        84
+      ],
+      "candidateSize": [
+        1440,
+        84
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 140,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmv-1440-standard-chromium-linux.png",
+      "file": "shared-reset-pc-cmv-1440-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "b4ce510f1b2518d9ecc86283a3cc69eff483f95b643a54522545d6688274a237",
+      "candidateSha256": "523acf72201ff0ead76b90f3bf646f61b6edcc5d8208fc9e18c6daf9d58da73d",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 81069,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 141,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmv-1440-teaching-chromium-linux.png",
+      "file": "shared-reset-pc-cmv-1440-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "ff6cb71127fde3acadb99b89df22c4e87c40829b479ed21c187f96541efd7e8a",
+      "candidateSha256": "ff6cb71127fde3acadb99b89df22c4e87c40829b479ed21c187f96541efd7e8a",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 142,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-1100-standard-chromium-linux.png",
+      "file": "shared-reset-pc-cmva-1100-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "bd44a19db282dd5a25774ce731372f58f023816959e896d42ed8c35910aa62d6",
+      "candidateSha256": "5d90898b65859c29ef4786beb827707dad2b16ff9a4c85d900c5b687b9bf9745",
+      "acceptedSize": [
+        1100,
+        900
+      ],
+      "candidateSize": [
+        1100,
+        900
+      ],
+      "changedPixels": 86167,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 143,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-1100-teaching-chromium-linux.png",
+      "file": "shared-reset-pc-cmva-1100-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "6a6500581aee3f66959cc8480f8dba3c8745fedace708ef86123642b29667830",
+      "candidateSha256": "6a6500581aee3f66959cc8480f8dba3c8745fedace708ef86123642b29667830",
+      "acceptedSize": [
+        1100,
+        900
+      ],
+      "candidateSize": [
+        1100,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 144,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-1440-standard-chromium-linux.png",
+      "file": "shared-reset-pc-cmva-1440-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "64164f65c6210541082151418bb79bedcba302315a9c1367d0ebd417efd90b61",
+      "candidateSha256": "dc863f82da85fea607e2f5dd6d6d9bfb8c53de8d4df2e5ce222fa401f880a8b1",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 86167,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 145,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-1440-teaching-chromium-linux.png",
+      "file": "shared-reset-pc-cmva-1440-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "eddad1478fa715a784fce4d70de1042807379d0855edc0c91a3fda3585900a04",
+      "candidateSha256": "eddad1478fa715a784fce4d70de1042807379d0855edc0c91a3fda3585900a04",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 146,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-800-standard-chromium-linux.png",
+      "file": "shared-reset-pc-cmva-800-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "9e73bb2beed3d8cea393c24868ece89552ec2f894a3c0727e68c8816287237d9",
+      "candidateSha256": "360dd26c03fe1793fd4dceb0081fd6d0827313821dec088c153b321a237a44ac",
+      "acceptedSize": [
+        800,
+        2319
+      ],
+      "candidateSize": [
+        800,
+        2349
+      ],
+      "changedPixels": 896819,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 147,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-pc-cmva-800-teaching-chromium-linux.png",
+      "file": "shared-reset-pc-cmva-800-teaching-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "50f259af39388cc5110bd9a6d67b459c4533a6d773c6f788883b8772b213aed8",
+      "candidateSha256": "dfad9c17a89e2ced2a40bd3524f1638c4339578e72c8ef37f968d6cb449f21e3",
+      "acceptedSize": [
+        800,
+        1506
+      ],
+      "candidateSize": [
+        800,
+        1570
+      ],
+      "changedPixels": 562104,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 148,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-PC-CSV-1440-standard-chromium-linux.png",
+      "file": "shared-reset-PC-CSV-1440-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "b5bef51a7946b6ad3398a15b5c48a21054e240c0c0a088839f4ff35dce36a37e",
+      "candidateSha256": "c4dd105fda47ec868ae4b3f4078e91323cb8e94de8aa0ebf91f6f11b2676553d",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 70533,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 149,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-PC-CSV-1440-teaching-chromium-linux.png",
+      "file": "shared-reset-PC-CSV-1440-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "4942ea4a615a5fa15904e9a29505dc89dc476ee69448d5be47618e43cab1461d",
+      "candidateSha256": "4942ea4a615a5fa15904e9a29505dc89dc476ee69448d5be47618e43cab1461d",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 150,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-vc-cmv-1440-standard-chromium-linux.png",
+      "file": "shared-reset-vc-cmv-1440-standard-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "d22ac5f3f9314c76b12e4a954a596f2a99330db71358f40d816495d737aaf352",
+      "candidateSha256": "9345a0a782698200ce5e16c63d7e0086cef3c713777fbcba2dae655eb224e755",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 90699,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 151,
+      "path": "tests/visual/waveforms.spec.js-snapshots/shared-reset-vc-cmv-1440-teaching-chromium-linux.png",
+      "file": "shared-reset-vc-cmv-1440-teaching-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "2681a206e90714326b16579eb2248e71bda4319ebe1e67fcec2c1dc69f937542",
+      "candidateSha256": "2681a206e90714326b16579eb2248e71bda4319ebe1e67fcec2c1dc69f937542",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 152,
+      "path": "tests/visual/waveforms.spec.js-snapshots/teaching-full-chromium-linux.png",
+      "file": "teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "896bc9b24f3199ea7d554105e9eda97529ae38ce2eda57cbacf3c36c34a5191c",
+      "candidateSha256": "896bc9b24f3199ea7d554105e9eda97529ae38ce2eda57cbacf3c36c34a5191c",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 153,
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-csv-help-teaching-full-chromium-linux.png",
+      "file": "ve-established-csv-help-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "3edd78b8cf7c1259d6fea0bac78ed891a38f248799cb47b968fc3b7a49126dfa",
+      "candidateSha256": "3edd78b8cf7c1259d6fea0bac78ed891a38f248799cb47b968fc3b7a49126dfa",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 154,
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-csv-teaching-full-chromium-linux.png",
+      "file": "ve-established-csv-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "f43c13c8a33ff21900379b05a185ec10c25ac7ac099c36b18cd5d2218dba5bb8",
+      "candidateSha256": "f43c13c8a33ff21900379b05a185ec10c25ac7ac099c36b18cd5d2218dba5bb8",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 155,
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-vc-help-standard-full-chromium-linux.png",
+      "file": "ve-established-vc-help-standard-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "e1491a5ca7b48dc50bf1d71ad98d7a07c7daed3b8091bdca531246d18d0f2dae",
+      "candidateSha256": "99ca1ab14d03e2957708102f5d38647b335cd2a5e3993477b71dced906fdd7f7",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84683,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 156,
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-vc-help-teaching-full-chromium-linux.png",
+      "file": "ve-established-vc-help-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "b4a41476feb6709a59a0a14a0121f97d090b9c39eda2f9b765ba359959d4cf8f",
+      "candidateSha256": "b4a41476feb6709a59a0a14a0121f97d090b9c39eda2f9b765ba359959d4cf8f",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 157,
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-vc-standard-full-chromium-linux.png",
+      "file": "ve-established-vc-standard-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "1144bdfc79871d884772d3a41f7bc84e6313ef6eab3a0917eabaca1296b65976",
+      "candidateSha256": "c60ae3523cb8fe1bcfd2f95093b43b1803fcc26bed6dddfd504dbf21b13b5420",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 84683,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 158,
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-established-vc-teaching-full-chromium-linux.png",
+      "file": "ve-established-vc-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "9790de0956d0756d2e863adc3969e7f2dc9672fa596db4f2f74abb6aee532439",
+      "candidateSha256": "9790de0956d0756d2e863adc3969e7f2dc9672fa596db4f2f74abb6aee532439",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 159,
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-warming-help-teaching-full-chromium-linux.png",
+      "file": "ve-warming-help-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "20d70717b7cb57dcc18b86de0fc307218504f86b0558440b071c65799b31ff50",
+      "candidateSha256": "20d70717b7cb57dcc18b86de0fc307218504f86b0558440b071c65799b31ff50",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 160,
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-zero-help-standard-full-chromium-linux.png",
+      "file": "ve-zero-help-standard-full-chromium-linux.png",
+      "status": "changed",
+      "acceptedSha256": "5af073dbcc4cc2eb58fac9ba854cf3da90152fede183a1d0dbc091edcf17770d",
+      "candidateSha256": "72b9c4ae9e2d89c82bd8556a0a1d3ffffbc48002820ee8be6fb6daece90ad01e",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 68991,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 161,
+      "path": "tests/visual/waveforms.spec.js-snapshots/ve-zero-help-teaching-full-chromium-linux.png",
+      "file": "ve-zero-help-teaching-full-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "0d9d85a363c5cc1d25143e6b4fbd0999afef86538a02d451c525c72616015c9a",
+      "candidateSha256": "0d9d85a363c5cc1d25143e6b4fbd0999afef86538a02d451c525c72616015c9a",
+      "acceptedSize": [
+        1440,
+        900
+      ],
+      "candidateSize": [
+        1440,
+        900
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    },
+    {
+      "number": 162,
+      "path": "tests/visual/waveforms.spec.js-snapshots/weak-csv-chromium-linux.png",
+      "file": "weak-csv-chromium-linux.png",
+      "status": "unchanged",
+      "acceptedSha256": "9d5a5b1a7868441983873bd374a885c8c8100159947786c94aa89d54fa35363c",
+      "candidateSha256": "9d5a5b1a7868441983873bd374a885c8c8100159947786c94aa89d54fa35363c",
+      "acceptedSize": [
+        928,
+        817
+      ],
+      "candidateSize": [
+        928,
+        817
+      ],
+      "changedPixels": 0,
+      "comparison": "Exact RGBA pixel difference; not Playwright tolerance classification"
+    }
+  ]
+}

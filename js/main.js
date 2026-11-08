@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=34';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=34';
-import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=34';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=34';
-import AlarmEngine from '../alarms.js?v=34';
+import { LungModel }        from './lung-model.js?v=36';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=36';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=36';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=36';
+import AlarmEngine from '../alarms.js?v=36';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=34';
+} from '../alarm-audio.js?v=36';
 
 
 // =============================================================================
@@ -191,6 +191,8 @@ function init() {
     ensurePcCsvControls();
     ensureAdaptiveModeOption();
     syncMonitorLayout();
+
+    initSettingEditor();
 
     // --- Bind all controls ---
     bindSlider('vt',            onVtChange);
@@ -349,6 +351,7 @@ function ensureAdaptiveModeOption() {
 }
 
 function syncOperatorControls() {
+    closeSettingEditor(false);
     effortTimingError = null;
     updateEffortTimingUI();
     syncEffortControl();
@@ -359,7 +362,7 @@ function syncOperatorControls() {
     const peep = adaptive?.requested.peep_cmH2O ?? vent.peep;
     document.getElementById('vt').value = target;
     document.getElementById('peep').value = peep;
-    setText('vt-display', `${target} mL`);
+    setText('vt-display', `${vent.tidalVolume * 1000} mL`);
     setText('peep-display', `${peep} cmH₂O`);
     if (adaptive) {
         document.getElementById('adaptive-maximum').value = adaptive.config.maximumPressure_cmH2O;
@@ -493,7 +496,7 @@ function ensurePcCsvControls() {
         pinspControl.insertAdjacentHTML('afterend', `
             <div class="control control--primary control--hidden" id="ps-control">
                 <div class="control__header">
-                    <span class="control__label">Pressure Support</span>
+                    <span class="control__label">Pressure<br>Support</span>
                     <span class="control__value" id="ps-pressure-display">${vent.psPressure} cmH2O</span>
                 </div>
                 <input type="range" class="control__range" id="ps-pressure"
@@ -561,6 +564,8 @@ function applyModeUI(mode) {
         patternControl.classList.toggle('control--hidden', isAdaptive);
     }
     setText('vt-control-label', isAdaptive ? 'Target VT' : 'Tidal Volume');
+    document.getElementById('vt-display').setAttribute('aria-label', 'Edit ' + settingName('vt'));
+    document.getElementById('peep-display').setAttribute('aria-label', 'Edit PEEP');
     document.getElementById('adaptive-setup').hidden = !isAdaptive;
 
     pinspControl.classList.toggle('control--hidden', mode !== 'pc-cmv');
@@ -829,6 +834,7 @@ function syncEffortControl() {
 function bindPmusToggle() {
     const btn = document.getElementById('pmus-toggle');
     btn.addEventListener('click', () => {
+        closeSettingEditor(false);
         const wasActive = sim.patientRR > 0;
         if (wasActive) {
             sim.setEffortEnabled(false);
@@ -1098,6 +1104,7 @@ function bindTriggerTypeToggle() {
         const btn = e.target.closest('[data-trigger-type]');
         if (!btn) return;
 
+        closeSettingEditor(false);
         vent.triggerType = btn.dataset.triggerType;
         sim.notifyMeasurementSettingsChanged();
         updateTriggerDisplay();
@@ -1238,6 +1245,7 @@ function bindTeachingModeToggle() {
     if (!btn) return;
 
     const setTeachingMode = (enabled) => {
+        if (enabled) closeSettingEditor(false);
         document.body.classList.toggle('teaching-mode', enabled);
         btn.classList.toggle('transport-btn--teaching-active', enabled);
         btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
@@ -1297,6 +1305,213 @@ function bindCollapsibles() {
 }
 
 
+// One unconfirmed draft, separate from the retained operator settings and adaptive queue.
+let settingDraft = null;
+const PRIMARY_SETTINGS = {
+    vt: { name: 'Tidal Volume', unit: 'mL', get: () => vent.tidalVolume * 1000, apply: onVtChange, adaptiveKey: 'targetVT_mL' },
+    rr: { name: 'Resp Rate', unit: '/min', get: () => vent.respiratoryRate, apply: onRrChange },
+    peep: { name: 'PEEP', unit: 'cmH2O', get: () => sim.adaptiveState?.appliedPeep_cmH2O ?? vent.peep, apply: onPeepChange, adaptiveKey: 'peep_cmH2O' },
+    fio2: { name: 'FiO2', unit: '%', get: () => Math.round(vent.fio2 * 100), apply: onFio2Change },
+    pinsp: { name: 'Pinsp', unit: 'cmH2O', get: () => vent.inspiratoryPressure, apply: onPinspChange },
+    'ps-pressure': { name: 'Pressure Support', unit: 'cmH2O', get: () => vent.psPressure, apply: onPsPressureChange }
+};
+function acceptedSettingValue(id) {
+    const spec = PRIMARY_SETTINGS[id];
+    return sim.adaptiveState?.requested?.[spec.adaptiveKey] ?? spec.get();
+}
+function settingName(id) { return id === 'vt' && vent.isAdaptiveMode() ? 'Target VT' : PRIMARY_SETTINGS[id].name; }
+function settingUnit(id) { return PRIMARY_SETTINGS[id].unit; }
+function settingAvailable(id) { return SETTING_HIERARCHY[vent.mode].primary.includes(id); }
+function refreshSettingTiles() {
+    for (const [id, spec] of Object.entries(PRIMARY_SETTINGS)) {
+        const tile = document.getElementById(id + '-tile');
+        if (!tile) continue;
+        const value = spec.get(), waiting = sim.adaptiveState?.pendingSettings?.[spec.adaptiveKey];
+        const display = document.getElementById(id + '-display');
+        const valueText = value + (spec.unit === '%' ? '' : ' ');
+        if (!display.querySelector('.setting-tile__unit') || display.textContent !== valueText + spec.unit) {
+            const unit = document.createElement('span');
+            unit.className = 'setting-tile__unit'; unit.textContent = spec.unit;
+            display.replaceChildren(document.createTextNode(valueText), unit);
+        }
+        const pending = document.getElementById(id + '-tile-pending');
+        const pendingText = waiting === undefined ? '' : 'Accepted ' + waiting + ' ' + spec.unit + ' · waiting for next breath';
+        if (pending.textContent !== pendingText) pending.textContent = pendingText;
+        document.getElementById(id + '-tile-pending').hidden = waiting === undefined;
+        tile.setAttribute('aria-label', 'Edit ' + settingName(id) + ', applied ' + value + ' ' + spec.unit);
+        tile.setAttribute('aria-expanded', String(settingDraft?.id === id));
+        if (waiting === undefined) tile.removeAttribute('aria-describedby');
+        else tile.setAttribute('aria-describedby', id + '-tile-pending');
+    }
+}
+function positionSettingEditor() {
+    const editor = document.getElementById('setting-editor');
+    if (!settingDraft || !editor.open) return;
+    if (window.innerWidth <= 850) {
+        editor.style.left = '8px'; editor.style.top = 'auto'; editor.style.bottom = '8px';
+        return;
+    }
+    const rail = document.querySelector('.controls').getBoundingClientRect();
+    const tile = document.getElementById(settingDraft.id + '-tile').getBoundingClientRect();
+    editor.style.bottom = 'auto';
+    editor.style.left = Math.max(8, Math.min(rail.right + 12, window.innerWidth - editor.offsetWidth - 8)) + 'px';
+    editor.style.top = Math.max(8, Math.min(tile.top, window.innerHeight - editor.offsetHeight - 8)) + 'px';
+}
+function closeSettingEditor(restore = true) {
+    if (!settingDraft) return;
+    const trigger = document.getElementById(settingDraft.id + '-tile');
+    document.getElementById(settingDraft.id).value = acceptedSettingValue(settingDraft.id);
+    settingDraft = null;
+    document.getElementById('setting-editor').close();
+    refreshSettingTiles();
+    if (restore && trigger.getClientRects().length) trigger.focus();
+}
+function settingDraftIsCurrent() {
+    return settingDraft && settingAvailable(settingDraft.id) && settingDraft.mode === vent.mode
+        && settingDraft.generation === sim.simulationGeneration
+        && settingDraft.accepted === acceptedSettingValue(settingDraft.id);
+}
+function openSettingEditor(id) {
+    if (!PRIMARY_SETTINGS[id] || !settingAvailable(id)) return;
+    if (settingDraft?.id === id && settingDraftIsCurrent()) {
+        document.getElementById('setting-draft').focus({ preventScroll: true });
+        return;
+    }
+    closeSettingEditor(false);
+    const source = document.getElementById(id), value = acceptedSettingValue(id);
+    settingDraft = { id, mode: vent.mode, generation: sim.simulationGeneration,
+        accepted: value, text: String(value), consequence: '' };
+    const input = document.getElementById('setting-draft');
+    for (const key of ['min', 'max', 'step']) { input[key] = source[key]; document.getElementById('setting-range')[key] = source[key]; }
+    document.getElementById('setting-range').value = value;
+    input.value = String(value);
+    document.getElementById('setting-editor-title').textContent = 'Edit ' + settingName(id);
+    document.getElementById('setting-draft-label').textContent = 'New value (' + settingUnit(id) + ')';
+    document.getElementById('setting-editor').show();
+    document.getElementById('setting-editor').scrollTop = 0;
+    refreshSettingEditor();
+    input.focus({ preventScroll: true }); input.select();
+    // Keep the selected primary tile visible above the narrow sheet. The full
+    // page remains scrollable; no waveform or output is removed for this view.
+    if (window.innerWidth <= 850) {
+        const tile = document.getElementById(id + '-tile').getBoundingClientRect();
+        const sheet = document.getElementById('setting-editor').getBoundingClientRect();
+        if (tile.bottom > sheet.top - 12) window.scrollBy(0, tile.bottom - sheet.top + 12);
+    }
+}
+function validatedSettingDraft() {
+    if (!settingDraft || !settingDraft.text.trim()) return null;
+    const input = document.getElementById('setting-draft'), value = Number(settingDraft.text);
+    const min = Number(input.min), max = Number(input.max), step = Number(input.step);
+    return Number.isFinite(value) && value >= min && value <= max
+        && Number.isInteger((value - min) / step) ? value : null;
+}
+function changeSettingDraft(text) {
+    if (!settingDraftIsCurrent()) { closeSettingEditor(false); return; }
+    text = String(text);
+    if (text === settingDraft.text) return;
+    settingDraft.text = text;
+    document.getElementById('setting-draft').value = text;
+    if (validatedSettingDraft() !== null) document.getElementById('setting-range').value = text;
+    const hold = sim.manualHoldState;
+    if (hold.active || hold.armed) settingDraft.consequence = 'This edit canceled the manual hold. Cancel cannot restore it.';
+    if (vent.isAdaptiveMode()) settingDraft.consequence = 'This edit invalidated adaptive feedback for the current context. Cancel cannot restore it.';
+    // An attempt is an actual draft change, including blank/invalid and edit/revert.
+    // This must not mutate accepted settings or create an adaptive request.
+    sim.notifyMeasurementSettingsChanged();
+    updateMonitorValues(vent.summary()); updateHoldResults();
+}
+// Live regions must announce changes, not identical text on every animation frame.
+function setSettingStatus(id, text) {
+    const el = document.getElementById(id);
+    if (el && el.textContent !== text) el.textContent = text;
+}
+function refreshSettingEditor() {
+    refreshSettingTiles();
+    if (!settingDraft) return;
+    if (!settingDraftIsCurrent()) { closeSettingEditor(false); return; }
+    const { id } = settingDraft, unit = settingUnit(id), adaptive = sim.adaptiveState;
+    const applied = PRIMARY_SETTINGS[id].get();
+    const key = PRIMARY_SETTINGS[id].adaptiveKey;
+    const waiting = adaptive?.pendingSettings?.[key] !== undefined;
+    setText('setting-applied', 'Applied: ' + applied + ' ' + unit);
+    setSettingStatus('setting-accepted', waiting ? 'Accepted: ' + acceptedSettingValue(id) + ' ' + unit + ' · waiting for next breath' : 'No accepted change waiting');
+    const input = document.getElementById('setting-draft'), valid = validatedSettingDraft() !== null;
+    input.setAttribute('aria-invalid', String(!valid));
+    setSettingStatus('setting-validation', valid ? 'Range ' + input.min + '–' + input.max + ' ' + unit + '; step ' + input.step + '.'
+        : 'Enter ' + input.min + '–' + input.max + ' ' + unit + ' in steps of ' + input.step + '.');
+    setSettingStatus('setting-consequence', settingDraft.consequence || 'Changing this value can cancel a manual hold or invalidate adaptive feedback. Cancel discards only the unconfirmed value.');
+    document.getElementById('setting-confirm').disabled = !valid;
+    positionSettingEditor();
+}
+function confirmSettingDraft() {
+    if (!settingDraftIsCurrent()) { closeSettingEditor(false); return; }
+    const value = validatedSettingDraft();
+    if (value === null) return;
+    const { id, accepted } = settingDraft;
+    closeSettingEditor();
+    if (value === accepted) return; // Unchanged confirmation is not an edit event/request.
+    const source = document.getElementById(id);
+    source.value = value;
+    PRIMARY_SETTINGS[id].apply(source);
+    // The accepted nonadaptive write needs its own fingerprint synchronization;
+    // adaptive requestAdaptiveSettings already invalidates atomically.
+    if (!(vent.isAdaptiveMode() && PRIMARY_SETTINGS[id].adaptiveKey)) sim.notifyMeasurementSettingsChanged();
+    updateMonitorValues(vent.summary()); updateHoldResults();
+    refreshSettingTiles();
+}
+function initSettingEditor() {
+    document.body.insertAdjacentHTML('beforeend', `
+        <dialog id="setting-editor" class="setting-editor" aria-labelledby="setting-editor-title">
+            <h2 id="setting-editor-title"></h2>
+            <p id="setting-applied"></p><p id="setting-accepted" role="status"></p>
+            <label id="setting-draft-label" for="setting-draft"></label>
+            <div class="setting-editor__entry">
+                <button type="button" id="setting-decrease" aria-label="Decrease new value">−</button>
+                <input id="setting-draft" type="text" inputmode="decimal" aria-describedby="setting-validation setting-consequence">
+                <button type="button" id="setting-increase" aria-label="Increase new value">+</button>
+            </div>
+            <label class="setting-range-label" for="setting-range">Adjust new value</label>
+            <input id="setting-range" type="range" aria-describedby="setting-validation setting-consequence">
+            <p id="setting-validation" role="status"></p>
+            <p id="setting-consequence" role="status"></p>
+            <div class="setting-editor__actions"><button type="button" id="setting-cancel">Cancel</button><button type="button" id="setting-confirm">Confirm</button></div>
+        </dialog>`);
+    for (const id of Object.keys(PRIMARY_SETTINGS)) {
+        const source = document.getElementById(id), control = source.closest('.control');
+        const header = control.querySelector('.control__header');
+        const tile = document.createElement('button');
+        tile.type = 'button'; tile.id = id + '-tile'; tile.className = 'setting-tile';
+        tile.setAttribute('aria-haspopup', 'dialog'); tile.setAttribute('aria-controls', 'setting-editor');
+        while (header.firstChild) tile.appendChild(header.firstChild);
+        const applied = document.createElement('span'); applied.className = 'setting-tile__applied'; applied.textContent = 'Applied'; tile.appendChild(applied);
+        const pending = document.createElement('span'); pending.id = id + '-tile-pending'; pending.className = 'setting-tile__pending'; pending.setAttribute('role', 'status'); pending.hidden = true; tile.appendChild(pending);
+        header.replaceWith(tile);
+        source.hidden = true; source.tabIndex = -1; source.setAttribute('aria-hidden', 'true');
+        tile.addEventListener('click', () => openSettingEditor(id));
+    }
+    document.getElementById('setting-range').addEventListener('input', e => changeSettingDraft(e.target.value));
+    window.addEventListener('resize', positionSettingEditor);
+    window.addEventListener('scroll', positionSettingEditor, true);
+    document.getElementById('setting-draft').addEventListener('input', e => changeSettingDraft(e.target.value));
+    for (const [name, direction] of [['decrease', -1], ['increase', 1]]) {
+        document.getElementById('setting-' + name).addEventListener('click', () => {
+            if (!settingDraftIsCurrent()) { closeSettingEditor(false); return; }
+            const input = document.getElementById('setting-draft'), value = validatedSettingDraft();
+            if (value === null) return;
+            const next = Math.min(Number(input.max), Math.max(Number(input.min), value + direction * Number(input.step)));
+            changeSettingDraft(String(next));
+        });
+    }
+    document.getElementById('setting-confirm').addEventListener('click', confirmSettingDraft);
+    document.getElementById('setting-cancel').addEventListener('click', () => closeSettingEditor());
+    document.getElementById('setting-editor').addEventListener('cancel', e => { e.preventDefault(); closeSettingEditor(); });
+    document.getElementById('setting-editor').addEventListener('keydown', e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeSettingEditor(); }
+        if (e.key === 'Enter' && e.target.id === 'setting-draft') { e.preventDefault(); confirmSettingDraft(); }
+    });
+}
+
 // =============================================================================
 // SLIDER BINDINGS
 // =============================================================================
@@ -1310,6 +1525,15 @@ function bindSlider(id, callback) {
     const slider = document.getElementById(id);
     if (!slider) return;
     slider.addEventListener('input', () => {
+        if (PRIMARY_SETTINGS[id]) {
+            const proposed = slider.value;
+            slider.value = acceptedSettingValue(id);
+            if (!settingAvailable(id)) return;
+            openSettingEditor(id);
+            changeSettingDraft(proposed);
+            return;
+        }
+        closeSettingEditor(false);
         callback(slider);
         if (['neural-ti', 'patient-rr'].includes(id)) {
             updateMonitorValues(vent.summary()); updateHoldResults(); return;
@@ -1409,6 +1633,7 @@ function bindPresetSelector() {
         const presets = LungModel.presets();
         const preset = presets[presetName];
         if (!preset) return;
+        closeSettingEditor(false);
         lung.resistance = preset.resistance;
         lung.compliance = preset.compliance;
         sim.notifyMeasurementSettingsChanged();
@@ -1429,6 +1654,7 @@ function bindIEButtons() {
     group.addEventListener('click', (e) => {
         const btn = e.target.closest('.ie-btn');
         if (!btn) return;
+        closeSettingEditor(false);
         const parts = btn.dataset.ie.split(',').map(Number);
         currentIE = parts;
         vent.ieRatio = parts;
@@ -1566,6 +1792,7 @@ function mapUnavailableReason() {
 }
 
 function updateMonitorValues(summary, deliveredVentilation = sim.deliveredVentilation) {
+    refreshSettingEditor();
     const s = monitorSummary(summary);
     const m = sim.breathSummary;
     const isCsv = vent.isSpontaneousMode();
@@ -2840,6 +3067,7 @@ function installTestHooks() {
                 mode:            vent.mode,
                 running:         sim.running,
                 adaptiveState:   sim.adaptiveState,
+                inputRevision: sim.inputRevision,
                 operatorSettings: { targetVT_mL: vent.tidalVolume * 1000, peep_cmH2O: vent.peep,
                     inspiratoryPressure_cmH2O: vent.inspiratoryPressure, pressureSupport_cmH2O: vent.psPressure,
                     pMusMax: vent.pMusMax, patientRR: sim.patientRR, neuralTi_s: vent.neuralTi },

@@ -329,6 +329,10 @@ try {
         if (usabilityCode !== 0) throw new Error('Usability follow-up browser gate failed');
         const overlayCode = await runChild([fileURLToPath(new URL('../tests/overlay-panel.browser.cjs', import.meta.url))]);
         if (overlayCode !== 0) throw new Error('Overlay panel browser gate failed');
+        const editorCode = await runChild([fileURLToPath(new URL('../tests/setting-editor.browser.cjs', import.meta.url))]);
+        if (editorCode !== 0) throw new Error('Setting editor browser gate failed');
+        const polishCode = await runChild([fileURLToPath(new URL('../tests/primary-tile-polish.browser.cjs', import.meta.url))]);
+        if (polishCode !== 0) throw new Error('Primary tile polish browser gate failed');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

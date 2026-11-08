@@ -64,6 +64,7 @@ export async function setRange(page, selector, value) {
         el.value = String(v);
         el.dispatchEvent(new Event('input', { bubbles: true }));
     }, value);
+    if (['#vt','#rr','#peep','#fio2','#pinsp','#ps-pressure'].includes(selector)) await page.locator('#setting-confirm').click();
 }
 
 /** Drive the effort controls. Must run before Teaching Mode is enabled. */

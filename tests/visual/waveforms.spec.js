@@ -91,11 +91,11 @@ async function pcDisclosureSnapshots(page) {
     for (const mode of ['pc-cmv', 'PC-CSV']) for (const active of [false, true]) for (const teaching of [false, true]) {
         const errors = await h.open(page);
         await page.setViewportSize({ width: 1440, height: 900 });
+        await h.setRange(page, '#rr', 14);
         await h.setMode(page, mode);
         await h.expandRail(page);
         await h.setRange(page, '#compliance', 50);
         await h.setRange(page, '#resistance', 10);
-        await h.setRange(page, '#rr', 14);
         if (active) await h.enableEffort(page, { patientRR: mode === 'pc-cmv' ? 14 : 20, pmus: mode === 'pc-cmv' ? 10 : 6 });
         if (teaching) await h.teachingMode(page);
         await h.seek(page, 14);
@@ -142,8 +142,9 @@ async function pcDisclosureSnapshots(page) {
     expect((await h.state(page)).phase).toBe('HOLD');
     await expect(page.locator('#pc-disclosure-trigger')).toBeVisible();
     await expect(page).toHaveScreenshot('pc-disclosure-cmv-hold.png', { fullPage: true });
-    await h.open(page); await h.setMode(page, 'PC-CSV'); await h.enableEffort(page, { patientRR: 20, pmus: 6 });
-    await h.setRange(page, '#rr', 35); await h.setRange(page, '#cycle-percent', 10); await h.teachingMode(page); await h.seek(page, 15);
+    // Select the retained RR through its applicable CMV tile before entering CSV.
+    await h.open(page); await h.setRange(page, '#rr', 35); await h.setMode(page, 'PC-CSV'); await h.enableEffort(page, { patientRR: 20, pmus: 6 });
+    await h.setRange(page, '#cycle-percent', 10); await h.teachingMode(page); await h.seek(page, 15);
     expect((await h.state(page)).completed.terminationReason).toBe('maxTiReached');
     await expect(page.locator('#pc-disclosure-trigger')).toBeVisible();
     await expect(page).toHaveScreenshot('pc-disclosure-csv-max-ti.png', { fullPage: true });
@@ -546,7 +547,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'overlay panel asset release').toEqual(['34']);
+        expect(versions, 'primary setting tiles asset release').toEqual(['36']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);

@@ -1,0 +1,14 @@
+PASS RR24/high RR hover, panel transfer, pin, retained copy, Escape and no reopen
+PASS keyboard activation, both explanations, Close and focus restoration
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+'false' !== 'true'
+
+    at C:\Projects\vent-sim-overlay-panel-20261107\tests\overlay-panel.browser.cjs:74:12 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'false',
+  expected: 'true',
+  operator: 'strictEqual',
+  diff: 'simple'
+}

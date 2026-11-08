@@ -92,12 +92,12 @@ async function failedTriggerTerminologyContract(page) {
             search: for (let y = 8; y < rect.height - 24; y += 2) {
                 for (let x = 56; x < rect.width - 12; x += 2) {
                     canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: rect.left + x, clientY: rect.top + y }));
-                    if (canvas.title.includes('Earlier trigger settings are not stored')) { titles.add(canvas.title); break search; }
+                    if (window.__vsim.state().renderers.flow.overlayHelpHit.includes('Earlier trigger settings are not stored')) { titles.add(window.__vsim.state().renderers.flow.overlayHelpHit); break search; }
                 }
             }
-            require(titles.size > 0 && [...titles].every(t => t.includes('Failed trigger —') && t.includes('Earlier trigger settings are not stored') && !t.includes('ineffective effort')), `${mode} canonical-flow-title`);
+            require(titles.size > 0 && [...titles].every(t => t.includes('Failed trigger:') && t.includes('Earlier trigger settings are not stored') && !t.includes('ineffective effort')), `${mode} canonical-flow-title`);
             canvas.dispatchEvent(new MouseEvent('mouseleave'));
-            require(canvas.title === '', `${mode} hover-leave`);
+            require(window.__vsim.state().renderers.flow.overlayHelpHit === '', `${mode} hover-leave`);
         }
         api.seek(0);
         const refs = [...document.querySelectorAll('#param-rr .rr-triple__line, #param-rr .rr-triple__cell')];
@@ -867,7 +867,7 @@ if (require.main === module) (async () => {
                 c.dispatchEvent(new MouseEvent('mousemove', {
                     clientX: r.left + x, clientY: r.top + r.height / 2, bubbles: true,
                 }));
-                if (c.title) found.add(c.title);
+                if (window.__vsim.state().renderers.flow.overlayHelpHit) found.add(window.__vsim.state().renderers.flow.overlayHelpHit);
                 await new Promise((res) => setTimeout(res, 4));
             }
             return [...found];
@@ -898,7 +898,7 @@ if (require.main === module) (async () => {
                 c.dispatchEvent(new MouseEvent('mousemove', {
                     clientX: r.left + x, clientY: r.top + r.height / 2, bubbles: true,
                 }));
-                if (c.title) found.add(c.title);
+                if (window.__vsim.state().renderers.flow.overlayHelpHit) found.add(window.__vsim.state().renderers.flow.overlayHelpHit);
                 await new Promise((res) => setTimeout(res, 4));
             }
             return [...found];
@@ -1013,7 +1013,7 @@ if (require.main === module) (async () => {
         const allVersions = [...(html + mainJs + ventJs + simJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 11 && allVersions.every(v => v === '32'),
+                && allVersions.length === 11 && allVersions.every(v => v === '34'),
             `imports=${imp.join(',')} html=${versions.join(',')} all eleven=${allVersions.join(',')}`);
     }
 

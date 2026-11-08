@@ -16,7 +16,7 @@
  */
 
 export const AIR_TRAPPING_HELP = "Flow baseline cue: modeled expiratory flow in this highlighted interval did not come within 0.5 L/min of zero before flow turned positive. This cue does not measure intrinsic PEEP or identify a unique cause. Predicted auto-PEEP and live modeled trapped volume are separate outputs.";
-export const FAILED_FLOW_HELP = "Failed trigger — this effort did not meet an active trigger criterion during its eligible expiratory samples. The flow trace shows signed net lung flow, not a separate effort signal. No delivered breath was recorded for this effort. Earlier trigger settings are not stored for this failed event.";
+export const FAILED_FLOW_HELP = "Failed trigger: this effort did not meet an active trigger criterion during its eligible expiratory samples. The flow trace shows signed net lung flow, not a separate effort signal. No delivered breath was recorded for this effort. Earlier trigger settings are not stored for this failed event.";
 
 /** The pressure axis includes atmospheric zero and every finite modeled sample. */
 export function signedPressureRange(dataMin, dataMax) {
@@ -724,7 +724,7 @@ export class WaveformRenderer {
         this._highlightHoverClient = null;
         this.canvas.addEventListener('mousemove', e => {
             this._highlightHoverClient = { x: e.clientX, y: e.clientY };
-            this._syncHighlightTooltip();
+            this._syncHighlightTooltip(true);
         });
         this.canvas.addEventListener('mouseleave', () => {
             this._highlightHoverClient = null;
@@ -733,17 +733,17 @@ export class WaveformRenderer {
     }
 
     /** Stroke-distance or visible label hit; overlapping cues retain every explanation. */
-    _syncHighlightTooltip() {
+    _syncHighlightTooltip(pointerMoved = false) {
         const client = this._highlightHoverClient, rect = this.canvas.getBoundingClientRect();
         const point = client && { x: client.x - rect.left, y: client.y - rect.top };
         const plot = this.lastGeometry?.plot;
         const texts = new Set();
+        const visibleCues = (this._highlightHoverRegions || []).filter(cue =>
+            plot && cue.runs.some(run => run.filter((v, i) => i % 2 === 0
+                && v >= plot.x && v <= plot.x + plot.w
+                && run[i + 1] >= plot.y && run[i + 1] <= plot.y + plot.h).length >= 2));
         if (point && plot && point.x >= plot.x && point.x <= plot.x + plot.w
             && point.y >= plot.y && point.y <= plot.y + plot.h && !this._highlightHidden?.(point.x)) {
-            const visibleCues = (this._highlightHoverRegions || []).filter(cue =>
-                cue.runs.some(run => run.filter((v, i) => i % 2 === 0
-                    && v >= plot.x && v <= plot.x + plot.w
-                    && run[i + 1] >= plot.y && run[i + 1] <= plot.y + plot.h).length >= 2));
             const broadHit = this._teachingFlowHelp && visibleCues.length
                 && this._pointNearRuns(point, this._expiratoryHoverRuns || [], 8);
             if (broadHit) {
@@ -767,7 +767,9 @@ export class WaveformRenderer {
             }
         }
         const text = [...texts].join('\n\n');
-        if (this.canvas.title !== text) this.canvas.title = text;
+        this._highlightHelpText = text;
+        this.canvas.removeAttribute('title');
+        this.onOverlayHelp?.({ text, visibleCues, pointerMoved });
     }
 
     _pointNearRuns(point, runs, radius) {
@@ -1275,7 +1277,7 @@ export class WaveformDisplay {
      */
     _failedEffortTooltip(ev) {
         if (ev.gateFailed === 'ventilator_unavailable') {
-            return 'Failed trigger — this effort was resolved while the ventilator was inspiring or holding, '
+            return 'Failed trigger: this effort was resolved while the ventilator was inspiring or holding, '
                 + 'so it could not start another breath. Its mechanical effects may continue, '
                 + 'but it is not reconsidered for triggering in the same effort.';
         }

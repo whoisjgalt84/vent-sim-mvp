@@ -1,5 +1,7 @@
 # Usability follow-up: accepted local candidate
 
+**Later successor:** the [accepted overlay help panel](overlay-help-panel.md) replaces native waveform hover help with an app-controlled panel. This record retains its historical scope, identities, acceptance state and results.
+
 ## Scope and identity
 
 This follow-up is based on `19085369ceb04402a66dd3932eb628cc5e50c653` (PR #57), in local branch `fix/usability-followup-20261107`. It has not been committed or published by this closeout. The reviewed 15-file source manifest identity is `6d26446e569ea5b1e0f72ddef78036d5f1421e55f4201705e48003dedccb3f9d`; this is a changed-file manifest identity, not a Git commit or a hash of the entire repository. Exact paths and SHA256 values are retained in the [source manifest](evidence/usability-followup/source-manifest.json).

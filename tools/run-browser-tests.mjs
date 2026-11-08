@@ -327,6 +327,8 @@ try {
         if (hierarchyCode !== 0) throw new Error('Approved setting hierarchy browser acceptance gate failed');
         const usabilityCode = await runChild([fileURLToPath(new URL('../tests/usability-followup.browser.cjs', import.meta.url))]);
         if (usabilityCode !== 0) throw new Error('Usability follow-up browser gate failed');
+        const overlayCode = await runChild([fileURLToPath(new URL('../tests/overlay-panel.browser.cjs', import.meta.url))]);
+        if (overlayCode !== 0) throw new Error('Overlay panel browser gate failed');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

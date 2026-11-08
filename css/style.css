@@ -1740,3 +1740,10 @@ body.teaching-mode.patient-open .app { grid-template-columns: 0 minmax(0, 1fr) 2
     body.patient-open .app { grid-template-columns: 256px minmax(0, 1fr) 264px; }
     body.teaching-mode .app, body.teaching-mode.patient-open .app { grid-template-columns: 0 minmax(0, 1fr) 264px; }
 }
+
+/* Shared help shell; overlay controls remain reachable at narrow/zoomed sizes. */
+#overlay-help-controls:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+#overlay-help-controls strong { flex: 1 1 140px; }
+#overlay-help-controls button { color: var(--text-primary); background: #21364e; border: 1px solid #6fb1ff; border-radius: 4px; padding: 6px 8px; font: inherit; cursor: pointer; }
+#overlay-help-controls button:focus-visible, #canvas-flow:focus-visible { outline: 2px solid #6fb1ff; outline-offset: 2px; }
+#overlay-help-status { color: #c5d9ef; margin: 8px 0; }

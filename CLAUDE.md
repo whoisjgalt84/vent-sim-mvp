@@ -69,18 +69,20 @@ require generating host-specific, non-authoritative snapshots first with
 <a id="verification-inventory"></a>
 <a id="current-verification-inventory--2026-11-03"></a>
 
-### Current verification inventory - 2026-11-07
+### Current verification inventory - 2026-11-08
 
 The inventory is defined by the [engine runner](tools/run-engine-tests.mjs)
 and [browser/visual runner](tools/run-browser-tests.mjs), not workflow job titles.
-The following inventory includes the bounded desktop teaching slice, usability follow-up and overlay help panel. It is not
+The following inventory includes the bounded desktop teaching slice, usability follow-up, overlay help panel and primary-setting tiles/editor. It is not
 the inventory of the historical release CI run below.
 
 | Gate | Required inventory |
 | --- | --- |
 | Engine | 300 original assertions; 22 adaptive controller; 24 adaptive integration; 22 selective legacy fixtures; 41 effort/pressure; 28 demonstration-reset; 43 manual-hold; 15 R01/R11; 17 R02 groups. Plus 8 teaching-slice and 6 phase-history groups. Total: 526 mixed top-level assertions/groups/fixtures, not 526 equivalent tests. |
-| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice, 5 hierarchy, 4 usability and 8 overlay-panel groups. Total: 132. |
+| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice, 5 hierarchy, 4 usability and 8 overlay-panel groups. Plus 12 setting-editor groups and 16 primary-tile responsive layout cases. Total: 144 behavior groups plus 16 layout cases (160 mixed checks). |
 | Pinned-Linux visual | 18 existing groups plus 3 manual-hold groups. Total: 21, including determinism and cache-busting. |
+
+**Primary-setting tile/editor closeout:** Christian accepted the complete visual review. Exactly 98 changed references were installed, with 64 identical files retained; all 162 hashes match the reviewed manifest. Final pinned-Linux visual verification passed 21/21 with updates disabled and unchanged tolerances. The final browser receipt (144 groups plus 16 layout cases) and earlier engine receipt (526 mixed items, zero failures) are carried forward, not rerun for this documentation-only update. See [the setting-editor closeout](docs/setting-editor.md#accepted-local-candidate-and-evidence-8-november-2026) for exact identities, receipts, authorization and limits.
 
 **Overlay-panel premerge-fix evidence:** local engine 526/0, browser 132/0 and pinned-Linux visual 21/21 receipts cover the targeted persistence/focus and Standard-mode accessibility fixes. This documentation-only update carries those results forward without rerunning gates. See [the premerge-fix closeout](docs/overlay-help-premerge.md) for exact source identity, retained receipts and limits.
 
@@ -203,7 +205,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=34`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=36`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's

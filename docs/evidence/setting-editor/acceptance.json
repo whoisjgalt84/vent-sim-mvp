@@ -1,0 +1,68 @@
+{
+  "date": "2026-11-08",
+  "scope": "Local primary-settings tile/editor candidate; not publication authority",
+  "baseCommit": "cda77473739f950d540b572196758e7be88c2c13",
+  "ownerVisualAcceptance": true,
+  "reviewedNumbers": [
+    140,
+    148,
+    144,
+    28,
+    69,
+    12,
+    106
+  ],
+  "sourceCanonicalEntriesSha256": "780b4d81de4774b7d7d4c7e527350891b1786b48024a95f38bc86983e6f1362b",
+  "sourceScope": "78-file reviewed snapshot; CLAUDE.md updated by this later documentation-only pass, runtime/test/runner inputs preserved",
+  "installedReferences": {
+    "total": 162,
+    "replaced": 98,
+    "waveformReplaced": 83,
+    "manualHoldReplaced": 15,
+    "identicalRetained": 64,
+    "supplementalInstalled": 0,
+    "hashField": "candidateSha256 in reviewed-gallery-manifest.json"
+  },
+  "visual": {
+    "groupsPassed": 21,
+    "updatesEnabled": false,
+    "tolerancesChanged": false,
+    "pinnedImage": "mcr.microsoft.com/playwright:v1.62.1-noble"
+  },
+  "carriedForward": {
+    "engine": "526 mixed assertions/groups/fixtures, zero failures; before CSS-only unit fix",
+    "browser": "144 behavior groups and 16 layout cases, final unit-fix source"
+  },
+  "documentationPassRunsSimulatorGates": false,
+  "receipts": [
+    {
+      "path": "reviewed-source-manifest.json",
+      "sha256": "d01f626eb37f152534165525c0f0546bb2ae9de21a98d66bd7c5a57a8c06446f",
+      "gitNormalizedSha256": "d01f626eb37f152534165525c0f0546bb2ae9de21a98d66bd7c5a57a8c06446f"
+    },
+    {
+      "path": "reviewed-gallery-manifest.json",
+      "sha256": "d2eed1d8172598f17fd0d113ee31ac4b45362aed864b5ac2d33b9c3428ba01bc",
+      "gitNormalizedSha256": "d2eed1d8172598f17fd0d113ee31ac4b45362aed864b5ac2d33b9c3428ba01bc"
+    },
+    {
+      "path": "installed-visual.log",
+      "sha256": "eff5a9b58f96de40e737482e50d1b7e0367523ae2ee7e7aab878a47f53b807a9",
+      "gitNormalizedSha256": "c57ab1e1132a6849192b9da00e6cd5dd22c06ed39c7f87c8953321bb03764a7e"
+    },
+    {
+      "path": "browser-linux-final.log",
+      "sha256": "7bb200e5895e2bb340ab5ed40198d99b6226528468be2340d507a539c1f99abf",
+      "gitNormalizedSha256": "045c398ed13b71882e92e5c4d0a06f8918d73505c01326cc5868e99e67eacedd"
+    },
+    {
+      "path": "engine.log",
+      "sha256": "3b84998c9d331e3c84b778a7bfa1678b92a9ce3c1ef243d07a7f88ad172b88a9",
+      "gitNormalizedSha256": "2634d7df84da8b978685396eed4663d472cbecf1329ffcdfb9986b690a9d2377"
+    }
+  ],
+  "receiptHashSemantics": {
+    "sha256": "Original local receipt bytes before Git text normalization; retained as historical evidence.",
+    "gitNormalizedSha256": "SHA256 of the staged Git blob after repository text normalization. Use this for committed-file verification."
+  }
+}

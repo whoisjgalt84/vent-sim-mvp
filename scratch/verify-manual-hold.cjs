@@ -5,7 +5,7 @@ const results = [];
 const browserOptions = { headless: true, ...(process.env.CHROMIUM_PATH ? { executablePath:process.env.CHROMIUM_PATH } : {}) };
 const state = page => page.evaluate(() => window.__vsim.state());
 const step = (page, seconds) => page.evaluate(s => window.__vsim.step(s), seconds);
-const input = (page, id, value) => page.locator('#'+id).evaluate((el,v) => { el.value=String(v); el.dispatchEvent(new Event('input',{bubbles:true})); },value);
+const input = async (page, id, value) => { await page.locator('#'+id).evaluate((el,v) => { el.value=String(v); el.dispatchEvent(new Event('input',{bubbles:true})); },value); if (['vt','rr','peep','fio2','pinsp','ps-pressure'].includes(id)) await page.locator('#setting-confirm').click(); };
 async function until(page, predicate, max = 800) {
     for (let i=0;i<max;i++) { if(predicate(await state(page))) return; await step(page,0.01); }
     throw Error('bounded transition failed');

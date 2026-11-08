@@ -41,6 +41,7 @@ async function setRange(page, id, v) {
         el.value = String(val);
         el.dispatchEvent(new Event('input', { bubbles: true }));
     }, v);
+    if (['#vt','#rr','#peep','#fio2','#pinsp','#ps-pressure'].includes(id)) await page.locator('#setting-confirm').click();
 }
 
 async function enableEffort(page, { patientRR = 30, pmus = 6 } = {}) {
@@ -64,6 +65,7 @@ async function failedTriggerTerminologyContract(page) {
             const el = document.getElementById(id);
             el.value = String(value);
             el.dispatchEvent(new Event('input', { bubbles: true }));
+            if (['vt','rr','peep','fio2','pinsp','ps-pressure'].includes(id)) document.getElementById('setting-confirm').click();
         };
         const teaching = on => {
             if (document.body.classList.contains('teaching-mode') !== on) document.getElementById('btn-teaching-mode').click();
@@ -127,6 +129,7 @@ async function readoutContract(page) {
         const input = (id, value) => {
             el(id).value = String(value);
             el(id).dispatchEvent(new Event('input', { bubbles: true }));
+            if (['vt','rr','peep','fio2','pinsp','ps-pressure'].includes(id)) document.getElementById('setting-confirm').click();
         };
         const teaching = on => {
             if (document.body.classList.contains('teaching-mode') !== on) el('btn-teaching-mode').click();
@@ -488,6 +491,7 @@ async function pcDisclosureContract(page, { stopOnFailure = false } = {}) {
     const seek = s => page.evaluate(s => window.__vsim.seek(s), s);
     const input = (id, value) => page.evaluate(({ id, value }) => {
         const e = document.getElementById(id); e.value = String(value); e.dispatchEvent(new Event('input', { bubbles: true }));
+            if (['vt','rr','peep','fio2','pinsp','ps-pressure'].includes(id)) document.getElementById('setting-confirm').click();
     }, { id, value });
     const teaching = on => page.evaluate(on => {
         if (document.body.classList.contains('teaching-mode') !== on) document.getElementById('btn-teaching-mode').click();
@@ -562,7 +566,10 @@ async function pcDisclosureContract(page, { stopOnFailure = false } = {}) {
     await cue.evaluate(e => { window.__pcOriginalCue = e; });
     await page.evaluate(() => { for (let i = 0; i < 120; i++) window.__vsim.redraw(); window.__vsim.step(1); });
     check('PC.redraw-identity-focus-pin', await cue.evaluate(e => e === window.__pcOriginalCue && document.activeElement === e) && await help.isVisible());
-    await seek(0); await input('peep', 7); await mode('PC-CSV');
+    await seek(0); await input('peep', 7);
+    // The confirmed setting editor restores focus to its own trigger. Re-enter
+    // the persistent help cue before asserting its unrelated transition focus.
+    await cue.focus(); await mode('PC-CSV');
     check('PC.state-transition-text', (await help.textContent()).trim() === csv + '\n\n' + common && await help.isVisible());
     await teaching(true); await teaching(false);
     await page.evaluate(() => { document.querySelector('#speed-group [data-speed="2"]').click(); document.getElementById('btn-pause').click(); document.getElementById('btn-pause').click(); window.__vsim.redraw(); });
@@ -587,11 +594,11 @@ async function pcDisclosureContract(page, { stopOnFailure = false } = {}) {
     await input('pmus-max', 6); await input('patient-rr', 20); await input('neural-ti', 10);
     await mode('PC-CSV'); await input('cycle-percent', 25); await seek(15);
     check('PC.csv-active-flow', (await state()).completed?.terminationReason === 'flowCycle' && await cue.isVisible());
-    await input('cycle-percent', 10); await input('rr', 35); await seek(15);
+    await input('cycle-percent', 10); await mode('pc-cmv'); await input('rr', 35); await mode('PC-CSV'); await seek(15);
     check('PC.csv-max-ti', (await state()).completed?.terminationReason === 'maxTiReached' && await cue.isVisible());
     await input('pmus-max', 0.5); await input('flow-trigger', 5); await seek(15);
     check('PC.csv-weak', (await state()).completed === null && (await state()).failedTriggers > 0 && await cue.isVisible());
-    await input('flow-trigger', 2); await input('pmus-max', 6); await input('rr', 14); await input('cycle-percent', 25); await seek(15);
+    await input('flow-trigger', 2); await input('pmus-max', 6); await mode('pc-cmv'); await input('rr', 14); await mode('PC-CSV'); await input('cycle-percent', 25); await seek(15);
     await page.locator('#pmus-toggle').evaluate(e => { if (e.classList.contains('hold-btn--active')) e.click(); });
     await page.evaluate(() => window.__vsim.step(35));
     check('PC.csv-cessation', (await state()).deliveredVentilation.valueLpm === 0 && await cue.isVisible());
@@ -1013,7 +1020,7 @@ if (require.main === module) (async () => {
         const allVersions = [...(html + mainJs + ventJs + simJs).matchAll(/\?v=(\d+)/g)].map(m => m[1]);
         check('js/main.js imports share the same version as index.html',
             imp.length === 1 && (versions.length === 0 || imp[0] === versions[0])
-                && allVersions.length === 11 && allVersions.every(v => v === '34'),
+                && allVersions.length === 11 && allVersions.every(v => v === '36'),
             `imports=${imp.join(',')} html=${versions.join(',')} all eleven=${allVersions.join(',')}`);
     }
 

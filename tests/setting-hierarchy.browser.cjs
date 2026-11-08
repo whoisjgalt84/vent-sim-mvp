@@ -95,22 +95,26 @@ async function group(browser,name,fn) {
             assert.deepEqual(order,expected[i],mode);
             assert.equal(await p.evaluate(()=>hierarchyNodes.every(e=>document.getElementById(e.id)===e)),true);
             const volumeMode=mode==='vc-cmv'||mode==='pc-cmva';
-            assert.equal(await p.locator('#vt').isVisible(),volumeMode,'VT visibility '+mode);
+            assert.equal(await p.locator('#vt-tile').isVisible(),volumeMode,'VT tile visibility '+mode);
+            assert.equal(await p.locator('#vt').isVisible(),false,'compatibility range stays hidden');
             if(volumeMode) {
                 const name=mode==='pc-cmva'?'Target VT':'Tidal Volume';
                 assert.equal(await p.locator('#vt-control-label').innerText(),name,'visible VT label '+mode);
-                const named=p.getByRole('slider',{name,exact:true});
-                assert.equal(await named.getAttribute('id'),'vt','exact accessible VT name '+mode);
+                const named=p.getByRole('button',{name:new RegExp('^Edit '+name+', applied [0-9]+ mL$')});
+                assert.equal(await named.getAttribute('id'),'vt-tile','exact accessible VT name, applied value and unit '+mode);
                 await named.focus();assert.equal(await named.evaluate(e=>e===document.activeElement),true);
                 const other=name==='Target VT'?'Tidal Volume':'Target VT';
-                assert.equal(await p.getByRole('slider',{name:other,exact:true}).count(),0,'no stale VT name '+mode);
+                assert.equal(await p.getByRole('button',{name:new RegExp('^Edit '+other+',')}).count(),0,'no stale VT name '+mode);
             } else {
-                assert.equal(await p.getByRole('slider',{name:/^(Tidal Volume|Target VT)$/}).count(),0,'hidden VT is not exposed '+mode);
+                assert.equal(await p.getByRole('button',{name:/^Edit (Tidal Volume|Target VT),/}).count(),0,'hidden VT is not exposed '+mode);
             }
             for(const id of expected[i][0]) {
-                const input=p.locator('#'+id);await input.focus();assert.equal(await input.evaluate(e=>e===document.activeElement),true);
-                const ax=await input.ariaSnapshot();assert.match(ax,/slider ".+"/,'named primary slider '+id);
-                assert.ok((await input.getAttribute('aria-describedby')),'units/value accessible '+id);
+                const input=p.locator('#'+id+'-tile');await input.focus();assert.equal(await input.evaluate(e=>e===document.activeElement),true);
+                const ax=await input.ariaSnapshot();assert.match(ax,/button "Edit .+, applied [0-9]+ (mL|cmH2O|\/min|%)"/,'named primary tile with value and units '+id);
+                assert.equal(await input.getAttribute('aria-controls'),'setting-editor','shared editor target '+id);
+                await p.keyboard.press('Enter');assert.equal(await p.locator('#setting-draft').evaluate(e=>e===document.activeElement),true);
+                assert.equal(await p.locator('#setting-range').getAttribute('aria-describedby'),'setting-validation setting-consequence');
+                await p.keyboard.press('Escape');assert.equal(await input.evaluate(e=>e===document.activeElement),true);
             }
         }
         const styles=await p.evaluate(()=>{const root=getComputedStyle(document.documentElement),s=getComputedStyle(document.getElementById('primary-settings'));
@@ -118,7 +122,7 @@ async function group(browser,name,fn) {
         assert.equal(styles.background,'rgb(25, 44, 66)');assert.equal(styles.border,'rgb(109, 174, 255)');assert.equal(styles.width,'2px');
         // Current global palette remains byte-identical in the CSS; test the rendered main background too.
         assert.equal(await p.locator('body').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(11, 15, 20)');
-        await setup(p);await p.locator('#vt').focus();await p.keyboard.press('ArrowRight');
+        await setup(p);await p.locator('#vt-tile').click();await p.locator('#setting-range').focus();await p.keyboard.press('ArrowRight');await p.locator('#setting-confirm').click();
         const selected=+(await p.locator('#vt').inputValue());assert.equal((await state(p)).resetDiagnostics.configuration.tidalVolume,selected/1000);
         await teach(p,true);await teach(p,false);assert.equal(+(await p.locator('#vt').inputValue()),selected);
         assert.equal(await p.locator('#hold-duration').evaluate(e=>!!e.closest('.control-group__body')?.querySelector('#hold-toggle')),true,'recurring pause remains in Maneuvers');

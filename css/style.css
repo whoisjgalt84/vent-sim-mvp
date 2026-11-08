@@ -1747,3 +1747,59 @@ body.teaching-mode.patient-open .app { grid-template-columns: 0 minmax(0, 1fr) 2
 #overlay-help-controls button { color: var(--text-primary); background: #21364e; border: 1px solid #6fb1ff; border-radius: 4px; padding: 6px 8px; font: inherit; cursor: pointer; }
 #overlay-help-controls button:focus-visible, #canvas-flow:focus-visible { outline: 2px solid #6fb1ff; outline-offset: 2px; }
 #overlay-help-status { color: #c5d9ef; margin: 8px 0; }
+
+/* Bounded nonmodal setting editor. Opening it never pauses transport. */
+#vt-display[role="button"], #peep-display[role="button"] { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 4px; }
+.setting-editor { position: fixed; inset: auto 16px 24px auto; margin: 0; z-index: 1000; box-sizing: border-box; width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; padding: 20px; border: 1px solid #6d879f; border-radius: 12px; background: #17212d; color: #edf3fa; box-shadow: 0 12px 40px #0009; font: 14px/1.5 system-ui, sans-serif; }
+.setting-editor h2 { margin: 0 0 12px; font-size: 18px; }
+.setting-editor p { margin: 8px 0; }
+.setting-editor__entry, .setting-editor__actions { display: flex; gap: 10px; margin-top: 10px; }
+.setting-editor input { min-width: 0; width: 100%; padding: 8px; font: inherit; background: #0b1420; color: white; border: 1px solid #8ba1b5; border-radius: 6px; }
+.setting-editor button { min-width: 44px; min-height: 44px; padding: 8px 12px; background: #27394b; color: white; border: 1px solid #8299ad; border-radius: 6px; font: inherit; cursor: pointer; }
+.setting-editor button:disabled { opacity: .5; cursor: not-allowed; }
+.setting-editor__actions { justify-content: flex-end; }
+#setting-confirm { background: #185977; }
+.setting-editor :focus-visible, #vt-display:focus-visible, #peep-display:focus-visible { outline: 3px solid #67d2ff; outline-offset: 3px; }
+#setting-consequence { font-size: 12px; color: #f1d797; }
+
+/* Primary setting tiles: a single explicit draft/confirm interaction. */
+.setting-primary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px; }
+.controls .setting-primary > .control { padding: 0; min-width: 0; }
+.controls .setting-primary > .control + .control { border: 0; }
+.setting-tile { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; width: 100%; min-height: 100px; padding: 10px 8px; border: 1px solid #607fa4; border-radius: 7px; color: #edf3fa; background: #20364d; font: inherit; text-align: left; cursor: pointer; }
+.setting-tile:hover, .setting-tile[aria-expanded="true"] { border-color: #8fc9ff; background: #294a68; }
+.setting-tile:focus-visible { outline: 3px solid #67d2ff; outline-offset: 2px; }
+.setting-tile .control__label { font-size: 12px; white-space: normal; }
+.setting-tile .control__value { font-size: 16px; white-space: normal; }
+.setting-tile__applied { color: #b9cbdc; font-size: 10px; }
+.setting-tile__pending { color: #ffdb91; font-size: 11px; line-height: 1.35; }
+.setting-primary input[hidden] { display: none; }
+.setting-primary .adaptive-pending { display: none; } /* Same accepted request is explicit on its tile. */
+.setting-editor { inset: auto; max-height: calc(100dvh - 16px); }
+.setting-range-label { display: block; margin-top: 12px; font-size: 12px; }
+.setting-editor #setting-range { box-sizing: border-box; min-height: 44px; padding: 0; accent-color: #6daeff; }
+@media (max-width: 850px) {
+    .setting-editor { width: calc(100vw - 16px); max-height: min(70dvh, 540px); padding: 14px; }
+    .setting-editor h2 { margin-bottom: 6px; }
+    .setting-editor p { margin: 5px 0; }
+    .setting-editor__actions { position: sticky; bottom: -14px; margin: 0 -14px -14px; padding: 12px 14px; background: #17212d; }
+    .setting-primary .setting-tile { min-height: 90px; }
+}
+
+.setting-tile .control__value { margin-left: 0; min-width: 0; align-self: flex-start; text-align: left; }
+@media (max-width: 850px) {
+    .header { gap: 6px; padding: 8px; }
+    .header__status, .header__transport, .header__alerts { gap: 4px; width: 100%; }
+    .header__status { display: grid; grid-template-columns: 1fr auto; }
+    .header__transport { display: grid; grid-template-columns: auto 24px 36px 1fr 1fr 1fr; }
+    .header__transport .transport-btn { min-width: 0; padding: 6px 4px; }
+    .header__alerts { margin-left: 0; }
+    .setting-editor #setting-draft { font-size: 16px; }
+}
+
+/* Keep primary tiles uniform without reducing the setting numbers or names. */
+.setting-primary { grid-auto-rows: 1fr; }
+.setting-primary .setting-tile { height: 100%; justify-content: flex-start; }
+.setting-tile .control__label { min-height: 2.4em; line-height: 1.2; }
+.setting-tile .control__value { white-space: nowrap; }
+.setting-tile__unit { display: inline-block; font-size: 12px; }

@@ -25,7 +25,7 @@ const HELP = {
 };
 const state = page => page.evaluate(() => window.__vsim.state());
 const text = (page, selector) => page.locator(selector).textContent().then(x => x.trim());
-const range = (page, selector, value) => page.locator(selector).evaluate((el, v) => { el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); }, value);
+const range = async (page, selector, value) => { await page.locator(selector).evaluate((el, v) => { el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); }, value); if (['#vt','#rr','#peep','#fio2','#pinsp','#ps-pressure'].includes(selector)) await page.locator('#setting-confirm').click(); };
 const step = (page, count) => page.evaluate(n => window.__vsim.stepTicks(n), count);
 const complete = (page, count) => page.evaluate(n => window.__vsim.stepToCompleted(n), count);
 async function rail(page) { await page.locator('.controls [data-collapsible][data-collapsed]').evaluateAll(els => els.forEach(el => el.click())); }
@@ -59,7 +59,7 @@ const groups = [
         assert.equal(await text(page, '#adaptive-achieved'), '—'); assert.equal(await text(page, '#adaptive-next'), '—');
         assert.equal(await text(page, '#adaptive-target'), '500');
         assert((await text(page, '#mode-label')).includes('Adaptive targeting'));
-        assert(await page.locator('#vt').isVisible()); assert(await page.locator('#hold-toggle').isDisabled());
+        assert(await page.locator('#vt-tile').isVisible()); assert(await page.locator('#hold-toggle').isDisabled());
         assert(await page.locator('#adaptive-hold-exclusion').isVisible());
         assert.equal(s.holdMechanics.status, 'inapplicable');
         assert.equal(await page.locator('#vt').getAttribute('min'), '200'); assert.equal(await page.locator('#vt').getAttribute('max'), '800');
@@ -73,7 +73,7 @@ const groups = [
         assert.equal(s.operatorSettings.targetVT_mL, 500); assert.equal(s.operatorSettings.peep_cmH2O, 5);
         assert.equal(s.adaptiveState.requested.targetVT_mL, 650); assert.equal(s.adaptiveState.requested.peep_cmH2O, 9);
         assert.equal(await text(page, '#adaptive-target'), '500'); assert.equal(await text(page, '#adaptive-applied-peep'), 'Applied PEEP: 5 cmH₂O');
-        assert(await page.locator('#adaptive-target-pending').isVisible()); assert(await page.locator('#adaptive-peep-pending').isVisible());
+        assert(await page.locator('#vt-tile-pending').isVisible()); assert(await page.locator('#peep-tile-pending').isVisible());
         s = await complete(page, 1); assert.equal(s.completed.measuredPIP_cmH2O, before.adaptiveState.applied_cmH2O + 5);
         assert.equal(s.completed.adaptive.targetVT_mL, 500); assert.equal(s.adaptiveState.latestDecision.eligible, false);
         s = await nextStart(page); assert.equal(s.operatorSettings.targetVT_mL, 650); assert.equal(s.operatorSettings.peep_cmH2O, 9);

@@ -104,12 +104,12 @@ const channel = process.env.VSM_BROWSER_CHANNEL;
   const retainedCopy=await text.innerText();assert.match(retainedCopy,/Failed trigger: this effort/);
   // A deterministic imported renderer tests the same help visibility callback with explicit cue absence.
   await page.evaluate(async()=>{
-   const {WaveformRenderer}=await import('/js/waveforms.js?v=34');
+   const {WaveformRenderer}=await import('/js/waveforms.js' + new URL(document.querySelector('script[src*="js/main.js"]').src).search);
    const original=WaveformRenderer.prototype._syncHighlightTooltip;
    // Capture real renderer only, then restore the prototype immediately.
    WaveformRenderer.prototype._syncHighlightTooltip=function(...args){if(this.canvas.id==='canvas-flow')window.__flowRenderer=this;return original.apply(this,args);};
    __vsim.redraw();WaveformRenderer.prototype._syncHighlightTooltip=original;
-   const {FAILED_FLOW_HELP}=await import('/js/waveforms.js?v=34');
+   const {FAILED_FLOW_HELP}=await import('/js/waveforms.js' + new URL(document.querySelector('script[src*="js/main.js"]').src).search);
    window.__renderCueKinds=kinds=>{
     const time=Array.from({length:100},(_,i)=>i/10),flow=time.map(()=>-1);
     __flowRenderer.render(time,flow,[],kinds.includes('air')?{tailWindow:{start:10,end:30},baselineReached:false}:null,
@@ -122,7 +122,7 @@ const channel = process.env.VSM_BROWSER_CHANNEL;
   for(const [kinds,notice] of [[['air'],'Not currently visible: Failed trigger.'],[['failed'],'Not currently visible: air trapping.'],[['air','failed'],'']]) {
    await page.evaluate(kinds=>__renderCueKinds(kinds),kinds);assert.equal(await status.textContent(),notice);assert.equal(await status.isHidden(),!notice);assert.equal(await text.innerText(),retainedCopy);
   }
-  const variant=await page.evaluate(async()=>{const {WaveformDisplay}=await import('/js/waveforms.js?v=34');return WaveformDisplay.prototype._failedEffortTooltip({gateFailed:'ventilator_unavailable'});});
+  const variant=await page.evaluate(async()=>{const {WaveformDisplay}=await import('/js/waveforms.js' + new URL(document.querySelector('script[src*="js/main.js"]').src).search);return WaveformDisplay.prototype._failedEffortTooltip({gateFailed:'ventilator_unavailable'});});
   assert.ok(variant.startsWith('Failed trigger: this effort was resolved'));
   passed++;console.log('PASS absent/mixed/returned cues retain text, show only missing notices, and both variants use colons');
   await setup();await flow.focus();await page.keyboard.press('Enter');

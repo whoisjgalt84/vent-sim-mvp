@@ -60,7 +60,7 @@ The desktop editor is positioned next to the settings rail and clamped to the
 viewport. Narrow layouts use a scrollable bottom sheet with reachable actions;
 the selected tile is scrolled above it on opening when needed. The complete
 waveforms, outputs, alarms and secondary controls remain in the page. Secondary
-and patient setting behavior is unchanged. Asset version is 36 at all 11 sites.
+and patient setting behavior is unchanged. Asset version is 37 at all 11 sites; the mode-notice closeout below records the later cache-only version update.
 
 No accepted snapshot installation, commit, push, PR, merge, release or deployment
 is authorized by this implementation approval. Final candidate evidence and
@@ -187,3 +187,58 @@ fresh result. The remote CI results for e129885 do not cover this uncommitted fi
 This documentation-only closeout runs no simulator gates. No staging, commit,
 push, merge or deployment was performed by this pass. Physical touch-device and
 screen-reader verification limitations remain as described above.
+
+
+## Mode-specific notice closeout (8 November 2026)
+
+Christian reviewed the isolated notices and reported: "Wording and placement feel just right!"
+He then authorized documentation and cache-version closeout. This is acceptance of
+this notice presentation, not comprehensive clinical or assistive-technology validation.
+The candidate is based on merged main fde79973ab13bb0997435841fc92b4ff2e586b47.
+
+The pre-edit messages now match the active mode:
+- VC-CMV and PC-CMV: "Changing this value can cancel an armed or active manual hold. Cancel discards the new value but does not restore the hold."
+- PC-CSV: "The new value takes effect when you select Confirm. Cancel discards the new value."
+- PC-CMVa: "Changing this value clears the controller’s current feedback. It will use feedback from subsequent eligible breaths for future adjustments. Cancel discards the new value but does not restore the cleared feedback."
+
+An actual canceled-hold notice remains explicit. After an adaptive edit, the
+notice switches to "This edit cleared the controller’s current feedback" and
+retains the fresh-eligible-breath and cancellation explanation. "Cleared" means
+invalidated for current/future control decisions, not erased historical records,
+changed applied pressure, or an accepted operator setting. In PC-CMVa all four
+primary edit attempts retain this behavior, including RR and FiO2. Opening an
+editor remains inert. Blank, invalid, and edit/revert attempts still notify;
+Cancel discards the new value without restoring invalidated control feedback.
+
+Only rendering copy and selection changed. No hold or adaptive-controller logic,
+operator-request timing, Confirm/Cancel path, or measurement behavior changed.
+The existing content-change guard prevents repeated unchanged live-region writes.
+The new regression covers every primary setting in all four modes, mode transitions,
+real edit/cancel consequences, stable live regions, and both actions at 1440x500
+and 390x500. Two browser-side mutations that break the hold/adaptive notice
+conditions fail this regression. Desktop and narrow previews were inspected.
+
+All eleven existing asset version sites advance together from 36 to 37. This is
+cache coordination only; accepted PNG references and tolerances remain unchanged.
+The final [verification record](evidence/setting-editor/mode-notices/verification.json)
+identifies the changed runtime/test files and retained receipts. Local hashes
+identify original receipt bytes; Git-normalized hashes identify the LF-normalized
+committed form. Previous tile/status-fix receipts above remain historical.
+
+Final v37 local verification passed:
+- [Engine receipt](evidence/setting-editor/mode-notices/engine-v37.log): 526 mixed top-level checks, zero failures.
+- [Focused all-mode notice check](evidence/setting-editor/mode-notices/focused-v37.log): 1/1.
+- [Hold-condition mutation](evidence/setting-editor/mode-notices/mutation-modeNotice-v37.log) and [adaptive-condition mutation](evidence/setting-editor/mode-notices/mutation-adaptiveNotice-v37.log): both fail as expected.
+- [Full pinned-Linux browser and visual receipt](evidence/setting-editor/mode-notices/browser-visual-linux-v37-final.log): 146 behavior groups plus 16 layout cases, including 14 editor groups; 21/21 visual groups, updates disabled and tolerances unchanged.
+- All 162 installed reference hashes remain unchanged. Independent review found no blocker.
+
+The first cache-version browser attempt stopped at an obsolete v36 expectation.
+Both explicit release assertions were aligned with v37, then the final full run
+passed. The earlier pre-cache notice checks remain historical; the receipts above
+cover final v37 runtime/test source. The visual suite does not baseline every open
+notice, so separate inspected desktop/narrow previews and short-window checks
+supplement it. This is local verification, not new remote CI.
+
+No staging, commit, push, PR, merge, release or deployment was performed by this
+closeout. Actual screen-reader speech and physical touch-device sessions remain
+untested; automated DOM/layout checks are not exhaustive accessibility validation.

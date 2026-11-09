@@ -18,7 +18,7 @@ let browser;
   for(const b of boxes){assert.ok(b.scroll<=b.width);for(const part of b.parts){assert.ok(part.right<=b.rect.right&&part.bottom<=b.rect.bottom,JSON.stringify({width,mode,b}));}assert.equal(b.parts[0].font,12);assert.equal(b.parts[1].font,16);}
   if(mode==='PC-CSV'){assert.equal(await p.locator('#ps-pressure-tile .control__label br').count(),1);assert.match(await p.locator('#ps-pressure-tile').getAttribute('aria-label'),/Edit Pressure Support/);}
   for(let i=0;i<await tiles.count();i++){
-   await tiles.nth(i).click();assert.doesNotMatch(await p.locator('#setting-consequence').innerText(),/draft/i);assert.match(await p.locator('#setting-consequence').innerText(),/Changing this value.*manual hold.*adaptive feedback/);
+   await tiles.nth(i).click();assert.doesNotMatch(await p.locator('#setting-consequence').innerText(),/draft/i);assert.match(await p.locator('#setting-consequence').innerText(),mode==='pc-cmva'?/Changing this value clears.*controller/:mode==='PC-CSV'?/new value takes effect.*Confirm/:/Changing this value can cancel.*manual hold/);
    const max=await p.locator('#setting-draft').getAttribute('max');await p.locator('#setting-draft').fill(max);await p.keyboard.press('Escape');
   }
   // Confirm maxima, including both queued adaptive settings, before measuring again.

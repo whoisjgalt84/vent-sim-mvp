@@ -1,0 +1,1115 @@
+
+> vent-sim-mvp@1.0.0 test
+> node tools/run-engine-tests.mjs
+
+PASS expiration display prefilled history is unknown in every mode
+PASS expiration display exact aligned history survives ring overwrite and display-window changes
+PASS expiration display transition ticks keep solved phase including both sides of recurring/manual holds
+PASS expiration display positive failed-trigger flow remains expiration at default flow and pressure thresholds
+PASS expiration display reset and every mode transition clear old phase history before fresh samples
+PASS expiration display phase-history corruption cannot influence physics, canonical records, triggers or old buffers
+EXPIRATION_DISPLAY_TALLY 6 passed, 0 failed
+Commissioned gate verified: expiration display6/0
+PASS slice hold age starts on the actual completion tick, not breath start
+PASS slice paused wall time cannot age; speed and catch-up cap count executed ticks only
+PASS slice mode changes retain age/source across all destinations without reset-time fabrication
+PASS slice flow-pattern fresh runs retain age; main Reset clears saved hold and age
+PASS slice invalid later hold preserves original measurement and original clock
+PASS slice PC-CSV retains configured Ti backstop and flow-cycle precedence
+PASS slice PC-CSV flow cycling can terminate before max Ti; passive CSV invents no breaths
+PASS slice metadata clock has no effect on samples, breath records, or detector inputs
+TEACHING_SLICE_ENGINE_TALLY {"groups":8,"passed":8,"failed":0}
+Commissioned gate verified: teaching slice8/0
+PASS R02 exact 6000-tick overlap rejection and Ti1 control vc-cmv
+PASS R02 exact 6000-tick overlap rejection and Ti1 control pc-cmv
+PASS R02 exact 6000-tick overlap rejection and Ti1 control PC-CSV
+PASS R02 exact 6000-tick overlap rejection and Ti1 control pc-cmva
+PASS R02 equal/near-cycle ordering and waveform bound vc-cmv
+PASS R02 equal/near-cycle ordering and waveform bound pc-cmv
+PASS R02 equal/near-cycle ordering and waveform bound PC-CSV
+PASS R02 equal/near-cycle ordering and waveform bound pc-cmva
+PASS R02 invalid proposals reject atomically at all engine seams
+PASS R02 valid pair waits for the old full cycle with uninterrupted starting half-sine
+PASS R02 single field edits use last valid selected pair; reject retains queue; revert cancels
+PASS R02 reset and mode change resolve selections atomically and retain Off/transport
+PASS R02 Off interrupts unresolved eligible effort; frozen clock and terminal guard survive On
+PASS R02 already resolved effort keeps immutable outcome and receives only mechanical interruption
+PASS R02 zero amplitude produces no invented interruption
+PASS R02 relevant valid queued edit immediately disarms manual hold without suppressing effort
+PASS R02 invalid atomic setup leaves run, pair and history intact
+EFFORT_TIMING_TALLY {"groups":17,"passed":17,"failed":0}
+Commissioned gate verified: R-02 effort timing17/0
+PASS R01 cadence matrix vc-cmv
+PASS R01 cadence matrix pc-cmv
+PASS R01 cadence matrix PC-CSV
+PASS R01 cadence matrix pc-cmva
+PASS R01 jitter, sub-5ms and equivalent partitions
+PASS R01 pause, speed credit, reset and mode reset
+PASS R01 cap discards whole excess ticks, retains only fractional credit
+R11_BREATH22 {"record":{"simulationGeneration":1,"modeGeneration":0,"settingsGeneration":0,"breathId":22,"configuredMode":"vc-cmv","flowPattern":"square","triggerAgent":"machine","triggerDetection":null,"triggerDelivery":null,"cycleAgent":"machine","terminationReason":null,"breathType":"mandatory","startedAt_s":36.12000000000138,"completedAt_s":36.70000000000127,"inspiratoryTime_s":0.5800000000000003,"boundarySampleIndex":6670,"measuredVT_mL":203.00000000000017,"measuredPIP_cmH2O":-0.3466659288246299,"flowAtTermination_Lpm":21.000000000000004,"flowCycleThreshold_Lpm":null,"settingsFingerprint":"[\"vc-cmv\",\"square\",0.2,15,10,35,[1,2],0,0.4,\"pressure\",2,5,25,0,5,0.1]","holdMechanics":{"status":"unavailable","reasons":["NO_HOLD"],"pplat":{"status":"unavailable","value":null,"reasons":["NO_HOLD"]},"drivingPressure":{"status":"unavailable","value":null,"reasons":["NO_HOLD"]},"compliance":{"status":"unavailable","value":null,"reasons":["NO_HOLD"]},"resistance":{"status":"unavailable","value":null,"reasons":["NO_HOLD"]}}},"expected":-0.3466659288246299}
+PASS R11 same-breath independent sample oracle vc-cmv
+PASS R11 same-breath independent sample oracle pc-cmv
+PASS R11 same-breath independent sample oracle PC-CSV
+PASS R11 same-breath independent sample oracle pc-cmva
+PASS R11 negative, zero, tiny positive and ordinary transitions; live alarm peak unchanged
+PASS R11 no finite sample is null, never prior peak or sentinel; reset and first breath
+PASS R11 retains inspiration boundaries and excludes hold and expiration pressure
+PASS R11 neighboring valid effort/mechanics
+REVIEW_REMEDIATION_TALLY {"groups":15,"passed":15,"failed":0}
+Commissioned gate verified: R-01/R-11 review remediation15/0
+PASS manual-hold: initial four manual results unavailable; recurring default zero
+PASS manual-hold: press preserves inspiration delivery and arms end-inspiration
+PASS manual-hold: release before end-inspiration cancels arming without an attempt
+PASS manual-hold: expiration press arms only the next eligible end-inspiration
+PASS manual-hold: expiration release prevents future arming
+PASS manual-hold: normal release publishes exactly 50 contiguous simulated samples
+PASS manual-hold: 49-sample attempt invalid; no valid history fabricated
+PASS manual-hold: cap includes exactly 200 samples and stays valid
+PASS manual-hold: continued press and rapid repeated presses after cap never rearm
+PASS manual-hold: release and fresh press after cap allow a new maneuver
+PASS manual-hold: rapid release/repress cannot rescind expiration; it arms the next breath
+PASS manual-hold: cycle cap rounds down and leaves at least 0.2 seconds expiration
+PASS manual-hold: timing cap below minimum creates invalid attempt, not valid plateau
+PASS manual-hold: zero available occlusion closes and completes without invented samples
+PASS manual-hold: recurring pauses cannot populate or overwrite manual history
+PASS manual-hold: manual takeover retains collector, entry boundary and continuous duration
+PASS manual-hold: takeover cap uses full scheduled plus manual continuous pause
+PASS manual-hold: manual release overrides recurring pause only for that breath
+PASS manual-hold: pc-cmv valid same-breath dependencies and frozen provenance
+PASS manual-hold: vc-cmv valid same-breath dependencies and frozen provenance
+PASS manual-hold: ramp VC retains valid plateau with unavailable resistance
+PASS manual-hold: ordinary breaths and settings retain exact old bytes without recomputation
+PASS manual-hold: invalid later actual hold retains all prior same-breath results
+PASS manual-hold: pointer-cancel cancels valid-length actual hold without publishing success
+PASS manual-hold: lost-pointer-capture cancels valid-length actual hold without publishing success
+PASS manual-hold: window-blur cancels valid-length actual hold without publishing success
+PASS manual-hold: hidden-tab cancels valid-length actual hold without publishing success
+PASS manual-hold: focus-lost cancels valid-length actual hold without publishing success
+PASS manual-hold: transport pause cancels/disarms, resume cannot restart
+PASS manual-hold: setting edit during actual hold invalidates and releases immediately
+PASS manual-hold: edit/revert and effort-only edits cannot evade invalidation
+PASS manual-hold: setting edits while armed cancel without attempted hold
+PASS manual-hold: mode transitions cancel and explicitly retain original historical mode
+PASS manual-hold: PC-CSV explicitly excludes manual and recurring hold
+PASS manual-hold: pc-cmva explicitly excludes manual and recurring hold
+PASS manual-hold: Reset clears armed/active/valid/invalid history and retains settings/transport
+PASS manual-hold: settings-associated reset retains history; explicit Reset clears it
+PASS manual-hold: simulated speed changes neither cap nor measurement duration
+PASS manual-hold: Pmus remains physical and invalidates a hold instead of being suppressed
+PASS manual-hold: collector rejects pressure fault
+PASS manual-hold: collector rejects flow fault
+PASS manual-hold: collector rejects nonfinite fault
+PASS manual-hold: collector rejects membership fault
+MANUAL_HOLD_ENGINE_TALLY {"groups":43,"passed":43,"failed":0}
+Commissioned gate verified: manual hold43/0
+PASS reset-engine: vc-cmv/passive/paused
+PASS reset-engine: vc-cmv/passive/running
+PASS reset-engine: vc-cmv/active/paused
+PASS reset-engine: vc-cmv/active/running
+PASS reset-engine: pc-cmv/passive/paused
+PASS reset-engine: pc-cmv/passive/running
+PASS reset-engine: pc-cmv/active/paused
+PASS reset-engine: pc-cmv/active/running
+PASS reset-engine: PC-CSV/passive/paused
+PASS reset-engine: PC-CSV/passive/running
+PASS reset-engine: PC-CSV/active/paused
+PASS reset-engine: PC-CSV/active/running
+PASS reset-engine: pc-cmva/passive/paused
+PASS reset-engine: pc-cmva/passive/running
+PASS reset-engine: pc-cmva/active/paused
+PASS reset-engine: pc-cmva/active/running
+PASS reset-engine: vc-cmv/reset-during-INSPIRATION
+PASS reset-engine: vc-cmv/reset-during-EXPIRATION
+PASS reset-engine: vc-cmv/reset-during-HOLD
+PASS reset-engine: pc-cmv/reset-during-INSPIRATION
+PASS reset-engine: pc-cmv/reset-during-EXPIRATION
+PASS reset-engine: pc-cmv/reset-during-HOLD
+PASS reset-engine: PC-CSV/reset-during-INSPIRATION
+PASS reset-engine: PC-CSV/reset-during-EXPIRATION
+PASS reset-engine: pc-cmva/reset-during-INSPIRATION
+PASS reset-engine: pc-cmva/reset-during-EXPIRATION
+PASS reset-engine: adaptive atomic queues, selected maximum and obsolete correction
+PASS reset-engine: reset re-arms full VE observation window and new canonical identity
+DEMONSTRATION_RESET_ENGINE_TALLY {"groups":28,"passed":28,"failed":0}
+Commissioned gate verified: demonstration reset28/0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 1: LungModel ΓÇö Normal Lung (R=10, C=0.05)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Time constant (s): 0.500
+  Γ£ô Elastance (cmH2O/L): 20.000
+  Γ£ô Insp pressure at end-insp: 18.500
+  Γ£ô Plateau pressure: 15.000
+  Γ£ô Exp flow at t=0 (L/s): -1.000
+  Γ£ô Exp flow at t=╧ä (L/s): -0.368
+  Γ£ô Volume remaining at t=╧ä (L): 0.184
+  Γ£ô Auto-PEEP normal (cmH2O): 0.033
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 2: LungModel ΓÇö COPD (R=25, C=0.06)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Time constant (s): 1.500
+  Γ£ô Auto-PEEP COPD (cmH2O): 1.454
+  ΓåÆ Clinical note: Te/╧ä = 1.9 (< 3 ΓåÆ gas trapping!)
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 3: LungModel ΓÇö ARDS (R=10, C=0.03)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Time constant (s): 0.300
+  Γ£ô Driving pressure (cmH2O): 16.667
+  Γ£ô Plateau pressure (cmH2O): 21.667
+  ΓåÆ Clinical note: Driving pressure 16.7 cmH2O > 15 ΓÇö consider ΓåôVT
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Banner: Ventilator ΓÇö Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2 ΓÇö full TEST 4 follows TEST 3A
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 3A: Expiratory Completion - Analytical Time Constant Invariants
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Completion at 1tau (%): 63.212
+  Γ£ô Completion at 2tau (%): 86.466
+  Γ£ô Completion at 3tau (%): 95.021
+  Γ£ô Completion at 5tau (%): 99.326
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 4: Ventilator ΓÇö Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Total cycle time (s): 4.286
+  Γ£ô Inspiratory time (s): 1.429
+  Γ£ô Expiratory time (s): 2.857
+  Γ£ô Insp flow (L/min): 21.000
+  Γ£ô PIP (cmH2O): 18.533
+  Γ£ô Pplat (cmH2O): 15.033
+  Γ£ô Driving pressure (cmH2O): 10.000
+  Γ£ô Resistive pressure (cmH2O): 3.500
+  Γ£ô Te/╧ä: 5.714
+  Γ£ô Normal expiratory completion: 0.997
+  Γ£ô Normal expiratory completion (%): 99.670
+  Γ£ô Normal expiratory completion status: 1.000
+  Γ£ô Gas trapping risk: 0.000
+  Γ£ô Minute ventilation (L/min): 7.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 5: Ventilator ΓÇö COPD (R=25, C=0.06), VT=500, RR=14, I:E=1:2
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Time constant (s): 1.500
+  Γ£ô Te/╧ä: 1.905
+  Γ£ô COPD expiratory completion (%): 85.114
+  Γ£ô COPD expiratory completion status: 1.000
+  Γ£ô Gas trapping risk: 1.000
+  Γ£ô Auto-PEEP (cmH2O): 1.457
+  Γ£ô PIP (cmH2O): 23.541
+  ΓåÆ Clinical note: Te/╧ä = 1.9 ΓÇö consider ΓåôRR or ΓåæI:E
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 6: Waveform Data Integrity
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô All arrays same length: 1.000
+  Total samples: 858 (8.6 seconds)
+  Γ£ô First pressure sample (cmH2O): 8.533
+  Γ£ô First flow sample (L/min): 21.000
+  Γ£ô First volume sample (mL): 0.000
+  Γ£ô Peak pressure in waveform (cmH2O): 18.473
+  Γ£ô Peak volume in waveform (mL): 500.000
+  Γ£ô Min flow is negative: 1.000
+  Γ£ô Volume at end of last breath (mL): 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 7: Mean Airway Pressure
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  MAP = 9.0 cmH2O
+  Γ£ô MAP between PEEP and PIP: 1.000
+  Γ£ô MAP in clinical range: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 8: Full Summary ΓÇö Normal Patient
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+{
+  "mode": "VC-CMV",
+  "isPC": false,
+  "flowPattern": "square",
+  "isRamp": false,
+  "holdActive": false,
+  "pMusActive": false,
+  "pMusMax": 0,
+  "neuralTi": 1,
+  "settings": {
+    "triggerType": "flow",
+    "flowTriggerLpm": 2,
+    "pressureTriggerCmH2O": 1,
+    "tidalVolume_mL": 500,
+    "inspiratoryPressure": null,
+    "respiratoryRate": 14,
+    "ieRatio": "1:2.0",
+    "peep_cmH2O": 5,
+    "fio2": 0.4
+  },
+  "timing": {
+    "totalCycleTime_s": 4.29,
+    "inspiratoryTime_s": 1.43,
+    "holdTime_s": 0,
+    "expiratoryTime_s": 2.86,
+    "effectiveExpTime_s": 2.86,
+    "inspFlow_Lpm": 21,
+    "tiOverTau": null
+  },
+  "pressures": {
+    "pip_cmH2O": 18.5,
+    "pplat_cmH2O": 15,
+    "map_cmH2O": 9,
+    "peep_cmH2O": 5,
+    "autoPeep_cmH2O": 0,
+    "totalPeep_cmH2O": 5,
+    "drivingPressure": 10,
+    "resistivePressure": 3.5,
+    "inspiratoryPressure": null
+  },
+  "mechanics": {
+    "resistance": 10,
+    "compliance": 0.05,
+    "elastance": 20,
+    "timeConstant_s": 0.5,
+    "staticCompliance": null,
+    "measuredResistance": null
+  },
+  "volumes": {
+    "tidalVolume_mL": 500,
+    "minuteVentilation": 7,
+    "trappedVolume_mL": 1.7
+  },
+  "safety": {
+    "teOverTau": 5.7,
+    "tiOverTau": null,
+    "expiratoryCompletion": 0.996701494244061,
+    "expiratoryCompletionPercent": 99.67014942440609,
+    "expiratoryCompletionStatus": "complete",
+    "gasTrappingRisk": false,
+    "pplatAbove30": false,
+    "drivingPressureAbove15": false,
+    "tiTooShort": false
+  }
+}
+  Γ£ô Summary includes trigger type: 1.000
+  Γ£ô Summary includes flow trigger threshold: 2.000
+  Γ£ô Summary includes pressure trigger threshold: 1.000
+  Γ£ô Summary includes expiratory completion: 0.997
+  Γ£ô Summary includes expiratory completion %: 99.670
+  Γ£ô Summary includes expiratory completion status: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 8A: Expiratory Metrics - Summary Data Contract
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  ├ó┼ôΓÇ£ expiratoryCompletionPercent exists
+  ├ó┼ôΓÇ£ expiratoryCompletionPercent is finite
+  ├ó┼ôΓÇ£ flowBaselineReached exists
+  ├ó┼ôΓÇ£ flowBaselineReached is boolean
+  ├ó┼ôΓÇ£ expiratoryCompletionStatus exists
+  ├ó┼ôΓÇ£ expiratoryCompletionStatus is string
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 8B: Flow Baseline + Exp Completion - Normal VC-CMV
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Expected completion: 99.7%
+  Expected end-exp flow: -0.20 L/min
+  ├ó┼ôΓÇ£ Normal exp completion is near complete: 99.670 within [99, 100]
+  ├ó┼ôΓÇ£ Normal expected flow baseline reached
+  ├ó┼ôΓÇ£ Simulator exp completion normal (%): 99.670 within [99, 100]
+  ├ó┼ôΓÇ£ Simulator flow baseline reached normal
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 8C: Flow Baseline + Exp Completion - COPD Short Te
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Te=1.00s
+  tau=1.50s
+  Te/tau=0.67
+  Expected completion=48.7%
+  Expected end-exp flow=-10.3 L/min
+  ├ó┼ôΓÇ£ COPD short Te has Te/tau < 3
+  ├ó┼ôΓÇ£ COPD short Te exp completion reduced (%): 48.658 within [40, 90]
+  ├ó┼ôΓÇ£ COPD short Te expected flow baseline NOT reached
+  ├ó┼ôΓÇ£ Simulator COPD short Te exp completion (%): 48.658 within [40, 90]
+  ├ó┼ôΓÇ£ Simulator COPD short Te flow baseline NOT reached
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 8D: Flow Baseline + Exp Completion - COPD Long Te Recovery
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Te=6.00s
+  tau=1.50s
+  Te/tau=4.00
+  Expected completion=98.2%
+  Expected end-exp flow=-0.37 L/min
+  ├ó┼ôΓÇ£ COPD long Te has Te/tau >= 3
+  ├ó┼ôΓÇ£ COPD long Te exp completion near complete (%): 98.168 within [95, 100]
+  ├ó┼ôΓÇ£ COPD long Te expected flow baseline reached
+  ├ó┼ôΓÇ£ Simulator COPD long Te exp completion (%): 98.168 within [95, 100]
+  ├ó┼ôΓÇ£ Simulator COPD long Te flow baseline reached
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 8E: Cross-Mode Consistency - VC-CMV vs PC-CMV Exp Completion
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô VC and PC Te/tau match: 5.714
+  Γ£ô VC and PC exp completion percent match: 99.670
+  ├ó┼ôΓÇ£ VC flow baseline reached
+  ├ó┼ôΓÇ£ PC flow baseline reached
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 8F: Measured RR - Real-Time Engine Accuracy
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  ├ó┼ôΓÇ£ measuredRR exists
+  ├ó┼ôΓÇ£ measuredRR is finite
+  Measured RR=14.0; Set RR=14
+  ├ó┼ôΓÇ£ Measured RR approximates set RR: 13.986 within [13.5, 14.5]
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 8G: VSM-CLIN-003 ΓÇö PC-CSV Cycle Agent and Breath Type
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Flow-cycle: Ti=0.74s flow=15.33 L/min threshold=16.43 L/min
+  Maximum-Ti: Ti=0.86s flow=12.93 L/min threshold=3.47 L/min
+  ├ó┼ôΓÇ£ VSM-CLIN-003 supported inventory is exact, case-sensitive, and excludes VC-CSV
+  ├ó┼ôΓÇ£ VSM-CLIN-003 PC-CSV pressure support targets psPressure above PEEP
+  ├ó┼ôΓÇ£ VSM-CLIN-003 configured inspiratory hold is inapplicable in PC-CSV
+  ├ó┼ôΓÇ£ VSM-CLIN-003 passive PC-CSV completes no breath and measured RR stays zero
+  ├ó┼ôΓÇ£ VSM-CLIN-003 current PC-CSV breaths are patient-triggered and measured RR follows effort
+  ├ó┼ôΓÇ£ VSM-CLIN-003 flow-cycle record is PC-CSV, patient/patient, flowCycle, spontaneous
+  ├ó┼ôΓÇ£ VSM-CLIN-003 maximum-Ti record is PC-CSV, patient/machine, maxTiReached, mandatory
+  ├ó┼ôΓÇ£ VSM-CLIN-003 finalized records agree with their waveform and loop boundary sample
+  ├ó┼ôΓÇ£ VSM-CLIN-003 consecutive breaths replace classification and reset clears metadata
+  ├ó┼ôΓÇ£ VSM-CLIN-003 mode transition cannot retain prior PC-CSV cycle metadata
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 9: Patient Presets
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Available presets:
+    Normal example       R=10  C=0.060  ╧ä=0.60s  Illustrative starting values: R = 10 cmHΓééO┬╖s/L; C = 60 mL/cmHΓééO. Calculated ╧ä = 0.60 s. This pair is a project example, not Arnal's recommended Normal pair.
+    Low compliance (35)  R=10  C=0.035  ╧ä=0.35s  Illustrative starting values: R = 10 cmHΓééO┬╖s/L; C = 35 mL/cmHΓééO. Calculated ╧ä = 0.35 s. The name describes the configured compliance, not ARDS severity.
+    Low compliance (25)  R=12  C=0.025  ╧ä=0.30s  Illustrative starting values: R = 12 cmHΓééO┬╖s/L; C = 25 mL/cmHΓééO. Calculated ╧ä = 0.30 s. The name describes the configured compliance, not ARDS severity.
+    COPD example (HME)   R=25  C=0.060  ╧ä=1.50s  Starting values: R = 25 cmHΓééO┬╖s/L; C = 60 mL/cmHΓééO. Calculated ╧ä = 1.50 s. This pair follows Arnal et al. (2018), Table 9, for a COPD simulation with a heat-and-moisture exchanger (HME). The study measured passive, intubated adults in one ICU and excluded BMI above 30 and mixed lung conditions. The model uses combined resistance; it does not simulate the HME separately.
+    High resistance (20) R=20  C=0.060  ╧ä=1.20s  Illustrative starting values: R = 20 cmHΓééO┬╖s/L; C = 60 mL/cmHΓééO. Calculated ╧ä = 1.20 s. This example explores increased resistance; it is not a validated acute-asthma preset.
+    Reduced compliance (40) R= 8  C=0.040  ╧ä=0.32s  Illustrative starting values: R = 8 cmHΓééO┬╖s/L; C = 40 mL/cmHΓééO. Calculated ╧ä = 0.32 s. This example changes total respiratory-system compliance. It does not identify a chest-wall cause or represent validated obesity mechanics.
+    Low compliance (30)  R= 8  C=0.030  ╧ä=0.24s  Illustrative starting values: R = 8 cmHΓééO┬╖s/L; C = 30 mL/cmHΓééO. Calculated ╧ä = 0.24 s. This example explores reduced compliance; it is not a validated pulmonary-fibrosis preset.
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  SCENARIO: Does the math pass the clinical sniff test?
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  70 kg normal, VT=420 mL, RR=16:
+    PIP=15.5  Pplat=12.1  DP=7.0  V╠çE=6.7
+    ΓåÆ Looks like a typical post-op patient Γ£ô
+
+  ARDS moderate, VT=420 mL, RR=24, PEEP=12:
+    PIP=29.1  Pplat=24.1  DP=12.0  V╠çE=10.1
+    Pplat Γëñ 30 Γ£ô   DP Γëñ 15 Γ£ô
+
+  COPD, VT=450 mL, RR=10, I:E=1:4 (permissive strategy):
+    Ti=1.20s  Te=4.80s  Te/╧ä=3.2
+    PIP=22.2  autoPEEP=0.32  Trapping: Minimal Γ£ô
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 9A: PC-CMV ΓÇö Normal Lung (R=10, C=0.05)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô PC mode label: 1.000
+  Γ£ô PC Ti (s): 1.429
+  Γ£ô PC Peak flow (L/s): 1.495
+  Γ£ô PC PIP (cmH2O): 20.000
+    Delivered VT = 704.7 mL (expected ~707 mL)
+  Γ£ô PC Delivered VT (L): 0.705
+  Γ£ô PC Steady-state VT (L): 0.705
+  Γ£ô PC V╠çE (L/min): 9.866
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 9B: PC-CMV ΓÇö ARDS (R=10, C=0.035)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    ARDS VT = 516.0 mL (expected ~516 mL)
+  Γ£ô ARDS PC VT (L): 0.516
+    Normal VT=705 vs ARDS VT=516 ΓÇö compliance matters!
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 9C: PC-CMV ΓÇö COPD with Gas Trapping (R=25, C=0.06)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    ╧ä=1.50s  Ti/╧ä=0.95  Te/╧ä=1.90
+    Auto-PEEP=1.45 cmH2O  Trapped=87.3 mL
+  Γ£ô COPD Ti/╧ä < 1 (incomplete fill): 1.000
+  Γ£ô COPD gas trapping risk: 1.000
+  Γ£ô COPD auto-PEEP > 0: 1.000
+  Γ£ô PC waveform has data: 1.000
+  Γ£ô PC pressure square wave (max Γëê PIP): 20.000
+  Γ£ô PC flow peak > 0: 1.000
+  Γ£ô PC flow decelerating (peak >> end-insp): 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 10: PC-CMV ΓÇö Waveform Shape Validation
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Insp pressure range: 20.00 ΓÇô 20.00 (should be ~constant at 20.0)
+  Γ£ô PC pressure constant during insp (spread < 0.5): 0.000
+    Flow: start=89.7, mid=21.3, end=5.2 L/min
+  Γ£ô PC flow decelerating (start > mid > end): 1.000
+    Volume: mid=570.5 mL, end=704.0 mL
+  Γ£ô PC volume rises (end > mid > 0): 1.000
+    Expiratory flow at start: -84.8 L/min (should be negative)
+  Γ£ô PC exp flow is negative: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  CLINICAL SCENARIO: PC-CMV Sensitivity to Mechanics
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Pinsp=15, RR=14, I:E=1:2 across different compliance values:
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    C=60 mL/cmHΓééO ΓåÆ VT=810 mL, V╠çE=11.3 L/min
+    C=50 mL/cmHΓééO ΓåÆ VT=705 mL, V╠çE=9.9 L/min
+    C=35 mL/cmHΓééO ΓåÆ VT=516 mL, V╠çE=7.2 L/min
+    C=25 mL/cmHΓééO ΓåÆ VT=374 mL, V╠çE=5.2 L/min
+
+  ΓÜò∩╕Å In PC-CMV, watch VT closely ΓÇö it changes with the patient!
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 11: VC Descending Ramp ΓÇö Normal Lung (R=10, C=0.05)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Ramp peak flow (L/s): 0.700
+  Γ£ô Ramp peak flow = 2├ù square flow: 0.700
+  Γ£ô Ramp flow pattern label: 1.000
+  Γ£ô Ramp Pplat = Square Pplat: 15.033
+  Γ£ô Ramp ╬öP = Square ╬öP: 10.000
+    Square PIP = 18.5 cmHΓééO
+    Ramp PIP   = 16.3 cmHΓééO
+  Γ£ô Ramp PIP < Square PIP: 1.000
+    Analytical PIP = 16.2 (t*=0.93s)
+  Γ£ô Ramp PIP matches analytical: 16.291
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 12: Descending Ramp ΓÇö Waveform Shape Validation
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Flow: start=42.0, mid=20.8, end=0.3 L/min
+  Γ£ô Ramp flow start Γëê peak: 42.000
+  Γ£ô Ramp flow end Γëê 0: 1.000
+  Γ£ô Ramp flow linearly decreasing: 1.000
+  Γ£ô Ramp flow mid Γëê half peak: 20.832
+    Volume: mid=377.0 mL, end=500.0 mL
+  Γ£ô Ramp volume reaches VT: 499.982
+  Γ£ô Ramp volume at midpoint Γëê 75% VT (parabolic): 376.992
+    Pressure: start=12.0, peak=16.3, end-insp=15.1
+  Γ£ô Ramp end-insp P Γëê Pplat: 15.075
+  Γ£ô Ramp PIP is interior maximum: 1.000
+    Expiratory flow at start: -60.2 L/min
+  Γ£ô Ramp exp flow is negative: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 13: Ramp vs Square ΓÇö Comparative Analysis
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Same VT=500 mL, same patient, different flow patterns:
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Normal     Square PIP=18.5  Ramp PIP=16.3  (╬öP=2.2 less)  Pplat=15.0 (same)
+    ARDS       Square PIP=22.8  Ramp PIP=20.2  (╬öP=2.6 less)  Pplat=19.3 (same)
+    COPD       Square PIP=23.5  Ramp PIP=25.4  (╬öP=-1.9 less)  Pplat=14.8 (same)
+    Fibrosis   Square PIP=24.5  Ramp PIP=22.1  (╬öP=2.3 less)  Pplat=21.7 (same)
+
+  ΓÜò∩╕Å Descending ramp: same VT, same Pplat, lower PIP ΓÇö purely cosmetic?
+     No! Lower PIP means less peak airway pressure and potentially
+     better patient comfort. But Pplat (the alveolar stretching
+     pressure) is unchanged ΓÇö lung protection depends on Pplat and ╬öP.
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 14: High Resistance ΓÇö PIP Location Shifts
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    ╧ä=2.40s > Ti=1.43s ΓåÆ PIP at t=0
+  Γ£ô ╧ä > Ti condition: 1.000
+    PIP=40.3 cmHΓééO  (R├ùV╠ç_peak=28.0, autoPEEP=3.6)
+  Γ£ô High-R ramp PIP Γëê PEEP + autoPEEP + R├ùV╠ç_peak: 40.282
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 15: Inspiratory Hold ΓÇö VC Square (R=10, C=0.05)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Hold is active: 1.000
+  Γ£ô Effective hold time: 0.500
+    Ti=1.43s  Hold=0.5s  Te_eff=2.36s
+  Γ£ô Effective Te = Te - holdTime: 2.357
+  Γ£ô Hold PIP = no-hold PIP: 18.590
+  Γ£ô Hold Pplat = no-hold Pplat: 15.090
+    PIP=18.6  Pplat=15.1  PIP-Pplat=3.5
+  Γ£ô PIP - Pplat = R ├ù V╠ç: 3.500
+    Static Crs = 50 mL/cmHΓééO (actual=50)
+    Measured Raw = 10 cmHΓééO┬╖s/L (actual=10)
+  Γ£ô Hold reveals correct static Crs: 50.000
+  Γ£ô Hold reveals correct Raw: 10.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 16: Hold Waveform ΓÇö Pressure Drop & Flow Zero
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Last insp pressure: 18.5 (PIP=18.6)
+    First hold: P=15.1 (Pplat=15.1)  V╠ç=0.0 L/min  V=500 mL
+  Γ£ô Hold pressure = Pplat: 15.090
+  Γ£ô Hold flow = 0: 0.000
+  Γ£ô Hold volume = VT: 500.000
+  Γ£ô All hold samples: flow = 0: 1.000
+  Γ£ô All hold samples: P = constant: 1.000
+    First exp flow after hold: -60.5 L/min
+  Γ£ô Exp starts after hold: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 17: Hold ΓÇö Ramp Flow (interior PIP ΓåÆ hold at Pplat)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Ramp PIP=16.4  Pplat=15.1
+  Γ£ô Ramp hold Pplat < PIP: 1.000
+    Hold start: P=15.1 V╠ç=0.0
+  Γ£ô Ramp hold flow = 0: 0.000
+  Γ£ô Ramp hold pressure Γëê Pplat: 15.090
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 18: Hold ΓÇö PC-CMV (Pplat visibility depends on Ti/╧ä)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    PC: Ti/╧ä=1.9  PIP=20.0  Pplat=17.8
+    PIP - Pplat = 2.2 cmHΓééO (visible pressure drop during hold)
+  Γ£ô PC hold shows pressure drop (Ti/╧ä < 3): 1.000
+    PC hold: P=17.8 V╠ç=0.0
+  Γ£ô PC hold flow = 0: 0.000
+  Γ£ô PC hold P Γëê Pplat: 17.850
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 19: Hold Increases Gas Trapping (COPD + hold)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Without hold: Te=2.86s  Te/╧ä=1.9  AutoPEEP=1.5
+    With 1s hold: Te=1.86s  Te/╧ä=1.2  AutoPEEP=3.4
+  Γ£ô Hold reduces effective Te: 1.000
+  Γ£ô Hold increases auto-PEEP: 1.000
+  Γ£ô Hold increases trapped volume: 1.000
+
+  ΓÜò∩╕Å Teaching point: In COPD patients, prolonged inspiratory holds
+     steal expiratory time ΓåÆ more gas trapping ΓåÆ higher auto-PEEP.
+     Keep holds brief in obstructive patients!
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 20: Hold Duration Clamping (safety limit)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Te=2.86s  Requested hold=99s
+    Effective hold=2.66s  Effective Te=0.20s
+  Γ£ô Hold clamped (Te_eff ΓëÑ 0.2): 1.000
+  Γ£ô Hold clamped = Te - 0.2: 2.657
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 21: Pmus Waveform ΓÇö Half-Sine Shape
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Pmus is active: 1.000
+  Γ£ô Pmus at t=0: 0.000
+  Γ£ô Pmus at t=0.5 (peak): 10.000
+  Γ£ô Pmus at t=1.0 (end): 0.000
+  Γ£ô Pmus at t=1.5 (after neural Ti): 0.000
+  Γ£ô Pmus at t=0.25 (quarter): 7.071
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 22: VC-CMV + Pmus ΓÇö Pressure Scalloping
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô VC+Pmus: flow unchanged at start: 21.000
+  Γ£ô VC+Pmus: flow unchanged at mid: 21.000
+  Γ£ô VC+Pmus: volume unchanged at mid: 252.000
+    Without Pmus: P(0.5s) = 12.0 cmHΓééO
+    With Pmus=10: P(0.5s) = 2.0 cmHΓééO
+    Scallop depth = 10.0 cmHΓééO (should Γëê Pmus_max = 10)
+  Γ£ô VC+Pmus: pressure scallop Γëê Pmus_max: 10.000
+  Γ£ô VC+Pmus: P(0) unchanged (Pmus=0 at t=0): 8.533
+
+  ΓÜò∩╕Å In VC mode, patient effort creates the "scalloped" pressure waveform.
+     Flow and volume are unchanged ΓÇö the patient does work that
+     would otherwise be done by the ventilator.
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 23: PC-CMV + Pmus ΓÇö Volume Increase
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Without Pmus: VT = 704 mL
+    With Pmus=10: VT = 926 mL
+    VT increase = 222 mL
+  Γ£ô PC+Pmus: VT increases: 1.000
+    Without Pmus: V╠ç_peak = 89.7 L/min
+    With Pmus=10: V╠ç_peak = 89.7 L/min
+  Γ£ô PC+Pmus: initial flow same (Pmus=0 at t=0): 89.720
+    Mid-insp flow: no-Pmus=21.3, Pmus=30.0 L/min
+  Γ£ô PC+Pmus: mid-insp flow higher: 1.000
+  Γ£ô PC+Pmus: idealized inspiratory pressure stays constant: 1.000
+
+  In this PC-CMV batch fixture, effort increases delivered volume.
+     Inspiratory Paw stays at the set target: idealized set-point pressure control.
+     This result does not establish the pressure-waveform shape on a real ventilator.
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 24: Pmus = 0 ΓÇö Backward Compatibility
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Pmus inactive when 0: 0.000
+  Γ£ô Pmus at any time = 0: 0.000
+    Max pressure difference: 0.000000 cmHΓééO
+  Γ£ô Pmus=0 produces identical waveforms: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 25: RingBuffer ΓÇö Circular Buffer Integrity
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô RingBuffer count after 3 pushes: 3.000
+  Γ£ô RingBuffer last value: 3.000
+  Γ£ô RingBuffer toArray length: 3.000
+  Γ£ô RingBuffer toArray order: 1.000
+  Γ£ô RingBuffer count after wrap: 5.000
+  Γ£ô RingBuffer oldest after wrap: 3.000
+  Γ£ô RingBuffer newest after wrap: 7.000
+    Buffer contents: [3, 4, 5, 6, 7]
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 26: SimEngine ΓÇö Passive VC-CMV Numerical Characterization
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  ├ó┼ôΓÇ£ VSM-CLIN-002 commissioned live timestep is dt=0.01 s at 100 Hz
+  ├ó┼ôΓÇ£ VSM-CLIN-002 live VC update is explicit Euler: Vnext = Vcurrent + flow(t) * dt
+    square VT=300 mL Ti=1.000000 s: analytical=300.0000 startup=303.0000 stable=300.0000 mL
+    ramp   VT=300 mL Ti=1.000000 s: analytical=300.0000 startup=303.0000 stable=297.0000 mL
+    square VT=300 mL Ti=1.666667 s: analytical=300.0000 startup=302.4000 stable=300.6000 mL
+    ramp   VT=300 mL Ti=1.666667 s: analytical=300.0000 startup=301.8024 stable=298.2024 mL
+    square VT=500 mL Ti=1.000000 s: analytical=500.0000 startup=505.0000 stable=500.0000 mL
+    ramp   VT=500 mL Ti=1.000000 s: analytical=500.0000 startup=505.0000 stable=495.0000 mL
+    square VT=500 mL Ti=1.666667 s: analytical=500.0000 startup=504.0000 stable=501.0000 mL
+    ramp   VT=500 mL Ti=1.666667 s: analytical=500.0000 startup=503.0040 stable=497.0040 mL
+  ├ó┼ôΓÇ£ VSM-CLIN-002 matrix analytical VC VT remains equal to set VT
+  ├ó┼ôΓÇ£ VSM-CLIN-002 matrix pins startup and repeated post-startup VC boundaries
+  ├ó┼ôΓÇ£ VSM-CLIN-002 completed-breath waveform and loop boundaries equal finalized measuredVT_mL
+    Analytical PIP=18.5  Sim PIP=18.5
+    Analytical VT=500 mL  Sim VT=501 mL
+    Breaths completed: 6
+  Γ£ô Sim PIP converges to analytical: 18.500
+  ├ó┼ôΓÇ£ Passive VC operational signals remain machine-triggered with complete expiration tracking
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 27: SimEngine ΓÇö PC-CMV VT Matches Analytical
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    PC Analytical VT=705 mL  Sim VT=706 mL
+    PC PIP = 20 (expected 20.0)
+  Γ£ô PC Sim VT Γëê analytical: 706.000
+  Γ£ô PC PIP = PEEP + Pinsp: 20.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 28: SimEngine ΓÇö Patient-Triggered Breaths
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Vent RR=12, Patient RR=20
+    Breaths in 15s: 5
+    Last trigger: patient
+    Trigger markers: 3
+  Γ£ô Patient triggers detected: 1.000
+  Γ£ô Effective RR > vent RR: 1.000
+  Γ£ô Patient breath counter increments: 1.000
+  Γ£ô Trigger markers include patient breaths: 1.000
+    Pre-trigger nadir: 4.93 cmH2O (PEEP=5)
+  Γ£ô Patient-triggered flow event retains actual finite supply pressure drop: 1.000
+
+  ΓÜò∩╕Å Teaching point: When patient RR > vent RR, the patient triggers
+     additional breaths. The effective RR follows the patient.
+     This is normal Assist/Control behavior.
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 28D: Trigger Sensitivity ΓÇö Weak Effort Easy Flow Trigger
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Easy flow trigger detects patient breaths: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 28E: Trigger Sensitivity ΓÇö Weak Effort Hard Flow Trigger
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Hard flow trigger blocks weak patient efforts: 1.000
+  Γ£ô Hard flow trigger still allows machine backup breaths: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 28F: Trigger Sensitivity ΓÇö Easy Pressure Trigger
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Weak effort does not cross the actual finite-boundary pressure threshold: 0.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 28G: Trigger Sensitivity ΓÇö Hard Pressure Trigger
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Hard pressure trigger blocks weak patient efforts: 1.000
+  Γ£ô Hard pressure trigger still allows machine backup breaths: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 28B: SimEngine ΓÇö Lockout Effort Triggers After 100 ms
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Breath count after 2.5 s: 2
+    Patient trigger markers: 1
+    Failed trigger markers: 0
+  Γ£ô Lockout-onset effort later triggers: 1.000
+  Γ£ô Persistent effort delivers a second breath: 2.000
+  Γ£ô Persistent effort is not marked failed: 0.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 28C: SimEngine ΓÇö Patient Trigger Wins Timer Ties
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Breath count after 7.0 s: 2
+    Second trigger: patient at 5.02 s
+  Γ£ô Tie produces a second breath: 2.000
+  Γ£ô Patient trigger wins timer tie: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 29: SimEngine ΓÇö Ramp Flow + Hold Phase
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Ramp PIP=16.3  VT=497 mL
+    Pplat=15 (hold active ΓåÆ should measure)
+  Γ£ô Ramp sim VT Γëê 500: 497.000
+  Γ£ô VSM-CLIN-005 completed-hold measurement contract: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 30: SimEngine ΓÇö COPD Gas Trapping (dynamic)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    After 3 breaths: vLung above eq = 87.6 mL
+    After 13 breaths: vLung above eq = 90.2 mL
+    Analytical trapped vol = 87.4 mL
+  Γ£ô Gas trapping builds over breaths: 1.000
+  Γ£ô Trapping converges toward analytical: 1.000
+  Γ£ô COPD flow baseline not reached: 0.000
+  Γ£ô COPD expiratory flow return percent < 100: 1.000
+
+  ΓÜò∩╕Å Teaching point: Gas trapping isn't a setting ΓÇö it EMERGES
+     from the physics when Te < 3╧ä. Watch it build breath-by-breath!
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 31: SimEngine ΓÇö VC Pressure Scalloping with Pmus
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Passive mid P: 5.0  Active mid P: 5.0
+  Γ£ô VC Pmus creates pressure scalloping: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 32: SimEngine ΓÇö Pause/Resume/Speed
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Sim starts running: 1.000
+  Γ£ô Sim paused: 0.000
+  Γ£ô No advance while paused: 1.000
+  Γ£ô Sim resumed: 1.000
+  Γ£ô Speed set to 2├ù: 2.000
+  Γ£ô Advance works at 2├ù speed: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 33: Loop Data ΓÇö Per-Breath Collection
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    loopCurrent samples: 428
+    loopCompleted samples: 429
+  Γ£ô Loop current has data: 1.000
+  Γ£ô Loop completed has data: 1.000
+  Γ£ô Loop arrays same length: 1.000
+  Γ£ô Completed loop arrays same length: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 34: P-V Loop Shape Validation
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Peak volume: 501 mL at sample 143
+    Pressure at peak vol: 18.5 cmHΓééO
+    Pressure at start: 5.0 cmHΓééO
+    Pressure at end: 5.0 cmHΓééO
+  Γ£ô P-V loop: peak vol Γëê VT: 500.500
+  Γ£ô P-V loop: pressure rises during insp: 1.000
+  Γ£ô P-V loop: pressure decreases during exp: 1.000
+  Γ£ô P-V loop closes (end vol near start): 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 35: F-V Loop Shape Validation
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Insp flow (sample 43): 21.0 L/min
+    Exp flow (sample 322): -1.7 L/min
+  Γ£ô F-V loop: inspiratory flow > 0: 1.000
+  Γ£ô F-V loop: expiratory flow < 0: 1.000
+    Peak insp flow: 21.0 L/min (expected Γëê21)
+  Γ£ô F-V loop: peak insp flow Γëê square flow: 21.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 36: COPD Loop ΓÇö Air Trapping (loop doesn't close)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    COPD loop: start vol=0 mL, end vol=1 mL
+    COPD loop: peak vol=500 mL
+    Volume at start > 0 indicates trapped gas from prior breaths
+    Exp flow at end: -3.5 L/min
+    (In COPD, expiratory flow may not reach zero = air trapping)
+  Γ£ô COPD: loop has data: 1.000
+  Γ£ô COPD: VT still Γëê 500 mL: 500.500
+
+  ΓÜò∩╕Å Teaching point: In the P-V loop, the area between the
+     inspiratory and expiratory limbs represents resistive work.
+     Wider loop = more resistance. In the F-V loop, a scooped
+     expiratory limb indicates airflow obstruction.
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 37: Loop Reset
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Loop current empty after reset: 0.000
+  Γ£ô Loop completed empty after reset: 0.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 38: Measured RR ΓÇö CMV Completed Breaths
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    Set RR=12  Measured RR=12.0
+  Γ£ô Measured RR Γëê set RR in CMV: 11.976
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 41: Alarm Engine ΓÇö No Alerts Normal
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+VSM-CLIN-006 focused engine: 884 passed / 0 failed
+  Γ£ô No alarms in normal state: 0.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 42: Alarm Engine ΓÇö High Pressure
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô High pressure alarm active: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 43: Alarm Engine ΓÇö High RR
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô High RR alarm active: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 44: Alarm Engine ΓÇö Apnea
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Apnea alarm active: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 45: Alarm Engine ΓÇö Low Minute Ventilation
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Low VE alarm active: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 46: Alarm Engine ΓÇö High Minute Ventilation
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô High VE alarm active: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 47: Alarm Engine ΓÇö Auto Reset
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Alarm activates initially: 1.000
+  Γ£ô Alarm auto-resets when condition resolves: 0.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 48: Alarm Audio Policy - No Alarm No Sound
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô No alarms produce no sound: 0.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 49: Alarm Audio Policy - New Alarm Plays
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô New alarm signature plays sound: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 50: Alarm Audio Policy - Silence Suppresses Sound
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Silenced alarm does not play: 0.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 51: Alarm Audio Policy - Mute Suppresses Sound
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Muted alarm does not play: 0.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  TEST 52: Alarm Audio Policy - Repeat Interval Limits Annoyance
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô Persistent alarm does not repeat too soon: 0.000
+  Γ£ô Persistent high alarm repeats after interval: 1.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  NT1 [FIXED to ┬º2] ΓÇö No silent drops; synchrony where physiology allows
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô NT1 I:E 1:2 patRR 22: no silent drop (delivered+failed+inProgress == onsets): 21.000
+  Γ£ô NT1 I:E 1:2 patRR 22: synchrony ΓÇö delivered == in-expiration onsets: 21.000
+  Γ£ô NT1 I:E 1:2 patRR 24: no silent drop (delivered+failed+inProgress == onsets): 23.000
+  Γ£ô NT1 I:E 1:2 patRR 24: synchrony ΓÇö delivered == in-expiration onsets: 23.000
+  Γ£ô NT1 I:E 1:2 patRR 26: no silent drop (delivered+failed+inProgress == onsets): 25.000
+  Γ£ô NT1 I:E 1:2 patRR 26: synchrony ΓÇö delivered == in-expiration onsets: 25.000
+  Γ£ô NT1 I:E 1:2 patRR 28: no silent drop (delivered+failed+inProgress == onsets): 27.000
+  Γ£ô NT1 I:E 1:2 patRR 28: synchrony ΓÇö delivered == in-expiration onsets: 27.000
+  Γ£ô NT1 I:E 1:2 patRR 30: no silent drop (delivered+failed+inProgress == onsets): 30.000
+  Γ£ô NT1 I:E 1:1 patRR 22: no silent drop (delivered+failed+inProgress == onsets): 21.000
+  Γ£ô NT1 I:E 1:1 patRR 24: no silent drop (delivered+failed+inProgress == onsets): 23.000
+  Γ£ô NT1 I:E 1:1 patRR 26: no silent drop (delivered+failed+inProgress == onsets): 25.000
+  Γ£ô NT1 I:E 1:1 patRR 28: no silent drop (delivered+failed+inProgress == onsets): 27.000
+  Γ£ô NT1 I:E 1:1 patRR 30: no silent drop (delivered+failed+inProgress == onsets): 30.000
+  Γ£ô NT1 hold 0.5s patRR 22: no silent drop (delivered+failed+inProgress == onsets): 21.000
+  Γ£ô NT1 hold 0.5s patRR 24: no silent drop (delivered+failed+inProgress == onsets): 23.000
+  Γ£ô NT1 hold 0.5s patRR 26: no silent drop (delivered+failed+inProgress == onsets): 25.000
+  Γ£ô NT1 hold 0.5s patRR 28: no silent drop (delivered+failed+inProgress == onsets): 27.000
+  Γ£ô NT1 hold 0.5s patRR 30: no silent drop (delivered+failed+inProgress == onsets): 30.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  NT2 [FIXED to ┬º2] ΓÇö Effort during machine INSPIRATION fails visibly
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  ├ó┼ôΓÇ£ NT2 scenario produces inspiration-phase onsets (onsetInspHold > 0)
+  ├ó┼ôΓÇ£ NT2(a) inspiration-phase onsets deliver no breath
+  Γ£ô NT2(b) failed(ventilator_unavailable) count == inspiration-phase onsets: 15.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  NT3 [FIXED to ┬º2] ΓÇö Sub-threshold effort fails visibly (mirror 28E/28G + PC-CSV)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô NT3a VC flow sub-threshold: patient breaths == 0: 0.000
+  ├ó┼ôΓÇ£ NT3a VC flow sub-threshold: emits failed(threshold) event
+  Γ£ô NT3b VC pressure sub-threshold: patient breaths == 0: 0.000
+  ├ó┼ôΓÇ£ NT3b VC pressure sub-threshold: emits failed(threshold) event
+  ├ó┼ôΓÇ£ NT3c PC-CSV stiff trigger: delivered rate collapses (measuredRR < set 35)
+  ├ó┼ôΓÇ£ NT3c PC-CSV stiff trigger: emits failed(threshold) event
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  NT4 [FIXED to ┬º2] ΓÇö Full accounting identity + measured-RR honesty (high rate)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô NT4 full identity: onsets == delivered + failed + inProgress: 35.000
+  ├ó┼ôΓÇ£ NT4 measuredRR tracks delivered-breath rate: 23.242 within [14.400000000000809, 33.600000000001884]
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  NT5 [GREEN guard] ΓÇö PC-CSV unchanged for adequate effort
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  ├ó┼ôΓÇ£ NT5 PC-CSV patRR 18: measuredRR ~= set and failed events ~= 0
+  ├ó┼ôΓÇ£ NT5 PC-CSV patRR 35: measuredRR ~= set and failed events ~= 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  NT6 [FIXED to ┬º2] ΓÇö Passive (no effort) emits nothing
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô NT6 passive: patient breaths == 0: 0.000
+  ├ó┼ôΓÇ£ NT6 passive: failed events == 0 (no Pmus -> no ineffective effort)
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  SME-018 ΓÇö cancelling a silence must actually restore sound
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£ô BROKEN state ΓÇö silence cleared but lastSoundAtSec stale: still mute: 0.000
+  Γ£ô FIXED state ΓÇö cancel resets lastSoundAtSec: sounds on the next frame: 1.000
+  Γ£ô a fresh silence still suppresses sound after a previous cancel: 0.000
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  SME-014 ΓÇö latched per-breath PIP (display) vs live PIP (alarms)
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  ├ó┼ôΓÇ£ pipLatched starts unavailable (nothing completed yet)
+  ├ó┼ôΓÇ£ pipLatched is populated once a breath completes
+  ├ó┼ôΓÇ£ pipLatched is within 0.5 cmH2O of the analytical PIP: 18.500 within [18.033094219031355, 19.033094219031355]
+  ├ó┼ôΓÇ£ pipLatched equals the peak of the breath that just ended, for the whole expiratory phase
+  ├ó┼ôΓÇ£ live pip still moves within the breath (alarm path intact)
+  ├ó┼ôΓÇ£ live pip reflects a mid-breath pressure rise before the breath ends
+  ├ó┼ôΓÇ£ reset() clears pipLatched to unavailable
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Ineffective-effort counter ΓÇö window semantics
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  ├ó┼ôΓÇ£ overbreathing at RR 34 produces failed efforts to count
+  ├ó┼ôΓÇ£ the run outlives the window (failed efforts exist outside it)
+  Γ£ô the 60 s window returns every failed effort produced inside it (retention covers the window): 17.000
+  ├ó┼ôΓÇ£ phase-gate failures are present (these have NO waveform highlight)
+  ├ó┼ôΓÇ£ every failed event has a gateFailed reason
+  ├ó┼ôΓÇ£ every failed event has a phase
+  ├ó┼ôΓÇ£ tMin is honoured: a 10 s read is a strict subset of the 60 s read
+  Γ£ô reading the counter does not mutate the event store: 34.000
+  ├ó┼ôΓÇ£ reset() zeroes the ineffective-effort counter
+  ├ó┼ôΓÇ£ reset() leaves only the freshly-started mandatory breath
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  RESULTS
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Passed: 300
+  Failed: 0
+  ≡ƒ½ü All systems nominal. Engine is breathing.
+
+Commissioned gate verified: legacy engine 300/0
+PASS adaptive-controller: approved defaults and validated setup-only configuration
+PASS adaptive-controller: explicit initialization and no unavailable-to-zero conversion
+PASS adaptive-controller: independent error-law examples and symmetric capped step
+PASS adaptive-controller: inclusive deadband and unrounded fractional edge
+PASS adaptive-controller: decision uses source-applied pressure after boundary, not initial pressure
+PASS adaptive-controller: pending pressure only applies at beginBreath and only once
+PASS adaptive-controller: upper saturation does not accumulate behind bound and releases immediately
+PASS adaptive-controller: lower saturation keeps excessive measured VT and releases immediately
+PASS adaptive-controller: PEEP is trace context and never silently changes above-PEEP bounds
+PASS adaptive-controller: duplicate feedback cannot issue a second decision or replace pending pressure
+PASS adaptive-controller: wrong mode and generation never poison current source identity
+PASS adaptive-controller: publication timing and identity are required
+PASS adaptive-controller: out-of-order time and breath IDs are rejected
+PASS adaptive-controller: invalid/partial feedback is consumed and cannot be repaired by replay
+PASS adaptive-controller: applied command, version and source target cannot be substituted
+PASS adaptive-controller: each invalidation cancels pending and mixed epoch, including edit then revert
+PASS adaptive-controller: beginBreath target selection uses same epoch and cancels superseded correction
+PASS adaptive-controller: reset clears history, bound assessment and source while retaining passed configuration
+PASS adaptive-controller: invalid reset/boundary inputs cannot partially mutate live state
+PASS adaptive-controller: snapshots, feedback and pending commands are immutable detached context
+PASS adaptive-controller: no clock or undeclared physiology/model access
+PASS adaptive-controller: trace provenance retains exact source identity, raw VT and decision values
+ADAPTIVE_CONTROLLER_TALLY 22 passed, 0 failed
+Commissioned gate verified: adaptive controller 22/0
+PASS adaptive-integration: explicit mode routing and initialization before prefill
+PASS adaptive-integration: raw canonical inspired feedback matches independent passive discrete recurrence
+PASS adaptive-integration: normal next-boundary target/PEEP queue matrix holds old context and cancels correction
+PASS adaptive-integration: reset queue matrix retains both operator settings without synthetic completion or resume
+PASS adaptive-integration: three destination modes and reentry queue matrix preserves ownership and manual pressure
+PASS adaptive-integration: multiple requests and edit/revert advance epoch without replaying pressure
+PASS adaptive-integration: invalid queued requests are atomic and cannot erase an earlier valid request
+PASS adaptive-integration: immediate input edits including effort invalidate a mixed inspiration and rearm next breath
+PASS adaptive-integration: ineligible real deliveries remain in raw VE history and age normally
+PASS adaptive-integration: feedback remains paired with source target and never reassessed against queued target
+PASS adaptive-integration: pause/resume and matched ticks at different speeds preserve controller results
+PASS adaptive-integration: adaptive HOLD is excluded and old hold intent cannot poison initialization
+PASS adaptive-integration: adaptive summary and analytical APIs cannot leak fixed-pressure predictions
+PASS adaptive-integration: uncontrolled mode entry/exit is rejected and no source is synthesized
+PASS adaptive-integration: setup validation resets only after a valid configuration and keeps paused transport
+PASS adaptive-integration: above-PEEP bounds coexist with unchanged absolute pressure alarm
+PASS adaptive-integration: production mechanics adaptation matches reviewed Phase A fixture bands
+PASS adaptive-integration: production prescribed-effort contribution matches reviewed fixture without changing drive
+PASS adaptive-integration: production maximum-limit demonstration retains unmet target and actual VT
+PASS adaptive-integration: production minimum-bound excess volume remains visible
+PASS adaptive-integration: production saturation release immediately retreats without hidden windup
+PASS adaptive-integration: production incomplete-expiration and off-rate stress expose limitations
+PASS adaptive-integration: broader operating-range and gain sampling records success and limitation rather than assuming convergence
+PASS adaptive-integration: canonical publication is immutable and read/summary operations never create extra decisions
+ADAPTIVE_INTEGRATION_TALLY 24 passed, 0 failed
+Commissioned gate verified: adaptive integration 24/0
+PASS legacy vc-square-passive (3500 exercised ticks; passive-exact)
+PASS legacy vc-ramp-passive (3500 exercised ticks; passive-exact)
+PASS legacy vc-valid-hold (3500 exercised ticks; passive-exact)
+PASS legacy vc-short-hold (3500 exercised ticks; passive-exact)
+PASS legacy pc-passive (3500 exercised ticks; passive-exact)
+PASS legacy pc-pressure-trigger (3500 exercised ticks; active-contract-conformance)
+PASS legacy pc-valid-hold (3500 exercised ticks; passive-exact)
+PASS legacy csv-flow-cycle (3500 exercised ticks; active-contract-conformance)
+PASS legacy csv-max-ti (3500 exercised ticks; active-contract-conformance)
+PASS legacy csv-threshold-failure (3500 exercised ticks; active-contract-conformance)
+PASS legacy csv-delivery-ages-after-effort-stops (7000 exercised ticks; active-contract-conformance)
+PASS legacy pc-incomplete-expiration (3500 exercised ticks; passive-exact)
+PASS legacy vc-high-pressure-rate-ventilation (3500 exercised ticks; passive-exact)
+PASS legacy vc-cmv-live-edits (3500 exercised ticks; active-contract-conformance)
+PASS legacy pc-cmv-live-edits (3500 exercised ticks; active-contract-conformance)
+PASS legacy PC-CSV-live-edits (3500 exercised ticks; active-contract-conformance)
+PASS legacy vc-cmv-reset-to-pc-cmv (5500 exercised ticks; active-contract-conformance)
+PASS legacy vc-cmv-reset-to-PC-CSV (5500 exercised ticks; active-contract-conformance)
+PASS legacy pc-cmv-reset-to-vc-cmv (5500 exercised ticks; active-contract-conformance)
+PASS legacy pc-cmv-reset-to-PC-CSV (5500 exercised ticks; active-contract-conformance)
+PASS legacy PC-CSV-reset-to-vc-cmv (5500 exercised ticks; active-contract-conformance)
+PASS legacy PC-CSV-reset-to-pc-cmv (5500 exercised ticks; active-contract-conformance)
+LEGACY_PRESERVATION_TALLY {"fixtures":22,"passed":22,"failed":0,"ticks":92500,"exercisedTicks":92500,"exactMatchedTicks":28000,"conformanceTicks":64500,"passiveExactFixtures":8,"activeConformanceFixtures":14}
+Commissioned gate verified: selective legacy22/0;92500 exercised ticks (28000 exact,64500 conformance)
+PASS effort-pressure: Rc defaults and validated setup reset preserve paused transport
+PASS effort-pressure: unsupported Rc values fail without reset or changing the stored assumption
+PASS effort-pressure: expiration EOM and volume share a common pre-state at supported corners
+PASS effort-pressure: zero demand and both adjacent supply branches are continuous
+PASS effort-pressure: effort cessation restores outward PEEP without retaining an artificial dip
+PASS effort-pressure: original inconsistent expiration pressure fails the independent EOM oracle
+PASS effort-pressure: PC open and closed valve states obey the same law in every pressure mode
+PASS effort-pressure: valve closure raises actual live PIP while the adaptive command stays latched
+PASS effort-pressure: PC valve reopens algebraically and neither reverses flow nor jumps volume
+PASS effort-pressure: commanded pressure behind a closed valve is rejected as patient-side pressure
+PASS effort-pressure: post-step discrepancy is ordinary staggering for pre-collocated PC and expiration
+PASS effort-pressure: VC preserves its deliberate post-integration pressure collocation
+PASS effort-pressure: HOLD remains sealed and is distinct from delivery-valve closure
+PASS effort-pressure: CSV zero flow after an established peak retains flow cycling
+PASS effort-pressure: CSV with no positive peak retains maximum-Ti fallback
+PASS effort-pressure: immutable sample retains old physics phase through machine transitions
+PASS effort-pressure: pressure threshold uses actual sampled Paw rather than effort/recoil proxy
+PASS effort-pressure: pressure delivery records the first eligible physical threshold sample
+PASS effort-pressure: flow delivery records signed net lung flow and units from detection
+PASS effort-pressure: exact phaseTime <= .10 remains refractory, with first already-above-threshold eligibility
+PASS effort-pressure: terminal unavailable effort remains mechanical and cannot carry over to expiration
+PASS effort-pressure: threshold failure resolves once without a delivered marker
+PASS effort-pressure: passive input produces no phantom patient or failed events
+PASS effort-pressure: detection/edit/publication race freezes the actual historical trigger configuration
+PASS effort-pressure: queued adaptive PEEP is separate at detection and delivery without a volume jump
+PASS effort-pressure: ordinary immediate PEEP changes do not relabel already detected history
+PASS effort-pressure: explicit pending cancellation is terminal without a new failure counter or marker
+PASS effort-pressure: external schedule interruption clears pending provenance before the next tick
+PASS effort-pressure: reset clears pending snapshot, physics sample, neural identities and event history
+PASS effort-pressure: mode exit cannot publish stale pending patient metadata
+PASS effort-pressure: paused edits change input revision without advancing or relabeling retained events
+PASS effort-pressure: canonical completed breath carries the same frozen detection and delivery identity
+PASS effort-pressure: all modes/variables/rates matrix accounts for every volume increment and terminal outcome
+PASS effort-pressure: inward sinus forcing converges to an independent analytical solution
+PASS effort-pressure: PC sinus forcing closure converges to independent continuous valve reference
+PASS effort-pressure: adaptive raw source, gain/bounds and command publication boundaries stay protected
+PASS effort-pressure: actual closure pressure activates unchanged high-pressure rule before PIP latch
+PASS effort-pressure: VE first availability, stale/reset eligibility and five-second grace remain unchanged
+PASS effort-pressure: reported clean-reset Rc2 setup retains intentional flow3 versus pressure0 deliveries
+PASS effort-pressure: exact completion-indexed adaptive demonstrations preserve accepted recipe inputs
+PASS effort-pressure: signed renderer, highlights, frozen resize and full historical schema conform
+EFFORT_PRESSURE_TALLY {"groups":41,"passed":41,"failed":0}
+Commissioned gate verified: effort-pressure conformance41/0

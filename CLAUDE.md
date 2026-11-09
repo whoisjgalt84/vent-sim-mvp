@@ -79,8 +79,10 @@ the inventory of the historical release CI run below.
 | Gate | Required inventory |
 | --- | --- |
 | Engine | 300 original assertions; 22 adaptive controller; 24 adaptive integration; 22 selective legacy fixtures; 41 effort/pressure; 28 demonstration-reset; 43 manual-hold; 15 R01/R11; 17 R02 groups. Plus 8 teaching-slice and 6 phase-history groups. Total: 526 mixed top-level assertions/groups/fixtures, not 526 equivalent tests. |
-| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice, 5 hierarchy, 4 usability and 8 overlay-panel groups. Plus 13 setting-editor groups and 16 primary-tile responsive layout cases. Total: 145 behavior groups plus 16 layout cases (161 mixed checks). |
+| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice, 5 hierarchy, 4 usability and 8 overlay-panel groups. Plus 14 setting-editor groups and 16 primary-tile responsive layout cases. Total: 146 behavior groups plus 16 layout cases (162 mixed checks). |
 | Pinned-Linux visual | 18 existing groups plus 3 manual-hold groups. Total: 21, including determinism and cache-busting. |
+
+**Mode-specific editor notices:** Christian accepted the wording and placement. Hold notices apply only in VC-CMV/PC-CMV; PC-CSV gives Confirm/Cancel guidance; PC-CMVa explains controller feedback invalidation. Existing edit-attempt safety behavior is unchanged. The new all-mode regression covers each primary setting, mode transitions, unchanged live-region stability and narrow/short windows. Asset version is 37 at all 11 sites. See [the mode-notice closeout](docs/setting-editor.md#mode-specific-notice-closeout-8-november-2026) for source identities, final verification and limitations.
 
 **Editor live-status accessibility fix:** the three editor status regions update only when content changes. Fresh local checks passed 13 editor groups, the full pinned-Linux browser inventory (145 behavior groups plus 16 layout cases), and 21/21 visual groups with updates disabled and unchanged references. The guard-removal mutation fails. Actual screen-reader speech is untested; prior engine evidence is carried forward. This documentation-only pass reruns no gates and establishes no new remote CI. See [the fix closeout](docs/setting-editor.md#editor-live-status-accessibility-fix-8-november-2026) for exact identities and receipts.
 
@@ -207,7 +209,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=36`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=37`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's

@@ -547,7 +547,7 @@ test.describe('cache-busting invariant', () => {
 
         const versions = [...new Set(requested.map((u) => u.split('?v=')[1]))];
         expect(versions, 'all local assets must share one version').toHaveLength(1);
-        expect(versions, 'primary setting tiles asset release').toEqual(['36']);
+        expect(versions, 'mode-specific notices asset release').toEqual(['37']);
 
         const paths = requested.map((u) => u.split('?')[0]);
         expect(paths, 'no module fetched twice').toHaveLength(new Set(paths).size);

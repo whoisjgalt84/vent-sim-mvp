@@ -1,0 +1,100 @@
+{
+  "datePacific": "2026-11-08",
+  "generatedAt": "2026-11-09T02:52:52.199Z",
+  "baseCommit": "fde79973ab13bb0997435841fc92b4ff2e586b47",
+  "ownerAcceptance": "Wording and placement feel just right!",
+  "scope": "Mode-specific notice presentation plus cache/documentation closeout; no safety behavior or reference changes; no commit/publication authority",
+  "assetVersion": 37,
+  "assetSites": 11,
+  "sources": [
+    {
+      "path": "index.html",
+      "localSha256": "172b20d54509f8838a2a904bf8ea81679105ff39c1b7b1f069ee4f56c6f9a7e4",
+      "gitNormalizedSha256": "172b20d54509f8838a2a904bf8ea81679105ff39c1b7b1f069ee4f56c6f9a7e4"
+    },
+    {
+      "path": "js/main.js",
+      "localSha256": "9097f44ce45c18a92cd108b7fe020ad1644f7f4f6cf77e129e1227e77def2b26",
+      "gitNormalizedSha256": "9097f44ce45c18a92cd108b7fe020ad1644f7f4f6cf77e129e1227e77def2b26"
+    },
+    {
+      "path": "js/simulation.js",
+      "localSha256": "c3c06ca43c6af1fb80056ffdc6f7779af93d2ef5b7a7faadbce76601153e9eed",
+      "gitNormalizedSha256": "c3c06ca43c6af1fb80056ffdc6f7779af93d2ef5b7a7faadbce76601153e9eed"
+    },
+    {
+      "path": "js/ventilator.js",
+      "localSha256": "70cd989c4ad4396504b1a2e97e059d0387f7911e457596599dd31e3846c192ca",
+      "gitNormalizedSha256": "70cd989c4ad4396504b1a2e97e059d0387f7911e457596599dd31e3846c192ca"
+    },
+    {
+      "path": "scratch/verify-batch.cjs",
+      "localSha256": "ed5a2a6f4d0874457bb26607960336720901787f657f568eb3bbab17f716679a",
+      "gitNormalizedSha256": "ed5a2a6f4d0874457bb26607960336720901787f657f568eb3bbab17f716679a"
+    },
+    {
+      "path": "tests/setting-editor.browser.cjs",
+      "localSha256": "142c1246a8ddcf57d9e45ac4b3c5de01e8d795a59cca63a4bb8dd43268f6b21d",
+      "gitNormalizedSha256": "142c1246a8ddcf57d9e45ac4b3c5de01e8d795a59cca63a4bb8dd43268f6b21d"
+    },
+    {
+      "path": "tests/primary-tile-polish.browser.cjs",
+      "localSha256": "f5dd3c6d8129786edcad6ab83590f00b7fa2e4980ec59f8d8034cfee9e60bf0e",
+      "gitNormalizedSha256": "f5dd3c6d8129786edcad6ab83590f00b7fa2e4980ec59f8d8034cfee9e60bf0e"
+    },
+    {
+      "path": "tests/visual/waveforms.spec.js",
+      "localSha256": "cb59421bb966c207093df7a8eae2a916aee66c6fc98bc273351d906d477ae9c3",
+      "gitNormalizedSha256": "cb59421bb966c207093df7a8eae2a916aee66c6fc98bc273351d906d477ae9c3"
+    }
+  ],
+  "sourceManifestSha256": "8dd4ca1b88312380b90b69e7ceab34b008a7d02b42680f114264083d3caafe7f",
+  "receipts": [
+    {
+      "path": "engine-v37.log",
+      "localSha256": "3b84998c9d331e3c84b778a7bfa1678b92a9ce3c1ef243d07a7f88ad172b88a9",
+      "gitNormalizedSha256": "2634d7df84da8b978685396eed4663d472cbecf1329ffcdfb9986b690a9d2377"
+    },
+    {
+      "path": "focused-v37.log",
+      "localSha256": "9a6829d5951dde2f913bc9daaaeebba36b3dab2783d80929b82607017c11b446",
+      "gitNormalizedSha256": "a59ea6f8a05a22461501fecd531448f9ae52832623d0c201ffea867228a8da96"
+    },
+    {
+      "path": "mutation-modeNotice-v37.log",
+      "localSha256": "03d3b2732c974d643876c9b0713347ae35563637825648529c486495f5ca2605",
+      "gitNormalizedSha256": "9efd4f04f1842a7a876966c56aff7749a019abae20c3bd1aaf45d9309d2c9e6f"
+    },
+    {
+      "path": "mutation-adaptiveNotice-v37.log",
+      "localSha256": "97561cbc95c89f88c6df5a612491a115d6d65ff98cbd070020910011a61eb6c5",
+      "gitNormalizedSha256": "4892700468117a35f961c9938b3feb1eec94ec916e19df19ab018f9695d0607e"
+    },
+    {
+      "path": "browser-visual-linux-v37-final.log",
+      "localSha256": "8f193e5f083b1963bc2f720a063e94ecc34c4a1929526b7d9d789d8539cb4516",
+      "gitNormalizedSha256": "f1bf33de4e7a613411f7b62305852e1eede9c76a1d80349c0582402b5b93771a"
+    }
+  ],
+  "results": {
+    "engineMixedChecks": 526,
+    "engineFailures": 0,
+    "focusedModeNoticeGroups": 1,
+    "editorGroups": 14,
+    "pinnedLinuxBrowserBehaviorGroups": 146,
+    "pinnedLinuxLayoutCases": 16,
+    "pinnedLinuxVisualGroups": 21,
+    "updatesEnabled": false,
+    "tolerancesChanged": false,
+    "referencesUnchanged": 162,
+    "mutationChecksExpectedFailures": 2
+  },
+  "pinnedImage": "mcr.microsoft.com/playwright:v1.62.1-noble",
+  "history": "First v37 browser run stopped at the obsolete v36 assertion. Both explicit release assertions were updated to v37; the retained final browser/visual run passes. Earlier pre-cache notice results and owner preview are historical.",
+  "limits": [
+    "Actual screen-reader speech and physical touch devices untested",
+    "Existing visual suite does not baseline every open editor notice; separate desktop/narrow previews and short-window checks cover the notices",
+    "Local results do not establish remote CI or publication"
+  ],
+  "hashSemantics": "localSha256 identifies original working bytes; gitNormalizedSha256 identifies UTF-8 bytes with CRLF-to-LF normalization."
+}

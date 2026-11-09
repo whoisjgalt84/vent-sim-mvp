@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=36';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=36';
-import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=36';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=36';
-import AlarmEngine from '../alarms.js?v=36';
+import { LungModel }        from './lung-model.js?v=37';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=37';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=37';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=37';
+import AlarmEngine from '../alarms.js?v=37';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=36';
+} from '../alarm-audio.js?v=37';
 
 
 // =============================================================================
@@ -1415,7 +1415,7 @@ function changeSettingDraft(text) {
     if (validatedSettingDraft() !== null) document.getElementById('setting-range').value = text;
     const hold = sim.manualHoldState;
     if (hold.active || hold.armed) settingDraft.consequence = 'This edit canceled the manual hold. Cancel cannot restore it.';
-    if (vent.isAdaptiveMode()) settingDraft.consequence = 'This edit invalidated adaptive feedback for the current context. Cancel cannot restore it.';
+    if (vent.isAdaptiveMode()) settingDraft.consequence = 'This edit cleared the controller’s current feedback. It will use feedback from subsequent eligible breaths for future adjustments. Cancel discards the new value but does not restore the cleared feedback.';
     // An attempt is an actual draft change, including blank/invalid and edit/revert.
     // This must not mutate accepted settings or create an adaptive request.
     sim.notifyMeasurementSettingsChanged();
@@ -1425,6 +1425,11 @@ function changeSettingDraft(text) {
 function setSettingStatus(id, text) {
     const el = document.getElementById(id);
     if (el && el.textContent !== text) el.textContent = text;
+}
+function settingSafetyNotice() {
+    if (vent.isAdaptiveMode()) return 'Changing this value clears the controller’s current feedback. It will use feedback from subsequent eligible breaths for future adjustments. Cancel discards the new value but does not restore the cleared feedback.';
+    if (sim.manualHoldSupported) return 'Changing this value can cancel an armed or active manual hold. Cancel discards the new value but does not restore the hold.';
+    return 'The new value takes effect when you select Confirm. Cancel discards the new value.';
 }
 function refreshSettingEditor() {
     refreshSettingTiles();
@@ -1440,7 +1445,7 @@ function refreshSettingEditor() {
     input.setAttribute('aria-invalid', String(!valid));
     setSettingStatus('setting-validation', valid ? 'Range ' + input.min + '–' + input.max + ' ' + unit + '; step ' + input.step + '.'
         : 'Enter ' + input.min + '–' + input.max + ' ' + unit + ' in steps of ' + input.step + '.');
-    setSettingStatus('setting-consequence', settingDraft.consequence || 'Changing this value can cancel a manual hold or invalidate adaptive feedback. Cancel discards only the unconfirmed value.');
+    setSettingStatus('setting-consequence', settingDraft.consequence || settingSafetyNotice());
     document.getElementById('setting-confirm').disabled = !valid;
     positionSettingEditor();
 }

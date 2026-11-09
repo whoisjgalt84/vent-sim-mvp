@@ -1,0 +1,11 @@
+FAIL editor mode-specific safety notices preserve editing and live-region semantics
+AssertionError [ERR_ASSERTION]: pc-cmva vt
++ actual - expected
+
++ 'The new value takes effect when you select Confirm. Cancel discards the new value.'
+- 'Changing this value clears the controllerΓÇÖs current feedback. It will use feedback from subsequent eligible breaths for future adjustments. Cancel discards the new value but does not restore the cleared feedback.'
+
+    at C:\Users\chris\Documents\Codex\2026-11-09\vent-sim-mode-notices\tests\setting-editor.browser.cjs:136:64
+    at async group (C:\Users\chris\Documents\Codex\2026-11-09\vent-sim-mode-notices\tests\setting-editor.browser.cjs:47:80)
+    at async C:\Users\chris\Documents\Codex\2026-11-09\vent-sim-mode-notices\tests\setting-editor.browser.cjs:128:2
+SETTING_EDITOR_BROWSER_TALLY 0 passed, 1 failed

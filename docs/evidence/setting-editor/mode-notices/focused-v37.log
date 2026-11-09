@@ -1,0 +1,2 @@
+PASS editor mode-specific safety notices preserve editing and live-region semantics
+SETTING_EDITOR_BROWSER_TALLY 1 passed, 0 failed

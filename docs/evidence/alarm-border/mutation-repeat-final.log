@@ -1,0 +1,16 @@
+PASS highest priority and downgrade/clear
+PASS legacy low mapping without new alarm producer
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+5 !== 0
+
+    at /work/tests/alarm-border.browser.cjs:21:379
+    at async check (/work/tests/alarm-border.browser.cjs:18:31)
+    at async /work/tests/alarm-border.browser.cjs:21:1 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 5,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}

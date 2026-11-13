@@ -1,0 +1,1115 @@
+
+> vent-sim-mvp@1.0.0 test
+> node tools/run-engine-tests.mjs
+
+PASS expiration display prefilled history is unknown in every mode
+PASS expiration display exact aligned history survives ring overwrite and display-window changes
+PASS expiration display transition ticks keep solved phase including both sides of recurring/manual holds
+PASS expiration display positive failed-trigger flow remains expiration at default flow and pressure thresholds
+PASS expiration display reset and every mode transition clear old phase history before fresh samples
+PASS expiration display phase-history corruption cannot influence physics, canonical records, triggers or old buffers
+EXPIRATION_DISPLAY_TALLY 6 passed, 0 failed
+Commissioned gate verified: expiration display6/0
+PASS slice hold age starts on the actual completion tick, not breath start
+PASS slice paused wall time cannot age; speed and catch-up cap count executed ticks only
+PASS slice mode changes retain age/source across all destinations without reset-time fabrication
+PASS slice flow-pattern fresh runs retain age; main Reset clears saved hold and age
+PASS slice invalid later hold preserves original measurement and original clock
+PASS slice PC-CSV retains configured Ti backstop and flow-cycle precedence
+PASS slice PC-CSV flow cycling can terminate before max Ti; passive CSV invents no breaths
+PASS slice metadata clock has no effect on samples, breath records, or detector inputs
+TEACHING_SLICE_ENGINE_TALLY {"groups":8,"passed":8,"failed":0}
+Commissioned gate verified: teaching slice8/0
+PASS R02 exact 6000-tick overlap rejection and Ti1 control vc-cmv
+PASS R02 exact 6000-tick overlap rejection and Ti1 control pc-cmv
+PASS R02 exact 6000-tick overlap rejection and Ti1 control PC-CSV
+PASS R02 exact 6000-tick overlap rejection and Ti1 control pc-cmva
+PASS R02 equal/near-cycle ordering and waveform bound vc-cmv
+PASS R02 equal/near-cycle ordering and waveform bound pc-cmv
+PASS R02 equal/near-cycle ordering and waveform bound PC-CSV
+PASS R02 equal/near-cycle ordering and waveform bound pc-cmva
+PASS R02 invalid proposals reject atomically at all engine seams
+PASS R02 valid pair waits for the old full cycle with uninterrupted starting half-sine
+PASS R02 single field edits use last valid selected pair; reject retains queue; revert cancels
+PASS R02 reset and mode change resolve selections atomically and retain Off/transport
+PASS R02 Off interrupts unresolved eligible effort; frozen clock and terminal guard survive On
+PASS R02 already resolved effort keeps immutable outcome and receives only mechanical interruption
+PASS R02 zero amplitude produces no invented interruption
+PASS R02 relevant valid queued edit immediately disarms manual hold without suppressing effort
+PASS R02 invalid atomic setup leaves run, pair and history intact
+EFFORT_TIMING_TALLY {"groups":17,"passed":17,"failed":0}
+Commissioned gate verified: R-02 effort timing17/0
+PASS R01 cadence matrix vc-cmv
+PASS R01 cadence matrix pc-cmv
+PASS R01 cadence matrix PC-CSV
+PASS R01 cadence matrix pc-cmva
+PASS R01 jitter, sub-5ms and equivalent partitions
+PASS R01 pause, speed credit, reset and mode reset
+PASS R01 cap discards whole excess ticks, retains only fractional credit
+R11_BREATH22 {"record":{"simulationGeneration":1,"modeGeneration":0,"settingsGeneration":0,"breathId":22,"configuredMode":"vc-cmv","flowPattern":"square","triggerAgent":"machine","triggerDetection":null,"triggerDelivery":null,"cycleAgent":"machine","terminationReason":null,"breathType":"mandatory","startedAt_s":36.12000000000138,"completedAt_s":36.70000000000127,"inspiratoryTime_s":0.5800000000000003,"boundarySampleIndex":6670,"measuredVT_mL":203.00000000000017,"measuredPIP_cmH2O":-0.3466659288246299,"flowAtTermination_Lpm":21.000000000000004,"flowCycleThreshold_Lpm":null,"settingsFingerprint":"[\"vc-cmv\",\"square\",0.2,15,10,35,[1,2],0,0.4,\"pressure\",2,5,25,0,5,0.1]","holdMechanics":{"status":"unavailable","reasons":["NO_HOLD"],"pplat":{"status":"unavailable","value":null,"reasons":["NO_HOLD"]},"drivingPressure":{"status":"unavailable","value":null,"reasons":["NO_HOLD"]},"compliance":{"status":"unavailable","value":null,"reasons":["NO_HOLD"]},"resistance":{"status":"unavailable","value":null,"reasons":["NO_HOLD"]}}},"expected":-0.3466659288246299}
+PASS R11 same-breath independent sample oracle vc-cmv
+PASS R11 same-breath independent sample oracle pc-cmv
+PASS R11 same-breath independent sample oracle PC-CSV
+PASS R11 same-breath independent sample oracle pc-cmva
+PASS R11 negative, zero, tiny positive and ordinary transitions; live alarm peak unchanged
+PASS R11 no finite sample is null, never prior peak or sentinel; reset and first breath
+PASS R11 retains inspiration boundaries and excludes hold and expiration pressure
+PASS R11 neighboring valid effort/mechanics
+REVIEW_REMEDIATION_TALLY {"groups":15,"passed":15,"failed":0}
+Commissioned gate verified: R-01/R-11 review remediation15/0
+PASS manual-hold: initial four manual results unavailable; recurring default zero
+PASS manual-hold: press preserves inspiration delivery and arms end-inspiration
+PASS manual-hold: release before end-inspiration cancels arming without an attempt
+PASS manual-hold: expiration press arms only the next eligible end-inspiration
+PASS manual-hold: expiration release prevents future arming
+PASS manual-hold: normal release publishes exactly 50 contiguous simulated samples
+PASS manual-hold: 49-sample attempt invalid; no valid history fabricated
+PASS manual-hold: cap includes exactly 200 samples and stays valid
+PASS manual-hold: continued press and rapid repeated presses after cap never rearm
+PASS manual-hold: release and fresh press after cap allow a new maneuver
+PASS manual-hold: rapid release/repress cannot rescind expiration; it arms the next breath
+PASS manual-hold: cycle cap rounds down and leaves at least 0.2 seconds expiration
+PASS manual-hold: timing cap below minimum creates invalid attempt, not valid plateau
+PASS manual-hold: zero available occlusion closes and completes without invented samples
+PASS manual-hold: recurring pauses cannot populate or overwrite manual history
+PASS manual-hold: manual takeover retains collector, entry boundary and continuous duration
+PASS manual-hold: takeover cap uses full scheduled plus manual continuous pause
+PASS manual-hold: manual release overrides recurring pause only for that breath
+PASS manual-hold: pc-cmv valid same-breath dependencies and frozen provenance
+PASS manual-hold: vc-cmv valid same-breath dependencies and frozen provenance
+PASS manual-hold: ramp VC retains valid plateau with unavailable resistance
+PASS manual-hold: ordinary breaths and settings retain exact old bytes without recomputation
+PASS manual-hold: invalid later actual hold retains all prior same-breath results
+PASS manual-hold: pointer-cancel cancels valid-length actual hold without publishing success
+PASS manual-hold: lost-pointer-capture cancels valid-length actual hold without publishing success
+PASS manual-hold: window-blur cancels valid-length actual hold without publishing success
+PASS manual-hold: hidden-tab cancels valid-length actual hold without publishing success
+PASS manual-hold: focus-lost cancels valid-length actual hold without publishing success
+PASS manual-hold: transport pause cancels/disarms, resume cannot restart
+PASS manual-hold: setting edit during actual hold invalidates and releases immediately
+PASS manual-hold: edit/revert and effort-only edits cannot evade invalidation
+PASS manual-hold: setting edits while armed cancel without attempted hold
+PASS manual-hold: mode transitions cancel and explicitly retain original historical mode
+PASS manual-hold: PC-CSV explicitly excludes manual and recurring hold
+PASS manual-hold: pc-cmva explicitly excludes manual and recurring hold
+PASS manual-hold: Reset clears armed/active/valid/invalid history and retains settings/transport
+PASS manual-hold: settings-associated reset retains history; explicit Reset clears it
+PASS manual-hold: simulated speed changes neither cap nor measurement duration
+PASS manual-hold: Pmus remains physical and invalidates a hold instead of being suppressed
+PASS manual-hold: collector rejects pressure fault
+PASS manual-hold: collector rejects flow fault
+PASS manual-hold: collector rejects nonfinite fault
+PASS manual-hold: collector rejects membership fault
+MANUAL_HOLD_ENGINE_TALLY {"groups":43,"passed":43,"failed":0}
+Commissioned gate verified: manual hold43/0
+PASS reset-engine: vc-cmv/passive/paused
+PASS reset-engine: vc-cmv/passive/running
+PASS reset-engine: vc-cmv/active/paused
+PASS reset-engine: vc-cmv/active/running
+PASS reset-engine: pc-cmv/passive/paused
+PASS reset-engine: pc-cmv/passive/running
+PASS reset-engine: pc-cmv/active/paused
+PASS reset-engine: pc-cmv/active/running
+PASS reset-engine: PC-CSV/passive/paused
+PASS reset-engine: PC-CSV/passive/running
+PASS reset-engine: PC-CSV/active/paused
+PASS reset-engine: PC-CSV/active/running
+PASS reset-engine: pc-cmva/passive/paused
+PASS reset-engine: pc-cmva/passive/running
+PASS reset-engine: pc-cmva/active/paused
+PASS reset-engine: pc-cmva/active/running
+PASS reset-engine: vc-cmv/reset-during-INSPIRATION
+PASS reset-engine: vc-cmv/reset-during-EXPIRATION
+PASS reset-engine: vc-cmv/reset-during-HOLD
+PASS reset-engine: pc-cmv/reset-during-INSPIRATION
+PASS reset-engine: pc-cmv/reset-during-EXPIRATION
+PASS reset-engine: pc-cmv/reset-during-HOLD
+PASS reset-engine: PC-CSV/reset-during-INSPIRATION
+PASS reset-engine: PC-CSV/reset-during-EXPIRATION
+PASS reset-engine: pc-cmva/reset-during-INSPIRATION
+PASS reset-engine: pc-cmva/reset-during-EXPIRATION
+PASS reset-engine: adaptive atomic queues, selected maximum and obsolete correction
+PASS reset-engine: reset re-arms full VE observation window and new canonical identity
+DEMONSTRATION_RESET_ENGINE_TALLY {"groups":28,"passed":28,"failed":0}
+Commissioned gate verified: demonstration reset28/0
+
+════════════════════════════════════════════════════════════
+  TEST 1: LungModel — Normal Lung (R=10, C=0.05)
+════════════════════════════════════════════════════════════
+  ✓ Time constant (s): 0.500
+  ✓ Elastance (cmH2O/L): 20.000
+  ✓ Insp pressure at end-insp: 18.500
+  ✓ Plateau pressure: 15.000
+  ✓ Exp flow at t=0 (L/s): -1.000
+  ✓ Exp flow at t=τ (L/s): -0.368
+  ✓ Volume remaining at t=τ (L): 0.184
+  ✓ Auto-PEEP normal (cmH2O): 0.033
+
+════════════════════════════════════════════════════════════
+  TEST 2: LungModel — COPD (R=25, C=0.06)
+════════════════════════════════════════════════════════════
+  ✓ Time constant (s): 1.500
+  ✓ Auto-PEEP COPD (cmH2O): 1.454
+  → Clinical note: Te/τ = 1.9 (< 3 → gas trapping!)
+
+════════════════════════════════════════════════════════════
+  TEST 3: LungModel — ARDS (R=10, C=0.03)
+════════════════════════════════════════════════════════════
+  ✓ Time constant (s): 0.300
+  ✓ Driving pressure (cmH2O): 16.667
+  ✓ Plateau pressure (cmH2O): 21.667
+  → Clinical note: Driving pressure 16.7 cmH2O > 15 — consider ↓VT
+
+════════════════════════════════════════════════════════════
+  Banner: Ventilator — Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2 — full TEST 4 follows TEST 3A
+════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════
+  TEST 3A: Expiratory Completion - Analytical Time Constant Invariants
+════════════════════════════════════════════════════════════
+  ✓ Completion at 1tau (%): 63.212
+  ✓ Completion at 2tau (%): 86.466
+  ✓ Completion at 3tau (%): 95.021
+  ✓ Completion at 5tau (%): 99.326
+
+════════════════════════════════════════════════════════════
+  TEST 4: Ventilator — Normal (R=10, C=0.05), VT=500, RR=14, I:E=1:2
+════════════════════════════════════════════════════════════
+  ✓ Total cycle time (s): 4.286
+  ✓ Inspiratory time (s): 1.429
+  ✓ Expiratory time (s): 2.857
+  ✓ Insp flow (L/min): 21.000
+  ✓ PIP (cmH2O): 18.533
+  ✓ Pplat (cmH2O): 15.033
+  ✓ Driving pressure (cmH2O): 10.000
+  ✓ Resistive pressure (cmH2O): 3.500
+  ✓ Te/τ: 5.714
+  ✓ Normal expiratory completion: 0.997
+  ✓ Normal expiratory completion (%): 99.670
+  ✓ Normal expiratory completion status: 1.000
+  ✓ Gas trapping risk: 0.000
+  ✓ Minute ventilation (L/min): 7.000
+
+════════════════════════════════════════════════════════════
+  TEST 5: Ventilator — COPD (R=25, C=0.06), VT=500, RR=14, I:E=1:2
+════════════════════════════════════════════════════════════
+  ✓ Time constant (s): 1.500
+  ✓ Te/τ: 1.905
+  ✓ COPD expiratory completion (%): 85.114
+  ✓ COPD expiratory completion status: 1.000
+  ✓ Gas trapping risk: 1.000
+  ✓ Auto-PEEP (cmH2O): 1.457
+  ✓ PIP (cmH2O): 23.541
+  → Clinical note: Te/τ = 1.9 — consider ↓RR or ↑I:E
+
+════════════════════════════════════════════════════════════
+  TEST 6: Waveform Data Integrity
+════════════════════════════════════════════════════════════
+  ✓ All arrays same length: 1.000
+  Total samples: 858 (8.6 seconds)
+  ✓ First pressure sample (cmH2O): 8.533
+  ✓ First flow sample (L/min): 21.000
+  ✓ First volume sample (mL): 0.000
+  ✓ Peak pressure in waveform (cmH2O): 18.473
+  ✓ Peak volume in waveform (mL): 500.000
+  ✓ Min flow is negative: 1.000
+  ✓ Volume at end of last breath (mL): 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 7: Mean Airway Pressure
+════════════════════════════════════════════════════════════
+  MAP = 9.0 cmH2O
+  ✓ MAP between PEEP and PIP: 1.000
+  ✓ MAP in clinical range: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 8: Full Summary — Normal Patient
+════════════════════════════════════════════════════════════
+{
+  "mode": "VC-CMV",
+  "isPC": false,
+  "flowPattern": "square",
+  "isRamp": false,
+  "holdActive": false,
+  "pMusActive": false,
+  "pMusMax": 0,
+  "neuralTi": 1,
+  "settings": {
+    "triggerType": "flow",
+    "flowTriggerLpm": 2,
+    "pressureTriggerCmH2O": 1,
+    "tidalVolume_mL": 500,
+    "inspiratoryPressure": null,
+    "respiratoryRate": 14,
+    "ieRatio": "1:2.0",
+    "peep_cmH2O": 5,
+    "fio2": 0.4
+  },
+  "timing": {
+    "totalCycleTime_s": 4.29,
+    "inspiratoryTime_s": 1.43,
+    "holdTime_s": 0,
+    "expiratoryTime_s": 2.86,
+    "effectiveExpTime_s": 2.86,
+    "inspFlow_Lpm": 21,
+    "tiOverTau": null
+  },
+  "pressures": {
+    "pip_cmH2O": 18.5,
+    "pplat_cmH2O": 15,
+    "map_cmH2O": 9,
+    "peep_cmH2O": 5,
+    "autoPeep_cmH2O": 0,
+    "totalPeep_cmH2O": 5,
+    "drivingPressure": 10,
+    "resistivePressure": 3.5,
+    "inspiratoryPressure": null
+  },
+  "mechanics": {
+    "resistance": 10,
+    "compliance": 0.05,
+    "elastance": 20,
+    "timeConstant_s": 0.5,
+    "staticCompliance": null,
+    "measuredResistance": null
+  },
+  "volumes": {
+    "tidalVolume_mL": 500,
+    "minuteVentilation": 7,
+    "trappedVolume_mL": 1.7
+  },
+  "safety": {
+    "teOverTau": 5.7,
+    "tiOverTau": null,
+    "expiratoryCompletion": 0.996701494244061,
+    "expiratoryCompletionPercent": 99.67014942440609,
+    "expiratoryCompletionStatus": "complete",
+    "gasTrappingRisk": false,
+    "pplatAbove30": false,
+    "drivingPressureAbove15": false,
+    "tiTooShort": false
+  }
+}
+  ✓ Summary includes trigger type: 1.000
+  ✓ Summary includes flow trigger threshold: 2.000
+  ✓ Summary includes pressure trigger threshold: 1.000
+  ✓ Summary includes expiratory completion: 0.997
+  ✓ Summary includes expiratory completion %: 99.670
+  ✓ Summary includes expiratory completion status: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 8A: Expiratory Metrics - Summary Data Contract
+════════════════════════════════════════════════════════════
+  âœ“ expiratoryCompletionPercent exists
+  âœ“ expiratoryCompletionPercent is finite
+  âœ“ flowBaselineReached exists
+  âœ“ flowBaselineReached is boolean
+  âœ“ expiratoryCompletionStatus exists
+  âœ“ expiratoryCompletionStatus is string
+
+════════════════════════════════════════════════════════════
+  TEST 8B: Flow Baseline + Exp Completion - Normal VC-CMV
+════════════════════════════════════════════════════════════
+  Expected completion: 99.7%
+  Expected end-exp flow: -0.20 L/min
+  âœ“ Normal exp completion is near complete: 99.670 within [99, 100]
+  âœ“ Normal expected flow baseline reached
+  âœ“ Simulator exp completion normal (%): 99.670 within [99, 100]
+  âœ“ Simulator flow baseline reached normal
+
+════════════════════════════════════════════════════════════
+  TEST 8C: Flow Baseline + Exp Completion - COPD Short Te
+════════════════════════════════════════════════════════════
+  Te=1.00s
+  tau=1.50s
+  Te/tau=0.67
+  Expected completion=48.7%
+  Expected end-exp flow=-10.3 L/min
+  âœ“ COPD short Te has Te/tau < 3
+  âœ“ COPD short Te exp completion reduced (%): 48.658 within [40, 90]
+  âœ“ COPD short Te expected flow baseline NOT reached
+  âœ“ Simulator COPD short Te exp completion (%): 48.658 within [40, 90]
+  âœ“ Simulator COPD short Te flow baseline NOT reached
+
+════════════════════════════════════════════════════════════
+  TEST 8D: Flow Baseline + Exp Completion - COPD Long Te Recovery
+════════════════════════════════════════════════════════════
+  Te=6.00s
+  tau=1.50s
+  Te/tau=4.00
+  Expected completion=98.2%
+  Expected end-exp flow=-0.37 L/min
+  âœ“ COPD long Te has Te/tau >= 3
+  âœ“ COPD long Te exp completion near complete (%): 98.168 within [95, 100]
+  âœ“ COPD long Te expected flow baseline reached
+  âœ“ Simulator COPD long Te exp completion (%): 98.168 within [95, 100]
+  âœ“ Simulator COPD long Te flow baseline reached
+
+════════════════════════════════════════════════════════════
+  TEST 8E: Cross-Mode Consistency - VC-CMV vs PC-CMV Exp Completion
+════════════════════════════════════════════════════════════
+  ✓ VC and PC Te/tau match: 5.714
+  ✓ VC and PC exp completion percent match: 99.670
+  âœ“ VC flow baseline reached
+  âœ“ PC flow baseline reached
+
+════════════════════════════════════════════════════════════
+  TEST 8F: Measured RR - Real-Time Engine Accuracy
+════════════════════════════════════════════════════════════
+  âœ“ measuredRR exists
+  âœ“ measuredRR is finite
+  Measured RR=14.0; Set RR=14
+  âœ“ Measured RR approximates set RR: 13.986 within [13.5, 14.5]
+
+════════════════════════════════════════════════════════════
+  TEST 8G: VSM-CLIN-003 — PC-CSV Cycle Agent and Breath Type
+════════════════════════════════════════════════════════════
+  Flow-cycle: Ti=0.74s flow=15.33 L/min threshold=16.43 L/min
+  Maximum-Ti: Ti=0.86s flow=12.93 L/min threshold=3.47 L/min
+  âœ“ VSM-CLIN-003 supported inventory is exact, case-sensitive, and excludes VC-CSV
+  âœ“ VSM-CLIN-003 PC-CSV pressure support targets psPressure above PEEP
+  âœ“ VSM-CLIN-003 configured inspiratory hold is inapplicable in PC-CSV
+  âœ“ VSM-CLIN-003 passive PC-CSV completes no breath and measured RR stays zero
+  âœ“ VSM-CLIN-003 current PC-CSV breaths are patient-triggered and measured RR follows effort
+  âœ“ VSM-CLIN-003 flow-cycle record is PC-CSV, patient/patient, flowCycle, spontaneous
+  âœ“ VSM-CLIN-003 maximum-Ti record is PC-CSV, patient/machine, maxTiReached, mandatory
+  âœ“ VSM-CLIN-003 finalized records agree with their waveform and loop boundary sample
+  âœ“ VSM-CLIN-003 consecutive breaths replace classification and reset clears metadata
+  âœ“ VSM-CLIN-003 mode transition cannot retain prior PC-CSV cycle metadata
+
+════════════════════════════════════════════════════════════
+  TEST 9: Patient Presets
+════════════════════════════════════════════════════════════
+  Available presets:
+    Normal example       R=10  C=0.060  τ=0.60s  Illustrative starting values: R = 10 cmH₂O·s/L; C = 60 mL/cmH₂O. Calculated τ = 0.60 s. This pair is a project example, not Arnal's recommended Normal pair.
+    Low compliance (35)  R=10  C=0.035  τ=0.35s  Illustrative starting values: R = 10 cmH₂O·s/L; C = 35 mL/cmH₂O. Calculated τ = 0.35 s. The name describes the configured compliance, not ARDS severity.
+    Low compliance (25)  R=12  C=0.025  τ=0.30s  Illustrative starting values: R = 12 cmH₂O·s/L; C = 25 mL/cmH₂O. Calculated τ = 0.30 s. The name describes the configured compliance, not ARDS severity.
+    COPD example (HME)   R=25  C=0.060  τ=1.50s  Starting values: R = 25 cmH₂O·s/L; C = 60 mL/cmH₂O. Calculated τ = 1.50 s. This pair follows Arnal et al. (2018), Table 9, for a COPD simulation with a heat-and-moisture exchanger (HME). The study measured passive, intubated adults in one ICU and excluded BMI above 30 and mixed lung conditions. The model uses combined resistance; it does not simulate the HME separately.
+    High resistance (20) R=20  C=0.060  τ=1.20s  Illustrative starting values: R = 20 cmH₂O·s/L; C = 60 mL/cmH₂O. Calculated τ = 1.20 s. This example explores increased resistance; it is not a validated acute-asthma preset.
+    Reduced compliance (40) R= 8  C=0.040  τ=0.32s  Illustrative starting values: R = 8 cmH₂O·s/L; C = 40 mL/cmH₂O. Calculated τ = 0.32 s. This example changes total respiratory-system compliance. It does not identify a chest-wall cause or represent validated obesity mechanics.
+    Low compliance (30)  R= 8  C=0.030  τ=0.24s  Illustrative starting values: R = 8 cmH₂O·s/L; C = 30 mL/cmH₂O. Calculated τ = 0.24 s. This example explores reduced compliance; it is not a validated pulmonary-fibrosis preset.
+
+════════════════════════════════════════════════════════════
+  SCENARIO: Does the math pass the clinical sniff test?
+════════════════════════════════════════════════════════════
+  70 kg normal, VT=420 mL, RR=16:
+    PIP=15.5  Pplat=12.1  DP=7.0  V̇E=6.7
+    → Looks like a typical post-op patient ✓
+
+  ARDS moderate, VT=420 mL, RR=24, PEEP=12:
+    PIP=29.1  Pplat=24.1  DP=12.0  V̇E=10.1
+    Pplat ≤ 30 ✓   DP ≤ 15 ✓
+
+  COPD, VT=450 mL, RR=10, I:E=1:4 (permissive strategy):
+    Ti=1.20s  Te=4.80s  Te/τ=3.2
+    PIP=22.2  autoPEEP=0.32  Trapping: Minimal ✓
+
+════════════════════════════════════════════════════════════
+  TEST 9A: PC-CMV — Normal Lung (R=10, C=0.05)
+════════════════════════════════════════════════════════════
+  ✓ PC mode label: 1.000
+  ✓ PC Ti (s): 1.429
+  ✓ PC Peak flow (L/s): 1.495
+  ✓ PC PIP (cmH2O): 20.000
+    Delivered VT = 704.7 mL (expected ~707 mL)
+  ✓ PC Delivered VT (L): 0.705
+  ✓ PC Steady-state VT (L): 0.705
+  ✓ PC V̇E (L/min): 9.866
+
+════════════════════════════════════════════════════════════
+  TEST 9B: PC-CMV — ARDS (R=10, C=0.035)
+════════════════════════════════════════════════════════════
+    ARDS VT = 516.0 mL (expected ~516 mL)
+  ✓ ARDS PC VT (L): 0.516
+    Normal VT=705 vs ARDS VT=516 — compliance matters!
+
+════════════════════════════════════════════════════════════
+  TEST 9C: PC-CMV — COPD with Gas Trapping (R=25, C=0.06)
+════════════════════════════════════════════════════════════
+    τ=1.50s  Ti/τ=0.95  Te/τ=1.90
+    Auto-PEEP=1.45 cmH2O  Trapped=87.3 mL
+  ✓ COPD Ti/τ < 1 (incomplete fill): 1.000
+  ✓ COPD gas trapping risk: 1.000
+  ✓ COPD auto-PEEP > 0: 1.000
+  ✓ PC waveform has data: 1.000
+  ✓ PC pressure square wave (max ≈ PIP): 20.000
+  ✓ PC flow peak > 0: 1.000
+  ✓ PC flow decelerating (peak >> end-insp): 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 10: PC-CMV — Waveform Shape Validation
+════════════════════════════════════════════════════════════
+    Insp pressure range: 20.00 – 20.00 (should be ~constant at 20.0)
+  ✓ PC pressure constant during insp (spread < 0.5): 0.000
+    Flow: start=89.7, mid=21.3, end=5.2 L/min
+  ✓ PC flow decelerating (start > mid > end): 1.000
+    Volume: mid=570.5 mL, end=704.0 mL
+  ✓ PC volume rises (end > mid > 0): 1.000
+    Expiratory flow at start: -84.8 L/min (should be negative)
+  ✓ PC exp flow is negative: 1.000
+
+════════════════════════════════════════════════════════════
+  CLINICAL SCENARIO: PC-CMV Sensitivity to Mechanics
+════════════════════════════════════════════════════════════
+
+  Pinsp=15, RR=14, I:E=1:2 across different compliance values:
+  ─────────────────────────────────────────────────────
+    C=60 mL/cmH₂O → VT=810 mL, V̇E=11.3 L/min
+    C=50 mL/cmH₂O → VT=705 mL, V̇E=9.9 L/min
+    C=35 mL/cmH₂O → VT=516 mL, V̇E=7.2 L/min
+    C=25 mL/cmH₂O → VT=374 mL, V̇E=5.2 L/min
+
+  ⚕️ In PC-CMV, watch VT closely — it changes with the patient!
+
+════════════════════════════════════════════════════════════
+  TEST 11: VC Descending Ramp — Normal Lung (R=10, C=0.05)
+════════════════════════════════════════════════════════════
+  ✓ Ramp peak flow (L/s): 0.700
+  ✓ Ramp peak flow = 2× square flow: 0.700
+  ✓ Ramp flow pattern label: 1.000
+  ✓ Ramp Pplat = Square Pplat: 15.033
+  ✓ Ramp ΔP = Square ΔP: 10.000
+    Square PIP = 18.5 cmH₂O
+    Ramp PIP   = 16.3 cmH₂O
+  ✓ Ramp PIP < Square PIP: 1.000
+    Analytical PIP = 16.2 (t*=0.93s)
+  ✓ Ramp PIP matches analytical: 16.291
+
+════════════════════════════════════════════════════════════
+  TEST 12: Descending Ramp — Waveform Shape Validation
+════════════════════════════════════════════════════════════
+    Flow: start=42.0, mid=20.8, end=0.3 L/min
+  ✓ Ramp flow start ≈ peak: 42.000
+  ✓ Ramp flow end ≈ 0: 1.000
+  ✓ Ramp flow linearly decreasing: 1.000
+  ✓ Ramp flow mid ≈ half peak: 20.832
+    Volume: mid=377.0 mL, end=500.0 mL
+  ✓ Ramp volume reaches VT: 499.982
+  ✓ Ramp volume at midpoint ≈ 75% VT (parabolic): 376.992
+    Pressure: start=12.0, peak=16.3, end-insp=15.1
+  ✓ Ramp end-insp P ≈ Pplat: 15.075
+  ✓ Ramp PIP is interior maximum: 1.000
+    Expiratory flow at start: -60.2 L/min
+  ✓ Ramp exp flow is negative: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 13: Ramp vs Square — Comparative Analysis
+════════════════════════════════════════════════════════════
+
+  Same VT=500 mL, same patient, different flow patterns:
+  ─────────────────────────────────────────────────────
+    Normal     Square PIP=18.5  Ramp PIP=16.3  (ΔP=2.2 less)  Pplat=15.0 (same)
+    ARDS       Square PIP=22.8  Ramp PIP=20.2  (ΔP=2.6 less)  Pplat=19.3 (same)
+    COPD       Square PIP=23.5  Ramp PIP=25.4  (ΔP=-1.9 less)  Pplat=14.8 (same)
+    Fibrosis   Square PIP=24.5  Ramp PIP=22.1  (ΔP=2.3 less)  Pplat=21.7 (same)
+
+  ⚕️ Descending ramp: same VT, same Pplat, lower PIP — purely cosmetic?
+     No! Lower PIP means less peak airway pressure and potentially
+     better patient comfort. But Pplat (the alveolar stretching
+     pressure) is unchanged — lung protection depends on Pplat and ΔP.
+
+════════════════════════════════════════════════════════════
+  TEST 14: High Resistance — PIP Location Shifts
+════════════════════════════════════════════════════════════
+    τ=2.40s > Ti=1.43s → PIP at t=0
+  ✓ τ > Ti condition: 1.000
+    PIP=40.3 cmH₂O  (R×V̇_peak=28.0, autoPEEP=3.6)
+  ✓ High-R ramp PIP ≈ PEEP + autoPEEP + R×V̇_peak: 40.282
+
+════════════════════════════════════════════════════════════
+  TEST 15: Inspiratory Hold — VC Square (R=10, C=0.05)
+════════════════════════════════════════════════════════════
+  ✓ Hold is active: 1.000
+  ✓ Effective hold time: 0.500
+    Ti=1.43s  Hold=0.5s  Te_eff=2.36s
+  ✓ Effective Te = Te - holdTime: 2.357
+  ✓ Hold PIP = no-hold PIP: 18.590
+  ✓ Hold Pplat = no-hold Pplat: 15.090
+    PIP=18.6  Pplat=15.1  PIP-Pplat=3.5
+  ✓ PIP - Pplat = R × V̇: 3.500
+    Static Crs = 50 mL/cmH₂O (actual=50)
+    Measured Raw = 10 cmH₂O·s/L (actual=10)
+  ✓ Hold reveals correct static Crs: 50.000
+  ✓ Hold reveals correct Raw: 10.000
+
+════════════════════════════════════════════════════════════
+  TEST 16: Hold Waveform — Pressure Drop & Flow Zero
+════════════════════════════════════════════════════════════
+    Last insp pressure: 18.5 (PIP=18.6)
+    First hold: P=15.1 (Pplat=15.1)  V̇=0.0 L/min  V=500 mL
+  ✓ Hold pressure = Pplat: 15.090
+  ✓ Hold flow = 0: 0.000
+  ✓ Hold volume = VT: 500.000
+  ✓ All hold samples: flow = 0: 1.000
+  ✓ All hold samples: P = constant: 1.000
+    First exp flow after hold: -60.5 L/min
+  ✓ Exp starts after hold: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 17: Hold — Ramp Flow (interior PIP → hold at Pplat)
+════════════════════════════════════════════════════════════
+    Ramp PIP=16.4  Pplat=15.1
+  ✓ Ramp hold Pplat < PIP: 1.000
+    Hold start: P=15.1 V̇=0.0
+  ✓ Ramp hold flow = 0: 0.000
+  ✓ Ramp hold pressure ≈ Pplat: 15.090
+
+════════════════════════════════════════════════════════════
+  TEST 18: Hold — PC-CMV (Pplat visibility depends on Ti/τ)
+════════════════════════════════════════════════════════════
+    PC: Ti/τ=1.9  PIP=20.0  Pplat=17.8
+    PIP - Pplat = 2.2 cmH₂O (visible pressure drop during hold)
+  ✓ PC hold shows pressure drop (Ti/τ < 3): 1.000
+    PC hold: P=17.8 V̇=0.0
+  ✓ PC hold flow = 0: 0.000
+  ✓ PC hold P ≈ Pplat: 17.850
+
+════════════════════════════════════════════════════════════
+  TEST 19: Hold Increases Gas Trapping (COPD + hold)
+════════════════════════════════════════════════════════════
+    Without hold: Te=2.86s  Te/τ=1.9  AutoPEEP=1.5
+    With 1s hold: Te=1.86s  Te/τ=1.2  AutoPEEP=3.4
+  ✓ Hold reduces effective Te: 1.000
+  ✓ Hold increases auto-PEEP: 1.000
+  ✓ Hold increases trapped volume: 1.000
+
+  ⚕️ Teaching point: In COPD patients, prolonged inspiratory holds
+     steal expiratory time → more gas trapping → higher auto-PEEP.
+     Keep holds brief in obstructive patients!
+
+════════════════════════════════════════════════════════════
+  TEST 20: Hold Duration Clamping (safety limit)
+════════════════════════════════════════════════════════════
+    Te=2.86s  Requested hold=99s
+    Effective hold=2.66s  Effective Te=0.20s
+  ✓ Hold clamped (Te_eff ≥ 0.2): 1.000
+  ✓ Hold clamped = Te - 0.2: 2.657
+
+════════════════════════════════════════════════════════════
+  TEST 21: Pmus Waveform — Half-Sine Shape
+════════════════════════════════════════════════════════════
+  ✓ Pmus is active: 1.000
+  ✓ Pmus at t=0: 0.000
+  ✓ Pmus at t=0.5 (peak): 10.000
+  ✓ Pmus at t=1.0 (end): 0.000
+  ✓ Pmus at t=1.5 (after neural Ti): 0.000
+  ✓ Pmus at t=0.25 (quarter): 7.071
+
+════════════════════════════════════════════════════════════
+  TEST 22: VC-CMV + Pmus — Pressure Scalloping
+════════════════════════════════════════════════════════════
+  ✓ VC+Pmus: flow unchanged at start: 21.000
+  ✓ VC+Pmus: flow unchanged at mid: 21.000
+  ✓ VC+Pmus: volume unchanged at mid: 252.000
+    Without Pmus: P(0.5s) = 12.0 cmH₂O
+    With Pmus=10: P(0.5s) = 2.0 cmH₂O
+    Scallop depth = 10.0 cmH₂O (should ≈ Pmus_max = 10)
+  ✓ VC+Pmus: pressure scallop ≈ Pmus_max: 10.000
+  ✓ VC+Pmus: P(0) unchanged (Pmus=0 at t=0): 8.533
+
+  ⚕️ In VC mode, patient effort creates the "scalloped" pressure waveform.
+     Flow and volume are unchanged — the patient does work that
+     would otherwise be done by the ventilator.
+
+════════════════════════════════════════════════════════════
+  TEST 23: PC-CMV + Pmus — Volume Increase
+════════════════════════════════════════════════════════════
+    Without Pmus: VT = 704 mL
+    With Pmus=10: VT = 926 mL
+    VT increase = 222 mL
+  ✓ PC+Pmus: VT increases: 1.000
+    Without Pmus: V̇_peak = 89.7 L/min
+    With Pmus=10: V̇_peak = 89.7 L/min
+  ✓ PC+Pmus: initial flow same (Pmus=0 at t=0): 89.720
+    Mid-insp flow: no-Pmus=21.3, Pmus=30.0 L/min
+  ✓ PC+Pmus: mid-insp flow higher: 1.000
+  ✓ PC+Pmus: idealized inspiratory pressure stays constant: 1.000
+
+  In this PC-CMV batch fixture, effort increases delivered volume.
+     Inspiratory Paw stays at the set target: idealized set-point pressure control.
+     This result does not establish the pressure-waveform shape on a real ventilator.
+
+════════════════════════════════════════════════════════════
+  TEST 24: Pmus = 0 — Backward Compatibility
+════════════════════════════════════════════════════════════
+  ✓ Pmus inactive when 0: 0.000
+  ✓ Pmus at any time = 0: 0.000
+    Max pressure difference: 0.000000 cmH₂O
+  ✓ Pmus=0 produces identical waveforms: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 25: RingBuffer — Circular Buffer Integrity
+════════════════════════════════════════════════════════════
+  ✓ RingBuffer count after 3 pushes: 3.000
+  ✓ RingBuffer last value: 3.000
+  ✓ RingBuffer toArray length: 3.000
+  ✓ RingBuffer toArray order: 1.000
+  ✓ RingBuffer count after wrap: 5.000
+  ✓ RingBuffer oldest after wrap: 3.000
+  ✓ RingBuffer newest after wrap: 7.000
+    Buffer contents: [3, 4, 5, 6, 7]
+
+════════════════════════════════════════════════════════════
+  TEST 26: SimEngine — Passive VC-CMV Numerical Characterization
+════════════════════════════════════════════════════════════
+  âœ“ VSM-CLIN-002 commissioned live timestep is dt=0.01 s at 100 Hz
+  âœ“ VSM-CLIN-002 live VC update is explicit Euler: Vnext = Vcurrent + flow(t) * dt
+    square VT=300 mL Ti=1.000000 s: analytical=300.0000 startup=303.0000 stable=300.0000 mL
+    ramp   VT=300 mL Ti=1.000000 s: analytical=300.0000 startup=303.0000 stable=297.0000 mL
+    square VT=300 mL Ti=1.666667 s: analytical=300.0000 startup=302.4000 stable=300.6000 mL
+    ramp   VT=300 mL Ti=1.666667 s: analytical=300.0000 startup=301.8024 stable=298.2024 mL
+    square VT=500 mL Ti=1.000000 s: analytical=500.0000 startup=505.0000 stable=500.0000 mL
+    ramp   VT=500 mL Ti=1.000000 s: analytical=500.0000 startup=505.0000 stable=495.0000 mL
+    square VT=500 mL Ti=1.666667 s: analytical=500.0000 startup=504.0000 stable=501.0000 mL
+    ramp   VT=500 mL Ti=1.666667 s: analytical=500.0000 startup=503.0040 stable=497.0040 mL
+  âœ“ VSM-CLIN-002 matrix analytical VC VT remains equal to set VT
+  âœ“ VSM-CLIN-002 matrix pins startup and repeated post-startup VC boundaries
+  âœ“ VSM-CLIN-002 completed-breath waveform and loop boundaries equal finalized measuredVT_mL
+    Analytical PIP=18.5  Sim PIP=18.5
+    Analytical VT=500 mL  Sim VT=501 mL
+    Breaths completed: 6
+  ✓ Sim PIP converges to analytical: 18.500
+  âœ“ Passive VC operational signals remain machine-triggered with complete expiration tracking
+
+════════════════════════════════════════════════════════════
+  TEST 27: SimEngine — PC-CMV VT Matches Analytical
+════════════════════════════════════════════════════════════
+    PC Analytical VT=705 mL  Sim VT=706 mL
+    PC PIP = 20 (expected 20.0)
+  ✓ PC Sim VT ≈ analytical: 706.000
+  ✓ PC PIP = PEEP + Pinsp: 20.000
+
+════════════════════════════════════════════════════════════
+  TEST 28: SimEngine — Patient-Triggered Breaths
+════════════════════════════════════════════════════════════
+    Vent RR=12, Patient RR=20
+    Breaths in 15s: 5
+    Last trigger: patient
+    Trigger markers: 3
+  ✓ Patient triggers detected: 1.000
+  ✓ Effective RR > vent RR: 1.000
+  ✓ Patient breath counter increments: 1.000
+  ✓ Trigger markers include patient breaths: 1.000
+    Pre-trigger nadir: 4.93 cmH2O (PEEP=5)
+  ✓ Patient-triggered flow event retains actual finite supply pressure drop: 1.000
+
+  ⚕️ Teaching point: When patient RR > vent RR, the patient triggers
+     additional breaths. The effective RR follows the patient.
+     This is normal Assist/Control behavior.
+
+════════════════════════════════════════════════════════════
+  TEST 28D: Trigger Sensitivity — Weak Effort Easy Flow Trigger
+════════════════════════════════════════════════════════════
+  ✓ Easy flow trigger detects patient breaths: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 28E: Trigger Sensitivity — Weak Effort Hard Flow Trigger
+════════════════════════════════════════════════════════════
+  ✓ Hard flow trigger blocks weak patient efforts: 1.000
+  ✓ Hard flow trigger still allows machine backup breaths: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 28F: Trigger Sensitivity — Easy Pressure Trigger
+════════════════════════════════════════════════════════════
+  ✓ Weak effort does not cross the actual finite-boundary pressure threshold: 0.000
+
+════════════════════════════════════════════════════════════
+  TEST 28G: Trigger Sensitivity — Hard Pressure Trigger
+════════════════════════════════════════════════════════════
+  ✓ Hard pressure trigger blocks weak patient efforts: 1.000
+  ✓ Hard pressure trigger still allows machine backup breaths: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 28B: SimEngine — Lockout Effort Triggers After 100 ms
+════════════════════════════════════════════════════════════
+    Breath count after 2.5 s: 2
+    Patient trigger markers: 1
+    Failed trigger markers: 0
+  ✓ Lockout-onset effort later triggers: 1.000
+  ✓ Persistent effort delivers a second breath: 2.000
+  ✓ Persistent effort is not marked failed: 0.000
+
+════════════════════════════════════════════════════════════
+  TEST 28C: SimEngine — Patient Trigger Wins Timer Ties
+════════════════════════════════════════════════════════════
+    Breath count after 7.0 s: 2
+    Second trigger: patient at 5.02 s
+  ✓ Tie produces a second breath: 2.000
+  ✓ Patient trigger wins timer tie: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 29: SimEngine — Ramp Flow + Hold Phase
+════════════════════════════════════════════════════════════
+    Ramp PIP=16.3  VT=497 mL
+    Pplat=15 (hold active → should measure)
+  ✓ Ramp sim VT ≈ 500: 497.000
+  ✓ VSM-CLIN-005 completed-hold measurement contract: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 30: SimEngine — COPD Gas Trapping (dynamic)
+════════════════════════════════════════════════════════════
+    After 3 breaths: vLung above eq = 87.6 mL
+    After 13 breaths: vLung above eq = 90.2 mL
+    Analytical trapped vol = 87.4 mL
+  ✓ Gas trapping builds over breaths: 1.000
+  ✓ Trapping converges toward analytical: 1.000
+  ✓ COPD flow baseline not reached: 0.000
+  ✓ COPD expiratory flow return percent < 100: 1.000
+
+  ⚕️ Teaching point: Gas trapping isn't a setting — it EMERGES
+     from the physics when Te < 3τ. Watch it build breath-by-breath!
+
+════════════════════════════════════════════════════════════
+  TEST 31: SimEngine — VC Pressure Scalloping with Pmus
+════════════════════════════════════════════════════════════
+    Passive mid P: 5.0  Active mid P: 5.0
+  ✓ VC Pmus creates pressure scalloping: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 32: SimEngine — Pause/Resume/Speed
+════════════════════════════════════════════════════════════
+  ✓ Sim starts running: 1.000
+  ✓ Sim paused: 0.000
+  ✓ No advance while paused: 1.000
+  ✓ Sim resumed: 1.000
+  ✓ Speed set to 2×: 2.000
+  ✓ Advance works at 2× speed: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 33: Loop Data — Per-Breath Collection
+════════════════════════════════════════════════════════════
+    loopCurrent samples: 428
+    loopCompleted samples: 429
+  ✓ Loop current has data: 1.000
+  ✓ Loop completed has data: 1.000
+  ✓ Loop arrays same length: 1.000
+  ✓ Completed loop arrays same length: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 34: P-V Loop Shape Validation
+════════════════════════════════════════════════════════════
+    Peak volume: 501 mL at sample 143
+    Pressure at peak vol: 18.5 cmH₂O
+    Pressure at start: 5.0 cmH₂O
+    Pressure at end: 5.0 cmH₂O
+  ✓ P-V loop: peak vol ≈ VT: 500.500
+  ✓ P-V loop: pressure rises during insp: 1.000
+  ✓ P-V loop: pressure decreases during exp: 1.000
+  ✓ P-V loop closes (end vol near start): 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 35: F-V Loop Shape Validation
+════════════════════════════════════════════════════════════
+    Insp flow (sample 43): 21.0 L/min
+    Exp flow (sample 322): -1.7 L/min
+  ✓ F-V loop: inspiratory flow > 0: 1.000
+  ✓ F-V loop: expiratory flow < 0: 1.000
+    Peak insp flow: 21.0 L/min (expected ≈21)
+  ✓ F-V loop: peak insp flow ≈ square flow: 21.000
+
+════════════════════════════════════════════════════════════
+  TEST 36: COPD Loop — Air Trapping (loop doesn't close)
+════════════════════════════════════════════════════════════
+    COPD loop: start vol=0 mL, end vol=1 mL
+    COPD loop: peak vol=500 mL
+    Volume at start > 0 indicates trapped gas from prior breaths
+    Exp flow at end: -3.5 L/min
+    (In COPD, expiratory flow may not reach zero = air trapping)
+  ✓ COPD: loop has data: 1.000
+  ✓ COPD: VT still ≈ 500 mL: 500.500
+
+  ⚕️ Teaching point: In the P-V loop, the area between the
+     inspiratory and expiratory limbs represents resistive work.
+     Wider loop = more resistance. In the F-V loop, a scooped
+     expiratory limb indicates airflow obstruction.
+
+════════════════════════════════════════════════════════════
+  TEST 37: Loop Reset
+════════════════════════════════════════════════════════════
+  ✓ Loop current empty after reset: 0.000
+  ✓ Loop completed empty after reset: 0.000
+
+════════════════════════════════════════════════════════════
+  TEST 38: Measured RR — CMV Completed Breaths
+════════════════════════════════════════════════════════════
+    Set RR=12  Measured RR=12.0
+  ✓ Measured RR ≈ set RR in CMV: 11.976
+
+════════════════════════════════════════════════════════════
+  TEST 41: Alarm Engine — No Alerts Normal
+════════════════════════════════════════════════════════════
+VSM-CLIN-006 focused engine: 884 passed / 0 failed
+  ✓ No alarms in normal state: 0.000
+
+════════════════════════════════════════════════════════════
+  TEST 42: Alarm Engine — High Pressure
+════════════════════════════════════════════════════════════
+  ✓ High pressure alarm active: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 43: Alarm Engine — High RR
+════════════════════════════════════════════════════════════
+  ✓ High RR alarm active: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 44: Alarm Engine — Apnea
+════════════════════════════════════════════════════════════
+  ✓ Apnea alarm active: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 45: Alarm Engine — Low Minute Ventilation
+════════════════════════════════════════════════════════════
+  ✓ Low VE alarm active: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 46: Alarm Engine — High Minute Ventilation
+════════════════════════════════════════════════════════════
+  ✓ High VE alarm active: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 47: Alarm Engine — Auto Reset
+════════════════════════════════════════════════════════════
+  ✓ Alarm activates initially: 1.000
+  ✓ Alarm auto-resets when condition resolves: 0.000
+
+════════════════════════════════════════════════════════════
+  TEST 48: Alarm Audio Policy - No Alarm No Sound
+════════════════════════════════════════════════════════════
+  ✓ No alarms produce no sound: 0.000
+
+════════════════════════════════════════════════════════════
+  TEST 49: Alarm Audio Policy - New Alarm Plays
+════════════════════════════════════════════════════════════
+  ✓ New alarm signature plays sound: 1.000
+
+════════════════════════════════════════════════════════════
+  TEST 50: Alarm Audio Policy - Silence Suppresses Sound
+════════════════════════════════════════════════════════════
+  ✓ Silenced alarm does not play: 0.000
+
+════════════════════════════════════════════════════════════
+  TEST 51: Alarm Audio Policy - Mute Suppresses Sound
+════════════════════════════════════════════════════════════
+  ✓ Muted alarm does not play: 0.000
+
+════════════════════════════════════════════════════════════
+  TEST 52: Alarm Audio Policy - Repeat Interval Limits Annoyance
+════════════════════════════════════════════════════════════
+  ✓ Persistent alarm does not repeat too soon: 0.000
+  ✓ Persistent high alarm repeats after interval: 1.000
+
+════════════════════════════════════════════════════════════
+  NT1 [FIXED to §2] — No silent drops; synchrony where physiology allows
+════════════════════════════════════════════════════════════
+  ✓ NT1 I:E 1:2 patRR 22: no silent drop (delivered+failed+inProgress == onsets): 21.000
+  ✓ NT1 I:E 1:2 patRR 22: synchrony — delivered == in-expiration onsets: 21.000
+  ✓ NT1 I:E 1:2 patRR 24: no silent drop (delivered+failed+inProgress == onsets): 23.000
+  ✓ NT1 I:E 1:2 patRR 24: synchrony — delivered == in-expiration onsets: 23.000
+  ✓ NT1 I:E 1:2 patRR 26: no silent drop (delivered+failed+inProgress == onsets): 25.000
+  ✓ NT1 I:E 1:2 patRR 26: synchrony — delivered == in-expiration onsets: 25.000
+  ✓ NT1 I:E 1:2 patRR 28: no silent drop (delivered+failed+inProgress == onsets): 27.000
+  ✓ NT1 I:E 1:2 patRR 28: synchrony — delivered == in-expiration onsets: 27.000
+  ✓ NT1 I:E 1:2 patRR 30: no silent drop (delivered+failed+inProgress == onsets): 30.000
+  ✓ NT1 I:E 1:1 patRR 22: no silent drop (delivered+failed+inProgress == onsets): 21.000
+  ✓ NT1 I:E 1:1 patRR 24: no silent drop (delivered+failed+inProgress == onsets): 23.000
+  ✓ NT1 I:E 1:1 patRR 26: no silent drop (delivered+failed+inProgress == onsets): 25.000
+  ✓ NT1 I:E 1:1 patRR 28: no silent drop (delivered+failed+inProgress == onsets): 27.000
+  ✓ NT1 I:E 1:1 patRR 30: no silent drop (delivered+failed+inProgress == onsets): 30.000
+  ✓ NT1 hold 0.5s patRR 22: no silent drop (delivered+failed+inProgress == onsets): 21.000
+  ✓ NT1 hold 0.5s patRR 24: no silent drop (delivered+failed+inProgress == onsets): 23.000
+  ✓ NT1 hold 0.5s patRR 26: no silent drop (delivered+failed+inProgress == onsets): 25.000
+  ✓ NT1 hold 0.5s patRR 28: no silent drop (delivered+failed+inProgress == onsets): 27.000
+  ✓ NT1 hold 0.5s patRR 30: no silent drop (delivered+failed+inProgress == onsets): 30.000
+
+════════════════════════════════════════════════════════════
+  NT2 [FIXED to §2] — Effort during machine INSPIRATION fails visibly
+════════════════════════════════════════════════════════════
+  âœ“ NT2 scenario produces inspiration-phase onsets (onsetInspHold > 0)
+  âœ“ NT2(a) inspiration-phase onsets deliver no breath
+  ✓ NT2(b) failed(ventilator_unavailable) count == inspiration-phase onsets: 15.000
+
+════════════════════════════════════════════════════════════
+  NT3 [FIXED to §2] — Sub-threshold effort fails visibly (mirror 28E/28G + PC-CSV)
+════════════════════════════════════════════════════════════
+  ✓ NT3a VC flow sub-threshold: patient breaths == 0: 0.000
+  âœ“ NT3a VC flow sub-threshold: emits failed(threshold) event
+  ✓ NT3b VC pressure sub-threshold: patient breaths == 0: 0.000
+  âœ“ NT3b VC pressure sub-threshold: emits failed(threshold) event
+  âœ“ NT3c PC-CSV stiff trigger: delivered rate collapses (measuredRR < set 35)
+  âœ“ NT3c PC-CSV stiff trigger: emits failed(threshold) event
+
+════════════════════════════════════════════════════════════
+  NT4 [FIXED to §2] — Full accounting identity + measured-RR honesty (high rate)
+════════════════════════════════════════════════════════════
+  ✓ NT4 full identity: onsets == delivered + failed + inProgress: 35.000
+  âœ“ NT4 measuredRR tracks delivered-breath rate: 23.242 within [14.400000000000809, 33.600000000001884]
+
+════════════════════════════════════════════════════════════
+  NT5 [GREEN guard] — PC-CSV unchanged for adequate effort
+════════════════════════════════════════════════════════════
+  âœ“ NT5 PC-CSV patRR 18: measuredRR ~= set and failed events ~= 0
+  âœ“ NT5 PC-CSV patRR 35: measuredRR ~= set and failed events ~= 0
+
+════════════════════════════════════════════════════════════
+  NT6 [FIXED to §2] — Passive (no effort) emits nothing
+════════════════════════════════════════════════════════════
+  ✓ NT6 passive: patient breaths == 0: 0.000
+  âœ“ NT6 passive: failed events == 0 (no Pmus -> no ineffective effort)
+
+════════════════════════════════════════════════════════════
+  SME-018 — cancelling a silence must actually restore sound
+════════════════════════════════════════════════════════════
+  ✓ BROKEN state — silence cleared but lastSoundAtSec stale: still mute: 0.000
+  ✓ FIXED state — cancel resets lastSoundAtSec: sounds on the next frame: 1.000
+  ✓ a fresh silence still suppresses sound after a previous cancel: 0.000
+
+════════════════════════════════════════════════════════════
+  SME-014 — latched per-breath PIP (display) vs live PIP (alarms)
+════════════════════════════════════════════════════════════
+  âœ“ pipLatched starts unavailable (nothing completed yet)
+  âœ“ pipLatched is populated once a breath completes
+  âœ“ pipLatched is within 0.5 cmH2O of the analytical PIP: 18.500 within [18.033094219031355, 19.033094219031355]
+  âœ“ pipLatched equals the peak of the breath that just ended, for the whole expiratory phase
+  âœ“ live pip still moves within the breath (alarm path intact)
+  âœ“ live pip reflects a mid-breath pressure rise before the breath ends
+  âœ“ reset() clears pipLatched to unavailable
+
+════════════════════════════════════════════════════════════
+  Ineffective-effort counter — window semantics
+════════════════════════════════════════════════════════════
+  âœ“ overbreathing at RR 34 produces failed efforts to count
+  âœ“ the run outlives the window (failed efforts exist outside it)
+  ✓ the 60 s window returns every failed effort produced inside it (retention covers the window): 17.000
+  âœ“ phase-gate failures are present (these have NO waveform highlight)
+  âœ“ every failed event has a gateFailed reason
+  âœ“ every failed event has a phase
+  âœ“ tMin is honoured: a 10 s read is a strict subset of the 60 s read
+  ✓ reading the counter does not mutate the event store: 34.000
+  âœ“ reset() zeroes the ineffective-effort counter
+  âœ“ reset() leaves only the freshly-started mandatory breath
+
+════════════════════════════════════════════════════════════
+  RESULTS
+════════════════════════════════════════════════════════════
+  Passed: 300
+  Failed: 0
+  🫁 All systems nominal. Engine is breathing.
+
+Commissioned gate verified: legacy engine 300/0
+PASS adaptive-controller: approved defaults and validated setup-only configuration
+PASS adaptive-controller: explicit initialization and no unavailable-to-zero conversion
+PASS adaptive-controller: independent error-law examples and symmetric capped step
+PASS adaptive-controller: inclusive deadband and unrounded fractional edge
+PASS adaptive-controller: decision uses source-applied pressure after boundary, not initial pressure
+PASS adaptive-controller: pending pressure only applies at beginBreath and only once
+PASS adaptive-controller: upper saturation does not accumulate behind bound and releases immediately
+PASS adaptive-controller: lower saturation keeps excessive measured VT and releases immediately
+PASS adaptive-controller: PEEP is trace context and never silently changes above-PEEP bounds
+PASS adaptive-controller: duplicate feedback cannot issue a second decision or replace pending pressure
+PASS adaptive-controller: wrong mode and generation never poison current source identity
+PASS adaptive-controller: publication timing and identity are required
+PASS adaptive-controller: out-of-order time and breath IDs are rejected
+PASS adaptive-controller: invalid/partial feedback is consumed and cannot be repaired by replay
+PASS adaptive-controller: applied command, version and source target cannot be substituted
+PASS adaptive-controller: each invalidation cancels pending and mixed epoch, including edit then revert
+PASS adaptive-controller: beginBreath target selection uses same epoch and cancels superseded correction
+PASS adaptive-controller: reset clears history, bound assessment and source while retaining passed configuration
+PASS adaptive-controller: invalid reset/boundary inputs cannot partially mutate live state
+PASS adaptive-controller: snapshots, feedback and pending commands are immutable detached context
+PASS adaptive-controller: no clock or undeclared physiology/model access
+PASS adaptive-controller: trace provenance retains exact source identity, raw VT and decision values
+ADAPTIVE_CONTROLLER_TALLY 22 passed, 0 failed
+Commissioned gate verified: adaptive controller 22/0
+PASS adaptive-integration: explicit mode routing and initialization before prefill
+PASS adaptive-integration: raw canonical inspired feedback matches independent passive discrete recurrence
+PASS adaptive-integration: normal next-boundary target/PEEP queue matrix holds old context and cancels correction
+PASS adaptive-integration: reset queue matrix retains both operator settings without synthetic completion or resume
+PASS adaptive-integration: three destination modes and reentry queue matrix preserves ownership and manual pressure
+PASS adaptive-integration: multiple requests and edit/revert advance epoch without replaying pressure
+PASS adaptive-integration: invalid queued requests are atomic and cannot erase an earlier valid request
+PASS adaptive-integration: immediate input edits including effort invalidate a mixed inspiration and rearm next breath
+PASS adaptive-integration: ineligible real deliveries remain in raw VE history and age normally
+PASS adaptive-integration: feedback remains paired with source target and never reassessed against queued target
+PASS adaptive-integration: pause/resume and matched ticks at different speeds preserve controller results
+PASS adaptive-integration: adaptive HOLD is excluded and old hold intent cannot poison initialization
+PASS adaptive-integration: adaptive summary and analytical APIs cannot leak fixed-pressure predictions
+PASS adaptive-integration: uncontrolled mode entry/exit is rejected and no source is synthesized
+PASS adaptive-integration: setup validation resets only after a valid configuration and keeps paused transport
+PASS adaptive-integration: above-PEEP bounds coexist with unchanged absolute pressure alarm
+PASS adaptive-integration: production mechanics adaptation matches reviewed Phase A fixture bands
+PASS adaptive-integration: production prescribed-effort contribution matches reviewed fixture without changing drive
+PASS adaptive-integration: production maximum-limit demonstration retains unmet target and actual VT
+PASS adaptive-integration: production minimum-bound excess volume remains visible
+PASS adaptive-integration: production saturation release immediately retreats without hidden windup
+PASS adaptive-integration: production incomplete-expiration and off-rate stress expose limitations
+PASS adaptive-integration: broader operating-range and gain sampling records success and limitation rather than assuming convergence
+PASS adaptive-integration: canonical publication is immutable and read/summary operations never create extra decisions
+ADAPTIVE_INTEGRATION_TALLY 24 passed, 0 failed
+Commissioned gate verified: adaptive integration 24/0
+PASS legacy vc-square-passive (3500 exercised ticks; passive-exact)
+PASS legacy vc-ramp-passive (3500 exercised ticks; passive-exact)
+PASS legacy vc-valid-hold (3500 exercised ticks; passive-exact)
+PASS legacy vc-short-hold (3500 exercised ticks; passive-exact)
+PASS legacy pc-passive (3500 exercised ticks; passive-exact)
+PASS legacy pc-pressure-trigger (3500 exercised ticks; active-contract-conformance)
+PASS legacy pc-valid-hold (3500 exercised ticks; passive-exact)
+PASS legacy csv-flow-cycle (3500 exercised ticks; active-contract-conformance)
+PASS legacy csv-max-ti (3500 exercised ticks; active-contract-conformance)
+PASS legacy csv-threshold-failure (3500 exercised ticks; active-contract-conformance)
+PASS legacy csv-delivery-ages-after-effort-stops (7000 exercised ticks; active-contract-conformance)
+PASS legacy pc-incomplete-expiration (3500 exercised ticks; passive-exact)
+PASS legacy vc-high-pressure-rate-ventilation (3500 exercised ticks; passive-exact)
+PASS legacy vc-cmv-live-edits (3500 exercised ticks; active-contract-conformance)
+PASS legacy pc-cmv-live-edits (3500 exercised ticks; active-contract-conformance)
+PASS legacy PC-CSV-live-edits (3500 exercised ticks; active-contract-conformance)
+PASS legacy vc-cmv-reset-to-pc-cmv (5500 exercised ticks; active-contract-conformance)
+PASS legacy vc-cmv-reset-to-PC-CSV (5500 exercised ticks; active-contract-conformance)
+PASS legacy pc-cmv-reset-to-vc-cmv (5500 exercised ticks; active-contract-conformance)
+PASS legacy pc-cmv-reset-to-PC-CSV (5500 exercised ticks; active-contract-conformance)
+PASS legacy PC-CSV-reset-to-vc-cmv (5500 exercised ticks; active-contract-conformance)
+PASS legacy PC-CSV-reset-to-pc-cmv (5500 exercised ticks; active-contract-conformance)
+LEGACY_PRESERVATION_TALLY {"fixtures":22,"passed":22,"failed":0,"ticks":92500,"exercisedTicks":92500,"exactMatchedTicks":28000,"conformanceTicks":64500,"passiveExactFixtures":8,"activeConformanceFixtures":14}
+Commissioned gate verified: selective legacy22/0;92500 exercised ticks (28000 exact,64500 conformance)
+PASS effort-pressure: Rc defaults and validated setup reset preserve paused transport
+PASS effort-pressure: unsupported Rc values fail without reset or changing the stored assumption
+PASS effort-pressure: expiration EOM and volume share a common pre-state at supported corners
+PASS effort-pressure: zero demand and both adjacent supply branches are continuous
+PASS effort-pressure: effort cessation restores outward PEEP without retaining an artificial dip
+PASS effort-pressure: original inconsistent expiration pressure fails the independent EOM oracle
+PASS effort-pressure: PC open and closed valve states obey the same law in every pressure mode
+PASS effort-pressure: valve closure raises actual live PIP while the adaptive command stays latched
+PASS effort-pressure: PC valve reopens algebraically and neither reverses flow nor jumps volume
+PASS effort-pressure: commanded pressure behind a closed valve is rejected as patient-side pressure
+PASS effort-pressure: post-step discrepancy is ordinary staggering for pre-collocated PC and expiration
+PASS effort-pressure: VC preserves its deliberate post-integration pressure collocation
+PASS effort-pressure: HOLD remains sealed and is distinct from delivery-valve closure
+PASS effort-pressure: CSV zero flow after an established peak retains flow cycling
+PASS effort-pressure: CSV with no positive peak retains maximum-Ti fallback
+PASS effort-pressure: immutable sample retains old physics phase through machine transitions
+PASS effort-pressure: pressure threshold uses actual sampled Paw rather than effort/recoil proxy
+PASS effort-pressure: pressure delivery records the first eligible physical threshold sample
+PASS effort-pressure: flow delivery records signed net lung flow and units from detection
+PASS effort-pressure: exact phaseTime <= .10 remains refractory, with first already-above-threshold eligibility
+PASS effort-pressure: terminal unavailable effort remains mechanical and cannot carry over to expiration
+PASS effort-pressure: threshold failure resolves once without a delivered marker
+PASS effort-pressure: passive input produces no phantom patient or failed events
+PASS effort-pressure: detection/edit/publication race freezes the actual historical trigger configuration
+PASS effort-pressure: queued adaptive PEEP is separate at detection and delivery without a volume jump
+PASS effort-pressure: ordinary immediate PEEP changes do not relabel already detected history
+PASS effort-pressure: explicit pending cancellation is terminal without a new failure counter or marker
+PASS effort-pressure: external schedule interruption clears pending provenance before the next tick
+PASS effort-pressure: reset clears pending snapshot, physics sample, neural identities and event history
+PASS effort-pressure: mode exit cannot publish stale pending patient metadata
+PASS effort-pressure: paused edits change input revision without advancing or relabeling retained events
+PASS effort-pressure: canonical completed breath carries the same frozen detection and delivery identity
+PASS effort-pressure: all modes/variables/rates matrix accounts for every volume increment and terminal outcome
+PASS effort-pressure: inward sinus forcing converges to an independent analytical solution
+PASS effort-pressure: PC sinus forcing closure converges to independent continuous valve reference
+PASS effort-pressure: adaptive raw source, gain/bounds and command publication boundaries stay protected
+PASS effort-pressure: actual closure pressure activates unchanged high-pressure rule before PIP latch
+PASS effort-pressure: VE first availability, stale/reset eligibility and five-second grace remain unchanged
+PASS effort-pressure: reported clean-reset Rc2 setup retains intentional flow3 versus pressure0 deliveries
+PASS effort-pressure: exact completion-indexed adaptive demonstrations preserve accepted recipe inputs
+PASS effort-pressure: signed renderer, highlights, frozen resize and full historical schema conform
+EFFORT_PRESSURE_TALLY {"groups":41,"passed":41,"failed":0}
+Commissioned gate verified: effort-pressure conformance41/0

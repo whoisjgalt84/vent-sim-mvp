@@ -1,0 +1,22 @@
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
++   color: 'rgba(0, 0, 0, 0)',
++   priority: 'none',
+-   color: 'rgb(255, 123, 123)',
+-   priority: 'high',
+    text: 'High priority',
+    width: '4px'
+  }
+
+    at /work/tests/alarm-border.browser.cjs:19:294
+    at async check (/work/tests/alarm-border.browser.cjs:18:31)
+    at async /work/tests/alarm-border.browser.cjs:19:1 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [Object],
+  expected: [Object],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}

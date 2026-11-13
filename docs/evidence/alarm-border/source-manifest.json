@@ -1,0 +1,41 @@
+{
+  "base": "35ea2bddd7a60c2861df7a4c0a9b2f8389177ecd",
+  "files": [
+    {
+      "file": "css/style.css",
+      "sha256": "0c2c939b81f3d251eb5b36938187bcf15ad947ccbe1348821f5180c3260d1155"
+    },
+    {
+      "file": "index.html",
+      "sha256": "45fcaff5391876882b5fa5695c5d3d2905e3971bead272556289bd0ef7a84bd7"
+    },
+    {
+      "file": "js/main.js",
+      "sha256": "60e8b1ecd5d8de0b1e21c5289b5e621e8ce5211eb16c44e9b125568f022ee618"
+    },
+    {
+      "file": "js/simulation.js",
+      "sha256": "fc4ebbcb86d6f2622237ca0d836dacf2cc2f5ea2713ec4b1243011725de33060"
+    },
+    {
+      "file": "js/ventilator.js",
+      "sha256": "11fe60be2744c5512036b04a9a58127cbd7cbebb96dca035c15978d817097d96"
+    },
+    {
+      "file": "scratch/verify-batch.cjs",
+      "sha256": "0bd0f020d42b8149108b0f6b3c706c4e5cdba4f7174ad931ea992142eb29d2cf"
+    },
+    {
+      "file": "tests/visual/waveforms.spec.js",
+      "sha256": "0f8961eb39d094f6d85335f2e0bbf45db721e17530848cc35ac661a08a93f9fb"
+    },
+    {
+      "file": "tools/run-browser-tests.mjs",
+      "sha256": "5293aec0aab58f21d8172ea44a16bb6587faac5f9ef77963fdd246311b75004b"
+    },
+    {
+      "file": "tests/alarm-border.browser.cjs",
+      "sha256": "af642fc8e089d5e947a1dfec487bf73cc60b39739496c7eb765d3e4a9082815b"
+    }
+  ]
+}

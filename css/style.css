@@ -1803,3 +1803,25 @@ body.teaching-mode.patient-open .app { grid-template-columns: 0 minmax(0, 1fr) 2
 .setting-tile .control__label { min-height: 2.4em; line-height: 1.2; }
 .setting-tile .control__value { white-space: nowrap; }
 .setting-tile__unit { display: inline-block; font-size: 12px; }
+
+/* Bounded alarm cue: decorative, steady and outside layout.
+   Low retains the existing amber banner mapping; its blue chip is unchanged. */
+#alarm-perimeter {
+    position: fixed; inset: 0; z-index: 20000;
+    border: 4px solid transparent; pointer-events: none;
+}
+#alarm-perimeter[data-priority="high"] { border-color: #ff7b7b; }
+#alarm-perimeter[data-priority="medium"],
+#alarm-perimeter[data-priority="low"] { border-color: #ffd166; }
+.alarm-banner { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
+.alarm-priority { display: inline-block; min-width: 9.5em; font-size: 0.8rem; }
+@media (forced-colors: active) {
+    #alarm-perimeter[data-priority="high"],
+    #alarm-perimeter[data-priority="medium"],
+    #alarm-perimeter[data-priority="low"] { border-color: CanvasText; }
+}
+
+/* Reserve the single-chip height even when no alarms are active. */
+.alarm-chip-list { min-height: 22px; }
+
+#alarm-perimeter[data-priority="none"] { visibility: hidden; }

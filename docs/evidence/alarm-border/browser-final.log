@@ -1,0 +1,228 @@
+
+> vent-sim-mvp@1.0.0 test:browser
+> node tools/run-browser-tests.mjs
+
+Starting Vent-Sim server at http://127.0.0.1:8899 ...
+[server] Serving /work/ at http://127.0.0.1:8899/
+Vent-Sim server is healthy.
+
+[SME-018] cancel an active alarm silence
+  ok   silence button enabled once an alarm is active
+  ok   shows a running countdown
+  ok   stays clickable while silenced
+  ok   title advertises cancel
+  ok   second press CANCELS the silence
+  ok   silence stays cancellable after the alarm clears
+  ok   no page errors
+
+[SME-012] loops available regardless of Teaching Mode
+  ok   loops start off
+  ok   loops stay off entering Teaching Mode
+  ok   loops stay off after leaving Teaching Mode
+  ok   loops off when the user turns them off
+  ok   Teaching Mode does not resurrect loops the user turned off
+  ok   loops can be re-enabled inside Teaching Mode
+  ok   no page errors
+
+[SME-013] vent mode alongside measured values
+  ok   mode row hidden in standard mode (header already shows it)
+  ok   mode row visible in Teaching Mode
+  ok   panel mode matches the header
+    VSM-CLIN-007 disclosure checks: 96/96
+    VSM-CLIN-005 presentation checks: 52/52
+    VSM-CLIN-004 states: [{"name":"VC initialization","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"PC initialization / synchronous switch","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"CSV selection / synchronous switch","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"CSV reset","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"CSV zero effort 15s","time":15,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"CSV changed predictions","time":15,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"Teaching CSV no breath","time":15,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"CSV failed efforts 15s","time":15,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"Teaching CSV failed efforts","time":15,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"CSV first inspiration","time":3.03,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0.6245184397067589},{"name":"CSV first completion","time":3.76,"completed":true,"rr":0,"pip":"15","vt":"639","ve":"—","liveTrapped":0.6245184397067589},{"name":"CSV next inspiration","time":6.03,"completed":true,"rr":0,"pip":"15","vt":"639","ve":"—","liveTrapped":8.647258866505725},{"name":"CSV established delivery","time":36.03,"completed":true,"rr":19.999999999998934,"pip":"15","vt":"631","ve":"12.6","liveTrapped":8.640839937390727},{"name":"Teaching CSV established delivery","time":36.03,"completed":true,"rr":19.999999999998934,"pip":"15","vt":"631","ve":"12.6","liveTrapped":8.640839937390727},{"name":"CSV full-window cessation","time":67.03,"completed":true,"rr":20.006674082312617,"pip":"15","vt":"372","ve":"0.0","liveTrapped":8.640839937390727},{"name":"CSV reset after delivery","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"VC established manual hold","time":23.49,"completed":true,"rr":13.871842443270966,"pip":"29.5","vt":"500","ve":"—","liveTrapped":341.8253959534852},{"name":"Teaching VC saved hold","time":23.49,"completed":true,"rr":13.871842443270966,"pip":"29.5","vt":"500","ve":"—","liveTrapped":341.8253959534852},{"name":"VC to PC retained hold","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"VC newest invalid manual hold","time":6.13,"completed":true,"rr":14.669926650367062,"pip":"17","vt":"501","ve":"—","liveTrapped":11.29282455136886},{"name":"VC ramp manual hold","time":2.04,"completed":true,"rr":0,"pip":"14.9","vt":"504","ve":"—","liveTrapped":0},{"name":"VC to CSV synchronous reset","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"VC to no-effort CSV 15s","time":15,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"CSV re-established","time":25,"completed":true,"rr":19.99999999999964,"pip":"15","vt":"697","ve":"—","liveTrapped":19.511391749470476},{"name":"CSV to VC synchronous reset","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"CSV re-established again","time":25,"completed":true,"rr":19.99999999999964,"pip":"15","vt":"697","ve":"—","liveTrapped":19.511391749470476},{"name":"CSV to PC synchronous reset","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0},{"name":"VC predicted Pplat before completion","time":0,"completed":false,"rr":0,"pip":"—","vt":"—","ve":"—","liveTrapped":0}]
+  ok   panel mode tracks a mode change and VSM-CLIN-004 readouts retain provenance/state
+  ok   no page errors
+
+[SME-014] peak-pressure readout stability
+  ok   PIP updates about once per breath, not per frame
+  ok   PIP no longer resizes as it updates
+  ok   PIP still shows a real value
+  ok   PIP catches up with a pressure excursion within one inspiration, not a whole cycle
+  ok   no page errors
+
+[counter + SME-022] failed triggers
+  ok   counter absent while the patient is passive
+  ok   counter present once effort is on
+  ok   counter registered failed efforts in an overbreathing patient
+  ok   a failed-effort tooltip is reachable by hover
+  ok   tooltip explains WHY, not just THAT (SME-022)
+  ok   historical failed tooltip does not invent current sensitivity
+    tooltip(s):
+      - Visible flow overlays: these explanations describe the highlighted intervals currently on screen, not necessarily the breath under the pointer.
+
+Failed trigger: this effort did not meet an active trigger criterion during its eligible expiratory samples. The flow trace shows signed net lung flow, not a separate effort signal. No delivered breath was recorded for this effort. Earlier trigger settings are not stored for this failed event.
+  ok   tooltip follows the trigger setting (pressure)
+    pressure-trigger tooltip(s):
+      - Visible flow overlays: these explanations describe the highlighted intervals currently on screen, not necessarily the breath under the pointer.
+
+Failed trigger: this effort did not meet an active trigger criterion during its eligible expiratory samples. The flow trace shows signed net lung flow, not a separate effort signal. No delivered breath was recorded for this effort. Earlier trigger settings are not stored for this failed event.
+      - Visible flow overlays: these explanations describe the highlighted intervals currently on screen, not necessarily the breath under the pointer.
+
+Flow baseline cue: modeled expiratory flow in this highlighted interval did not come within 0.5 L/min of zero before flow turned positive. This cue does not measure intrinsic PEEP or identify a unique cause. Predicted auto-PEEP and live modeled trapped volume are separate outputs.
+
+Failed trigger: this effort did not meet an active trigger criterion during its eligible expiratory samples. The flow trace shows signed net lung flow, not a separate effort signal. No delivered breath was recorded for this effort. Earlier trigger settings are not stored for this failed event.
+CLIN008_FOCUSED_BROWSER 28 passed, 0 failed
+  ok   no page errors
+
+[SME-002] effort slider units + fit
+  ok   Effort slider now has an inline value
+  ok   Effort value carries its unit
+  ok   Effort value tracks the slider
+  ok   T-neural value carries a spaced unit
+  ok   nothing overflows the sidebar
+  ok   no control text is cut off inside its own box
+  ok   no page errors
+
+[regression] Teaching-Mode monitor column clipping
+  ok   no readout is clipped by the 208px teaching column
+  ok   no readout text overflows its own box
+
+[regression] every local asset shares one cache-bust version
+  ok   no local asset is missing ?v=
+  ok   all local assets share one version
+  ok   js/main.js imports share the same version as index.html
+
+============================================================
+  44 passed, 0 failed
+============================================================
+Commissioned browser tally verified: 44 passed, 0 failed.
+PASS adaptive browser mode-entry-and-unavailable-feedback
+PASS adaptive browser queued-target-and-peep-apply-at-next-boundary
+PASS adaptive browser paused-reset-retains-each-operator-queue
+PASS adaptive browser destination-modes-and-reentry-retain-operator-settings
+PASS adaptive browser repeated-edits-revert-and-setup-only-bounds
+PASS adaptive browser source-target-pairing-and-mixed-delivery-history
+PASS adaptive browser applied-versus-pending-bounds-and-release
+PASS adaptive browser unsupported-predictions-are-unavailable-in-both-views
+PASS adaptive browser approved-effort-pressure-and-transition-help
+PASS adaptive browser static-help-hover-focus-and-escape-in-both-views
+PASS adaptive browser full-copy-and-readout-geometry-at-supported-type-sizes
+PASS adaptive browser actual-transport-pause-speed-and-render-do-not-create-decisions
+PASS adaptive browser finite-boundary-history-and-signed-geometry
+PASS adaptive browser active-prediction-gating-and-canonical-monitor
+PASS adaptive browser closed-valve-alarm-live-latch-and-wall-clock-audio
+PASS adaptive browser finite-boundary-first-VE-availability-and-reset
+ADAPTIVE_BROWSER_TALLY {"groups":12,"passed":12,"failed":0}
+EFFORT_PRESSURE_BROWSER_TALLY {"groups":4,"passed":4,"failed":0}
+Commissioned adaptive browser tally verified: 12 passed, 0 failed.
+Commissioned effort-pressure browser tally verified: 4 passed, 0 failed.
+PASS effort slider native-drags-and-geometry
+PASS effort slider precision-and-retention
+PASS effort slider running-transport-and-preservation
+PASS effort slider modes-and-keyboard
+PASS effort slider clipping-and-accessibility
+EFFORT_SLIDER_BROWSER_TALLY {"groups":5,"passed":5,"failed":0}
+Commissioned Effort slider browser tally verified: 5 passed, 0 failed.
+PASS reset-browser: vc-cmv-phase-effort-transport-repeat
+PASS reset-browser: pc-cmv-phase-effort-transport-repeat
+PASS reset-browser: PC-CSV-phase-effort-transport-repeat
+PASS reset-browser: pc-cmva-phase-effort-transport-repeat
+PASS reset-browser: adaptive-pending-maximum-and-header-reset
+PASS reset-browser: fresh-measurements-ve-window-and-alarm-eligibility
+PASS reset-browser: alarm-mute-silence-and-new-run-reevaluation
+PASS reset-browser: native-help-controls-and-header-geometry
+DEMONSTRATION_RESET_BROWSER_TALLY {"groups":8,"passed":8,"failed":0}
+Commissioned demonstration reset browser tally verified: 8 passed, 0 failed.
+PASS UI cleanup trigger-presentation
+PASS UI cleanup trigger-native-input
+PASS UI cleanup mechanics-group-order
+PASS UI cleanup custom-mechanics-reset-reload
+PASS UI cleanup mechanics-disclaimer-and-help
+PASS UI cleanup effort-single-state
+PASS UI cleanup narrow-layout-and-views
+UI_CLEANUP_BROWSER_TALLY {"groups":7,"passed":7,"failed":0}
+Commissioned UI cleanup browser tally verified: 7 passed, 0 failed.
+PASS manual-hold-browser default unmeasured values and separate recurring setting
+PASS manual-hold-browser native mouse arms without premature cycling and displays simulated duration
+PASS manual-hold-browser early release is canceled arming without attempted measurement
+PASS manual-hold-browser native mouse completion publishes frozen source and later invalid retains it
+PASS manual-hold-browser cap requires release and fresh press; click does not toggle recurring pause
+PASS manual-hold-browser Space and Enter support held state; auto-repeat cannot rearm after cap
+PASS manual-hold-browser touch press/hold/release uses continuous manual state
+PASS manual-hold-browser release/repress between ticks preserves expiration and arms next breath
+PASS manual-hold-browser takeover keeps continuous samples and release overrides only this pause
+PASS manual-hold-browser pointercancel cancels actual hold without success or restart
+PASS manual-hold-browser lostpointercapture cancels actual hold without success or restart
+PASS manual-hold-browser window-blur cancels actual hold without success or restart
+PASS manual-hold-browser hidden-tab cancels actual hold without success or restart
+PASS manual-hold-browser transport-pause cancels actual hold without success or restart
+PASS manual-hold-browser focus-lost cancels actual hold without success or restart
+PASS manual-hold-browser setting and effort edit/revert between ticks invalidate attempts
+PASS manual-hold-browser recurring alone publishes no manual history; ordinary settings preserve old context
+PASS manual-hold-browser cross-mode source retained and unsupported controls explicit
+PASS manual-hold-browser shared Reset clears history and active state while paused settings persist
+PASS manual-hold-browser PC/ramp per-value unavailability and help use original source
+MANUAL_HOLD_BROWSER_TALLY {"groups":20,"passed":20,"failed":0}
+Commissioned manual-hold browser tally verified: 20 passed, 0 failed.
+PASS R01 deterministic control settlement, older rAF timestamp, pause/resume, reset
+PASS R01 frozen deterministic fixtures do not accrue wall time through real controls
+REAL_ANIMATION [{"mode":"vc-cmv","elapsed":0.5095,"simulated":0.5},{"mode":"pc-cmv","elapsed":0.5083999999999068,"simulated":0.5},{"mode":"PC-CSV","elapsed":0.5063000000000466,"simulated":0.5},{"mode":"pc-cmva","elapsed":0.5079000000000233,"simulated":0.5}]
+PASS R01 real browser animation in all four modes
+SIGNED_BROWSER_PIP [{"id":20,"expected":5.1952101763975245,"canonical":5.1952101763975245,"latch":5.2,"display":"5.2","alarm":5.2,"live":5.2},{"id":21,"expected":4.124340693899234,"canonical":4.124340693899234,"latch":4.1,"display":"4.1","alarm":4.1,"live":4.1},{"id":22,"expected":-0.3466659288246299,"canonical":-0.3466659288246299,"latch":-0.3,"display":"-0.3","alarm":0,"live":0}]
+PASS R11 exact independent fixture displays breath 22 signed PIP and resets to unavailable
+PASS R02 UI rejects overlap, shows applied/queued timing and applies only at boundary in all modes
+PASS R02 effort Off/On preserves clock and interrupted/resolved outcomes without new markers
+PASS R02 timing edits immediately invalidate hold; paired import rejection and Reset are atomic
+REVIEW_BROWSER_TALLY {"groups":7,"passed":7,"failed":0}
+PASS slice desktop settings and seven output positions, all modes and both views
+PASS slice all Patient/Teach combinations retain state, alarms, holds and mounted controls
+PASS slice loops initially off and independently retain explicit selection across Teach and Patient
+PASS slice R03 zero and positive effort across every mode pair, Off/On and native inputs
+PASS slice Inspired VT source, MAP provenance/unavailability and stable accessible help
+PASS slice R05 CSV prediction surfaces gated, configured backstop visible, genuine signals and raw alarms retained
+PASS slice hold age follows physics, pause, speed/cap and retained source; invalid attempt and Reset
+PASS slice drawer focus, help, Escape, keyboard collapsibles and narrow reflow
+TEACHING_SLICE_BROWSER_TALLY {"groups":8,"passed":8,"failed":0}
+PASS hierarchy Patient closed default, discoverable toggle, retained choice and fresh reload
+PASS hierarchy exact mode hierarchy, native labels, preview emphasis and stable input identity
+PASS hierarchy Teach waveform focus and independent Patient across modes, sizes and repeated toggles
+PASS hierarchy additional outputs start closed; native keyboard, inner collapse and help work in both views
+PASS hierarchy settings and pending effort pair survive disclosure, Teach and Patient; genuine alarm unchanged
+SETTING_HIERARCHY_BROWSER_TALLY {"groups":5,"passed":5,"failed":0}
+PASS collapsed defaults and retained native keyboard selections
+PASS high-rate negative limbs, single/both overlays, stability, clearing, gaps and machine omission
+PASS genuine positive-expiration hover through sliced 5/10/30s history, reset and mode changes
+PASS underlying timed history, legend and keyboard/click help
+USABILITY_BROWSER_TALLY 4 passed, 0 failed
+PASS RR24/high RR hover, panel transfer, pin, retained copy, Escape and no reopen
+PASS keyboard activation, both explanations, Close and focus restoration
+PASS cross-trigger passive hover preserves pinned/focused help; explicit activation remains
+PASS Standard/Teach canvas affordance, activation and focus transitions
+PASS reset, mode and Teach-off dismissal
+PASS absent/mixed/returned cues retain text, show only missing notices, and both variants use colons
+PASS narrow and 150% zoom panel bounds and reachable controls
+PASS fresh touch cue tap pins and closes; static touch access remains
+OVERLAY_PANEL_BROWSER_TALLY 8 passed, 0 failed (managed chromium)
+PASS editor open focus navigation and unchanged Confirm are inert
+PASS editor numeric step bounds blank invalid and revert are draft-only
+PASS editor sliders cannot bypass Confirm and repeated keyboard edits accumulate
+PASS editor Confirm uses retained nonadaptive path in every supported mode
+PASS editor adaptive requests remain atomic and waiting until actual breath start
+PASS editor adaptive invalid blank revert Cancel cannot rehabilitate feedback
+PASS editor newest request supersedes earlier queue without reverting sibling
+PASS editor reset and mode close stale drafts and preserve accepted adaptive request
+PASS editor other accepted edits dismiss stale drafts
+PASS editor armed and active hold changes cancel without restoring or overwriting history
+PASS editor keyboard Escape focus and narrow viewport stay usable
+PASS editor live statuses update only when their messages change
+PASS editor mode-specific safety notices preserve editing and live-region semantics
+PASS editor review previews and input labels
+SETTING_EDITOR_BROWSER_TALLY 14 passed, 0 failed
+PRIMARY_TILE_POLISH_TALLY 16 layout cases passed
+PASS highest priority and downgrade/clear
+PASS legacy low mapping without new alarm producer
+PASS stable live-region content and decorative semantics
+PASS rendering does not mutate simulation/audio
+PASS no perimeter layout shifts or motion
+PASS real alarm silenced and muted remains visible
+PASS real mode buttons preserve sound/silence state
+PASS reset clears visual synchronously preserving audio
+PASS all-mode presentation matches unchanged evaluator
+PASS Standard and Teach, narrow and short/zoom-equivalent viewport
+PASS keyboard editor and Patient/help overlays remain usable
+PASS narrow scroll, editor and Patient overlay
+PASS forced colors retains non-color severity and steady frame
+PASS review captures of each priority state
+PASS no browser errors
+ALARM_BORDER_BROWSER_TALLY 15 passed, 0 failed

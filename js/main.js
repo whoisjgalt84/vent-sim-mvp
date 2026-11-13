@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=37';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=37';
-import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=37';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=37';
-import AlarmEngine from '../alarms.js?v=37';
+import { LungModel }        from './lung-model.js?v=38';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=38';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=38';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=38';
+import AlarmEngine from '../alarms.js?v=38';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=37';
+} from '../alarm-audio.js?v=38';
 
 
 // =============================================================================
@@ -2035,6 +2035,19 @@ function renderAlarms(alarms) {
 
     if (!banner || !chipList) return;
 
+    // Presentation only: the existing active-alarm list owns priority. Audio,
+    // alarm evaluation and its simulation/wall-clock split remain untouched.
+    const priority = AlarmEngine.highestAlarmPriority(alarms || []);
+    const perimeter = document.getElementById('alarm-perimeter');
+    const status = document.getElementById('alarm-priority');
+    const state = priority || 'none';
+    if (perimeter && perimeter.dataset.priority !== state) perimeter.dataset.priority = state;
+    const priorityText = priority
+        ? priority[0].toUpperCase() + priority.slice(1) + ' priority'
+        : alarms?.length ? 'Priority unavailable' : 'No active alarms';
+    // Stable live region: unchanged animation frames must not reannounce it.
+    if (status && status.textContent !== priorityText) status.textContent = priorityText;
+
     banner.classList.remove(
         'alarm-banner--ok',
         'alarm-banner--medium',
@@ -2056,7 +2069,6 @@ function renderAlarms(alarms) {
         return;
     }
 
-    const priority = AlarmEngine.highestAlarmPriority(alarms);
     banner.classList.add(
         priority === 'high' ? 'alarm-banner--high' : 'alarm-banner--medium'
     );

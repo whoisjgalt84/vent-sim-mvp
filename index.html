@@ -9,7 +9,7 @@
          style.css: markup-dependent rules silently vanish (the Teaching-Mode
          mode row disappears, the RR readout falls back to its old cramped
          layout) with no error anywhere. Bump all three together. -->
-    <link rel="stylesheet" href="css/style.css?v=38">
+    <link rel="stylesheet" href="css/style.css?v=39">
 </head>
 <body>
 <div id="alarm-perimeter" aria-hidden="true" data-priority="none"></div>
@@ -21,7 +21,10 @@
     <!-- ================================================================ -->
     <header class="header">
         <div class="header__status">
+            <div class="header__mode-status">
             <div class="header__mode" id="mode-label">VC-CMV<span style="font-weight:normal; font-size:11px; opacity:0.5; margin-left:4px;">set-point</span></div>
+                <span id="patient-trigger-status" class="alert-badge alert-badge--info" hidden>⬆ Patient triggered</span>
+            </div>
             <span class="header__status-chip" id="breath-info">#0</span>
             <div class="speed-group speed-group--status" id="speed-group">
                 <button class="speed-btn speed-btn--active" data-speed="1">1×</button>
@@ -745,8 +748,8 @@
 </div>
 
 <!-- Load scripts as ES modules (requires local server — use Live Server in VS Code) -->
-<script type="module" src="alarms.js?v=38"></script>
-<script type="module" src="js/main.js?v=38"></script>
+<script type="module" src="alarms.js?v=39"></script>
+<script type="module" src="js/main.js?v=39"></script>
 
 </body>
 </html>

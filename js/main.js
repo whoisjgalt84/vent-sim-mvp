@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=38';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=38';
-import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=38';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=38';
-import AlarmEngine from '../alarms.js?v=38';
+import { LungModel }        from './lung-model.js?v=39';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=39';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=39';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=39';
+import AlarmEngine from '../alarms.js?v=39';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=38';
+} from '../alarm-audio.js?v=39';
 
 
 // =============================================================================
@@ -2313,8 +2313,9 @@ function updateAlerts(summary, measured) {
     if (!s.isAdaptive && s.pressures.autoPeep_cmH2O > 2) badges.push(makeBadge('warning', `Predicted steady-state auto-PEEP ${s.pressures.autoPeep_cmH2O}`));
     if (s.safety.tiTooShort) badges.push(makeBadge('warning', `Ti/τ ${s.safety.tiOverTau} < 1 — short fill`));
 
-    if (sim.patientRR > 0 && measured.triggerType === 'patient') {
-        badges.push(makeBadge('info', '⬆ Patient triggered'));
+    const patientTriggerStatus = document.getElementById('patient-trigger-status');
+    if (patientTriggerStatus) {
+        patientTriggerStatus.hidden = !(sim.patientRR > 0 && measured.triggerType === 'patient');
     }
 
     container.innerHTML = badges.join('');

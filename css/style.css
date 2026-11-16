@@ -199,15 +199,20 @@ html, body {
 }
 
 .alarm-audio-btn {
-    border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 6px;
-    background: rgba(255,255,255,0.04);
+    min-width: 74px;
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
     color: var(--text-primary);
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 5px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
     cursor: pointer;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .alarm-audio-btn:hover {
@@ -1825,3 +1830,8 @@ body.teaching-mode.patient-open .app { grid-template-columns: 0 minmax(0, 1fr) 2
 .alarm-chip-list { min-height: 22px; }
 
 #alarm-perimeter[data-priority="none"] { visibility: hidden; }
+
+/* Header polish: breath provenance stays beside the mode, not the alarms. */
+.header__mode-status { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+#patient-trigger-status[hidden] { display: inline-flex; visibility: hidden; }
+.alarm-audio-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }

@@ -22,8 +22,8 @@ canonical measurements and patient-trigger semantics are unchanged. Asset
 references use version 38 at all 11 sites. The simulation/ventilator import
 changes are cache-version changes, not a model change.
 
-The proposed patient-trigger indicator relocation and consistent alarm-button
-sizing are a separate header-polish follow-up. The pilot video showing alarms
+The patient-trigger indicator relocation and consistent alarm-button sizing
+are covered by the separate [header-polish closeout](header-polish.md). The pilot video showing alarms
 clearing and returning between breaths is a separate deferred question about
 behavior or learner explanation; neither its cause nor remedy is settled here.
 

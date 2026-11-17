@@ -335,6 +335,8 @@ try {
         if (polishCode !== 0) throw new Error('Primary tile polish browser gate failed');
         const alarmCode = await runChild([fileURLToPath(new URL('../tests/alarm-border.browser.cjs', import.meta.url))]);
         if (alarmCode !== 0) throw new Error('Alarm border browser gate failed');
+        const headerCode = await runChild([fileURLToPath(new URL('../tests/header-polish.browser.cjs', import.meta.url))]);
+        if (headerCode !== 0) throw new Error('Header polish browser gate failed');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

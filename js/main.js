@@ -24,17 +24,17 @@
  * ============================================================================
  */
 
-import { LungModel }        from './lung-model.js?v=39';
-import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=39';
-import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=39';
-import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=39';
-import AlarmEngine from '../alarms.js?v=39';
+import { LungModel }        from './lung-model.js?v=40';
+import { Ventilator, MODE_PC_CSV, MODE_PC_CMVA }        from './ventilator.js?v=40';
+import { SimulationEngine, validateEffortTiming }  from './simulation.js?v=40';
+import { WaveformDisplay, LoopRenderer, hasUnknownPatientTriggerProvenance, AIR_TRAPPING_HELP, FAILED_FLOW_HELP }   from './waveforms.js?v=40';
+import AlarmEngine from '../alarms.js?v=40';
 import {
     DEFAULT_ALARM_AUDIO_SETTINGS,
     alarmSignature,
     highestPriority,
     shouldPlayAlarmSound,
-} from '../alarm-audio.js?v=39';
+} from '../alarm-audio.js?v=40';
 
 
 // =============================================================================
@@ -1315,13 +1315,19 @@ const PRIMARY_SETTINGS = {
     pinsp: { name: 'Pinsp', unit: 'cmH2O', get: () => vent.inspiratoryPressure, apply: onPinspChange },
     'ps-pressure': { name: 'Pressure Support', unit: 'cmH2O', get: () => vent.psPressure, apply: onPsPressureChange }
 };
+// Trigger thresholds share the editor, not the primary-setting hierarchy.
+const TRIGGER_SETTINGS = {
+    'flow-trigger': { name: 'Flow trigger sensitivity', unit: 'L/min', get: () => vent.flowTriggerLpm, apply: onFlowTriggerChange, triggerType: 'flow' },
+    'pressure-trigger': { name: 'Pressure trigger sensitivity', unit: 'cmH₂O', get: () => vent.pressureTriggerCmH2O, apply: onPressureTriggerChange, triggerType: 'pressure' }
+};
+const EDITABLE_SETTINGS = { ...PRIMARY_SETTINGS, ...TRIGGER_SETTINGS };
 function acceptedSettingValue(id) {
-    const spec = PRIMARY_SETTINGS[id];
+    const spec = EDITABLE_SETTINGS[id];
     return sim.adaptiveState?.requested?.[spec.adaptiveKey] ?? spec.get();
 }
-function settingName(id) { return id === 'vt' && vent.isAdaptiveMode() ? 'Target VT' : PRIMARY_SETTINGS[id].name; }
-function settingUnit(id) { return PRIMARY_SETTINGS[id].unit; }
-function settingAvailable(id) { return SETTING_HIERARCHY[vent.mode].primary.includes(id); }
+function settingName(id) { return id === 'vt' && vent.isAdaptiveMode() ? 'Target VT' : EDITABLE_SETTINGS[id].name; }
+function settingUnit(id) { return EDITABLE_SETTINGS[id].unit; }
+function settingAvailable(id) { return TRIGGER_SETTINGS[id] ? vent.triggerType === TRIGGER_SETTINGS[id].triggerType : SETTING_HIERARCHY[vent.mode].primary.includes(id); }
 function refreshSettingTiles() {
     for (const [id, spec] of Object.entries(PRIMARY_SETTINGS)) {
         const tile = document.getElementById(id + '-tile');
@@ -1344,6 +1350,17 @@ function refreshSettingTiles() {
         else tile.setAttribute('aria-describedby', id + '-tile-pending');
     }
 }
+function refreshTriggerTiles() {
+    for (const [id, spec] of Object.entries(TRIGGER_SETTINGS)) {
+        const tile = document.getElementById(id + '-tile');
+        if (!tile) continue;
+        const value = formatTriggerValue(spec.get(), spec.unit);
+        const display = document.getElementById(id + '-display');
+        if (display.textContent !== value) display.textContent = value;
+        tile.setAttribute('aria-label', 'Edit ' + spec.name + ', applied ' + value);
+        tile.setAttribute('aria-expanded', String(settingDraft?.id === id));
+    }
+}
 function positionSettingEditor() {
     const editor = document.getElementById('setting-editor');
     if (!settingDraft || !editor.open) return;
@@ -1364,15 +1381,17 @@ function closeSettingEditor(restore = true) {
     settingDraft = null;
     document.getElementById('setting-editor').close();
     refreshSettingTiles();
+    refreshTriggerTiles();
     if (restore && trigger.getClientRects().length) trigger.focus();
 }
 function settingDraftIsCurrent() {
     return settingDraft && settingAvailable(settingDraft.id) && settingDraft.mode === vent.mode
+        && (!TRIGGER_SETTINGS[settingDraft.id] || settingDraft.triggerType === vent.triggerType)
         && settingDraft.generation === sim.simulationGeneration
         && settingDraft.accepted === acceptedSettingValue(settingDraft.id);
 }
 function openSettingEditor(id) {
-    if (!PRIMARY_SETTINGS[id] || !settingAvailable(id)) return;
+    if (!EDITABLE_SETTINGS[id] || !settingAvailable(id)) return;
     if (settingDraft?.id === id && settingDraftIsCurrent()) {
         document.getElementById('setting-draft').focus({ preventScroll: true });
         return;
@@ -1380,7 +1399,7 @@ function openSettingEditor(id) {
     closeSettingEditor(false);
     const source = document.getElementById(id), value = acceptedSettingValue(id);
     settingDraft = { id, mode: vent.mode, generation: sim.simulationGeneration,
-        accepted: value, text: String(value), consequence: '' };
+        accepted: value, triggerType: vent.triggerType, text: String(value), consequence: '' };
     const input = document.getElementById('setting-draft');
     for (const key of ['min', 'max', 'step']) { input[key] = source[key]; document.getElementById('setting-range')[key] = source[key]; }
     document.getElementById('setting-range').value = value;
@@ -1399,12 +1418,20 @@ function openSettingEditor(id) {
         if (tile.bottom > sheet.top - 12) window.scrollBy(0, tile.bottom - sheet.top + 12);
     }
 }
+function settingStepScale(input) {
+    const places = value => (String(value).split('.')[1] || '').length;
+    return 10 ** Math.max(places(input.min), places(input.max), places(input.step));
+}
 function validatedSettingDraft() {
     if (!settingDraft || !settingDraft.text.trim()) return null;
     const input = document.getElementById('setting-draft'), value = Number(settingDraft.text);
     const min = Number(input.min), max = Number(input.max), step = Number(input.step);
-    return Number.isFinite(value) && value >= min && value <= max
-        && Number.isInteger((value - min) / step) ? value : null;
+    const scale = settingStepScale(input);
+    const scaled = value * scale, rounded = Math.round(scaled);
+    // Permit only multiplication roundoff, never a fraction of a configured step.
+    const exactGrid = Math.abs(scaled - rounded) <= Number.EPSILON * Math.max(1, Math.abs(scaled)) * 2;
+    return Number.isFinite(value) && value >= min && value <= max && exactGrid
+        && (rounded - Math.round(min * scale)) % Math.round(step * scale) === 0 ? value : null;
 }
 function changeSettingDraft(text) {
     if (!settingDraftIsCurrent()) { closeSettingEditor(false); return; }
@@ -1433,13 +1460,15 @@ function settingSafetyNotice() {
 }
 function refreshSettingEditor() {
     refreshSettingTiles();
+    refreshTriggerTiles();
     if (!settingDraft) return;
     if (!settingDraftIsCurrent()) { closeSettingEditor(false); return; }
     const { id } = settingDraft, unit = settingUnit(id), adaptive = sim.adaptiveState;
-    const applied = PRIMARY_SETTINGS[id].get();
-    const key = PRIMARY_SETTINGS[id].adaptiveKey;
+    const applied = EDITABLE_SETTINGS[id].get();
+    const key = EDITABLE_SETTINGS[id].adaptiveKey;
     const waiting = adaptive?.pendingSettings?.[key] !== undefined;
     setText('setting-applied', 'Applied: ' + applied + ' ' + unit);
+    document.getElementById('setting-accepted').hidden = Boolean(TRIGGER_SETTINGS[id]);
     setSettingStatus('setting-accepted', waiting ? 'Accepted: ' + acceptedSettingValue(id) + ' ' + unit + ' · waiting for next breath' : 'No accepted change waiting');
     const input = document.getElementById('setting-draft'), valid = validatedSettingDraft() !== null;
     input.setAttribute('aria-invalid', String(!valid));
@@ -1458,10 +1487,10 @@ function confirmSettingDraft() {
     if (value === accepted) return; // Unchanged confirmation is not an edit event/request.
     const source = document.getElementById(id);
     source.value = value;
-    PRIMARY_SETTINGS[id].apply(source);
+    EDITABLE_SETTINGS[id].apply(source);
     // The accepted nonadaptive write needs its own fingerprint synchronization;
     // adaptive requestAdaptiveSettings already invalidates atomically.
-    if (!(vent.isAdaptiveMode() && PRIMARY_SETTINGS[id].adaptiveKey)) sim.notifyMeasurementSettingsChanged();
+    if (!(vent.isAdaptiveMode() && EDITABLE_SETTINGS[id].adaptiveKey)) sim.notifyMeasurementSettingsChanged();
     updateMonitorValues(vent.summary()); updateHoldResults();
     refreshSettingTiles();
 }
@@ -1495,6 +1524,18 @@ function initSettingEditor() {
         source.hidden = true; source.tabIndex = -1; source.setAttribute('aria-hidden', 'true');
         tile.addEventListener('click', () => openSettingEditor(id));
     }
+    for (const [id, spec] of Object.entries(TRIGGER_SETTINGS)) {
+        const source = document.getElementById(id), row = source.parentElement;
+        const tile = document.createElement('button');
+        tile.type = 'button'; tile.id = id + '-tile'; tile.className = 'setting-tile trigger-setting-tile';
+        tile.setAttribute('aria-haspopup', 'dialog'); tile.setAttribute('aria-controls', 'setting-editor');
+        const label = document.createElement('span'); label.className = 'control__label'; label.textContent = 'Sensitivity';
+        const applied = document.createElement('span'); applied.className = 'setting-tile__applied'; applied.textContent = 'Applied';
+        tile.append(label, document.getElementById(id + '-display'), applied);
+        row.append(tile); source.hidden = true; source.tabIndex = -1; source.setAttribute('aria-hidden', 'true');
+        tile.addEventListener('click', () => openSettingEditor(id));
+    }
+    refreshTriggerTiles();
     document.getElementById('setting-range').addEventListener('input', e => changeSettingDraft(e.target.value));
     window.addEventListener('resize', positionSettingEditor);
     window.addEventListener('scroll', positionSettingEditor, true);
@@ -1504,7 +1545,9 @@ function initSettingEditor() {
             if (!settingDraftIsCurrent()) { closeSettingEditor(false); return; }
             const input = document.getElementById('setting-draft'), value = validatedSettingDraft();
             if (value === null) return;
-            const next = Math.min(Number(input.max), Math.max(Number(input.min), value + direction * Number(input.step)));
+            const scale = settingStepScale(input);
+            const next = Math.min(Number(input.max), Math.max(Number(input.min),
+                (Math.round(value * scale) + direction * Math.round(Number(input.step) * scale)) / scale));
             changeSettingDraft(String(next));
         });
     }
@@ -1530,7 +1573,7 @@ function bindSlider(id, callback) {
     const slider = document.getElementById(id);
     if (!slider) return;
     slider.addEventListener('input', () => {
-        if (PRIMARY_SETTINGS[id]) {
+        if (EDITABLE_SETTINGS[id]) {
             const proposed = slider.value;
             slider.value = acceptedSettingValue(id);
             if (!settingAvailable(id)) return;

@@ -12,6 +12,7 @@ const channel = process.env.VSM_BROWSER_CHANNEL;
    discovery:["if (pointerMoved && text && !overlayHelpSuppressed && allowPassiveHelp())","if (false)"],
    passive:["return !measurementHelpClickPinned\n        && !document.getElementById('measurement-help').contains(document.activeElement);","return true;"],
    standard:["canvas.tabIndex = teaching ? 0 : -1;","canvas.tabIndex = 0;"],
+   focusHandoff:["if (!teaching && document.activeElement === canvas) document.getElementById('btn-teaching-mode').focus();","/* mutation: suppress Standard canvas focus handoff */"],
    status:[".filter(k => !overlayHelpVisible.has(k))",".filter(k => false)"],
    selection:["if (text && text.textContent !== copy)","if (text)"],
    pin:["measurementHelpClickPinned = true;","measurementHelpClickPinned = false;"],
@@ -85,8 +86,20 @@ const channel = process.env.VSM_BROWSER_CHANNEL;
   passed++;console.log('PASS cross-trigger passive hover preserves pinned/focused help; explicit activation remains');
   await page.goto('http://127.0.0.1:8899');await page.waitForFunction(()=>window.__vsim);
   assert.equal(await flow.getAttribute('tabindex'),'-1');assert.equal(await flow.getAttribute('aria-label'),'Flow waveform.');
-  await flow.focus();await page.keyboard.press('Enter');assert.equal(await panel.isHidden(),true);
-  await page.locator('#btn-teaching-mode').click();assert.equal(await flow.getAttribute('tabindex'),'0');
+  // Freeze refresh while testing a key delivered to the Standard-mode canvas.
+  // Otherwise refresh legitimately hands focus to Teach before Enter is sent.
+  await page.evaluate(()=>__vsim.pause());
+  await flow.focus();
+  assert.equal(await flow.evaluate(e=>e===document.activeElement),true);
+  await page.keyboard.press('Enter');assert.equal(await panel.isHidden(),true);
+  assert.equal(await page.evaluate(()=>document.body.classList.contains('teaching-mode')),false);
+  // Exercise that handoff explicitly, rather than racing it against keyboard input.
+  await page.evaluate(()=>__vsim.redraw());
+  assert.equal(await page.locator('#btn-teaching-mode').evaluate(e=>e===document.activeElement),true);
+  assert.equal(await flow.getAttribute('tabindex'),'-1');
+  await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>document.body.classList.contains('teaching-mode')),true);
+  assert.equal(await flow.getAttribute('tabindex'),'0');
   assert.match(await flow.getAttribute('aria-label'),/Activate/);await flow.focus();await page.keyboard.press('Enter');
   await page.keyboard.press('Tab');assert.equal(await panel.isVisible(),true);
   await page.locator('#btn-teaching-mode').evaluate(e=>e.click());

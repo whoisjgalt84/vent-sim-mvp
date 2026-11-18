@@ -337,6 +337,8 @@ try {
         if (alarmCode !== 0) throw new Error('Alarm border browser gate failed');
         const headerCode = await runChild([fileURLToPath(new URL('../tests/header-polish.browser.cjs', import.meta.url))]);
         if (headerCode !== 0) throw new Error('Header polish browser gate failed');
+        const triggerEditorCode = await runChild([fileURLToPath(new URL('../tests/trigger-editor.browser.cjs', import.meta.url))]);
+        if (triggerEditorCode !== 0) throw new Error('Trigger editor browser gate failed');
     }
 } catch (error) {
     console.error(`${visualMode ? 'Visual' : 'Browser'} verification could not run: ${error.message}`);

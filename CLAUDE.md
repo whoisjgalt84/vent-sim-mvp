@@ -69,7 +69,7 @@ require generating host-specific, non-authoritative snapshots first with
 <a id="verification-inventory"></a>
 <a id="current-verification-inventory--2026-11-03"></a>
 
-### Current verification inventory - 2026-11-16
+### Current verification inventory - 2026-11-18
 
 The inventory is defined by the [engine runner](tools/run-engine-tests.mjs)
 and [browser/visual runner](tools/run-browser-tests.mjs), not workflow job titles.
@@ -79,10 +79,12 @@ the inventory of the historical release CI run below.
 | Gate | Required inventory |
 | --- | --- |
 | Engine | 300 original assertions; 22 adaptive controller; 24 adaptive integration; 22 selective legacy fixtures; 41 effort/pressure; 28 demonstration-reset; 43 manual-hold; 15 R01/R11; 17 R02 groups. Plus 8 teaching-slice and 6 phase-history groups. Total: 526 mixed top-level assertions/groups/fixtures, not 526 equivalent tests. |
-| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice, 5 hierarchy, 4 usability and 8 overlay-panel groups. Plus 14 setting-editor groups and 16 primary-tile responsive layout cases. Plus 15 alarm-border and 6 header-polish groups. Total: 167 behavior groups plus 16 layout cases (183 mixed checks). |
+| Browser | 44 original; 12 adaptive; 4 effort/pressure; 5 Effort-slider; 8 reset; 7 UI cleanup; 20 manual-hold; 4 R01/R11; 3 R02 groups. Plus 8 teaching-slice, 5 hierarchy, 4 usability and 8 overlay-panel groups. Plus 14 setting-editor groups and 16 primary-tile responsive layout cases. Plus 15 alarm-border, 6 header-polish and 9 trigger-editor groups. Total: 176 behavior groups plus 16 layout cases (192 mixed checks). |
 | Pinned-Linux visual | 18 existing groups plus 3 manual-hold groups. Total: 21, including determinism and cache-busting. |
 
-**Header-polish closeout:** Christian accepted the interactive candidate and all 162 comparison images. The installed-reference pinned-Linux run passed 21/21 with updates disabled and unchanged tolerances. Earlier engine 526/0 and Windows browser 167 behavior groups plus 16 layout cases are carried forward, not rerun for this documentation-only pass. Asset version is 39 at all 11 sites. See [the header closeout](docs/header-polish.md) for source identity, retained local evidence, acceptance and limits.
+**Trigger-editor closeout:** Christian accepted the trigger controls and complete 162-image gallery, then authorized installation of the 85 changed references. All 162 installed hashes match the reviewed bytes; pinned-Linux visuals passed 21/21 with updates disabled and unchanged tolerances. The installed test-only focus repair passed the full Windows browser inventory (176 behavior groups plus 16 layout cases); engine 526/0 is earlier unchanged-runtime evidence. This documentation-only pass runs no simulator gates. Asset version is 40 at all 11 sites. See [the trigger-editor closeout](docs/trigger-editor.md) for identity, evidence and limits.
+
+**Historical header-polish closeout:** Christian accepted the interactive candidate and all 162 comparison images. The installed-reference pinned-Linux run passed 21/21 with updates disabled and unchanged tolerances. Earlier engine 526/0 and Windows browser 167 behavior groups plus 16 layout cases are carried forward, not rerun for this documentation-only pass. Asset version is 39 at all 11 sites. See [the header closeout](docs/header-polish.md) for source identity, retained local evidence, acceptance and limits.
 
 **Historical alarm-border closeout:** Christian accepted the 4 px presentation and full gallery. All 162 installed references match the reviewed manifest (161 changed, one identical); final pinned-Linux visuals passed 21/21 with updates disabled and unchanged tolerances. Earlier engine 526/0 and browser 161 behavior groups plus 16 layout cases are carried forward, not rerun for this documentation-only pass. At that closeout, asset version was 38 at all 11 sites. See [the alarm-border closeout](docs/alarm-border.md) for evidence and limits.
 
@@ -213,7 +215,7 @@ Each of these encodes a bug that already shipped once.
    PC-CSV, so the array stays empty there. Assert on *failed* events, and do not
    assume a baseline event exists in CSV.
 7. **Every local asset carries the same `?v=`, including `css/style.css`.**
-   Currently `?v=39`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
+   Currently `?v=40`, at **11** sites: `index.html` ×3, `js/main.js` ×6,
    `js/ventilator.js` ×1, and `js/simulation.js` ×1. A returning browser that pairs new markup and new JS
    with a cached old stylesheet fails **silently** — this shipped. Asserted two
    ways: `verify-batch.cjs` reads the source, and the visual suite's

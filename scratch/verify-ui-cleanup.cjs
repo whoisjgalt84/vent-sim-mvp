@@ -81,32 +81,45 @@ const groups = [
         assert(gap>=7.5 && gap<=8.5,'explicit 8px Trigger/icon gap');
         for(const [type,value,unit] of [['flow','2.0','L/min'],['pressure','1.0','cmH2O']]) {
             await page.click(`[data-trigger-type="${type}"]`);
-            assert(await page.locator('#'+type+'-trigger-row').isVisible(),'selected slider visible');
+            assert(await page.locator('#'+type+'-trigger-row').isVisible(),'selected sensitivity row visible');
             assert.equal(await page.locator('#'+(type==='flow'?'pressure':'flow')+'-trigger-row').isVisible(),false);
             assert.equal(await text(page.locator('#'+type+'-trigger-display')),value+' '+unit);
             assert.equal(await page.locator('.trigger-control .control__value:visible').count(),1,'one inline readout');
-            const accessibility=await ax(page,'#'+type+'-trigger');
-            assert.equal(accessibility.role.value,'slider');
-            assert.equal(accessibility.name.value,(type==='flow'?'Flow':'Pressure')+' trigger sensitivity');
-            assert(accessibility.description.value.replaceAll('\u2082','2').includes(value+' '+unit),'inline value/units accessible');
+            const accessibility=await ax(page,'#'+type+'-trigger-tile');
+            assert.equal(accessibility.role.value,'button');
+            assert.equal(accessibility.name.value.replaceAll('\u2082','2'),'Edit '+(type==='flow'?'Flow':'Pressure')+' trigger sensitivity, applied '+value+' '+unit);
+            assert.equal(await page.locator('#'+type+'-trigger').isVisible(),false,'compatibility slider is hidden');
         }
     }],
     ['trigger-native-input',async page=>{
         for(const type of ['flow','pressure']) {
             await page.click(`[data-trigger-type="${type}"]`);
-            const input=page.locator('#'+type+'-trigger');
             const field=type==='flow'?'flowTriggerLpm':'pressureTriggerCmH2O';
+            const unit=type==='flow'?'L/min':'cmH2O';
+            const before=(await state(page)).resetDiagnostics.configuration;
+            await page.locator('#'+type+'-trigger-tile').click();
+            const input=page.locator('#setting-range');
+            assert.equal(+(await input.getAttribute('min')),.5);assert.equal(+(await input.getAttribute('max')),5);assert.equal(+(await input.getAttribute('step')),.1);
             await input.focus();await page.keyboard.press('Home');await page.keyboard.press('ArrowRight');
             assert.equal(+(await input.inputValue()),.6,'native keyboard tenth-step');
-            assert.equal((await state(page)).resetDiagnostics.configuration[field],.6,'keyboard changes retained setting');
+            assert.deepEqual((await state(page)).resetDiagnostics.configuration,before,'keyboard is draft only');
+            assert.equal(await text(page.locator('#'+type+'-trigger-display')),before[field].toFixed(1)+' '+unit,'readout retains applied units before Confirm');
+            await page.locator('#setting-confirm').click();
+            assert.deepEqual((await state(page)).resetDiagnostics.configuration,{...before,[field]:.6},'keyboard changes only selected setting after Confirm');
+            await page.locator('#'+type+'-trigger-tile').click();
             await input.scrollIntoViewIfNeeded();const box=await input.boundingBox();
             await input.evaluate(e=>{window.__triggerInputs=[];e.addEventListener('input',event=>window.__triggerInputs.push({value:+e.value,trusted:event.isTrusted}));});
             await page.mouse.move(box.x+8,box.y+box.height/2);await page.mouse.down();
             await page.mouse.move(box.x+box.width-8,box.y+box.height/2,{steps:20});await page.mouse.up();
             const events=await page.evaluate(()=>window.__triggerInputs);
             assert(events.length>=5 && events.every(e=>e.trusted),'nonvacuous trusted native pointer input');
-            assert.equal((await state(page)).resetDiagnostics.configuration[field],+(await input.inputValue()),'pointer/model agreement');
-            assert.equal(await text(page.locator('#'+type+'-trigger-display')),Number(await input.inputValue()).toFixed(1)+' '+(type==='flow'?'L/min':'cmH2O'));
+            assert(events.every(e=>e.value>=.5&&e.value<=5&&Math.abs(e.value*10-Math.round(e.value*10))<1e-12),'pointer respects tenth-step grid');
+            const selected=+(await input.inputValue());
+            assert.deepEqual((await state(page)).resetDiagnostics.configuration,{...before,[field]:.6},'pointer is draft only');
+            assert.equal(await text(page.locator('#'+type+'-trigger-display')),'0.6 '+unit,'pointer draft preserves applied readout');
+            await page.locator('#setting-confirm').click();
+            assert.deepEqual((await state(page)).resetDiagnostics.configuration,{...before,[field]:selected},'pointer/model agreement only after Confirm');
+            assert.equal(await text(page.locator('#'+type+'-trigger-display')),selected.toFixed(1)+' '+unit);
         }
         await page.locator('#fio2-tile').click();const fio2=page.locator('#setting-range');await fio2.focus();await page.keyboard.press('ArrowRight');
         assert.equal(+(await fio2.inputValue()),41,'FiO2 native keyboard step');assert.equal((await state(page)).resetDiagnostics.configuration.fio2,.40,'FiO2 keyboard remains a draft');await page.locator('#setting-confirm').click();assert.equal((await state(page)).resetDiagnostics.configuration.fio2,.41,'FiO2 keyboard/model agreement after Confirm');assert.equal(await page.locator('#fio2-display').textContent(),'41%','FiO2 keyboard units');await page.locator('#fio2-tile').click();
